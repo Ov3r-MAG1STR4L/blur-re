@@ -18,7 +18,7 @@ import aidreverse, blurbpr, blurroute, gridreverse, thumbreverse
 from blurxt import XT
 from kslfwrite import KSLF
 
-MAX_AI_PER_CONSOLE = 49        # multiplayer.bin MultiplayerConfig, original 4; 19 = 20 cars (engine limit), 49 = experiment
+MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4; 19 = 20 cars (49 tested: clamped to 20)
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
 G = os.path.join(E, "gamedata", "gamedata")

@@ -158,6 +158,7 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   Aussi : `ai_padding_limit` = 10 (rôle inconnu), `number_of_ai_players` = [19, 8, 5, 4] (écran partagé 1 à 4
   joueurs ?), 20 `ai_characters`. `GetCustomRaceLimits` (0xC60140) ne renvoie que max_laps, max_time, time_step.
   **20 voitures est une limite du moteur** (20 places de départ, 20 colonnes de difficulté, classement à 20 cases).
+  **Testé en jeu** : menu et `max_ai_per_console` à 49 → le jeu coupe à 20 voitures, sans planter (plafond fixe dans le code).
 - **Scripts des menus et du HUD** : dans `Blur.exe`, archive **`BZUI`** (après la chaîne de révision du build) :
   gros-boutiste, u32 nombre (144), puis 144 × (u32 nom, u32 données, u32 taille compressée, u32 taille), table des
   noms, données (positions comptées depuis la table des noms) ; chaque script = flux zlib d'un chunk Lua 5.1
