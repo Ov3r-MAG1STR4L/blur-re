@@ -26,6 +26,8 @@ Aucun fichier du jeu n'est inclus. Les outils lisent une installation existante 
 | `trackrec.py` | enregistre la position du joueur en roulant (lecture seule) : carte du sol praticable |
 | `Tester le mod.bat` | lance la copie de test en sauvegardant puis remettant ta progression Blur (automatique) |
 | `Jouer en ligne.bat` | lance le jeu installé ; remet d'abord la sauvegarde si un test n'a pas été restauré |
+| `blurbpr.py` | images d'interface `.bpr` (2RZB) : lister, exporter en PNG, ajouter une image (DXT1/DXT5) |
+| `thumbreverse.py` | image de présentation d'une route inversée (image d'origine + symbole demi-tour néon) |
 | `make_test_copy.ps1` | copie de test hors ligne du jeu (AMAX hors ligne : Lua + plugins, sans module en ligne) avec un mod, sauvegarde Blur protégée ; simulation par défaut |
 | `blur_live.py` | lecture **seule** de la mémoire en course (véhicules, positions, vitesses, profils IA) |
 | `deeprec.py` | enregistrement mémoire profond (objets pointés) pour l'analyse hors ligne |

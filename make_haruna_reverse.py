@@ -6,10 +6,11 @@ Output tree mirrors the game folder (loose files override paks, see docs/CONNAIS
   OUT/gamedata/levels/jpn_mharuna/actorpack.xt         + 2 start lists (solo #62, multi #15) at the bottom
   OUT/gamedata/xt/amax.bin                             + Route JPN_MHaruna_7 pointing to the new lists
   OUT/gamedata/xt/multiplayer.bin                      + JPN_MHaruna_7 in MultiplayerConfig.routes
+  OUT/ui/data/ui_frontend.bpr                          + picture JPN_MHaruna_7 (Descent picture + U-turn sign)
 usage: make_haruna_reverse.py OUT_DIR
 """
 import os, struct, sys
-import aidreverse, blurroute, gridreverse
+import aidreverse, blurbpr, blurroute, gridreverse, thumbreverse
 from blurxt import XT
 from kslfwrite import KSLF
 
@@ -93,6 +94,15 @@ def main(out):
                      ("LocString", LOC_ASCENT)):                    # menu name "Ascent" / "Montée"
         b = XT(p).patched("JPN_MHaruna_7", field, v)              # read before opening for writing
         open(p, "wb").write(b)
+
+    # menu / loading picture: looked up by Route Name in ui_frontend.bpr (root.pak); none = white screen
+    bpr = blurbpr.Bpr(os.path.join(E, "root", "ui", "data", "ui_frontend.bpr"))
+    (_, _, _, _, _, _, fmt, mips, w, h), _ = bpr.raw("JPN_MHaruna_1")
+    pic = thumbreverse.make(bpr.image("JPN_MHaruna_1"))
+    ui = os.path.join(out, "ui", "data")
+    os.makedirs(ui, exist_ok=True)
+    open(os.path.join(ui, "ui_frontend.bpr"), "wb").write(
+        bpr.build([("JPN_MHaruna_7", fmt, mips, w, h, blurbpr.encode(pic, fmt, mips))]))
 
     m = KSLF(os.path.join(G, "xt", "multiplayer.bin"))
     m.append_to_array("#735", "routes", m.add_external(H_ROUTE, "Route"))

@@ -88,15 +88,19 @@ if (-not $Run) { $rc += "/L" }                         # /L = list only
 & robocopy @rc | Select-Object -Last 12
 if ($LASTEXITCODE -ge 8) { throw "robocopy a échoué (code $LASTEXITCODE)" }
 
-# 3 bis. gamedata.pak wins over loose files (Process Monitor): lay its files loose and set the pak aside
-$unpacked = Join-Path (Split-Path $Mod -Parent | Split-Path -Parent | Split-Path -Parent) "gamedata\gamedata"
-Write-Host "gamedata en clair : $unpacked -> $dst\gamedata ; cache\gamedata.pak/.sig -> .off"
-if ($Run) {
-    & robocopy $unpacked (Join-Path $dst "gamedata") /E /XC /XN /XO /NFL /NDL /NP /NJH /NJS | Out-Null
-    if ($LASTEXITCODE -ge 8) { throw "robocopy gamedata a échoué (code $LASTEXITCODE)" }
-    foreach ($f in "gamedata.pak", "gamedata.sig") {
-        $p = Join-Path $dst "cache\$f"
-        if (Test-Path $p) { Move-Item $p "$p.off" -Force }
+# 3 bis. a pak wins over loose files (Process Monitor): lay the files of the paks the mod touches loose and set
+# the paks aside. gamedata.pak (data) -> <copy>\gamedata ; root.pak (models, UI pictures...) -> <copy>\
+$extracted = Split-Path $Mod -Parent | Split-Path -Parent | Split-Path -Parent
+foreach ($u in @(@("gamedata", "gamedata\gamedata", "gamedata"), @("root", "root", ""))) {
+    $pak, $from, $to = $u[0], (Join-Path $extracted $u[1]), (Join-Path $dst $u[2])
+    Write-Host "$pak en clair : $from -> $to ; cache\$pak.pak (+ .sig) -> .off"
+    if ($Run) {
+        & robocopy $from $to /E /XC /XN /XO /NFL /NDL /NP /NJH /NJS | Out-Null
+        if ($LASTEXITCODE -ge 8) { throw "robocopy $pak a échoué (code $LASTEXITCODE)" }
+        foreach ($f in "$pak.pak", "$pak.sig") {
+            $p = Join-Path $dst "cache\$f"
+            if (Test-Path $p) { Move-Item $p "$p.off" -Force }
+        }
     }
 }
 

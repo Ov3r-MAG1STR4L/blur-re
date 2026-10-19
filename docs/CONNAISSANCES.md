@@ -309,6 +309,22 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
 
 ---
 
+### 3.6 bis `.bpr` (« 2RZB », images de l'interface) : **Confirmé** — outil `blurbpr.py`
+
+- En-tête de 0x14 o : `2RZB`, u16 version 0x203, u16 = octets de la table + des noms, u32 octets de la table
+  (n × 28), u32 octets des données, u32 0.
+- n entrées de 28 o à 0x14 : u16 0x1C, u16 début du nom (table des noms), u32 début des données, u32 1, u32 taille,
+  u32 0, u16 format (1 = DXT1, 5 = DXT5, 6 = RGBA), u16 nombre de mips, u16 largeur, u16 hauteur.
+- Puis la table des noms, quelques octets inutilisés, et les données, qui finissent le fichier.
+- Vérifié sur les 4 `.bpr` : réécriture identique à l'octet ; 224/226 tailles égales au calcul (format, mips).
+- **Images de présentation des circuits** (menu « Track » et écran de chargement) : dans
+  `root.pak` `ui\data\ui_frontend.bpr`, **nommées comme la route** (`JPN_MHaruna_1` : DXT1 512×256, 2 mips ; le menu
+  montre la partie gauche ~330 px). Le champ `Thumbnail` de la `Route` n'est pas utilisé pour ça : le Lua reçoit
+  le nom (`+0x10`). Sans image du bon nom → fond blanc lumineux (vu en jeu).
+- `JPN_MHaruna_7` ajoutée : image de la Descent + symbole demi-tour néon (`thumbreverse.py`). `root.pak` passe avant
+  les fichiers en clair : dans la copie de test, `root.pak` est mis de côté et son contenu posé en clair. Non
+  encore vu en jeu.
+
 ### 3.7 Inventaire du dossier du jeu (2026-10-19) : ce qui reste non lu
 
 | Zone | Taille | Contenu | État |
@@ -316,7 +332,7 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
 | `levels/*/level.levelrender`, `.levelstream` | ~4,9 Go (avec `.level*`) | géométrie et rendu des cartes | **non décodé** |
 | `levels/*/level.levelphysics` | | collision : `Main` + un bloc `Route` par `RouteNumber` (route jouable) | structure ; contenu non décodé |
 | `levels/*/level.level` | | MdlDat, NavDat, Advert, MtaDbg | structure seulement |
-| `root.pak` `ui\data\*.bpr` (4) | 46 Mo | ressources des menus / HUD, magie `2RZB` | **non décodé** |
+| `root.pak` `ui\data\*.bpr` (4) | 46 Mo | images des menus / HUD, magie `2RZB` | **décodé** (3.6 bis) ; pas de Lua dedans |
 | `root.pak` `ui\data\ipf\*.ipf` (75) | 29 Mo | images d'interface, dont une **mini-carte par carte** (`minimap\jpn_mharuna_game.ipf`) | **non décodé** (utile pour le HUD) |
 | `root.pak` `ui\data\pf\*.pf`, `ui_font_eur.*` | | polices | non décodé |
 | scripts Lua des menus (`Screens\...\MpCustomRace.lua`…) | | noms dans l'exe ; **introuvables** dans les paks extraits et pas en clair dans l'exe | à chercher (peut-être dans les `.bpr`) |
