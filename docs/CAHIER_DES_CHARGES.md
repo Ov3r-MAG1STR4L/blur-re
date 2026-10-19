@@ -72,8 +72,8 @@ de référence, à comparer aux champs candidats.
 **Validation** : écart moyen voitures ↔ tracé inférieur à la largeur de route ; passage de la porte Start
 au même moment que le changement de tour au HUD.
 
-**Inconnues à lever en chemin** : la plupart des champs des nœuds de 323 octets, les valeurs des règles de
-jonction, le bit 0x400.
+**Inconnues à lever en chemin** : le rôle de `+0` des lignes et de `+36`/`+40` des nœuds, les valeurs des
+règles de jonction, le bit 0x400.
 
 ---
 
@@ -146,3 +146,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-09 | Format `.pak` résolu, `.loc` décodé, textures extraites et réinjectées |
 | 2026-10-18 | KSLF résolu (noms, valeurs, références) ; chaîne mémoire des véhicules ; position, vitesse, voiture ; profils IA en mémoire |
 | 2026-10-19 | Orientation ; formats « CP » des niveaux ; `.aid` décodés en entier (33/33) ; restes du DoubleTap ; dépôt GitHub créé |
+| 2026-10-19 | Nœuds `.aid` compris : en-tête (position, largeur, axe latéral avec dévers) + 11 lignes parallèles (fraction, hauteur, longueur) |
