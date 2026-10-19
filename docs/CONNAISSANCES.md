@@ -67,8 +67,27 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   `[hash, nameOfs, dirOfs, usize, crc, ?, startPage, flags, hash2, csize]`.
 - Données à `startPage*0x800` : boot/root = blocs deflate ; gamedata = flux zlib ; root_streaming = brut.
 - `shaders-speed.pak` (version 1) : non décodé.
-- Le jeu vérifie des signatures RSA (`.sig`). D'après la commu (wiki AMAX), les fichiers non
-  empaquetés (« loose ») sont chargés, ce qui éviterait de refaire les `.pak` : **Hypothèse**, à tester sur une copie.
+- Le jeu vérifie des signatures RSA (`.sig`) sur les paks. Les fichiers en clair passent avant les paks :
+  voir 3.1 bis (**Fort**, à confirmer en jeu).
+
+### 3.1 bis Chargement des fichiers (« LogicalFs ») : **Fort** (lu dans le code, pas encore testé)
+
+- Les sources de fichiers sont rangées en **couches** (`0xCB54C0`, un tableau par couche).
+  - **Couche 0** : `CFileSystem` = le système de fichiers Windows, monté à la racine, donc **le dossier du jeu**
+    (`0xCB1610`, drapeaux 0x11).
+  - **Couche 1** : les paks (`0x42D160`, `0xBC3390`) : `root.pak` sur `/`, `root_streaming.pak` sur `/audio/`,
+    `shaders-speed.pak` sur `/graphics/shaders/speed/`, `gamedata.pak` sur `/gamedata/` (plus `gamedata_boot.pak`,
+    `boot.pak`, `boot_rampak.pak` selon des drapeaux).
+- La recherche d'un fichier (`0xCB5700`) liste les candidats **couche 0 d'abord, puis couche 1**, et dans chaque
+  couche du dernier montage au premier. **Un fichier en clair dans le dossier du jeu passe donc avant le pak.**
+  Non vérifié : la boucle qui ouvre ensuite le premier candidat existant.
+- Signature : `0xCBA840` charge `cache/gamedata.sig` (et `gamedata_boot.sig`) s'il existe et a la bonne taille
+  (clé publique de 0x8C octets en `0xE678F8`) ; elle porte sur les paks. `Util.LogicalFs.VerifyPaks` est une
+  commande de débogage (rappel `0xCB2420`). Un fichier en clair n'est pas concerné.
+- `Mercury.FileSystemGlobals.FileAccessOrder` n'est qu'un nom de statistique (aucun code ne lit sa valeur).
+- **Où poser un fichier modifié** (dans la copie du jeu) : le chemin du pak, sous la racine du jeu. Exemples :
+  `gamedata/xt/amax.bin`, `gamedata/xt/multiplayer.bin`, `gamedata/levels/jpn_mharuna/jpn_mharuna_7.aid`
+  (chemin construit en `0xBBDD80`). Les `levels/<nom>/Level.*` sont déjà en clair dans le dossier du jeu.
 
 ### 3.2 `.loc` (« OLTX », textes) : **Confirmé** — outil `blurloc.py`
 

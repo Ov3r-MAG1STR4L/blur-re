@@ -35,7 +35,7 @@ Classement établi à partir des données ; l'effet réel en ligne n'est **pas v
 
 | Capacité | Lire | Écrire |
 |---|---|---|
-| `.pak` | oui | non (signatures RSA ; fichiers non empaquetés à tester) |
+| `.pak` | oui | inutile : un fichier en clair dans le dossier du jeu passe avant le pak (lu dans le code, à confirmer en jeu) |
 | `.bin` / `.xt` (KSLF) | oui, à 100 % | oui : reconstruction identique (49/49), modification de valeurs, clonage d'enregistrement, ajout à une liste de références ; non testé en jeu |
 | `.loc` (textes) | oui | non |
 | Textures de `.model` | oui | oui (réinjection, jamais testée en jeu) |
@@ -104,7 +104,7 @@ règles de jonction, le bit 0x400.
 | Route et épreuve | nouvelle route dans `amax.bin` (un emplacement libre existe : `JPN_MHaruna_0`), texte `.loc`, vignette ; pour l'afficher : ajout à `MultiplayerConfig.routes` (course perso) et/ou une épreuve dans un palier de `SP_TierData` | écrire du KSLF |
 | `Routes` de `.levelphysics` | sans doute pour les remises en piste | format non décodé |
 | Décor | flèches, barrières, bonus et déclencheurs pensés pour la descente | à évaluer en jeu |
-| Chargement | fichiers non empaquetés acceptés par le jeu ? | à tester sur une copie |
+| Chargement | fichiers en clair prioritaires sur les paks (lu dans le code) | à confirmer sur une copie |
 
 **Avant tout** : repérer les circuits inversables (sauts et rampes à sens unique) hors jeu, via les noms de
 tronçons (`*Ramp*`) et les ruptures de hauteur le long des 11 lignes des `.aid`.
@@ -182,3 +182,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | KSLF : encodeur des noms (aller-retour identique, 49 fichiers) ; modification de valeurs sur place (`blurxt.py --set`), non testée en jeu |
 | 2026-10-19 | Écrivain KSLF complet : reconstruction identique (49/49), clonage, ajout à une liste ; test « JPN_MHaruna_7 » ajoutée au menu de course perso (hors jeu) |
 | 2026-10-19 | Tri des 33 routes pour l'inversion : 1 saut sur boucle (Brighton 2), 2 doutes, 4 rampes sur raccourci, 26 sans indice (dont Haruna) ; hauteurs `.aid` parfois aplaties |
+| 2026-10-19 | Système de fichiers : le dossier du jeu (couche 0) est consulté avant les paks (couche 1) ; chemins où poser nos fichiers |
