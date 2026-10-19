@@ -16,8 +16,11 @@ Dernière mise à jour : 2026-10-19.
    (aller-retour octet pour octet, ou relecture par notre propre parseur sans erreur).
 4. **Une hypothèse reste une hypothèse** tant qu'elle n'a pas son test de validation (voir chaque projet).
 5. Chaque découverte met à jour `CONNAISSANCES.md` dans le même commit que le code.
-6. **Copie de test coupée du réseau** : dans la copie du jeu, retirer `d3d9.dll` et `amax/` (au minimum la
-   redirection), pour qu'un fichier modifié ne puisse jamais atteindre une partie en ligne.
+6. **Copie de test coupée du réseau** : la copie garde le chargeur Lua d'AMAX (`d3d9.dll`, `lua_hooks.asi`,
+   plugins dont `solo`), mais **jamais** `amax_auth.asi`, `amax_pfp.dll`, `blur_rpc.dll` ni `amax\config`
+   (redirection des serveurs). Un fichier modifié ne peut donc pas atteindre une partie en ligne. Le script le
+   vérifie à chaque `-Run` (accord de l'utilisateur le 2026-10-19 ; sans le plugin `solo`, impossible de
+   lancer une course perso seul).
 
 ### Fichiers à risque
 
@@ -138,18 +141,20 @@ dossier du jeu (`blur_extracted/mods/haruna_reverse/files/`) :
 course perso). Relecture complète : seuls ces ajouts changent, toutes les références se résolvent (`grille.png`).
 Choix et limites : hauteur des voitures = sol estimé (cônes et lampadaires proches) + 1 m ; écartement latéral
 réduit de moitié car la route fait 20 m en bas contre 40 m en haut (aucun chevauchement) ; zones « Hand of God »
-laissées en haut ; le nom affiché reste « Mount Haruna » (texte `.loc` non modifié) ; vignette identique.
+laissées en haut ; nom affiché « Ascent » / « Montée » (texte `CRN_MOUNT_HARUNA_2` laissé par les devs) ; vignette identique.
 
 **Copie de test** : `make_test_copy.ps1` (simulation par défaut ; `-Run` pour agir ; `-Restore -Run` après le test).
 Il sauvegarde d'abord `%APPDATA%\bizarre creations\blur\save` + `settings.xml` (**sauvegarde partagée entre toutes
-les installations** : la copie de test écrit dans la même), copie le jeu dans `Jeux_WII\Blur_test` **sans AMAX**
-(ni `d3d9.dll` ni `amax\`) et pose les fichiers du mod. Simulation vérifiée : 125 fichiers / 7,28 Go, rien d'écrit.
+les installations** : la copie de test écrit dans la même), copie le jeu dans `Jeux_WII\Blur_test` avec **AMAX hors ligne**
+(voir règle 6) et pose les fichiers du mod. `-Update -Run` met à jour une copie existante (AMAX + mod) sans
+refaire la sauvegarde. Simulation vérifiée : 125 fichiers / 7,28 Go, rien d'écrit.
 
 **Reste pour le projet C** : lancer la copie (`-Run`), essai en jeu, puis `-Restore -Run`.
 
 **Déroulé du test en jeu** (dans la copie) :
-1. le jeu démarre-t-il sans AMAX ?
-2. course perso / réseau local : « Mount Haruna » apparaît-il deux fois (le 2e = notre route) ?
+1. le jeu démarre-t-il (AMAX hors ligne : choisir « Skip » à la connexion) ?
+2. Online → Local Network → Custom Game (F1 pour lancer seul) → Game Settings : lieu « Mount Haruna »,
+   circuit « Ascent » / « Montée » (= notre route) ?
 3. départ en bas, voitures tournées vers le haut, IA qui montent ?
 4. passage des points intermédiaires puis arrivée en haut ?
 5. noter tout comportement bizarre (remise en piste, voitures qui tombent, IA qui braquent à contresens).
@@ -219,3 +224,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Mod Haruna inversé complet hors jeu : grilles en bas (actorpack), route `JPN_MHaruna_7`, menu course perso (`make_haruna_reverse.py`) |
 | 2026-10-19 | Script de copie de test hors ligne (`make_test_copy.ps1`), sauvegarde Blur protégée ; simulation OK |
 | 2026-10-19 | 1er essai en jeu : la montée n'est pas sélectionnable. La copie sans AMAX n'a plus le plugin `solo` (partie perso seul, F1). Menu course perso lu dans le code. Route renommée « Ascent » (texte inutilisé des devs), Index 3 |
+| 2026-10-19 | Copie de test : AMAX hors ligne (chargeur Lua + plugin `solo`, sans module en ligne), `-Update` |
