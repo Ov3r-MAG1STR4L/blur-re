@@ -28,6 +28,8 @@ Aucun fichier du jeu n'est inclus. Les outils lisent une installation existante 
 | `Jouer en ligne.bat` | lance le jeu installé ; remet d'abord la sauvegarde si un test n'a pas été restauré |
 | `blurbpr.py` | images d'interface `.bpr` (2RZB) : lister, exporter en PNG, remplacer une image en place (DXT1/DXT5) |
 | `thumbreverse.py` | image de présentation d'une route inversée (image d'origine + symbole demi-tour néon) |
+| `blurui.py`, `luadis.py` | extraction des 144 scripts Lua des menus intégrés à `Blur.exe` (archive BZUI) ; désassembleur Lua 5.1 |
+| `mod_static/` | fichiers livrés tels quels avec le mod (plugin AMAX `ai19` : Max AI jusqu'à 19) |
 | `make_test_copy.ps1` | copie de test hors ligne du jeu (AMAX hors ligne : Lua + plugins, sans module en ligne) avec un mod, sauvegarde Blur protégée ; simulation par défaut |
 | `blur_live.py` | lecture **seule** de la mémoire en course (véhicules, positions, vitesses, profils IA) |
 | `deeprec.py` | enregistrement mémoire profond (objets pointés) pour l'analyse hors ligne |
