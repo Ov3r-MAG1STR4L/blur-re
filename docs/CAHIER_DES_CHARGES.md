@@ -38,11 +38,11 @@ Classement établi à partir des données ; l'effet réel en ligne n'est **pas v
 
 | Capacité | Lire | Écrire |
 |---|---|---|
-| `.pak` | oui | inutile : un fichier en clair dans le dossier du jeu passe avant le pak (lu dans le code, à confirmer en jeu) |
-| `.bin` / `.xt` (KSLF) | oui, à 100 % | oui : reconstruction identique (49/49), modification de valeurs, clonage d'enregistrement, ajout à une liste de références ; non testé en jeu |
+| `.pak` | oui | pas besoin pour l'instant : sans `gamedata.pak`, le jeu lit tout en clair (testé en jeu). Le pak passe AVANT un fichier en clair |
+| `.bin` / `.xt` (KSLF) | oui, à 100 % | oui : reconstruction, valeurs, clonage, ajout à une liste. **Testé en jeu** (route + listes ajoutées, chargées et jouées) |
 | `.loc` (textes) | oui | non |
 | Textures de `.model` | oui | oui (réinjection, jamais testée en jeu) |
-| `.aid` (IA / logique de piste) | oui, à 100 % de la structure | oui : réécriture identique (33/33) ; pas encore de route modifiée |
+| `.aid` (IA / logique de piste) | oui, à 100 % de la structure | oui : réécriture identique (33/33) et **inversion testée en jeu** (Haruna) |
 | `.level*` (géométrie, collision) | structure seulement | non |
 | Mémoire en course | position, vitesse, rotation, voiture, profils IA | (lecture seule, par règle) |
 
@@ -94,7 +94,7 @@ règles de jonction, le bit 0x400.
 
 ---
 
-## Projet C : Haruna en sens inverse (mis de côté, à garder en tête)
+## Projet C : Haruna en sens inverse : **fonctionne en jeu** (2026-10-19)
 
 **Objectif** : une course qui monte Haruna (la route d'origine descend), jouable avec des IA.
 
@@ -149,7 +149,7 @@ les installations** : la copie de test écrit dans la même), copie le jeu dans 
 (voir règle 6) et pose les fichiers du mod. `-Update -Run` met à jour une copie existante (AMAX + mod) sans
 refaire la sauvegarde. Simulation vérifiée : 125 fichiers / 7,28 Go, rien d'écrit.
 
-**Reste pour le projet C** : lancer la copie (`-Run`), essai en jeu, puis `-Restore -Run`.
+**Reste pour le projet C** : vérifier le texte d'arrivée replacé ; bonus et HUD (ci-dessous) ; puis d'autres routes.
 
 **Déroulé du test en jeu** (dans la copie) :
 1. le jeu démarre-t-il (AMAX hors ligne : choisir « Skip » à la connexion) ?
