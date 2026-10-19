@@ -24,7 +24,10 @@ def sign(size):
     bottom = int(s * 0.86)
     # hairpin: up the left leg, round the top, down the right leg to the arrow head
     d.line([(left, bottom), (left, top + r)], fill="white", width=w)
-    d.arc([left - w // 2 + w // 2 - r + r, top, right, top + 2 * r], 180, 360, fill="white", width=w)
+    # PIL draws an arc's width INSIDE its box: grow the box by w/2 so the stroke is centred on radius r, like
+    # the legs (otherwise the bend sits half a stroke inward: seen 2026-10-19)
+    cy = top + r
+    d.arc([cx - r - w // 2, cy - r - w // 2, cx + r + w // 2, cy + r + w // 2], 180, 360, fill="white", width=w)
     d.line([(right, top + r), (right, bottom - int(s * 0.16))], fill="white", width=w)
     h = int(s * 0.19)
     tip = bottom
