@@ -251,3 +251,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Brighton 1R en jeu : ligne/porte OK, mais grille multi dans l'ancien sens (places `NewStartPosition*` ignorées). Places reconnues par leur type ; corrigé |
 | 2026-10-19 | **Brighton « Route 1 Reverse » fonctionne en jeu** : bon sens, bien placés. 1re boucle inversée. Suite : routes à une jonction (support des jonctions dans `aidreverse`) |
 | 2026-10-19 | Limite d'IA en LAN : `max_ai_per_console` 4 → 19 (seul : jusqu'aux 18 IA du menu). Plus de 20 voitures : limite moteur, non |
+| 2026-10-19 | **18 IA seul en LAN : confirmé en jeu** (`max_ai_per_console` = 19). Au-delà de 20 voitures : limite du moteur |
