@@ -59,20 +59,42 @@ class KSLF:
         """Append a copy of record `src` named `new_name`, reachable by `new_hash`. Returns its record number."""
         k = self._record_pos(src)
         idx, chunks, data, strings = self.records[k]
-        try:
-            name_off = self._rel(self.x.locate(src, "Name")[0], k)
-        except KeyError:
-            name_off = self._rel(self.x.locate(src, "name")[0], k)
-        plain = decode_names(strings) if strings else b""
-        new_ofs = len(plain)
-        plain += new_name.encode("latin-1") + b"\0"
-        plain += b"\0" * ((-len(plain)) % 4)
-        data = bytearray(data)
-        struct.pack_into("<I", data, name_off, new_ofs)
+        name_off = None
+        for field in ("Name", "name"):
+            try:
+                name_off = self._rel(self.x.locate(src, field)[0], k)
+                break
+            except KeyError:
+                pass
+        if name_off is not None and new_name:         # nameless records (e.g. LevelActorList) keep no name
+            plain = decode_names(strings) if strings else b""
+            new_ofs = len(plain)
+            plain += new_name.encode("latin-1") + b"\0"
+            plain += b"\0" * ((-len(plain)) % 4)
+            data = bytearray(data)
+            struct.pack_into("<I", data, name_off, new_ofs)
+            strings = encode_names(plain)
         root_type = self.index[idx][1]
         self.index.append((new_hash, root_type, len(self.records)))
-        self.records.append([len(self.index) - 1, list(chunks), bytes(data), encode_names(plain)])
+        self.records.append([len(self.index) - 1, list(chunks), bytes(data), strings])
         return len(self.records) - 1
+
+    def set_array_ref(self, owner, field, i, slot):
+        """Replace element i of a top-level reference array of `owner` by index slot `slot`."""
+        k = self._record_pos(owner)
+        x = self.x
+        ft, fo, fl = x._field(x._ch[0][0], field)
+        idx, chunks, data, strings = self.records[k]
+        ref, n = struct.unpack_from("<II", data, fo)
+        if not (fl & 0x100 and i < n):
+            raise IndexError(f"{field}[{i}]")
+        c, start = ref & 0xFFFF, ref >> 16
+        if not chunks[c][2]:
+            raise TypeError(f"{field} is not an array of references")
+        at = sum((4 if z else ts_size(x, t2)) * n2 for t2, n2, z in chunks[:c]) + (start + i) * 4
+        data = bytearray(data)
+        struct.pack_into("<I", data, at, slot)
+        self.records[k] = [idx, chunks, bytes(data), strings]
 
     def add_external(self, hash_, type_name):
         """Index slot for a record living in another file (appended: hash must be above all others)."""

@@ -130,8 +130,17 @@ le jeu ; longueurs conformes au nouveau trajet (écart médian 4 mm) ; départ e
 (~1050 m), portes et intermédiaires échangés ; table logique valide ; inverser deux fois redonne l'original
 (à des arrondis près). Incertitude restante : le champ « virage » (+0) des lignes, changé de signe par hypothèse.
 
-**Reste pour le projet C** : grille de départ en bas (actorpack), route `JPN_MHaruna_7` (+ menu), copie hors
-ligne, essai en jeu.
+**Fait aussi (hors jeu)** : `make_haruna_reverse.py SORTIE` produit les 4 fichiers du mod, rangés comme dans le
+dossier du jeu (`blur_extracted/mods/haruna_reverse/files/`) :
+`gamedata/levels/jpn_mharuna/jpn_mharuna_7.aid`, `gamedata/levels/jpn_mharuna/actorpack.xt` (+ listes #67 solo et
+#68 multi : 20 voitures en bas, tournées vers le haut, textes Start/Finish échangés), `gamedata/xt/amax.bin`
+(+ route `JPN_MHaruna_7`, copie de `_1` avec ces deux listes), `gamedata/xt/multiplayer.bin` (route ajoutée à la
+course perso). Relecture complète : seuls ces ajouts changent, toutes les références se résolvent (`grille.png`).
+Choix et limites : hauteur des voitures = sol estimé (cônes et lampadaires proches) + 1 m ; écartement latéral
+réduit de moitié car la route fait 20 m en bas contre 40 m en haut (aucun chevauchement) ; zones « Hand of God »
+laissées en haut ; le nom affiché reste « Mount Haruna » (texte `.loc` non modifié) ; vignette identique.
+
+**Reste pour le projet C** : copie hors ligne, essai en jeu.
 
 **Première étape proposée** (faite) : écrire `Haruna_reverse.aid`, puis le relire avec `blurroute.py` (aucune erreur,
 jusqu'au dernier octet) et le tracer. Cette étape ne touche pas au jeu.
@@ -195,3 +204,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Système de fichiers : le dossier du jeu (couche 0) est consulté avant les paks (couche 1) ; chemins où poser nos fichiers |
 | 2026-10-19 | Écriture des `.aid` : réécriture identique des 33 fichiers (`blurroute.build`) |
 | 2026-10-19 | Haruna inversé généré (`aidreverse.py` → `jpn_mharuna_7.aid`) et vérifié hors jeu |
+| 2026-10-19 | Mod Haruna inversé complet hors jeu : grilles en bas (actorpack), route `JPN_MHaruna_7`, menu course perso (`make_haruna_reverse.py`) |

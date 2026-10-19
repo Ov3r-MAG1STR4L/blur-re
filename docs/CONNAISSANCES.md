@@ -135,6 +135,12 @@ Tables de données du jeu (voitures, IA, épreuves, bonus…). 26 fichiers `.bin
   - Les nouveaux enregistrements reçoivent un hash au-dessus de tous les existants (le plus haut : 0xFFFE3216),
     donc ajoutés en fin d'index sans décaler les emplacements. La fonction de hash du jeu (nom → hash) reste
     inconnue : une recherche par nom pourrait ne pas trouver un ajout. **Risque, non testé en jeu.**
+- Aussi : `clone` accepte les enregistrements sans nom (ex. `LevelActorList`, nommés `#<emplacement>`) ;
+  `set_array_ref(propriétaire, champ, i, emplacement)` remplace une référence dans une liste.
+- Grilles de départ (actorpack) : une `Route` désigne ses objets par `ActorLists` (solo) et `MultiplayerActorLists` ;
+  sur Haruna, la grille est dans les listes #62 (solo) et #15 (multi), avec le point et les zones « Hand of God »
+  et les textes `Start_Text_*`. Matrice d'un objet : `az` = avant, `ax` = opposé de l'axe latéral des `.aid`,
+  `aw` = position. Sur Haruna, les hauteurs des `.aid` sont ~11-14 m sous le sol réel. **Confirmé** (mesuré).
 - Pas encore possible : modifier une chaîne existante, insérer dans un tableau d'éléments non-référence.
 - Attention : une fiche physique peut être partagée par plusieurs voitures (ex. `*_Shannon`).
 
