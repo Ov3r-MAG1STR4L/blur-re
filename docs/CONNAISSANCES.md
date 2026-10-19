@@ -204,6 +204,26 @@ Fichiers de difficulté : `gamedata/events/*_easy|medium|hard.csv`, désignés p
 Chaque colonne = une voiture (colonne 0 = joueur). Une ligne donne l'`Index` du profil `AIPerkSkillz`, la suivante
 celui de `AIPerkPrefs`. **Confirmé** (correspondance des valeurs et lecture en mémoire).
 
+### Circuits et menus : **Confirmé** (données)
+
+- `amax.bin` déclare **22 villes** (`City` = une carte) et **70 routes** (`Route`), chaque route avec : ville,
+  `RouteNumber`, nom affiché (`LocString`), vignette (`Thumbnail`), `CircuitType`, `OnlyAllowSingleLap`…
+- Seules 33 routes ont un `.aid`. Les autres : une **route 0** sans `.aid` pour chaque ville (rôle inconnu ;
+  `JPN_MHaruna_0` est de type « Hilly » alors que la route jouée `_1` est « Technical »), des routes de test
+  (`*_OBJTest`, `QuickExport_0…6`, `VehicleTestScene`).
+- **Les menus utilisent des listes explicites**, il n'y a pas de parcours automatique des routes :
+  - multijoueur / course perso : `multiplayer.bin` → `MultiplayerConfig.routes` = exactement les **30 routes
+    jouables** ; `arenas` = 4 arènes ; `defaults.track` = USA_Amboy_3 ; aussi `online_playlists`,
+    `splitscreen_playlists`, `system_link_playlists` ;
+  - carrière : `singleplayer.bin` → `SP_TierData` = 9 paliers (épreuves avec restriction de classe et
+    objectif de fans) et 9 boss ; chaque `AmaxEvent` désigne sa route ;
+  - écran partagé : `splitscreen.bin` → `AmaxSplitScreenEvent` ;
+  - succès : `achievements.bin` → `AllCitiesInTheGame` (14 villes).
+- **Ajouter un circuit au menu** = déclarer la `Route` (et la `City` si nouvelle carte), un texte `.loc`,
+  une vignette, puis l'ajouter à `MultiplayerConfig.routes` et/ou créer une épreuve dans un palier.
+  Aucun bouton à coder, mais il faut savoir **écrire** le KSLF. Ce qui se passe si on touche au multijoueur
+  en ligne : **inconnu**, à éviter.
+
 ### Bonus et contenu laissé par les développeurs
 
 | Bonus (nom interne) | Variantes dans `pickups.bin` |
