@@ -556,7 +556,10 @@ Trois couches :
    Décodeur (`0x4C5E20`) : ligne distances → palier +4 ; ligne facteurs → +8 = facteur − X[+0x44], au moins
    X[+0x48] (X = objet lié à la difficulté) ; ligne 0.55 → +0xC. Les variables `AmaxAI.DebugCar.Player.
    BrakeTrackSpeedPercentage{,Easy,Medium,Hard}` (0x1134C30/68/A0, défaut 0,95 / 1 / 1) concernent l'aide au
-   freinage du **joueur**. Essai 2 : facteurs à 1,2 pour toutes les IA (plafond de vitesse ?).
+   freinage du **joueur**. **Essai 2 (facteurs à 1,2 pour toutes les IA)** : 1er 2'35"39 (−5,8 s), médiane
+   2'43"86 (−13,0 s), dernier 2'48"93 (−14,7 s), écart 1er–dernier 13,5 s au lieu de 22,5 s. **La ligne des
+   facteurs est le plafond de vitesse de chaque IA (Confirmé)** : original 1,0 pour les 4 premières IA, 0,84–0,87
+   pour les autres (d'où le freinage après un nitro).
 3. **Aides** : variables de débogage `AmaxAI.DebugCar.CorneringBoost`, `…Player.BrakeBoost`,
    `…BrakeTrackSpeedPercentageEasy/Medium/Hard`, `AISpeed` ; rattrapage du **joueur** en multijoueur :
    `MultiplayerConfig.player_rubber_banding_settings` (maxDistanceBetweenGroupMembers 2000, minDistanceForFullBanding
