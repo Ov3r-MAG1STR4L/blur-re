@@ -271,3 +271,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | DoubleTap : Bouclier seul OK pour le joueur. Test suivant : Bouclier + Nitro |
 | 2026-10-19 | DoubleTap : Nitro en DoubleTap = pas de plantage mais aucun effet (réglages d'un autre type ; la faille passe par la capacité BossNitroRift). Test suivant : Bouclier + Mine |
 | 2026-10-19 | DoubleTap : Mine OK pour le joueur (dure ~3 s, mêmes dégâts que la normale). Test suivant : Bouclier + Shunt |
+| 2026-10-19 | DoubleTap : **Shunt = plantage** quand le joueur l'utilise (réglages incomplets). Test suivant : Bouclier + Shock |
