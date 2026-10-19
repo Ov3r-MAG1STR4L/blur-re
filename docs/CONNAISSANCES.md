@@ -309,6 +309,24 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
 
 ---
 
+### 3.7 Inventaire du dossier du jeu (2026-10-19) : ce qui reste non lu
+
+| Zone | Taille | Contenu | État |
+|---|---|---|---|
+| `levels/*/level.levelrender`, `.levelstream` | ~4,9 Go (avec `.level*`) | géométrie et rendu des cartes | **non décodé** |
+| `levels/*/level.levelphysics` | | collision : `Main` + un bloc `Route` par `RouteNumber` (route jouable) | structure ; contenu non décodé |
+| `levels/*/level.level` | | MdlDat, NavDat, Advert, MtaDbg | structure seulement |
+| `root.pak` `ui\data\*.bpr` (4) | 46 Mo | ressources des menus / HUD, magie `2RZB` | **non décodé** |
+| `root.pak` `ui\data\ipf\*.ipf` (75) | 29 Mo | images d'interface, dont une **mini-carte par carte** (`minimap\jpn_mharuna_game.ipf`) | **non décodé** (utile pour le HUD) |
+| `root.pak` `ui\data\pf\*.pf`, `ui_font_eur.*` | | polices | non décodé |
+| scripts Lua des menus (`Screens\...\MpCustomRace.lua`…) | | noms dans l'exe ; **introuvables** dans les paks extraits et pas en clair dans l'exe | à chercher (peut-être dans les `.bpr`) |
+| `root.pak` `animations` (`.cycle`, `.skeleton`) | ~1 300 fichiers | animations (pilotes, foule…) | non décodé |
+| `root.pak` `audio` (`.baf`, `.dat`, `.wbl`) + `root_streaming.pak` | ~700 Mo | sons, musique | non décodé |
+| `shaders-speed.pak` | 6 Mo | shaders | non décodé |
+| `root.pak` `dontship` (42) | 16 Mo | restes de développement : police de débogage, cubemaps, textures de test | lu (rien de jouable) |
+| `UI/movies/*.bik` (31) | 1,3 Go | vidéos Bink (tutoriels, boss vaincus) | format standard |
+| `Docs/` | | lisez-moi, licences | sans intérêt technique |
+
 ## 4. Données de jeu décodées
 
 Exports JSON de tous les `.bin` : `blur_extracted\xt_json`. Récap des voitures :
