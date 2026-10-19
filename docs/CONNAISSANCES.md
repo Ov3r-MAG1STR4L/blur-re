@@ -151,6 +151,12 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   « reversed » / « miroir ». **Les développeurs avaient prévu des routes inversées.**
 - `.bpr` : avec la bonne lecture, **les 6 doublons ont des images identiques** → 6 emplacements libres pour les
   images des routes inversées (noms d'au plus 11, 14, 19, 22, 23, 25 caractères).
+- **IA en course perso (LAN)** : réglage « Max AI » (`MP_CUSTOM_RACE_AIPADDING`, l'« AI padding » du jeu de base,
+  pas d'AMAX), jusqu'à 18 (= 20 voitures − 2 joueurs supposés). Puis le jeu limite à `MultiplayerConfig.max_ai_per_console`
+  IA **par joueur** (4 : seul = 4 IA, 2 joueurs = 8, 3 = 12 ; texte `MP_CRHELP_AIPADDING`). Mod : 19.
+  Aussi : `ai_padding_limit` = 10 (rôle inconnu), `number_of_ai_players` = [19, 8, 5, 4] (écran partagé 1 à 4
+  joueurs ?), 20 `ai_characters`. `GetCustomRaceLimits` (0xC60140) ne renvoie que max_laps, max_time, time_step.
+  **20 voitures est une limite du moteur** (20 places de départ, 20 colonnes de difficulté, classement à 20 cases).
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
   `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),

@@ -8,6 +8,7 @@ Per route (ROUTES below):
   gamedata/xt/amax.bin                    + Route <new> (copy of the original, pointing to the clones)
   gamedata/xt/multiplayer.bin             + <new> in MultiplayerConfig.routes (custom race menu)
   ui/data/ui_frontend.bpr                 picture <new> (original + U-turn sign) in a spare duplicate slot
+Also (multiplayer.bin): max_ai_per_console 4 -> 19, so a player alone gets the menu's 18 AI, not 4.
 The game folder rules (pak before loose files, header of .bpr...) are in docs/CONNAISSANCES.md.
 usage: make_reverse.py OUT_DIR
 """
@@ -16,6 +17,7 @@ import aidreverse, blurbpr, blurroute, gridreverse, thumbreverse
 from blurxt import XT
 from kslfwrite import KSLF
 
+MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4 (20 cars is an engine limit)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
 G = os.path.join(E, "gamedata", "gamedata")
 
@@ -206,7 +208,12 @@ def main(out):
     m = KSLF(os.path.join(G, "xt", "multiplayer.bin"))
     for r in ROUTES:
         m.append_to_array("#735", "routes", m.add_external(r["hash"], "Route"))
-    open(os.path.join(xt, "multiplayer.bin"), "wb").write(m.build())
+    mp = os.path.join(xt, "multiplayer.bin")
+    open(mp, "wb").write(m.build())
+    # 5. AI in custom races: the game allows max_ai_per_console AI per player in the lobby (4: alone = 4 AI);
+    # the menu's "Max AI" goes up to 18 (20 cars - 2 players assumed). 19: alone, up to the menu's 18 AI.
+    b = XT(mp).patched("#735", "max_ai_per_console", MAX_AI_PER_CONSOLE)
+    open(mp, "wb").write(b)
     print("written to", out)
 
 
