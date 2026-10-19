@@ -14,12 +14,12 @@ import json
 import numpy as np
 import blurroute
 
-CAR_ABOVE_GROUND = 1.0          # m; a small drop at spawn is safer than a car inside the ground
+CAR_ABOVE_GROUND = 2.0          # m; a small drop at spawn is safer than a car inside the ground (1.0 gave 0.7 m under a driven car)
 # Tested 2026-10-19 on Haruna: the road collision ends ~250 m after the old finish line (cars spawned past it
 # fell through), and the original grid sits off-centre on a 36 m road (copied as is, one column was off the
 # 20 m road at the bottom). So the grid is squeezed (front row kept) to end MAX_BEHIND m behind the start
 # line, and centred on the road.
-MAX_BEHIND = 219.0              # m behind the reversed start line; calibration knob (collision end ~250 m)
+MAX_BEHIND = 205.0              # m behind the reversed start line; calibration knob (end wall ~230 m, driven)
 CENTRE_GRID = True
 GROUND_LISTS = ("#37", "#16")
 
@@ -65,7 +65,7 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
                 p = _vec(x["WorldMatrix"], "aw")
                 i = int(np.argmin(np.hypot(P0[:, 0] - p[0], P0[:, 2] - p[2])))
                 meas[k] = (arc0[i] - arc0[ig0],
-                           0.5 + float(np.dot(p[[0, 2]] - P0[i, [0, 2]], lat0[i])) / W0[i])
+                           float(np.dot(p[[0, 2]] - P0[i, [0, 2]], lat0[i])) / W0[i])   # node = road edge
         mid = float(np.mean([f for _, f in meas.values()])) - 0.5 if CENTRE_GRID else 0.0
         squeeze = min(1.0, MAX_BEHIND / -min(a for a, _ in meas.values()))
         meas = {k: (a * squeeze, f) for k, (a, f) in meas.items()}
@@ -81,7 +81,7 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
                 c = P1[j - 1] + t * (P1[j] - P1[j - 1])
                 lat = lat1[j]
                 pos = np.array([c[0], 0.0, c[2]])
-                pos[[0, 2]] += lat * (frac - 0.5) * W1[j]
+                pos[[0, 2]] += lat * frac * W1[j]
                 pos[1] = ground(pos) + CAR_ABOVE_GROUND
                 fwd = P1[min(j + 2, len(P1) - 1)] - P1[max(j - 2, 0)]
                 az = fwd / np.linalg.norm(fwd)

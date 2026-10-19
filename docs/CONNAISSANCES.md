@@ -106,6 +106,15 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   une colonne était hors route (−12 m pour ±9,8 m) ; (b) la **collision s'arrête ~250 m après l'ancienne
   arrivée** (vers 13 780 m du tracé d'origine) : la place la plus en arrière tombait. Correctif dans
   `gridreverse.py` : grille centrée et resserrée (`MAX_BEHIND` = 219 m derrière la ligne, 1re rangée gardée).
+- **Relevé en roulant (Descent complète, `trackrec.py`, 2026-10-19)** : **le nœud d'un `.aid` est un BORD de la
+  route**, pas son centre. Position du joueur rapportée à la largeur : 0,04 à 0,95 (médiane 0,50) sur 13,5 km.
+  Point d'une ligne en XZ = `(x, z) + latéral2D × frac × largeur`. **Confirmé** (1 765 points). L'ancienne formule
+  `(frac − 0,5)` était fausse : elle n'avait été vérifiée que sur les hauteurs. Le vecteur à +24 a la même
+  direction XZ que +16 mais une grosse composante y (0,8) : ce n'est pas un décalage latéral utilisable.
+  Conséquences : l'inversion doit déplacer le nœud au bord opposé (`aidreverse.py` corrigé ; sinon les lignes
+  des IA sont symétriques, hors de la route : les IA « allaient tout droit ») ; la grille doit se placer avec ce
+  modèle. Fond d'Haruna : murs invisibles de 0 à ~19 m, mur du fond vers 13 760 m du tracé, sol à +13 à +14 m
+  au-dessus des nœuds.
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
   `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),
@@ -190,7 +199,7 @@ Tables de données du jeu (voitures, IA, épreuves, bonus…). 26 fichiers `.bin
   `set_array_ref(propriétaire, champ, i, emplacement)` remplace une référence dans une liste.
 - Grilles de départ (actorpack) : une `Route` désigne ses objets par `ActorLists` (solo) et `MultiplayerActorLists` ;
   sur Haruna, la grille est dans les listes #62 (solo) et #15 (multi), avec le point et les zones « Hand of God »
-  et les textes `Start_Text_*`. Matrice d'un objet : `az` = avant, `ax` = opposé de l'axe latéral des `.aid`,
+  et les textes `Start_Text_*`. Matrice d'un objet : `az` = avant, `ax` = opposé de l'axe latéral des `.aid` (le nœud `.aid` est un bord de la route),
   `aw` = position. Sur Haruna, les hauteurs des `.aid` sont ~11-14 m sous le sol réel. **Confirmé** (mesuré).
 - Pas encore possible : modifier une chaîne existante, insérer dans un tableau d'éléments non-référence.
 - Attention : une fiche physique peut être partagée par plusieurs voitures (ex. `*_Shannon`).
