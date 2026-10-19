@@ -16,6 +16,7 @@ from kslfwrite import KSLF
 E = os.path.join(os.path.dirname(__file__), "..", "blur_extracted")
 G = os.path.join(E, "gamedata", "gamedata")
 H_ROUTE, H_SOLO, H_MULTI = 0xFFFF0001, 0xFFFF0002, 0xFFFF0003   # above every existing hash (max 0xFFFE3216)
+LOC_ASCENT = 226956641   # hash of CRN_MOUNT_HARUNA_2 = "Ascent" / "Montée", unused string left in cityandroutenames.loc
 
 
 def main(out):
@@ -55,8 +56,10 @@ def main(out):
     a.set_array_ref("JPN_MHaruna_7", "ActorLists", 1, solo)            # was #62
     a.set_array_ref("JPN_MHaruna_7", "MultiplayerActorLists", 0, multi)  # was #15
     open(p, "wb").write(a.build())
-    b = XT(p).patched("JPN_MHaruna_7", "RouteNumber", 7)          # read before opening for writing
-    open(p, "wb").write(b)
+    for field, v in (("RouteNumber", 7), ("Index", 3),            # _1 has Index 2
+                     ("LocString", LOC_ASCENT)):                    # menu name "Ascent" / "Montée"
+        b = XT(p).patched("JPN_MHaruna_7", field, v)              # read before opening for writing
+        open(p, "wb").write(b)
 
     m = KSLF(os.path.join(G, "xt", "multiplayer.bin"))
     m.append_to_array("#735", "routes", m.add_external(H_ROUTE, "Route"))

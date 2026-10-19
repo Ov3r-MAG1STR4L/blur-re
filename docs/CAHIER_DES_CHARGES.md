@@ -218,3 +218,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Haruna inversé généré (`aidreverse.py` → `jpn_mharuna_7.aid`) et vérifié hors jeu |
 | 2026-10-19 | Mod Haruna inversé complet hors jeu : grilles en bas (actorpack), route `JPN_MHaruna_7`, menu course perso (`make_haruna_reverse.py`) |
 | 2026-10-19 | Script de copie de test hors ligne (`make_test_copy.ps1`), sauvegarde Blur protégée ; simulation OK |
+| 2026-10-19 | 1er essai en jeu : la montée n'est pas sélectionnable. La copie sans AMAX n'a plus le plugin `solo` (partie perso seul, F1). Menu course perso lu dans le code. Route renommée « Ascent » (texte inutilisé des devs), Index 3 |
