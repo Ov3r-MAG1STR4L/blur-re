@@ -164,7 +164,8 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   compilé (petit-boutiste). **Confirmé** (`blurui.py` extrait les 144, `luadis.py` les désassemble).
 - **Plafond « Max AI » = 18** : constante du script `Screens\Multiplayer\Shared\MpCustomRaceAdvanced.lua`,
   `for i = 2, 18 do UIButtons.AddItem(GUI.ai_padding_id, i, "GAME_NUM_" .. i, true) end`. Sans toucher l'exe :
-  plugin AMAX `ai19` (dans `mod_static/`) qui enveloppe `UIButtons.AddItem` et ajoute 19 après 18. À tester.
+  plugin AMAX `ai19` (dans `mod_static/`) qui enveloppe `UIButtons.AddItem` et ajoute 19 après 18. **Confirmé en jeu :
+  19 IA, 20 voitures.**
 - Plugin AMAX `laps` : met aussi `point_to_point = false` pour `JPN_MHaruna_1` (tours sur Haruna).
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
