@@ -549,6 +549,10 @@ Trois couches :
    Référence mesurée (Brighton 1, 3 tours, 19 IA Hard, classement officiel) : 1er 2'41"15, médiane 2'56"87,
    dernier 3'03"63. Le chrono officiel ≈ temps entre le 1er et le 4e passage de ligne (la grille est derrière
    la ligne).
+   **Essai 1 (Tier 10 Skills pour toutes les IA, tous les paliers)** : 1er 2'42"14, médiane 2'57"05, dernier
+   3'04"12 → **mêmes temps** (< 1 s), alors que le joueur a roulé autrement (3'04 contre 4'37). Le profil
+   d'habileté règle l'usage des bonus, pas le rythme ; **le rythme est imposé par le Race Director** (**Fort**),
+   cohérent avec l'observation « freinage juste après un nitro ».
 3. **Aides** : variables de débogage `AmaxAI.DebugCar.CorneringBoost`, `…Player.BrakeBoost`,
    `…BrakeTrackSpeedPercentageEasy/Medium/Hard`, `AISpeed` ; rattrapage du **joueur** en multijoueur :
    `MultiplayerConfig.player_rubber_banding_settings` (maxDistanceBetweenGroupMembers 2000, minDistanceForFullBanding
