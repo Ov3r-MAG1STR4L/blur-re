@@ -19,9 +19,11 @@ from blurxt import XT
 from kslfwrite import KSLF
 
 MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4; 19 = 20 cars (49 tested: clamped to 20)
-# Hard's "Difficulty 1..10" profiles (Index 50..59) are all identical; experiment 1: Tier 10 Skills (Index 70, every
-# perk Offensive/Defensive 1.0). None = original difficulty files.
-AI_PROFILE = ("multiplayer_hard.csv", 70)
+# AI experiments on a difficulty file: {file: {row of a stage: value for every AI}}. Stage rows: 0 i32, 1 distances
+# (+4), 2 factors 1 / 0.84..0.87 (+8, corrected by difficulty), 3 0.55 (+0xC), 4 i32 flags, 5 i32, 6 AIPerkSkillz
+# Index, 7 AIPerkPrefs Index. Experiment 1 ({6: 70}, Tier 10 Skills): same race times as the original.
+# Experiment 2: factors 1.2 (speed cap relative to the track speed?). {} = original files.
+AI_ROWS = {"multiplayer_hard.csv": {2: 1.2}}
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
 G = os.path.join(E, "gamedata", "gamedata")
@@ -219,15 +221,15 @@ def main(out):
     # the menu's "Max AI" goes up to 18 (20 cars - 2 players assumed). 19: alone, up to the menu's 18 AI.
     b = XT(mp).patched("#735", "max_ai_per_console", MAX_AI_PER_CONSOLE)
     open(mp, "wb").write(b)
-    # 6. AI experiment: every AI of a difficulty file gets one AIPerkSkillz profile at every stage
-    if AI_PROFILE:
-        name, index = AI_PROFILE
+    # 6. AI experiments: one stage row of a difficulty file set to one value for every AI, at every stage
+    for name, changes in AI_ROWS.items():
         src = os.path.join(G, "events", name)
         rows = [l.rstrip("\r\n").split(",") for l in open(src, encoding="latin-1", newline="")]
         n_stages = int(float(rows[1][0]))
-        for k in range(n_stages):                    # header 4 rows, then 9 rows per stage; stage row 6 = skills
-            r = rows[4 + 9 * k + 6]
-            rows[4 + 9 * k + 6] = [r[0]] + [str(index)] * (len(r) - 1)   # column 0 = the player
+        for k in range(n_stages):                    # header 4 rows, then 9 rows per stage (8 + a blank one)
+            for row, value in changes.items():
+                r = rows[4 + 9 * k + row]
+                rows[4 + 9 * k + row] = [r[0]] + [f"{value:g}"] * (len(r) - 1)   # column 0 = the player
         ev = os.path.join(out, "gamedata", "events")
         os.makedirs(ev, exist_ok=True)
         open(os.path.join(ev, name), "w", encoding="latin-1", newline="").write("".join(",".join(r) + "\r\n" for r in rows))
