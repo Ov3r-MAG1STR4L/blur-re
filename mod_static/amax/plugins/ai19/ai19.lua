@@ -10,8 +10,9 @@ local M = {
 	},
 }
 
--- MAX_AI: 19 = 20 cars, the engine's known limit. Raised for an experiment (does the game clamp, crash, or accept?)
-local MAX_AI = 49
+-- MAX_AI: 19 = 20 cars. Tested 2026-10-19 with 49 (and max_ai_per_console 49): the game silently clamps to 20 cars,
+-- a hard engine limit (20-slot vehicle manager, 20 AI profiles, 20 grid slots, 20-slot race positions).
+local MAX_AI = 19
 
 local ORG_AddItem = nil
 
