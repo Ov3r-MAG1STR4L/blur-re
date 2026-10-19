@@ -240,3 +240,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | `Tester le mod.bat` / `Jouer en ligne.bat` : sauvegarde et restauration automatiques autour des tests (essais à blanc OK) |
 | 2026-10-19 | Format `.bpr` (images d'interface) décodé et réécrit ; image de présentation « Ascent » ajoutée (`JPN_MHaruna_7`) ; copie de test : `root.pak` aussi en clair |
 | 2026-10-19 | Image Ascent noire (ajoutée en fin de fichier) → emplacement d'un doublon réutilisé. Grilles avancées à la porte, textes Start/Finish replacés, mesures sur l'axe central |
+| 2026-10-19 | `.bpr` : changer la taille des noms décale toutes les images (corruption). Correctif : remplacement en place d'un doublon. Relevé des lignes Start/Finish en Descent en cours |
