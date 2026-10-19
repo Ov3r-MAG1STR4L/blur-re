@@ -147,9 +147,35 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
   Signification des valeurs (poids de choix de route pour l'IA ?) : **Hypothèse**.
 - **Table logique** (fin du fichier) : u32 N (= nombre de nœuds de la ligne logique), puis pour chaque
   nœud logique : u32 n, n × (u32 index de nœud, nom de section). 137 032 renvois au total, **tous valides**.
-- **Nœud** : +0 x, +4 y, +8 z (**Z inversé** par rapport aux coordonnées du niveau), +12 largeur en mètres
-  (plus grande sur la ligne logique : un couloir). Le reste n'est **pas identifié** (vecteurs unitaires
-  à partir de +16, valeur latérale en +36, 3 sous-blocs avec des fractions ≈ 0,28 / 0,46 / 0,63).
+- **Nœud (323 octets) = en-tête de 48 octets + 11 « lignes » de 25 octets.** Statistiques mesurées sur
+  les 99 181 nœuds des 33 fichiers :
+
+  | Offset | Contenu | Confiance |
+  |---|---|---|
+  | +0 / +4 / +8 | position x, y, z (**Z inversé** par rapport au niveau) | Confirmé |
+  | +12 | largeur (m) : l'échelle latérale des 11 lignes (plus grande sur la ligne logique : un couloir) | Confirmé |
+  | +16 / +20 | direction latérale (vecteur unitaire en X, Z), perpendiculaire à la route (produit scalaire médian -0,999) | Confirmé |
+  | +24 / +28 / +32 | même axe latéral en 3D, incliné par le **dévers** (partie horizontale identique à 100 %) | Confirmé |
+  | +36 / +40 | hauteurs basse et haute, plus larges que celles des lignes (plancher et plafond du volume de piste ?) | Hypothèse |
+  | +44 | toujours 0 | Confirmé |
+
+  Ligne k (k = 0 à 10), à l'offset 48 + 25 × k :
+
+  | Offset | Contenu | Confiance |
+  |---|---|---|
+  | +0 | lié à l'angle de virage de la ligne entre deux nœuds (corrélation 0,65) : indication de braquage ? | Hypothèse |
+  | +4 | longueur jusqu'au nœud suivant le long de cette ligne (m ; écart médian 0,015) | Confirmé |
+  | +8 | toujours 0 | Confirmé |
+  | +12 | hauteur du point de la ligne (écart médian 0 avec y + dévers × décalage latéral) | Confirmé |
+  | +16 | position latérale de 0 à 1 (médianes 0,24 … 0,77 ; ligne 5 au centre, 0,5) | Confirmé |
+  | +20 à +24 | toujours 0 | Confirmé |
+
+  Point d'une ligne = (x, y, z) + axe latéral 3D × (fraction − 0,5) × largeur. Les 11 lignes sont donc des
+  trajectoires parallèles à travers la route, au même nombre sur chaque nœud (rôle exact pour l'IA :
+  choix de ligne, dépassement ? **Hypothèse**). `blurroute.py --full` les exporte.
+  Pour inverser une route (projet C), les champs orientés sont : la direction latérale et l'axe 3D (à
+  retourner), l'ordre des 11 lignes et leurs fractions (1 − f), `+4` (longueur vers le nœud *suivant*,
+  à décaler d'un cran) et le signe de `+0` (si c'est bien un virage).
 - Validation visuelle : les trajets passent par les grilles de départ ; Brighton est en huit ;
   Haruna est une descente d'un point à un autre. Exports JSON + PNG dans `blur_extracted\routes`.
 - Chaque carte a une ou plusieurs routes (Amboy : `_1`, `_3` ; Brighton : `_1`, `_2`, `_3`, `_5` ;

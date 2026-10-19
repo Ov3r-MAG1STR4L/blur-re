@@ -15,10 +15,23 @@ Junction block: name, from-section name, to-section name, u32 flags (0x40 or 0xC
     2: section name + u32 b  (AI route-choice rule? values not interpreted), then u32 count + nodes.
 Logic table (after the blocks): u32 N (== Logic node count), N x [u32 n, n x (u32 nodeIdx, name)]
     = racing nodes associated with each logic node (137 032 refs over all files, all valid).
-NODE (323 B): +0 x, +4 y, +8 z (Z NEGATED vs level coordinates), +12 width (m; logic nodes are
-    wider: corridor), rest unidentified (+16.. unit vectors, +36 lateral value, 3 sub-blocks).
+NODE (323 B) = 48-byte header + 11 "lines" of 25 bytes (stats over all 99 181 nodes of the 33 files):
+    +0 x, +4 y, +8 z   position (Z NEGATED vs level coordinates; this module re-negates every z)
+    +12 width (m)      lateral scale of the 11 lines (logic nodes are wider: corridor)
+    +16 f32[2]         lateral unit direction in XZ (dot with road perpendicular = -0.999 median)
+    +24 f32[3]         same lateral axis in 3D, tilted by the road bank (XZ part == +16 at 100 %)
+    +36 / +40          low / high height bounds, wider than the 11 line heights (track volume?) [hypothesis]
+    +44                always 0
+    line k (k = 0..10) at 48 + 25*k:
+        +0  f32  correlates 0.65 with the line's turn angle between nodes [hypothesis: steering hint]
+        +4  f32  length to the next node along this line (m; median error vs geometry 0.015)
+        +8  u32  always 0
+        +12 f32  height of the line point (median error 0 vs y + bank * lateral offset)
+        +16 f32  lateral position across the width, 0..1 (medians 0.24 ... 0.77, centre line k=5 at 0.5);
+                 point = (x,y,z) + lateral3D * (frac - 0.5) * width
+        +20..+24 always 0
 
-usage: blurroute.py FILE.aid [out.json] [out.png] [level actorpack.json for start positions]
+usage: blurroute.py FILE.aid [out.json] [out.png] [level actorpack.json] [--full: include the 11 lines]
 """
 import json, struct, sys
 
@@ -34,9 +47,21 @@ def _name(b, o):
     return b[o + 4:o + 4 + n].decode(), o + 4 + n
 
 
+FULL = "--full" in sys.argv
+
+
+def _node(b, o):
+    x, y, z, w, lx, lz, bx, by, bz, ylo, yhi = struct.unpack_from("<11f", b, o)
+    n = {"x": x, "y": y, "z": -z, "width": w, "lateral": [lx, -lz], "lateral3d": [bx, by, -bz],
+         "ylow": ylo, "yhigh": yhi}
+    if FULL:
+        n["lines"] = [dict(zip(("turn", "length", "height", "frac"),
+                               struct.unpack_from("<2f4x2f", b, o + 48 + 25 * k))) for k in range(11)]
+    return n
+
+
 def _nodes(b, o, count):
-    return [dict(zip(("x", "y", "z", "width"), (x, y, -z, w)))
-            for x, y, z, w in (struct.unpack_from("<4f", b, o + 323 * k) for k in range(count))]
+    return [_node(b, o + 323 * k) for k in range(count)]
 
 
 def parse(b):
@@ -87,6 +112,7 @@ def parse(b):
 
 
 if __name__ == "__main__":
+    sys.argv = [a for a in sys.argv if a != "--full"]
     d = parse(open(sys.argv[1], "rb").read())
     for s in d["sections"]:
         print(f"section  {s['name']:20} {len(s['nodes']):5} nodes  {'/'.join(s['flags']) or 'racing'}")
