@@ -74,7 +74,7 @@ def _centres(nodes):
 def roles(d):
     """Blocks by role, whatever their names (mainLoop, START, Start_line...): racing line = the biggest block with
     no gate / logic bit; start / finish / inter gates by type bit (0x02 / 0x04 / 0x08 / 0x10), logic 0x20."""
-    secs = [b for b in d["blocks"] if "nodes" in b]
+    secs = [b for b in d["blocks"] if "nodes" in b and "type" in b]   # junction blocks have no type
     out = {"main": max((b for b in secs if not b["type"] & 0x3E), key=lambda b: len(b["nodes"]))}
     for role, bit in (("start", 0x02), ("finish", 0x04), ("inter1", 0x08), ("inter2", 0x10), ("logic", 0x20)):
         found = [b for b in secs if b["type"] & bit]

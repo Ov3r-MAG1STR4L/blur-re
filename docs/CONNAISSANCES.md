@@ -491,6 +491,30 @@ celui de `AIPerkPrefs`. **Confirmé** (correspondance des valeurs et lecture en 
     différence visible) ; Nitro : aucun effet (réglages d'un autre type, la faille passe par `BossNitroRift`) ;
     **Shunt : plantage** (réglages DoubleTap incomplets : pas de Radius/FallRate/ECM*).
 - « Reversed » = tir dans l'autre sens (vu en jeu : « Forward fire Mine »). **Fort.**
+
+**Restes de développement (passe du 2026-10-19)** :
+- **Menu de débogage des développeurs** (scripts BZUI `Screens\Debug\*`) : `DebugScreen` (menu), `DebugEventScreen`
+  (lancer n'importe quelle épreuve), `DebugCarScreen` (n'importe quelle voiture), `DebugLoadReplays`,
+  `DebugContentServer` (« CONTENT SERVER TEST BED »), `DebugUI`, `QuitandWin` (depuis la pause : « QUIT AND WIN »).
+  Entrée : écran titre, touche Y, **si `UIGlobals.DevMode == true`** (`StartScreen` : `allow_debug_buttons`) ; la
+  gâchette droite bascule « DEV MODE : DEBUG / MASTER » (`Amax.GetSetDebugDevMode`). Un plugin AMAX pourrait
+  mettre `UIGlobals.DevMode = true` (non testé).
+- **Triche « voiture chromée »** : dans le garage solo, `Amax.CheckChromeVehicleGarageCheat(id)` attend une séquence
+  de 4 touches clavier (A–Z) devant une voiture donnée. Données `DLCCheatChromeVehicle` (« dlc pack offer e
+  deployed », « walmart deployed ») : un seul enregistrement « Test » (BMW Série 1 → version chromée), code vide :
+  bonus de précommande jamais finalisés. `UnlockViperCheat` (Lua) débloque la Viper.
+- **Mode coupé « Motor Mash »** : textes « Motor Mash Test », « Motor Mash test bowls », champ `DisabledInMotormash`
+  des bonus.
+- Textes de développeurs : « [TODO] Please fill out my description in sorcery!!! », « QA - Don't test this :) »,
+  « This is all debug colors and layout!!!!! », « Placeholder Results Screen », « Racing (Beta) », playlist « Debug
+  earn Fans quickly », voitures « Astra Extreme (Physics Test) » / « Nemesis (Physics Test) », démo commerciale
+  (« Code accepted. Thank you for playing the Demo. », « Demo Event 1 - Barcelona Oval », « … 2 - LA Downtown »),
+  bêta multijoueur (« The Blur multiplayer Beta is now closed. »).
+- Pistes IA sans route : `uk_brighton_5` (= Brighton 1 à 100 %, 2 954 m) et `usa_la_downtown_3` (= Downtown 4,
+  3 409 m) : anciennes numérotations, **pas de tracé inédit**. Les blocs de collision `Route` 2, 3, 5 de Downtown sont
+  vides. Les 4 « routes hors menu » restantes sont les arènes (`MultiplayerConfig.arenas`).
+- Niveaux et routes de test : `VehicleTestScene`, `QuickExport_0..6`, `*_OBJTest`, `Graphical_1` (« Cut Scene Test »),
+  `ShowRoom` ; textes « AI Test Level », « Particle Test », « Physical Object Test Scene ».
 - Autres restes : toute une physique de moto (`RP_Motorbike*`, sans doute venue du moteur partagé),
   triches (`Cheats.Difficulty`, `Cheats.NumEventLaps`, `UnlockViperCheat`…), débogage (`SetupDebugRace`,
   `UseDebugHud`, `E3EnablePlayerControls`), épreuves de test (« Balancing Test 1 à 13 »,
