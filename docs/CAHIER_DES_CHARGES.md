@@ -87,7 +87,7 @@ règles de jonction, le bit 0x400.
 |---|---|---|
 | `.aid` inversé | inverser l'ordre des nœuds de chaque section, échanger Start et Finish, inverser la ligne logique et sa table | écrire un `.aid` ; comprendre et retourner les champs orientés des nœuds (directions, décalages gauche/droite) |
 | Grille de départ | 20 positions en bas, orientées vers le haut | écrire un `actorpack.xt` (KSLF) |
-| Route et épreuve | nouvelle route dans `amax.bin` (elle désigne le fichier `.aid`), épreuve dans `singleplayer.bin` | écrire du KSLF |
+| Route et épreuve | nouvelle route dans `amax.bin` (un emplacement libre existe : `JPN_MHaruna_0`), texte `.loc`, vignette ; pour l'afficher : ajout à `MultiplayerConfig.routes` (course perso) et/ou une épreuve dans un palier de `SP_TierData` | écrire du KSLF |
 | `Routes` de `.levelphysics` | sans doute pour les remises en piste | format non décodé |
 | Décor | flèches, barrières, bonus et déclencheurs pensés pour la descente | à évaluer en jeu |
 | Chargement | fichiers non empaquetés acceptés par le jeu ? | à tester sur une copie |
@@ -147,3 +147,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-18 | KSLF résolu (noms, valeurs, références) ; chaîne mémoire des véhicules ; position, vitesse, voiture ; profils IA en mémoire |
 | 2026-10-19 | Orientation ; formats « CP » des niveaux ; `.aid` décodés en entier (33/33) ; restes du DoubleTap ; dépôt GitHub créé |
 | 2026-10-19 | Nœuds `.aid` compris : en-tête (position, largeur, axe latéral avec dévers) + 11 lignes parallèles (fraction, hauteur, longueur) |
+| 2026-10-19 | Menus : listes explicites (`MultiplayerConfig.routes` = 30 routes jouables, paliers de carrière) ; 70 routes déclarées pour 33 `.aid` |
