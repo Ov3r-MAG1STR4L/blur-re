@@ -53,6 +53,13 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
 - API exposée minimale : `print_api`, `BlurAPI.set_fps`, et le rappel `M.GoScreen(screen)` avec les
   noms d'écrans Lua du jeu (`Ingame\Hud.lua`…).
 - `amax/config/amax-redirect.cfg` redirige les serveurs Demonware vers amax-emu.com.
+- `d3d9.dll` charge **tous** les modules de `amax/dlls` : `lua_hooks.asi` (Lua), `amax_auth.asi` (connexion
+  AMAX), `amax_pfp.dll`, `blur_rpc.dll` (Discord). **Confirmé** (chaînes).
+- Plugins actifs : `resprays`, `laps` (tours jusqu'à 99 pour l'hôte ; intercepte `GetCustomRaceRoutes`),
+  `block_popups`, **`solo`** (« race alone in LAN » : intercepte `MpLobby_HostCanPressStart`, d'où la touche
+  F1 pour lancer seul une partie perso en réseau local), `fps`, `revs`. Sans AMAX, **pas de partie perso en
+  solo**. Le chemin pour lancer un circuit : Online → Local Network → Custom Game → Game Settings (Lieu, Circuit).
+- `Amax.*` côté Lua est l'espace de noms du **jeu** (nom de code « amax » de Bizarre Creations), pas du serveur AMAX.
 
 ---
 
@@ -282,6 +289,16 @@ celui de `AIPerkPrefs`. **Confirmé** (correspondance des valeurs et lecture en 
   une vignette, puis l'ajouter à `MultiplayerConfig.routes` et/ou créer une épreuve dans un palier.
   Aucun bouton à coder, mais il faut savoir **écrire** le KSLF. Ce qui se passe si on touche au multijoueur
   en ligne : **inconnu**, à éviter.
+- **Menu course perso (Lieu / Circuit)** : **Confirmé** (code). Les fonctions Lua `GetCustomRaceCities(mode)`
+  (`0xC6C4F0`) et `GetCustomRaceRoutes(id)` (`0xC6C760`) parcourent la liste de routes à `[0x10FBF90]+0x88`
+  (`+0x90` pour le mode 3 = arènes) = `MultiplayerConfig.routes`. Les lieux sont dédoublonnés par ville,
+  les circuits filtrés par ville. Elles renvoient au Lua l'id, le nom (`LocString`), la vignette, `debug_tag`
+  et `point_to_point`. En mémoire, un enregistrement est décalé de +8 par rapport au fichier (`City` à `+0x20`).
+  Les écrans de menu sont des scripts Lua (`Screens\Multiplayer\Shared\MpCustomRace.lua`…) dont les noms sont
+  dans l'exe. On ne les a pas trouvés dans les paks.
+- **Texte inutilisé « Ascent » / « Montée »** : clé `CRN_MOUNT_HARUNA_2`, hash **226956641**, dans
+  `cityandroutenames.loc`. Les développeurs avaient prévu une montée d'Haruna. On s'en sert comme nom de
+  `JPN_MHaruna_7` (`LocString` = hash de la clé).
 
 ### Bonus et contenu laissé par les développeurs
 
@@ -381,6 +398,7 @@ la préparation de l'épreuve est en `0xBC1E70`.
 | 0xBC1E70 | préparation de l'épreuve |
 | 0xBBDD80 | construction des chemins `.level` / `.aid` |
 | 0xB11870 | constructeur de la classe à vtable 0xEC3A68 |
+| 0xC6C4F0 / 0xC6C760 | Lua `GetCustomRaceCities` / `GetCustomRaceRoutes` (menu course perso) |
 
 Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes),
 `0x1134E84` / `0x1134E9C` (listes de profils), `0x12260A8` (positions).
@@ -394,3 +412,9 @@ Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes
   avec IA), un réglage de bloom, et travaille sur le déblocage des FPS (la physique est calée sur 30 images/s).
 - Un moddeur réactive le DoubleTap.
 - Demande récurrente : circuits en sens inverse (« galère » selon la commu).
+- 2026-10 : un joueur a fait tourner des cartes Mario Kart (.obj converti en `.level*`) avec Claude Code,
+  Ghidra et des relevés **Process Monitor** filtrés sur Blur. Il joue avec les **fichiers dépaquetés**, ce qui
+  appuie la règle « le fichier en clair passe avant le pak ». Son pack modifie `Blur.exe` : on ne l'utilise pas.
+  TimberStalker : « ajouter des cartes, c'est dans les fichiers xt ; les fichiers de niveau sont plus durs ».
+- Vidéo d'un moddeur (2026-10-14) : lieu « Flat Earth », circuit « Home Run v1 », lancé avec `Blur_mod.exe`
+  (exe modifié) via Local Network → Custom Game.
