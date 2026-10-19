@@ -33,6 +33,15 @@ def decode_names(src):
     return bytes(out) + b"\0"
 
 
+def encode_names(plain):
+    """Inverse of decode_names (Blur.exe 0x5871f0). Round trip is byte-identical on all 49 KSLF files."""
+    dl, out = 0xCC, bytearray()
+    for i, p in enumerate(plain):
+        out.append(((dl - p) & 0xFF) ^ 0xB3)
+        dl = (dl + p - i) & 0xFF
+    return bytes(out)
+
+
 class XT:
     def __init__(self, path):
         self.b = open(path, "rb").read()
@@ -168,6 +177,60 @@ class XT:
             out[self.name(no)] = v
         return out
 
+    # ---- in-place edit (same size only: numbers, bools, enums; not strings / arrays length) ----
+    def _field(self, t, fname):
+        while t is not None:
+            for no, ft, fo, fl in self._flds[t]:
+                if self.name(no) == fname:
+                    return ft, fo, fl
+            t = self._parent[t]
+        raise KeyError(fname)
+
+    def locate(self, record, path):
+        """'Record', 'engine.engineTorque_Rpm.dataPoints[3]' -> (file offset, type idx, field flags)."""
+        import re
+        for name, _, _, _ in self.records():
+            if name == record:
+                break
+        else:
+            raise KeyError(record)
+        t, o, fl = self._ch[0][0], self._ch[0][2], 3
+        for seg in path.split("."):
+            fname, i = re.fullmatch(r"(\w+)(?:\[(\d+)\])?", seg).groups()
+            ft, fo, fl = self._field(t, fname)
+            if fl & 0x100:
+                ref, n = struct.unpack_from("<II", self._d, o + fo)
+                if i is None or int(i) >= n:
+                    raise IndexError(f"{seg}: array of {n}")
+                ct, _, co, sz = self._ch[ref & 0xFFFF]
+                t, o = ct, co + ((ref >> 16) + int(i)) * sz
+            else:
+                t, o = ft, o + fo
+            if fl & 0xFF == 4:                        # intra-record pointer: follow it
+                u = struct.unpack_from("<I", self._d, o)[0]
+                ct, _, co, sz = self._ch[u & 0xFFFF]
+                t, o = ct, co + (u >> 16) * sz
+        return self.sec[7][0] + o, t, fl
+
+    def patched(self, record, path, value):
+        """Return a copy of the file bytes with one number / bool / enum changed in place."""
+        off, t, fl = self.locate(record, path)
+        kind, prim = self._ts[t][3], self._ts[t][4]
+        if fl & 0xFF == 1 or kind == 1:
+            names = [self.name(e[0]) for e in self._flds[t]]
+            raw = struct.pack("<I", names.index(value) if isinstance(value, str) else int(value))
+        elif kind != 0 or prim == 12 or fl & 0xFF in (3, 5):
+            raise TypeError(f"{path}: only numbers, bools and enums can be edited in place")
+        elif prim == 1:
+            raw = struct.pack("<I", 1 if value in (True, 1, "1", "true", "True") else 0)
+        elif prim == 10:
+            raw = struct.pack("<f", float(value))
+        else:
+            raw = struct.pack(self.PRIM.get(prim, "<I"), int(value))
+        b = bytearray(self.b)
+        b[off:off + 4] = raw
+        return bytes(b)
+
 
 KIND = {0: "prim", 1: "enum", 2: "flags", 3: "struct"}
 
@@ -210,7 +273,12 @@ def export_all(paths, outdir):
     return files, label
 
 
-if __name__ == "__main__" and len(sys.argv) > 3 and sys.argv[1] == "--all":
+if __name__ == "__main__" and len(sys.argv) == 7 and sys.argv[1] == "--set":
+    # blurxt.py --set IN.bin OUT.bin "Record" "path.to.field[0]" VALUE   (never overwrite game files)
+    x = XT(sys.argv[2])
+    open(sys.argv[3], "wb").write(x.patched(sys.argv[4], sys.argv[5], sys.argv[6]))
+    print("written", sys.argv[3])
+elif __name__ == "__main__" and len(sys.argv) > 3 and sys.argv[1] == "--all":
     import glob                                       # blurxt.py --all XTDIR OUTDIR [more .bin/.xt ...]
     export_all(sorted(glob.glob(sys.argv[2] + "/*.bin")) + sys.argv[4:], sys.argv[3])
 elif __name__ == "__main__" and len(sys.argv) > 2 and sys.argv[1] == "--json":
