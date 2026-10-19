@@ -547,6 +547,10 @@ Trois couches :
    `…BrakeTrackSpeedPercentageEasy/Medium/Hard`, `AISpeed` ; rattrapage du **joueur** en multijoueur :
    `MultiplayerConfig.player_rubber_banding_settings` (maxDistanceBetweenGroupMembers 2000, minDistanceForFullBanding
    600, light 0.25 / medium 0.666, courbe d'impulsion ±100).
+- **Observation joueur (2026-10-19)** : après un nitro, les IA freinent fort pour revenir à un certain niveau de
+  vitesse (on le voit et on l'entend). **Hypothèse** : plafond de vitesse imposé par le Race Director (ligne de
+  facteurs `1, 0.84…0.87` des CSV ?) ou `BrakeTrackSpeedPercentage*`. À vérifier sur les enregistrements
+  (`trackrec.py --all`) : hausse brutale de vitesse suivie d'une chute immédiate.
 
 ### Non trouvé (à faire)
 
