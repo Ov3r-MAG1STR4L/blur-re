@@ -256,3 +256,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | **19 IA en course perso seul (20 voitures) : confirmé en jeu** (plugin `ai19` + `max_ai_per_console`) |
 | 2026-10-19 | Essai 49 IA : le jeu coupe à 20 voitures (plafond moteur). Retour à 19 |
 | 2026-10-19 | IA, essai 1 : référence Hard mesurée (Brighton 1, 3 tours). Profils Difficulty 1-10 identiques. CSV « élite » (Tier 10 Skills partout) prêt |
+| 2026-10-19 | IA, essai 1 : profil élite = mêmes temps que la référence (< 1 s). Rythme imposé par le Race Director. Suite : essai 2 (rattrapage / plafond de vitesse) |
