@@ -471,7 +471,21 @@ celui de `AIPerkPrefs`. **Confirmé** (correspondance des valeurs et lecture en 
 - **DoubleTap** (combiner deux bonus) : coupé avant la sortie, mais 5 bonus ont encore leurs réglages
   DoubleTap. Noms restés dans `Blur.exe` : `DoubleTap`, `ReversedDoubleTap`, `NitrousDoubleTapBalancingData`,
   `BombDoubleTapBalancingData`, `ShuntDoubleBalancingData`, `DoubleShuntReverse`, `PickupShuntDoubleSpecialFX`.
-  Code encore présent ou non : **inconnu**.
+  **Mis à jour 2026-10-19 :**
+  - Réglages DoubleTap (`pickups.bin`, `PickupType.DoubleTap` → `PickupLevel`) : Nitro = **faille** (RiftRadius 30 m,
+    force 500–1500, 2,5 s) ; Bouclier = Lifetime **12 s** (6 normal) ; Mine = rayon 2 / zone 5 m, vie 3 s (60) ;
+    Shunt = `ShotDelay` 0,5 (tir double ?) ; Shock = zone 14,5 m (14). Effets visuels propres à chaque niveau.
+  - **Le code des effets est vivant** : recyclé en capacités de voitures de boss, champ `AmaxVehicle.BossAbilitySlot`
+    (`Dodge_ViperGTSR_Stock_Carver` = `BossNitroRift`, `Foose_Stallion_Stock_Khan` = `BossDoubleShield`, autres boss :
+    ShotgunBlindfire, RepairBonus, AdditionalBlindfireShots, FansNitroGift, AdditionalShockDomes, ShuntDamage),
+    et en multijoueur `MultiplayerAbility` « Slot4 ».
+  - Déclencheur d'origine (combiner deux bonus) : variables de débogage `Perks.DoubleNitrous.ForceDoubleNitrous`,
+    `Perks.DoubleShield.ForceDoubleShield`, `Perks.DoubleShock.*`, `Perks.DoubleBomb.NumMines/SpreadDistance`,
+    `Perks.DoubleShuntReverse.*`. Leur fichier de valeurs `debug_values.xml` / `User\debug_values.xml` a un chargeur
+    (`0xD62140` → `0xD61DF0`) **jamais appelé** (code orphelin) : pas activable sans modifier l'exe.
+  - `GetXtVar` / `SetXtVar` (Lua) : propriétés des éléments d'interface, pas les variables de réglage.
+  - Scrambler (mod multijoueur) : tirs inversés qui bloquent les bonus adverses ; réutilise la faille du nitro
+    (`scrambler_enabled_nitro_rift`).
 - « Reversed » = tir dans l'autre sens (vu en jeu : « Forward fire Mine »). **Fort.**
 - Autres restes : toute une physique de moto (`RP_Motorbike*`, sans doute venue du moteur partagé),
   triches (`Cheats.Difficulty`, `Cheats.NumEventLaps`, `UnlockViperCheat`…), débogage (`SetupDebugRace`,
