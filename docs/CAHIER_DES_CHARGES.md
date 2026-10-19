@@ -229,3 +229,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Process Monitor : le pak passe avant le dossier (en clair = secours pour fichiers absents). Copie de test : les 588 fichiers de `gamedata.pak` posés en clair, pak à mettre de côté |
 | 2026-10-19 | Sans `gamedata.pak` (tout en clair) : le jeu démarre, 31 routes au menu, « Ascent » (`JPN_MHaruna_7`) chargée. `make_test_copy.ps1` le fait seul |
 | 2026-10-19 | 1re course « Ascent » : départ sur la grille d'origine (en haut), chute dans le lac. Uids des acteurs clonés renouvelés (`make_haruna_reverse.py`) |
+| 2026-10-19 | 2e course : départ sur notre grille du bas, mais chute à travers la route (`RouteNumber` 7 = pas de physique de route). Passé à 1 |

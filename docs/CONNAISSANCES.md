@@ -96,6 +96,11 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   ceux de l'original. Dans un pack, un `SerialisableUid` identifie un acteur ; les autres occurrences sont des
   **références** (ex. `HandOfGodEntry.VehicleMessage.ResetPositionActor` → l'acteur de sortie). Correctif :
   nouveaux uids (`0xB1E00000+`) pour les 56 acteurs clonés, références internes conservées. À vérifier en jeu.
+- **2e course (uids corrigés)** : le joueur apparaît bien sur notre grille du bas (1324, 510, −3355), puis tombe
+  à travers la route en boucle (réapparition, chute). Cause (**Fort**) : `RouteNumber` choisit le bloc `Route`
+  de `level.levelphysics` (collision de la route) ; Haruna n'a que les blocs 0 (vide) et 1. Avec 7, aucune
+  collision de route. Le `.aid` est trouvé par le **nom** de la route
+  (`.\gamedata\levels\<ville>\<Nom>.aid`, `0xBBDD80`), donc `RouteNumber = 1` garde notre piste inversée.
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
   `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),

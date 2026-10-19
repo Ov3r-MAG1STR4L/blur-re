@@ -87,7 +87,9 @@ def main(out):
     a.set_array_ref("JPN_MHaruna_7", "ActorLists", 1, solo)            # was #62
     a.set_array_ref("JPN_MHaruna_7", "MultiplayerActorLists", 0, multi)  # was #15
     open(p, "wb").write(a.build())
-    for field, v in (("RouteNumber", 7), ("Index", 3),            # _1 has Index 2
+    # RouteNumber picks the levelphysics Route chunk (road collision); Haruna only has 0 (empty) and 1.
+    # With 7 the cars fell through the road (tested 2026-10-19). The .aid is found by Name, not by number.
+    for field, v in (("RouteNumber", 1), ("Index", 3),            # _1 has Index 2
                      ("LocString", LOC_ASCENT)):                    # menu name "Ascent" / "Montée"
         b = XT(p).patched("JPN_MHaruna_7", field, v)              # read before opening for writing
         open(p, "wb").write(b)
