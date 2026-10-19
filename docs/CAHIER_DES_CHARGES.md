@@ -236,3 +236,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | 2e course : départ sur notre grille du bas, mais chute à travers la route (`RouteNumber` 7 = pas de physique de route). Passé à 1 |
 | 2026-10-19 | 3e course : route solide, mais une colonne hors route et le fond de grille au-delà de la collision. Grille centrée et resserrée |
 | 2026-10-19 | Descent enregistrée en roulant : le nœud `.aid` est un bord de la route. Inversion `.aid` corrigée (lignes IA exactes), grille replacée sur le sol mesuré |
+| 2026-10-19 | **Ascent fonctionne en jeu** (départ, IA, bonus). Textes Start/Finish replacés selon la règle de l'original (Finish était ~90 m trop loin) |
