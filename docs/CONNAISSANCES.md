@@ -614,6 +614,17 @@ Trois couches :
   facteurs `1, 0.84…0.87` des CSV ?) ou `BrakeTrackSpeedPercentage*`. À vérifier sur les enregistrements
   (`trackrec.py --all`) : hausse brutale de vitesse suivie d'une chute immédiate.
 
+### Boss : profils et duels (2026-10-19)
+
+- `AIPerkSkillz`, somme sur les 8 bonus (max 8) attaque / défense / esquive : **T9 Shannon (900) 8 / 8 / 8, le seul
+  profil à 1,0 partout** ; Tier 10 Skills (70) 8 / 8 / 2 ; Natalya (500) 5,95 / 4,11 / 1,9 ; Drayke (400) 5,5 / 4,83 /
+  1,9 ; Carver (800) 5 / 4 / 1,6 ; Khan (200) 4,95 / 3,75 / 1,7 ; Talon (600) 4,9 / 4 / 1,9 ; Rhymer (300) 4,8 / 4 /
+  1,6 ; Shannon T1 (1000) 4,5 / 4 / 1,65 ; Ayumi/Harumi (700) 4,45 / 4,25 / 1,6. Versions EASY plus faibles.
+- Racing 0,5 et Aggression 0,5 pour **tous** ; Blocking, Slamming, Mistakes à 0 pour tous (personne à 1,0).
+- Duels `events/bossbattlet<N>_<diff>.csv` (1 IA ; 2 pour T7 les jumelles et T9) : Easy = profil EASY du boss,
+  facteur 0,65–0,8 ; Medium = profil du boss, 0,75–0,97 ; **Hard = profil générique Tier 10 Skills (70) pour tous
+  les boss**, facteur 0,89 (T1), 0,91 (T2), **1,0 (T3 à T8)**, 0,96 (T9 Shannon).
+
 ### Non trouvé (à faire)
 
 - **Classement** : ni dans l'objet véhicule ni dans l'objet pilote. La structure `0x12260A8`
