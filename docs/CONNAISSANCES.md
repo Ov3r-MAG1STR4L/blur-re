@@ -143,8 +143,9 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   `uk_london_hackney_2` / `_4`, `usa_la_downtown_3` / `_4`, `usa_sanfran_russianhill_1`. Les noms de sections varient
   (`mainLoop`, `START`, `Start_line`…) : `aidreverse.roles` les reconnaît par les bits de type.
 - **Brighton 1 d'origine** (axe central) : porte Start à 1 036 m, les 4 textes sur la ligne à 1 040 m, grille solo
-  (`#27`) de 664 à 996 m. La liste multi (`#97`) n'a **que les textes**, pas de grille (d'où vient la grille multi ?
-  à voir en jeu).
+  (`#27`) de 664 à 996 m. La liste multi (`#97`) a sa grille, mais nommée **`NewStartPosition0..19`** : une place de
+  départ se reconnaît à son **type** (champ `StartNumber`), pas à son nom (filtrées par nom, elles restaient sur
+  la grille d'origine, dans l'ancien sens : vu en jeu).
 - **Textes inutilisés « Reverse »** (`cityandroutenames.loc`) : `CRN_ROUTE_1_REVERSE` « Route 1 Reverse » / « Route 1
   Miroir », `CRN_ROUTE_2_REVERSE`, `CRN_TOKYO_SHUTOKO_R1` « Tokyo Shutoko Reverse 1 » ; aussi `RBC_REVERSED`
   « reversed » / « miroir ». **Les développeurs avaient prévu des routes inversées.**
