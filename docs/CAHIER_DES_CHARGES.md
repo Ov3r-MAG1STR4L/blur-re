@@ -39,7 +39,7 @@ Classement établi à partir des données ; l'effet réel en ligne n'est **pas v
 | `.bin` / `.xt` (KSLF) | oui, à 100 % | oui : reconstruction identique (49/49), modification de valeurs, clonage d'enregistrement, ajout à une liste de références ; non testé en jeu |
 | `.loc` (textes) | oui | non |
 | Textures de `.model` | oui | oui (réinjection, jamais testée en jeu) |
-| `.aid` (IA / logique de piste) | oui, à 100 % de la structure | non |
+| `.aid` (IA / logique de piste) | oui, à 100 % de la structure | oui : réécriture identique (33/33) ; pas encore de route modifiée |
 | `.level*` (géométrie, collision) | structure seulement | non |
 | Mémoire en course | position, vitesse, rotation, voiture, profils IA | (lecture seule, par règle) |
 
@@ -183,3 +183,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Écrivain KSLF complet : reconstruction identique (49/49), clonage, ajout à une liste ; test « JPN_MHaruna_7 » ajoutée au menu de course perso (hors jeu) |
 | 2026-10-19 | Tri des 33 routes pour l'inversion : 1 saut sur boucle (Brighton 2), 2 doutes, 4 rampes sur raccourci, 26 sans indice (dont Haruna) ; hauteurs `.aid` parfois aplaties |
 | 2026-10-19 | Système de fichiers : le dossier du jeu (couche 0) est consulté avant les paks (couche 1) ; chemins où poser nos fichiers |
+| 2026-10-19 | Écriture des `.aid` : réécriture identique des 33 fichiers (`blurroute.build`) |
