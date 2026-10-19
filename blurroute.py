@@ -31,6 +31,8 @@ NODE (323 B) = 48-byte header + 11 "lines" of 25 bytes (stats over all 99 181 no
                  point = (x,y,z) + lateral3D * (frac - 0.5) * width
         +20..+24 always 0
 
+Writing: build(parse(b, raw=True)) == b on all 33 files (raw mode keeps block order and node bytes).
+
 usage: blurroute.py FILE.aid [out.json] [out.png] [level actorpack.json] [--full: include the 11 lines]
 """
 import json, struct, sys
@@ -60,13 +62,17 @@ def _node(b, o):
     return n
 
 
-def _nodes(b, o, count):
+def _nodes(b, o, count, raw=False):
+    if raw:                                           # keep the exact 323 bytes (for writing)
+        return [b[o + 323 * k:o + 323 * (k + 1)] for k in range(count)]
     return [_node(b, o + 323 * k) for k in range(count)]
 
 
-def parse(b):
+def parse(b, raw=False):
+    """raw=True: nodes are the original 323-byte blobs and d['blocks'] keeps the file order (for build())."""
+    _n = lambda o, c: _nodes(b, o, c, raw)
     version, nblocks = struct.unpack_from("<fI", b, 0)
-    o, sections, junctions = 8, [], []
+    o, sections, junctions, blocks = 8, [], [], []
     for _ in range(nblocks):
         name, p = _name(b, o)
         z0, z1, t, c = struct.unpack_from("<4I", b, p)
@@ -77,7 +83,8 @@ def parse(b):
                 extra, c = c, struct.unpack_from("<I", b, q)[0]
                 q += 4
             sections.append({"name": name, "type": t, "flags": [v for k, v in TYPE_NAMES.items() if t & k],
-                             "extra": extra, "nodes": _nodes(b, q, c)})
+                             "extra": extra, "nodes": _n(q, c)})
+            blocks.append(sections[-1])
             o = q + 323 * c
             continue
         frm, p = _name(b, p)                          # junction
@@ -95,7 +102,8 @@ def parse(b):
                 rule = {"kind": kind, "b": bo, "values": vals}
         c = struct.unpack_from("<I", b, p)[0]; p += 4
         junctions.append({"name": name, "from": frm, "to": to, "flags": flags, "rule": rule,
-                          "nodes": _nodes(b, p, c)})
+                          "nodes": _n(p, c)})
+        blocks.append(junctions[-1])
         o = p + 323 * c
     n = struct.unpack_from("<I", b, o)[0]; o += 4
     table = []
@@ -108,7 +116,39 @@ def parse(b):
             refs.append([idx, sec])
         table.append(refs)
     assert o == len(b), f"stopped at {o:#x} of {len(b):#x}"
-    return {"version": version, "sections": sections, "junctions": junctions, "logic_table": table}
+    d = {"version": version, "sections": sections, "junctions": junctions, "logic_table": table}
+    if raw:
+        d["blocks"] = blocks
+    return d
+
+
+def build(d):
+    """Inverse of parse(b, raw=True): byte-identical on all 33 .aid files."""
+    s = lambda text: struct.pack("<I", len(text)) + text.encode()
+    out = [struct.pack("<fI", d["version"], len(d["blocks"]))]
+    for blk in d["blocks"]:
+        if "type" in blk:                             # section
+            t = blk["type"]
+            head = struct.pack("<3I", 0, 0, t)
+            if t & 0x80:
+                head += struct.pack("<I", blk["extra"])
+            out.append(s(blk["name"]) + head + struct.pack("<I", len(blk["nodes"])))
+        else:                                         # junction
+            out.append(s(blk["name"]) + s(blk["from"]) + s(blk["to"]) + struct.pack("<I", blk["flags"]))
+            r = blk["rule"]
+            if blk["flags"] & 0x80:
+                out.append(struct.pack("<I", r["kind"]))
+                if r["kind"] == 2:
+                    out.append(s(r["section"]) + struct.pack("<I", r["b"]))
+                else:
+                    out.append(struct.pack(f"<I{len(r['values'])}f", r["b"], *r["values"]))
+            out.append(struct.pack("<I", len(blk["nodes"])))
+        out.extend(blk["nodes"])
+    out.append(struct.pack("<I", len(d["logic_table"])))
+    for refs in d["logic_table"]:
+        out.append(struct.pack("<I", len(refs)))
+        out.extend(struct.pack("<I", i) + s(sec) for i, sec in refs)
+    return b"".join(out)
 
 
 if __name__ == "__main__":

@@ -233,6 +233,8 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
   (sur la boucle de la route 2) ; Downtown `Building_TopofJump` (à 92 m de haut, 40 m des routes 1 et 6) ;
   River `FloodgateLanding` ×6 et Docks `Ramp` ×2 (110 à 600 m des tracés). Tronçons nommés : Amboy 1
   (`AltRamp`, `CrossRamp`, `FlatbedRamp`), Docks 3 (`Ramp`, `RampCatch`), River 3 et 6 (`Altjump`).
+- **Écriture** : `blurroute.parse(b, raw=True)` garde l'ordre des blocs et les 323 octets de chaque nœud ;
+  `blurroute.build(d)` réécrit le fichier. Aller-retour **identique à l'octet sur les 33 fichiers**. **Confirmé.**
 - Non validé en course.
 
 ---
