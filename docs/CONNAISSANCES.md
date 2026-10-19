@@ -553,6 +553,10 @@ Trois couches :
    3'04"12 → **mêmes temps** (< 1 s), alors que le joueur a roulé autrement (3'04 contre 4'37). Le profil
    d'habileté règle l'usage des bonus, pas le rythme ; **le rythme est imposé par le Race Director** (**Fort**),
    cohérent avec l'observation « freinage juste après un nitro ».
+   Décodeur (`0x4C5E20`) : ligne distances → palier +4 ; ligne facteurs → +8 = facteur − X[+0x44], au moins
+   X[+0x48] (X = objet lié à la difficulté) ; ligne 0.55 → +0xC. Les variables `AmaxAI.DebugCar.Player.
+   BrakeTrackSpeedPercentage{,Easy,Medium,Hard}` (0x1134C30/68/A0, défaut 0,95 / 1 / 1) concernent l'aide au
+   freinage du **joueur**. Essai 2 : facteurs à 1,2 pour toutes les IA (plafond de vitesse ?).
 3. **Aides** : variables de débogage `AmaxAI.DebugCar.CorneringBoost`, `…Player.BrakeBoost`,
    `…BrakeTrackSpeedPercentageEasy/Medium/Hard`, `AISpeed` ; rattrapage du **joueur** en multijoueur :
    `MultiplayerConfig.player_rubber_banding_settings` (maxDistanceBetweenGroupMembers 2000, minDistanceForFullBanding
