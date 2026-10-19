@@ -23,7 +23,7 @@ MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4; 
 # (+4), 2 factors 1 / 0.84..0.87 (+8, corrected by difficulty), 3 0.55 (+0xC), 4 i32 flags, 5 i32, 6 AIPerkSkillz
 # Index, 7 AIPerkPrefs Index. Experiment 1 ({6: 70}, Tier 10 Skills): same race times as the original.
 # Experiment 2: factors 1.2 -> median AI 13 s faster (the row is the speed cap). Experiment 3: 1.5. {} = original.
-AI_ROWS = {"multiplayer_hard.csv": {2: 1.5}}
+AI_ROWS = {}   # experiments closed 2026-10-19 (player: catch-up not really fixed, failure); values above for reference
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
 G = os.path.join(E, "gamedata", "gamedata")
