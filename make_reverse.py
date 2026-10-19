@@ -28,7 +28,7 @@ AI_ROWS = {}   # experiments closed 2026-10-19 (player: catch-up not really fixe
 # DoubleTap level (Nitro rift, Shield 12 s, Mine, Shunt, Shock) uses it as its Normal level. Test 1 (all five): the
 # AI use them fine, but the game crashes as soon as the PLAYER fires a pickup -> one pickup at a time.
 # Pickup Type names: "Bomb", "Shunt", "Shock", "Shield", "Nitrous". Empty = original.
-PICKUPS_DOUBLETAP = {"Shield", "Shock"}   # player: Shield OK; Bomb OK (3 s, same damage); Nitrous no effect; Shunt CRASH
+PICKUPS_DOUBLETAP = set()   # set aside 2026-10-19. Player results: Shield OK (12 s); Bomb OK (3 s); Shock OK (no visible change); Nitrous no effect; Shunt CRASH
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
 G = os.path.join(E, "gamedata", "gamedata")
