@@ -86,6 +86,10 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
 - Donc : un fichier **nouveau** (ex. `jpn_mharuna_7.aid`) peut être posé en clair ; pour **modifier** un fichier
   existant (`amax.bin`, `multiplayer.bin`, `actorpack.xt`), il faut retirer le pak et tout poser en clair
   (« unpacked files » de la commu), ou reconstruire le pak.
+- **Vérifié en jeu** : `cache\gamedata.pak` + `.sig` renommés en `.off` dans la copie, les 588 fichiers posés en
+  clair dans `<jeu>\gamedata\` → le jeu démarre, aucun pak gamedata ouvert, et le menu course perso compte
+  **31 routes** dont `JPN_MHaruna_7` (Index 3, `LocString` « Ascent ») : la route ajoutée et ses références
+  par hash (`0xFFFF0001..3`) sont résolues. Le `.sig` n'empêche pas de démarrer sans le pak.
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
   `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),
