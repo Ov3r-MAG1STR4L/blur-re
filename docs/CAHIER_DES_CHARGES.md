@@ -109,6 +109,20 @@ règles de jonction, le bit 0x400.
 **Avant tout** : repérer les circuits inversables (sauts et rampes à sens unique) hors jeu, via les noms de
 tronçons (`*Ramp*`) et les ruptures de hauteur le long des 11 lignes des `.aid`.
 
+**Tri des routes (2026-10-19, hors jeu, sur indices)** — détail dans `blur_extracted/routes/reversibility.json` :
+
+| Verdict | Routes |
+|---|---|
+| Saut sur la boucle principale : non inversable tel quel | `uk_brighton_2` (déclencheurs de saut + remise en piste en cas d'échec) |
+| Doute | `usa_la_downtown_1`, `usa_la_downtown_6` (`Building_TopofJump` à 40 m du tracé) |
+| Rampe ou saut seulement sur un raccourci : inversable sans ce raccourci | `usa_amboy_1`, `usa_la_longbeachdocks_3`, `usa_la_river_3`, `usa_la_river_6` |
+| Aucun indice de saut | les 26 autres, dont **`jpn_mharuna_1`** |
+
+Limites : « aucun indice » ne veut pas dire inversable. Une bosse, une marche, une barrière ou un raccourci à
+sens unique sans objet nommé passent inaperçus, et les hauteurs des `.aid` sont parfois aplaties. Montées les
+plus raides à l'envers (pente de la descente d'origine, sur les hauteurs des `.aid`) : Sausalito 1 (34 %),
+Russian Hill (33 %), Gracia 1 (31 %), **Haruna (29 %)**. Seul un essai en jeu (copie hors ligne) tranche.
+
 **Première étape proposée** : écrire `Haruna_reverse.aid`, puis le relire avec `blurroute.py` (aucune erreur,
 jusqu'au dernier octet) et le tracer. Cette étape ne touche pas au jeu.
 
@@ -167,3 +181,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Menus : listes explicites (`MultiplayerConfig.routes` = 30 routes jouables, paliers de carrière) ; 70 routes déclarées pour 33 `.aid` |
 | 2026-10-19 | KSLF : encodeur des noms (aller-retour identique, 49 fichiers) ; modification de valeurs sur place (`blurxt.py --set`), non testée en jeu |
 | 2026-10-19 | Écrivain KSLF complet : reconstruction identique (49/49), clonage, ajout à une liste ; test « JPN_MHaruna_7 » ajoutée au menu de course perso (hors jeu) |
+| 2026-10-19 | Tri des 33 routes pour l'inversion : 1 saut sur boucle (Brighton 2), 2 doutes, 4 rampes sur raccourci, 26 sans indice (dont Haruna) ; hauteurs `.aid` parfois aplaties |
