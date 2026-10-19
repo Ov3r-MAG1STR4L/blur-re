@@ -19,6 +19,9 @@ from blurxt import XT
 from kslfwrite import KSLF
 
 MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4; 19 = 20 cars (49 tested: clamped to 20)
+# Hard's "Difficulty 1..10" profiles (Index 50..59) are all identical; experiment 1: Tier 10 Skills (Index 70, every
+# perk Offensive/Defensive 1.0). None = original difficulty files.
+AI_PROFILE = ("multiplayer_hard.csv", 70)
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
 G = os.path.join(E, "gamedata", "gamedata")
@@ -216,7 +219,20 @@ def main(out):
     # the menu's "Max AI" goes up to 18 (20 cars - 2 players assumed). 19: alone, up to the menu's 18 AI.
     b = XT(mp).patched("#735", "max_ai_per_console", MAX_AI_PER_CONSOLE)
     open(mp, "wb").write(b)
-    # 6. AMAX Lua plugins shipped with the mod (test copy only): mod_static/amax/plugins/<name>/<name>.lua, plus
+    # 6. AI experiment: every AI of a difficulty file gets one AIPerkSkillz profile at every stage
+    if AI_PROFILE:
+        name, index = AI_PROFILE
+        src = os.path.join(G, "events", name)
+        rows = [l.rstrip("\r\n").split(",") for l in open(src, encoding="latin-1", newline="")]
+        n_stages = int(float(rows[1][0]))
+        for k in range(n_stages):                    # header 4 rows, then 9 rows per stage; stage row 6 = skills
+            r = rows[4 + 9 * k + 6]
+            rows[4 + 9 * k + 6] = [r[0]] + [str(index)] * (len(r) - 1)   # column 0 = the player
+        ev = os.path.join(out, "gamedata", "events")
+        os.makedirs(ev, exist_ok=True)
+        open(os.path.join(ev, name), "w", encoding="latin-1", newline="").write("".join(",".join(r) + "\r\n" for r in rows))
+
+    # 7. AMAX Lua plugins shipped with the mod (test copy only): mod_static/amax/plugins/<name>/<name>.lua, plus
     # the copy's plugins.lua = the installed one (read only) + a require line per plugin
     static = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mod_static")
     for root, _, files in os.walk(static):

@@ -543,6 +543,12 @@ Trois couches :
    `splitscreen_*.csv`). En-tête (1.0, 10 paliers, 20 voitures), puis par palier 7 lignes × 20 colonnes :
    i32, f32 distances (`0,-3,3,5,35…`), f32 facteurs (`1, 0.84…0.87`), f32 (`0.55`), i32 (`1,1,1,1,0…`), i32,
    Index `AIPerkSkillz`, Index `AIPerkPrefs`. Sens exact des lignes chiffrées : **à établir** (rattrapage ?).
+   **Les profils « Difficulty 1..10 » (Index 50..59) utilisés par `multiplayer_hard.csv` sont identiques** (même
+   valeurs, nom et Index mis à part) : en Hard, toutes les IA ont le même profil moyen. Profils forts :
+   `Tier 10 Skills` (70) et `T9 Shannon` (900), 1,0 partout en attaque et défense.
+   Référence mesurée (Brighton 1, 3 tours, 19 IA Hard, classement officiel) : 1er 2'41"15, médiane 2'56"87,
+   dernier 3'03"63. Le chrono officiel ≈ temps entre le 1er et le 4e passage de ligne (la grille est derrière
+   la ligne).
 3. **Aides** : variables de débogage `AmaxAI.DebugCar.CorneringBoost`, `…Player.BrakeBoost`,
    `…BrakeTrackSpeedPercentageEasy/Medium/Hard`, `AISpeed` ; rattrapage du **joueur** en multijoueur :
    `MultiplayerConfig.player_rubber_banding_settings` (maxDistanceBetweenGroupMembers 2000, minDistanceForFullBanding
