@@ -24,6 +24,8 @@ Aucun fichier du jeu n'est inclus. Les outils lisent une installation existante 
 | `aidreverse.py` | inverser une route d'un point à un autre (`.aid`) : nœuds, 11 lignes, portes, table logique |
 | `gridreverse.py`, `make_haruna_reverse.py` | grille de départ pour une route inversée ; construction complète du mod « Haruna montée » |
 | `trackrec.py` | enregistre la position du joueur en roulant (lecture seule) : carte du sol praticable |
+| `Tester le mod.bat` | lance la copie de test en sauvegardant puis remettant ta progression Blur (automatique) |
+| `Jouer en ligne.bat` | lance le jeu installé ; remet d'abord la sauvegarde si un test n'a pas été restauré |
 | `make_test_copy.ps1` | copie de test hors ligne du jeu (AMAX hors ligne : Lua + plugins, sans module en ligne) avec un mod, sauvegarde Blur protégée ; simulation par défaut |
 | `blur_live.py` | lecture **seule** de la mémoire en course (véhicules, positions, vitesses, profils IA) |
 | `deeprec.py` | enregistrement mémoire profond (objets pointés) pour l'analyse hors ligne |
