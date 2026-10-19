@@ -266,3 +266,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | IA, essai 3 : facteurs 1,5 ≈ 1,2 (gain saturé, limite physique des IA). Plafond utile ~1,2 |
 | 2026-10-19 | IA : essais clos, jugés **échec** par le joueur (testé sur une autre carte : le rattrapage n'est pas vraiment corrigé, un autre paramètre est en jeu). Copie remise au Hard d'origine. Suite : DoubleTap |
 | 2026-10-19 | DoubleTap : données complètes, effets recyclés en capacités de boss, déclencheur d'origine orphelin. 2 essais par les données proposés |
+| 2026-10-19 | DoubleTap, essai 1 : `pickups.bin` Normal → niveau DoubleTap pour Mine, Shunt, Shock, Bouclier, Nitro (10 octets) ; dans la copie |

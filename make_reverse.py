@@ -24,6 +24,9 @@ MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4; 
 # Index, 7 AIPerkPrefs Index. Experiment 1 ({6: 70}, Tier 10 Skills): same race times as the original.
 # Experiment 2: factors 1.2 -> median AI 13 s faster (the row is the speed cap). Experiment 3: 1.5. {} = original.
 AI_ROWS = {}   # experiments closed 2026-10-19 (player: catch-up not really fixed, failure); values above for reference
+# DoubleTap experiment (2026-10-19): the combine-two-pickups trigger is orphaned code; instead every pickup with a
+# DoubleTap level (Nitro rift, Shield 12 s, Mine, Shunt, Shock) uses it as its Normal level. False = original.
+PICKUPS_DOUBLETAP = True
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
 G = os.path.join(E, "gamedata", "gamedata")
@@ -234,7 +237,21 @@ def main(out):
         os.makedirs(ev, exist_ok=True)
         open(os.path.join(ev, name), "w", encoding="latin-1", newline="").write("".join(",".join(r) + "\r\n" for r in rows))
 
-    # 7. AMAX Lua plugins shipped with the mod (test copy only): mod_static/amax/plugins/<name>/<name>.lua, plus
+    # 7. DoubleTap experiment: every PickupType that has a DoubleTap level uses it as its Normal level
+    if PICKUPS_DOUBLETAP:
+        pk = os.path.join(G, "xt", "pickups.bin")
+        x = XT(pk)
+        b = bytearray(x.b)
+        done = []
+        for name, typ, v, _ in x.records():
+            if typ == "PickupType" and v.get("DoubleTap"):
+                n_at, d_at = x.locate(name, "Normal")[0], x.locate(name, "DoubleTap")[0]
+                b[n_at:n_at + 4] = b[d_at:d_at + 4]           # reference = index slot of the PickupLevel
+                done.append(v["Type"])
+        open(os.path.join(xt, "pickups.bin"), "wb").write(b)
+        print("DoubleTap as Normal:", done)
+
+    # 8. AMAX Lua plugins shipped with the mod (test copy only): mod_static/amax/plugins/<name>/<name>.lua, plus
     # the copy's plugins.lua = the installed one (read only) + a require line per plugin
     static = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mod_static")
     for root, _, files in os.walk(static):
