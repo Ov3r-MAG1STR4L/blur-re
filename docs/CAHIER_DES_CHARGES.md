@@ -140,7 +140,19 @@ Choix et limites : hauteur des voitures = sol estimé (cônes et lampadaires pro
 réduit de moitié car la route fait 20 m en bas contre 40 m en haut (aucun chevauchement) ; zones « Hand of God »
 laissées en haut ; le nom affiché reste « Mount Haruna » (texte `.loc` non modifié) ; vignette identique.
 
-**Reste pour le projet C** : copie hors ligne, essai en jeu.
+**Copie de test** : `make_test_copy.ps1` (simulation par défaut ; `-Run` pour agir ; `-Restore -Run` après le test).
+Il sauvegarde d'abord `%APPDATA%\bizarre creations\blur\save` + `settings.xml` (**sauvegarde partagée entre toutes
+les installations** : la copie de test écrit dans la même), copie le jeu dans `Jeux_WII\Blur_test` **sans AMAX**
+(ni `d3d9.dll` ni `amax\`) et pose les fichiers du mod. Simulation vérifiée : 125 fichiers / 7,28 Go, rien d'écrit.
+
+**Reste pour le projet C** : lancer la copie (`-Run`), essai en jeu, puis `-Restore -Run`.
+
+**Déroulé du test en jeu** (dans la copie) :
+1. le jeu démarre-t-il sans AMAX ?
+2. course perso / réseau local : « Mount Haruna » apparaît-il deux fois (le 2e = notre route) ?
+3. départ en bas, voitures tournées vers le haut, IA qui montent ?
+4. passage des points intermédiaires puis arrivée en haut ?
+5. noter tout comportement bizarre (remise en piste, voitures qui tombent, IA qui braquent à contresens).
 
 **Première étape proposée** (faite) : écrire `Haruna_reverse.aid`, puis le relire avec `blurroute.py` (aucune erreur,
 jusqu'au dernier octet) et le tracer. Cette étape ne touche pas au jeu.
@@ -205,3 +217,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Écriture des `.aid` : réécriture identique des 33 fichiers (`blurroute.build`) |
 | 2026-10-19 | Haruna inversé généré (`aidreverse.py` → `jpn_mharuna_7.aid`) et vérifié hors jeu |
 | 2026-10-19 | Mod Haruna inversé complet hors jeu : grilles en bas (actorpack), route `JPN_MHaruna_7`, menu course perso (`make_haruna_reverse.py`) |
+| 2026-10-19 | Script de copie de test hors ligne (`make_test_copy.ps1`), sauvegarde Blur protégée ; simulation OK |
