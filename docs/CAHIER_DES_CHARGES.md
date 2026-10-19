@@ -272,3 +272,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | DoubleTap : Nitro en DoubleTap = pas de plantage mais aucun effet (réglages d'un autre type ; la faille passe par la capacité BossNitroRift). Test suivant : Bouclier + Mine |
 | 2026-10-19 | DoubleTap : Mine OK pour le joueur (dure ~3 s, mêmes dégâts que la normale). Test suivant : Bouclier + Shunt |
 | 2026-10-19 | DoubleTap : **Shunt = plantage** quand le joueur l'utilise (réglages incomplets). Test suivant : Bouclier + Shock |
+| 2026-10-19 | DoubleTap, bilan : Bouclier 12 s OK ; Mine OK mais éphémère ; Shock sans différence ; Nitro sans effet ; Shunt plante. Faille du nitro : voie BossNitroRift |

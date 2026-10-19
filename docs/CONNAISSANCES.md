@@ -486,6 +486,10 @@ celui de `AIPerkPrefs`. **Confirmé** (correspondance des valeurs et lecture en 
   - `GetXtVar` / `SetXtVar` (Lua) : propriétés des éléments d'interface, pas les variables de réglage.
   - Scrambler (mod multijoueur) : tirs inversés qui bloquent les bonus adverses ; réutilise la faille du nitro
     (`scrambler_enabled_nitro_rift`).
+  - **Essai « niveau DoubleTap à la place du normal » (`pickups.bin`, en jeu 2026-10-19)** : les IA utilisent les
+    5 sans souci. Pour le joueur : **Bouclier OK (12 s)** ; Mine OK (vie ~3 s, mêmes dégâts) ; Shock OK (aucune
+    différence visible) ; Nitro : aucun effet (réglages d'un autre type, la faille passe par `BossNitroRift`) ;
+    **Shunt : plantage** (réglages DoubleTap incomplets : pas de Radius/FallRate/ECM*).
 - « Reversed » = tir dans l'autre sens (vu en jeu : « Forward fire Mine »). **Fort.**
 - Autres restes : toute une physique de moto (`RP_Motorbike*`, sans doute venue du moteur partagé),
   triches (`Cheats.Difficulty`, `Cheats.NumEventLaps`, `UnlockViperCheat`…), débogage (`SetupDebugRace`,
