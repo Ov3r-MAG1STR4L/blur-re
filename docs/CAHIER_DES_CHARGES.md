@@ -259,3 +259,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | IA, essai 1 : profil élite = mêmes temps que la référence (< 1 s). Rythme imposé par le Race Director. Suite : essai 2 (rattrapage / plafond de vitesse) |
 | 2026-10-19 | IA, essai 2 prêt : ligne des facteurs à 1,2 pour toutes les IA (Hard), profils d'origine |
 | 2026-10-19 | **IA, essai 2 : facteurs 1,2 → IA nettement plus rapides** (médiane −13 s sur 3 tours). La ligne des facteurs = plafond de vitesse |
+| 2026-10-19 | IA, essai 3 : facteurs 1,5 ≈ 1,2 (gain saturé, limite physique des IA). Plafond utile ~1,2 |

@@ -560,6 +560,9 @@ Trois couches :
    2'43"86 (−13,0 s), dernier 2'48"93 (−14,7 s), écart 1er–dernier 13,5 s au lieu de 22,5 s. **La ligne des
    facteurs est le plafond de vitesse de chaque IA (Confirmé)** : original 1,0 pour les 4 premières IA, 0,84–0,87
    pour les autres (d'où le freinage après un nitro).
+   **Essai 3 (facteurs 1,5)** : 1er 2'30"38, médiane 2'45"77, dernier 2'51"24 → médiane et dernier comme à 1,2
+   (±2 s de variation d'une course à l'autre), seul le 1er gagne encore 5 s : **au-delà de ~1,2 les IA sont à leur
+   limite physique** (voiture, tenue de route).
 3. **Aides** : variables de débogage `AmaxAI.DebugCar.CorneringBoost`, `…Player.BrakeBoost`,
    `…BrakeTrackSpeedPercentageEasy/Medium/Hard`, `AISpeed` ; rattrapage du **joueur** en multijoueur :
    `MultiplayerConfig.player_rubber_banding_settings` (maxDistanceBetweenGroupMembers 2000, minDistanceForFullBanding
