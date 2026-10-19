@@ -9,21 +9,32 @@ import pymem
 DT = 0.25
 
 
+def attach():
+    """Blur.exe process, or None; re-attaching matters: the game is often restarted during a recording."""
+    try:
+        return pymem.Pymem("Blur.exe")
+    except Exception:
+        return None
+
+
 def main(out, secs=900):
-    pm = pymem.Pymem("Blur.exe")
-    u, f = pm.read_uint, pm.read_float
+    pm = attach()
     t0 = time.time()
     with open(out, "w") as o:
         o.write("t,x,y,z,kmh\n")
         while time.time() - t0 < secs:
             try:
+                u, f = pm.read_uint, pm.read_float           # AttributeError if not attached yet
                 R = u(u(u(u(0x11AA04C) + 0xC90) + 0x30) + 0xA10)
                 v = u(R + 0x68 + pm.read_uchar(R + 0x2EC) * 0x10)
                 x, y, z, vx, vy, vz = (f(v + a) for a in (0x130, 0x134, 0x138, 0x13C, 0x140, 0x144))
                 o.write(f"{time.time() - t0:.2f},{x:.2f},{y:.2f},{z:.2f},{math.sqrt(vx*vx+vy*vy+vz*vz)*3.6:.1f}\n")
                 o.flush()
-            except Exception:                      # menus / loading: no vehicle
-                pass
+            except Exception:                      # menus / loading: no vehicle; game closed: re-attach
+                new = attach()
+                if new is not None and (pm is None or new.process_id != pm.process_id):
+                    print(f"{time.time() - t0:.0f}s : attaché à Blur.exe pid {new.process_id}", flush=True)
+                    pm = new
             time.sleep(DT)
 
 

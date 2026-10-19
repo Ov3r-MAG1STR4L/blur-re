@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Route picture for a reversed route: the original picture + a Blur-style neon U-turn sign.
 
-The menu shows the left ~330 px of the 512x256 picture, so the sign sits in the bottom right of that area.
+The menu shows the left ~330 px of the 512x256 picture; the sign sits in its bottom left corner.
 usage: thumbreverse.py IN.png OUT.png
 """
 import sys
 from PIL import Image, ImageDraw, ImageFilter
 
 GLOW = (40, 200, 255)          # Blur UI blue
-SIGN_BOX = (238, 158, 318, 238)  # x0, y0, x1, y1 in the 512x256 picture (visible part of the menu crop)
+SIGN_BOX = (14, 158, 94, 238)  # x0, y0, x1, y1 in the 512x256 picture: bottom LEFT (asked 2026-10-19)
 SS = 4                         # supersampling
 
 
