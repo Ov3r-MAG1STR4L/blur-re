@@ -8,7 +8,7 @@ Output tree mirrors the game folder (loose files override paks, see docs/CONNAIS
   OUT/gamedata/xt/multiplayer.bin                      + JPN_MHaruna_7 in MultiplayerConfig.routes
 usage: make_haruna_reverse.py OUT_DIR
 """
-import os, sys
+import os, struct, sys
 import aidreverse, blurroute, gridreverse
 from blurxt import XT
 from kslfwrite import KSLF
@@ -45,6 +45,37 @@ def main(out):
                 for c, v in zip(("vx", "vy", "vz"), m[row]):
                     b = XT(ap).patched(names[src], f"LevelActors[{i}].WorldMatrix.{row}.{c}", float(v))
                     open(ap, "wb").write(b)
+
+    # every SerialisableUid of the original pack is unique; with clones sharing them the game spawned the cars
+    # on the ORIGINAL grid (tested 2026-10-19). Give the cloned actors fresh uids.
+    x = XT(ap)
+    recs = {n: v for n, _, v, _ in x.records()}
+    used, paths = set(), []
+
+    def walk(v, path, out):
+        if isinstance(v, dict):
+            for k, w in v.items():
+                walk(w, f"{path}.{k}" if path else k, out)
+        elif isinstance(v, list):
+            for i, w in enumerate(v):
+                walk(w, f"{path}[{i}]", out)
+        elif path.endswith("SerialisableUid"):
+            out.append((path, v))
+
+    for n, v in recs.items():
+        found = []
+        walk(v, "", found)
+        used.update(u for _, u in found)
+        if n in names.values():
+            paths += [(n, p) for p, _ in found]
+    b, uid = bytearray(open(ap, "rb").read()), 0xB1E00000
+    for n, p in paths:
+        while uid in used:
+            uid += 1
+        used.add(uid)
+        struct.pack_into("<I", b, x.locate(n, p)[0], uid)
+    open(ap, "wb").write(b)
+    print(len(paths), "cloned actor uids renewed")
 
     # amax.bin: route JPN_MHaruna_7 = copy of _1 with the new start lists
     a = KSLF(os.path.join(G, "xt", "amax.bin"))

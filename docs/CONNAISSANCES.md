@@ -90,6 +90,12 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   clair dans `<jeu>\gamedata\` → le jeu démarre, aucun pak gamedata ouvert, et le menu course perso compte
   **31 routes** dont `JPN_MHaruna_7` (Index 3, `LocString` « Ascent ») : la route ajoutée et ses références
   par hash (`0xFFFF0001..3`) sont résolues. Le `.sig` n'empêche pas de démarrer sans le pak.
+- **Grille de départ (essai 2026-10-19)** : avec nos listes clonées (`#67`, `#68`) bien chargées et bien
+  référencées par la route, les voitures sont **parties de la grille d'origine** (en haut), puis ont fini dans le
+  lac du sommet. Hypothèse (**Fort**) : les acteurs sont retrouvés par `SerialisableUid`, et nos clones gardaient
+  ceux de l'original. Dans un pack, un `SerialisableUid` identifie un acteur ; les autres occurrences sont des
+  **références** (ex. `HandOfGodEntry.VehicleMessage.ResetPositionActor` → l'acteur de sortie). Correctif :
+  nouveaux uids (`0xB1E00000+`) pour les 56 acteurs clonés, références internes conservées. À vérifier en jeu.
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
   `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),
