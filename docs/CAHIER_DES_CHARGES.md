@@ -170,6 +170,8 @@ est détectée en haut.
 **À faire plus tard (demandé le 2026-10-19)** :
 - déplacer les **bonus** (power-ups) pour le sens montant (listes de l'actorpack de la route) ;
 - corriger le **HUD** (mini-carte, textes de départ/arrivée…) pour le sens inversé.
+- idée : **vignette animée** (flèche qui bouge). Pas de GIF possible dans un `.bpr` (textures fixes) : il faudrait
+  plusieurs images + un plugin Lua AMAX qui les alterne dans l'écran du menu (scripts des menus pas encore trouvés).
 
 ## Projet D : DoubleTap (combiner deux bonus)
 
