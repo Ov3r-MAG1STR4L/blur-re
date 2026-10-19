@@ -1,0 +1,9 @@
+# Nothing from the game in this repo: recordings, extraction listings and logs stay local
+*.npz
+rec_*.bin
+*.log
+*.err
+*.list.txt
+ext_tex.txt
+stage_arrays.txt
+__pycache__/

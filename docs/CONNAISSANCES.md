@@ -1,0 +1,291 @@
+# Blur (PC, 2010) : base de connaissances
+
+Tout ce qui a été découvert, avec le niveau de confiance. Règle : **ne jamais présenter une
+hypothèse comme un fait**. Chaque entrée porte une étiquette :
+
+- **Confirmé** : vérifié (en jeu, ou sur toutes les données, avec un test reproductible)
+- **Fort** : très probable, une seule vérification indirecte
+- **Hypothèse** : piste à valider
+
+Dernière mise à jour : 2026-10-19.
+
+---
+
+## 1. Règles du projet
+
+- **Ne jamais modifier les fichiers d'origine** du jeu installé dans
+  `C:\Program Files (x86)\Activision\Blur(TM)` : l'utilisateur joue en ligne via AMAX
+  (amax-emu.com). Les tests de mods se font sur une **copie** du dossier du jeu.
+- Les outils mémoire sont en **lecture seule** (aucune écriture dans le processus).
+- **Blur se met en pause quand sa fenêtre perd le focus.** Tout enregistrement mémoire doit
+  attendre que le jeu reprenne (voir `blur_live.py record`).
+- Aucun fichier du jeu dans ce dépôt (exe, fichiers extraits, enregistrements mémoire).
+
+## 2. Environnement
+
+| Élément | Emplacement |
+|---|---|
+| Jeu installé | `C:\Program Files (x86)\Activision\Blur(TM)` |
+| Outils (ce dépôt) | `C:\Users\sanqu\Jeux_WII\blur_tools` |
+| Données extraites (hors dépôt) | `C:\Users\sanqu\Jeux_WII\blur_extracted` |
+| Projet Ghidra | `C:\Appli\ghidra\projects\Blur` (copie de `Blur.exe` : le `.bat` de Ghidra casse sur « (TM) ») |
+| Script de décompilation | `C:\Appli\ghidra\scripts\Decomp.java` (arguments : fichier de sortie, puis adresses) |
+
+Décompiler une fonction (projet en lecture seule, sans réanalyse) :
+
+```
+analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanalysis -readOnly
+  -scriptPath C:\Appli\ghidra\scripts -postScript Decomp.java C:\chemin\sortie.c 0xADRESSE
+```
+
+### Exécutables
+
+- `Blur.exe` (13,7 Mo, compilé en mai 2010) : **non protégé**, idéal pour Ghidra. Base 0x400000,
+  `.text` RVA 0x1000 (fichier 0x400), `.rdata` RVA 0xA53000 (fichier 0xA51E00), `.data` RVA 0xB6C000
+  (fichier 0xB6A000). **Confirmé.**
+- `Blur_debug.exe` (28,9 Mo) : malgré son nom, ce n'est **pas** une version de débogage. C'est la
+  même chose plus une section protégée `.8thSin` (point d'entrée dedans). **Confirmé.**
+
+### AMAX (jeu en ligne)
+
+- `d3d9.dll` (proxy), `amax/dlls/lua_hooks.asi` (blur-lua-loader de tobii-dev, en Rust) lance
+  `amax/init.lua`, puis les plugins listés dans `amax/plugins/plugins.lua`.
+- API exposée minimale : `print_api`, `BlurAPI.set_fps`, et le rappel `M.GoScreen(screen)` avec les
+  noms d'écrans Lua du jeu (`Ingame\Hud.lua`…).
+- `amax/config/amax-redirect.cfg` redirige les serveurs Demonware vers amax-emu.com.
+
+---
+
+## 3. Formats de fichiers
+
+### 3.1 `.pak` (« 2KAP ») : **Confirmé** — outil `blurpak.py`
+
+- En-tête `2KAP`, pages de 0x800 octets.
+- Page 1 : u32 taille, puis table des chemins séparés par des NUL, XOR avec la clé de 14 octets
+  ``xVXo40j3@$%\%` `` (indice de clé `(i+1) % 14`).
+- Entrées de 40 octets (64 avec empreinte dans `gamedata*.pak`) :
+  `[hash, nameOfs, dirOfs, usize, crc, ?, startPage, flags, hash2, csize]`.
+- Données à `startPage*0x800` : boot/root = blocs deflate ; gamedata = flux zlib ; root_streaming = brut.
+- `shaders-speed.pak` (version 1) : non décodé.
+- Le jeu vérifie des signatures RSA (`.sig`). D'après la commu (wiki AMAX), les fichiers non
+  empaquetés (« loose ») sont chargés, ce qui éviterait de refaire les `.pak` : **Hypothèse**, à tester sur une copie.
+
+### 3.2 `.loc` (« OLTX », textes) : **Confirmé** — outil `blurloc.py`
+
+5 langues (en, fr, de, it, es), chaînes UTF-16, clés en clair + hash 32 bits (fonction de hash inconnue,
+pas nécessaire pour lire).
+
+### 3.3 `.bin` / `.xt` (« KSLF », le format « Flask ») : **Confirmé** — outil `blurxt.py`
+
+Tables de données du jeu (voitures, IA, épreuves, bonus…). 26 fichiers `.bin` + les `actorpack.xt` des niveaux.
+
+- En-tête : `KSLF`, u32 version (1 ou 2), puis 8 couples (offset, nombre) :
+  0 types (12 o), 1 parents (u32), 2 champs (8 o), 3 noms, 4 index (8 o), 5 enregistrements (16 o),
+  6 chunks (6 o), 7 données.
+- **Noms chiffrés** (version 2) : fonction `0x5871B0` de `Blur.exe`
+  (`dl=0xCC ; out=(dl-(b^0xB3))&255 ; dl=(dl+out-i)&255`). L'encodeur inverse est en `0x5871F0`.
+- Types : (nameOfs, nbChamps, aUnParent, genre, primitif, taille) ; genre 3 = structure, 2 = drapeaux,
+  1 = énumération, 0 = primitif. Les champs (et les valeurs d'énumération) se suivent dans la table des champs.
+- Enregistrement : (idx, nbChunks, tailleDonnées, tailleChaînes). Les chunks se suivent, puis une zone
+  de chaînes chiffrée comme les noms.
+- Tableau = `(chunk | début<<16, nombre)` ; pointeur interne = `chunk | élément<<16` ;
+  chunk avec drapeau pointeur ≠ 0 = éléments de 4 octets ; `0xFFFFFFFF` = nul.
+- Référence externe (drapeau 5) = case de l'index (section 4) donnant le hash de la cible ; si l'élément
+  local vaut 0xFFFF, la cible est dans un autre fichier (on la retrouve par son hash).
+- Chaîne de chargement dans l'exe : `0x585660` (entrée) → `0x584700` (validation, « Flask failed validation »)
+  → `0x5850D0` (schéma).
+
+Commandes : `blurxt.py FICHIER` (schéma), `blurxt.py --json FICHIER`,
+`blurxt.py --all DOSSIER_XT SORTIE levels/*/actorpack.xt` (tout, références résolues :
+**0 référence non résolue**).
+
+### 3.4 `.model` / `.texture` : **Fort** — outils `blurmodel.py`, `blurtex.py`
+
+- Textures = DDS sans en-tête (DXT1/DXT5). `blurtex.py` extrait toutes les textures d'un `.model`
+  (intégrées + niveaux de mip en flux) et sait les **réinjecter** (`blurtex.py inject`).
+  Aller-retour vérifié sur bmw_m3e92_tuner ; **jamais testé en jeu**.
+- La peinture de carrosserie est faite par des shaders (`veh_Paint_*`), pas par une texture.
+  Les voitures avec une texture de livrée (modifiables) sont listées dans le cahier des charges.
+
+### 3.5 Fichiers de niveau (`levels/<nom>/`) : en cours
+
+| Fichier | Format | Contenu | État |
+|---|---|---|---|
+| `.level` | « CP » (chunks) | Header, MdlDat, NavDat, Advert, MtaDbg (journal d'export) | Structure lue |
+| `.levelphysics` | « CP » | Physic { Header, Main (collision), Routes { Route… } } | Structure lue, contenu non décodé |
+| `.levelrender` | « CP » + archive « ARCH » | rendu (`RenderingData::CullNode`…) | Non décodé |
+| `.levelstream` | archive « ARCH » | géométrie en flux | Non décodé |
+
+Format « CP » (outil `cpdump.py`) : magie `"  CP"`, puis des chunks
+`[tag 8 o][u32 taille, en-tête de 16 o inclus][u16 nombre][u16 'C' conteneur ou 'A' données]`. **Confirmé.**
+
+Dans `gamedata/levels/<nom>/` (extrait des `.pak`) :
+
+- `actorpack.xt` (format KSLF) : **objets placés sur la carte**. Positions de départ (`StartPosition`, grilles
+  de 20), bonus (dont `Stopwatch`, placé 60 fois sur Amboy), zones de déclenchement (`FailTriggerRegion`,
+  `FanTriggerRegion`), objets physiques, effets… Lu et décodé. **Confirmé.**
+- `<nom>_<n>.aid` : **trajectoires de l'IA et logique de course**, voir 3.6.
+
+Les `Routes` de `.levelphysics` (Amboy : 4 chunks Route ; un Route = en-tête, 4 compteurs comme
+462/219/5188/77, boîte englobante, 462 points groupés en « portes », puis ~970 Ko compactés) : **non décodées**.
+
+### 3.6 `.aid` (données de piste de l'IA) : **Confirmé** (structure) — outil `blurroute.py`
+
+**Les 33 fichiers se lisent intégralement, jusqu'au dernier octet.**
+Le vocabulaire vient des noms de débogage de l'exe : `AmaxAI.DebugDraw.TrackData.{Racing, RacingSpline,
+RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, LogicInter2, LogicFinish}`.
+
+- Fichier : f32 version (6.0), u32 nbBlocs, les blocs, puis la table logique.
+- Chaînes : u32 longueur + caractères (sans NUL ni bourrage). Nœud = **323 octets**.
+- **Bloc section** : nom, u32 0, u32 0, u32 type, [u32 en plus si type & 0x80], u32 nombre, nœuds.
+  Bits du type : 0x01 boucle fermée, 0x02 départ, 0x04 arrivée, 0x08 intermédiaire 1, 0x10 intermédiaire 2,
+  0x20 ligne logique, 0x80 entier supplémentaire, 0x400 inconnu (5 boucles principales).
+  0 = tronçon (raccourci / variante), 1 = boucle principale, 0x21 = logique en boucle, 0x20 = logique d'un point à un autre.
+- **Bloc jonction** : nom, section de départ, section d'arrivée, u32 drapeaux (0x40 ou 0xC0).
+  Si drapeaux & 0x80 : u32 genre, puis genre 5 → u32 + 3 réels, 9 → u32 + 2 réels, 6 → u32 + 1 réel,
+  2 → nom de section + u32. Ensuite u32 nombre + nœuds.
+  Signification des valeurs (poids de choix de route pour l'IA ?) : **Hypothèse**.
+- **Table logique** (fin du fichier) : u32 N (= nombre de nœuds de la ligne logique), puis pour chaque
+  nœud logique : u32 n, n × (u32 index de nœud, nom de section). 137 032 renvois au total, **tous valides**.
+- **Nœud** : +0 x, +4 y, +8 z (**Z inversé** par rapport aux coordonnées du niveau), +12 largeur en mètres
+  (plus grande sur la ligne logique : un couloir). Le reste n'est **pas identifié** (vecteurs unitaires
+  à partir de +16, valeur latérale en +36, 3 sous-blocs avec des fractions ≈ 0,28 / 0,46 / 0,63).
+- Validation visuelle : les trajets passent par les grilles de départ ; Brighton est en huit ;
+  Haruna est une descente d'un point à un autre. Exports JSON + PNG dans `blur_extracted\routes`.
+- Chaque carte a une ou plusieurs routes (Amboy : `_1`, `_3` ; Brighton : `_1`, `_2`, `_3`, `_5` ;
+  Haruna : `_1`). Il y a parfois plus de grilles de 20 que de routes (Haruna : 2 grilles, toutes deux en haut,
+  dans le même sens ; sans doute une par mode). Chemin construit par l'exe en `0xBBDD80` :
+  `.\gamedata\levels\%s\%s.aid`.
+- Non validé en course.
+
+---
+
+## 4. Données de jeu décodées
+
+Exports JSON de tous les `.bin` : `blur_extracted\xt_json`. Récap des voitures :
+`carsummary.py` → `blur_extracted\blur_voitures.csv` (81 voitures).
+
+| Fichier | Contenu utile |
+|---|---|
+| `amax.bin` | `AmaxVehicle` (81 voitures : classe, `GameplayTopSpeed`, stats d'interface, lien vers la physique…) |
+| `racingphysics.bin` | `RP_CarDynamics` (62 fiches : masse, moteur et courbe de couple, rapports, pneus, freins…) |
+| `air.bin` | profils IA : `AISkillz`, `AIPerkSkillz`, `AIPerkPrefs`, `AISteering` |
+| `singleplayer.bin` | 86 épreuves `AmaxEvent`, avec réglages Easy/Medium/Hard (`DifficultySettings`) |
+| `pickups.bin` | bonus (11 `PickupType` et leurs variantes) |
+| `finalracebook.bin` | pilotes (`RaceBookCharacter`) et leurs voitures (`RaceBookVehicle`) |
+
+Fichiers de difficulté : `gamedata/events/*_easy|medium|hard.csv`, désignés par `AIBalancingFileName`.
+Chaque colonne = une voiture (colonne 0 = joueur). Une ligne donne l'`Index` du profil `AIPerkSkillz`, la suivante
+celui de `AIPerkPrefs`. **Confirmé** (correspondance des valeurs et lecture en mémoire).
+
+### Bonus et contenu laissé par les développeurs
+
+| Bonus (nom interne) | Variantes dans `pickups.bin` |
+|---|---|
+| Nitrous (Nitro) | Normal, DoubleTap, Reversed |
+| Shunt | Normal, DoubleTap, Reversed |
+| Bomb (Mine) | Normal, DoubleTap, Reversed, Mini, Modified |
+| Shock | Normal, DoubleTap |
+| Shield | Normal, DoubleTap |
+| Blindfire (Bolt) | Normal, Reversed, Modified, ReversedModified |
+| Barge, Repair | Normal |
+| SuperShield | Normal (non rencontré en jeu : **Hypothèse** contenu coupé) |
+| Stopwatch | Normal (placé dans les niveaux, donc **utilisé**, sans doute en mode checkpoint) |
+| Fan | Normal (bonus de fans) |
+
+- **DoubleTap** (combiner deux bonus) : coupé avant la sortie, mais 5 bonus ont encore leurs réglages
+  DoubleTap. Noms restés dans `Blur.exe` : `DoubleTap`, `ReversedDoubleTap`, `NitrousDoubleTapBalancingData`,
+  `BombDoubleTapBalancingData`, `ShuntDoubleBalancingData`, `DoubleShuntReverse`, `PickupShuntDoubleSpecialFX`.
+  Code encore présent ou non : **inconnu**.
+- « Reversed » = tir dans l'autre sens (vu en jeu : « Forward fire Mine »). **Fort.**
+- Autres restes : toute une physique de moto (`RP_Motorbike*`, sans doute venue du moteur partagé),
+  triches (`Cheats.Difficulty`, `Cheats.NumEventLaps`, `UnlockViperCheat`…), débogage (`SetupDebugRace`,
+  `UseDebugHud`, `E3EnablePlayerControls`), épreuves de test (« Balancing Test 1 à 13 »,
+  « Freeze Powered Up Test »…), niveaux `vehicletestscene` et `quickexport`.
+
+---
+
+## 5. Mémoire du jeu en course (lecture seule) — outil `blur_live.py`
+
+### Liste des véhicules : **Confirmé** (plusieurs courses)
+
+```
+R = [[[[0x11AA04C] + 0xC90] + 0x30] + 0xA10]     gestionnaire des véhicules de la course
+[R + 0x1A0]           nombre de véhicules
+[R + 0x64 + i*0x10]   handle du véhicule i (PAS un pointeur)
+[R + 0x68 + i*0x10]   objet du véhicule i
+octet [R + 0x2EC]     index du véhicule du joueur (0 dans toutes nos courses)
+```
+
+Trouvé via la fonction Lua `GetPlayerVehicleIndex` (`0xC31F30` → `0xB824A0` → `0x49B310`).
+
+### Objet véhicule
+
+| Donnée | Offset | Confiance | Comment c'est validé |
+|---|---|---|---|
+| Position (m, Y = hauteur) | +0x130 / +0x134 / +0x138 | Confirmé | copies en +0xF0, +0x1CC, +0x5B0 |
+| Vitesse (m/s, ×3,6 = km/h) | +0x13C / +0x140 / +0x144 | Confirmé | rapport 1,006 avec le déplacement mesuré |
+| Vecteur avant (unitaire) | +0x124 (copie +0xE4) | Fort | aligné à 99,7 % avec la vitesse |
+| Vecteur latéral (unitaire) | +0x10C (copie +0xCC) | Fort | perpendiculaire à l'avant |
+| Nom de la fiche physique | [+0x2A8] → chaîne | Fort | parfois invalide (`?`) : mémoire réutilisée |
+| Objet physique | [+0x238], masse en +0x1D4 | Confirmé | 20/20 masses identiques aux fichiers |
+| Chrono `+0x638` | +0x638 | Hypothèse | même valeur pour toutes les voitures, ~0,98 s/s, remis à 0 pour une voiture : temps au tour ? |
+| `+0x1FC` | +0x1FC | — | suit les virages mais n'est PAS une vitesse angulaire en rad/s |
+| Accélération, vitesse angulaire | — | — | non stockées ici : à calculer depuis la vitesse et la rotation |
+
+### Pilotes : **Fort**
+
+`[0x1134DCC]` = vecteur `{données, capacité, nombre}` des objets pilote ; objet pilote +0xC = objet véhicule.
+
+### Profils IA en course : **Confirmé** (2 courses de carrière, épisodes différents)
+
+```
+X = [[0x1134DC0] + 0x2C]        (vtable 0xEC3B94)
+[X + 0x48] = tableau de 20 entrées {paliers, capacité, n}   (une par colonne du CSV, même ordre que les véhicules)
+palier = 0x20 octets, 10 par voiture :
+  +0x00 i32   +0x04 f32 (ligne CSV « 0,400,3,5… »)   +0x08 f32 (ligne « 1,0.95,0.91… »)
+  +0x10 i32 (ligne « 1,1,0… »)   +0x18 hash AIPerkSkillz   +0x1C hash AIPerkPrefs
+Listes chargées : [0x1134E9C] × [0x1134EA4] AIPerkSkillz ; [0x1134E84] × [0x1134E8C] AIPerkPrefs
+  enregistrement en mémoire : +0x10 nom, +0x14 hash, +0x18 Index
+```
+
+Exemples vérifiés : Hummer = « T4 Drayke Skills 400 » (boss Drayke) ; les deux Skyline R34 =
+« T7 Ayumi/Harumi Skills 700 » (les jumelles). Le CSV est lu par le « RaceDirectorSystem » (`0x4C5E20`),
+la préparation de l'épreuve est en `0xBC1E70`.
+
+### Non trouvé (à faire)
+
+- **Classement** : ni dans l'objet véhicule ni dans l'objet pilote. La structure `0x12260A8`
+  (`GetVehiclePosition`, 20 cases de 0xD4 à partir de +0x10C8) est **vide pendant la course** (remplie
+  à l'arrivée ?).
+- **Palier IA actif**, **bonus détenus**, **tour en cours / progression**, **état accélérateur/frein**.
+- Prochaine étape prévue : `deeprec.py` (enregistre aussi les objets pointés, profondeur 1) avec une
+  séquence jouée et notée par l'utilisateur.
+
+---
+
+## 6. Adresses de `Blur.exe`
+
+| Adresse | Rôle |
+|---|---|
+| 0x5871B0 / 0x5871F0 | décodage / encodage des noms KSLF |
+| 0x585660 / 0x584700 / 0x5850D0 | chargement / validation / schéma KSLF |
+| 0xC31F30, 0xB824A0, 0x49B310 | index du véhicule du joueur (Lua `GetPlayerVehicleIndex`) |
+| 0xBBD420, 0xBBD460 | position en course ↔ véhicule (objet 0x12260A8) |
+| 0x4C5E20 | lecture du CSV de difficulté (RaceDirectorSystem) |
+| 0xBC1E70 | préparation de l'épreuve |
+| 0xBBDD80 | construction des chemins `.level` / `.aid` |
+| 0xB11870 | constructeur de la classe à vtable 0xEC3A68 |
+
+Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes),
+`0x1134E84` / `0x1134E9C` (listes de profils), `0x12260A8` (positions).
+
+---
+
+## 7. Communauté (Discord Blur / wiki AMAX)
+
+- Pas de décodeur public des `.bin` / `.xt` connu (la page « outils » du wiki était vide en 2026-09).
+- « Md » a fait un éditeur de cartes (tracé 2D, objets 3D du jeu, compilation et installation, test en jeu
+  avec IA), un réglage de bloom, et travaille sur le déblocage des FPS (la physique est calée sur 30 images/s).
+- Un moddeur réactive le DoubleTap.
+- Demande récurrente : circuits en sens inverse (« galère » selon la commu).
