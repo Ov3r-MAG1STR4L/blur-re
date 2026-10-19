@@ -62,6 +62,60 @@ def reverse(d):
     return d
 
 
+def _centres(nodes):
+    """Road centres (file frame, x z) of raw nodes: node = road edge, centre = node + lateral2D * width / 2."""
+    out = []
+    for nd in nodes:
+        x, y, z, w, lx, lz = struct.unpack_from("<6f", nd, 0)
+        out.append((x + lx * w / 2, z + lz * w / 2))
+    return out
+
+
+def move_gate(d, name, first_main):
+    """Slide gate block `name` along the road so its first node lies on Main node `first_main` (same node count,
+    same gate width, centred on the road). Logic-table references to the gate are re-attached by geometry.
+    Why: reversed, each gate's first node lies ~92 m before the painted line it belongs to, and a race starts /
+    ends at the first node of its gate (original Haruna: start gate 16 m before the painted start line, finish
+    gate 4 m after the painted finish line; player report: the finish fired before the line)."""
+    blk = {b["name"]: b for b in d["blocks"]}
+    main, gate = blk["Main"]["nodes"], blk[name]["nodes"]
+    mc = _centres(main)
+
+    def nearest(p):
+        return min(range(len(mc)), key=lambda i: (mc[i][0] - p[0]) ** 2 + (mc[i][1] - p[1]) ** 2)
+
+    old = [nearest(p) for p in _centres(gate)]
+    shift = first_main - old[0]
+    new_nodes, under = [], []
+    for nd, m in zip(gate, old):
+        j = max(0, min(len(main) - 1, m + shift))
+        src = main[j]
+        wg = struct.unpack_from("<f", nd, 12)[0]
+        x, y, z, wm, lx, lz = struct.unpack_from("<6f", src, 0)
+        b = bytearray(src[:48])
+        cx, cz = x + lx * wm / 2, z + lz * wm / 2
+        struct.pack_into("<4f", b, 0, cx - lx * wg / 2, y, cz - lz * wg / 2, wg)
+        for k in range(11):
+            line = bytearray(src[48 + 25 * k:48 + 25 * (k + 1)])
+            fm = struct.unpack_from("<f", line, 16)[0]
+            struct.pack_into("<f", line, 16, 0.5 + (fm - 0.5) * wm / wg)   # same point, wider gate
+            b += line
+        new_nodes.append(bytes(b))
+        under.append(j)
+    blk[name]["nodes"] = new_nodes
+    at = {}
+    for k, j in enumerate(under):
+        at.setdefault(j, []).append(k)
+    table = []
+    for refs in d["logic_table"]:
+        keep = [r for r in refs if r[1] != name]
+        mains = [r[0] for r in refs if r[1] == "Main"]
+        keep += [[k, name] for j in mains for k in at.get(j, [])]
+        table.append(keep)
+    d["logic_table"] = table
+    return shift
+
+
 if __name__ == "__main__":
     d = reverse(blurroute.parse(open(sys.argv[1], "rb").read(), raw=True))
     open(sys.argv[2], "wb").write(blurroute.build(d))
