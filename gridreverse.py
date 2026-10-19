@@ -60,6 +60,12 @@ def _vec(m, k):
     return np.array([m[k]["vx"], m[k]["vy"], m[k]["vz"]])
 
 
+def is_start_position(x):
+    """Grid slot, by type (StartNumber field), not by name: Brighton's multiplayer slots are 'NewStartPosition0..19'
+    (missed by a name test, they stayed on the original grid, facing the old way: seen 2026-10-19)."""
+    return bool(x) and "StartNumber" in x and "WorldMatrix" in x
+
+
 def start_line(actors):
     """(x, z) of the Start text of an original start list = the painted line (loops: start = finish)."""
     for x in actors:
@@ -122,7 +128,7 @@ def compute(orig_aid, rev_aid, actorpack_json, lists, cfg):
     for key in lists:
         actors = A[key]["LevelActors"]
         new, meas = [], {k: measure(_vec(x["WorldMatrix"], "aw")) for k, x in enumerate(actors)
-                         if x["Name"].startswith("StartPosition")}
+                         if is_start_position(x)}
         if meas:
             mid = float(np.mean([f for _, f, _ in meas.values()])) - 0.5 if CENTRE_GRID else 0.0
             dy = float(np.median([h for _, _, h in meas.values()]))   # original spawn height above the .aid

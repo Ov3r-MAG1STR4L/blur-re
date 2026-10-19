@@ -139,8 +139,8 @@ def main(out):
                 for i, ref in enumerate(r["src"][field]):
                     pk, _, lst = ref.split("/")
                     acts = [a for a in A.get(lst, {}).get("LevelActors", []) if a]
-                    if pk == f"{city}.actorpack" and any(a.get("Name", "").startswith(("StartPosition", "Start_Text"))
-                                                         for a in acts):
+                    if pk == f"{city}.actorpack" and any(gridreverse.is_start_position(a) or
+                                                         a.get("Name", "").startswith("Start_Text") for a in acts):
                         r["clones"].append((field, i, lst))
             if not r["grid"].get("lines"):         # loop: the painted line = the original Start text
                 xz = next(filter(None, (gridreverse.start_line(A[l]["LevelActors"]) for _, _, l in r["clones"])))
