@@ -528,6 +528,26 @@ Exemples vérifiés : Hummer = « T4 Drayke Skills 400 » (boss Drayke) ; les de
 « T7 Ayumi/Harumi Skills 700 » (les jumelles). Le CSV est lu par le « RaceDirectorSystem » (`0x4C5E20`),
 la préparation de l'épreuve est en `0xBC1E70`.
 
+### Caractéristiques de l'IA : inventaire (2026-10-19)
+
+Trois couches :
+
+1. **Profils** (`air.bin`) : `AIPerkSkillz` (50 : par bonus Offensive / Defensive / Avoidance, plus Racing,
+   Aggression, Blocking, Slamming, Mistakes ; « Difficulty 1..10 » = Index 50..59, « Tier 0..10 Skills »),
+   `AIPerkPrefs` (33 : préférence par bonus), `AISkillz` (32 : BackwardFiring, ForwardFiring, Defensive, Offensive,
+   Racing, Aggression, Blocking, Slamming, Mistakes), `AISteering` (6 : PID de direction, ForwardsDist,
+   SteeringRate…), `AI` (2 : `Air_Default` = BrakingCoefficient 1.0, FrictionCoefficient 1.212, Block ;
+   `DEBUG_Easy`). Chaque `RaceBookCharacter` (pilote) a un `AITemplate` (Air_Default pour les boss).
+2. **Race Director** (`RaceDirectorSystem`, `RubberbandingAI`, `air.rubberbanding`) : fichiers
+   `events/<épreuve>_easy|medium|hard.csv` (course perso : `multiplayer_*.csv`, écran partagé :
+   `splitscreen_*.csv`). En-tête (1.0, 10 paliers, 20 voitures), puis par palier 7 lignes × 20 colonnes :
+   i32, f32 distances (`0,-3,3,5,35…`), f32 facteurs (`1, 0.84…0.87`), f32 (`0.55`), i32 (`1,1,1,1,0…`), i32,
+   Index `AIPerkSkillz`, Index `AIPerkPrefs`. Sens exact des lignes chiffrées : **à établir** (rattrapage ?).
+3. **Aides** : variables de débogage `AmaxAI.DebugCar.CorneringBoost`, `…Player.BrakeBoost`,
+   `…BrakeTrackSpeedPercentageEasy/Medium/Hard`, `AISpeed` ; rattrapage du **joueur** en multijoueur :
+   `MultiplayerConfig.player_rubber_banding_settings` (maxDistanceBetweenGroupMembers 2000, minDistanceForFullBanding
+   600, light 0.25 / medium 0.666, courbe d'impulsion ±100).
+
 ### Non trouvé (à faire)
 
 - **Classement** : ni dans l'objet véhicule ni dans l'objet pilote. La structure `0x12260A8`
