@@ -101,6 +101,11 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   de `level.levelphysics` (collision de la route) ; Haruna n'a que les blocs 0 (vide) et 1. Avec 7, aucune
   collision de route. Le `.aid` est trouvé par le **nom** de la route
   (`.\gamedata\levels\<ville>\<Nom>.aid`, `0xBBDD80`), donc `RouteNumber = 1` garde notre piste inversée.
+- **3e course (RouteNumber 1)** : la collision de route est là (2 voitures tiennent sur la grille), mais
+  (a) la grille d'origine est décentrée (fraction 0,72 à 1,13 d'une route de 36 m) : recopiée en bas sur 20 m,
+  une colonne était hors route (−12 m pour ±9,8 m) ; (b) la **collision s'arrête ~250 m après l'ancienne
+  arrivée** (vers 13 780 m du tracé d'origine) : la place la plus en arrière tombait. Correctif dans
+  `gridreverse.py` : grille centrée et resserrée (`MAX_BEHIND` = 219 m derrière la ligne, 1re rangée gardée).
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
   `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),
