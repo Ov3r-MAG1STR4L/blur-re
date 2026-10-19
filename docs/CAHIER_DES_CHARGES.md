@@ -249,3 +249,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Portes déplacées : départ et arrivée « mieux mais pas parfait » (petit écart restant, jugé acceptable). Ascent utilisable |
 | 2026-10-19 | Générateur commun `make_reverse.py` (toutes les routes en une passe ; Haruna identique à l'octet). 2e route : **Brighton 1 inversée** (`UK_Brighton_1R`, « Route 1 Reverse »), 1re boucle, vérifiée hors jeu |
 | 2026-10-19 | Brighton 1R en jeu : ligne/porte OK, mais grille multi dans l'ancien sens (places `NewStartPosition*` ignorées). Places reconnues par leur type ; corrigé |
+| 2026-10-19 | **Brighton « Route 1 Reverse » fonctionne en jeu** : bon sens, bien placés. 1re boucle inversée. Suite : routes à une jonction (support des jonctions dans `aidreverse`) |
