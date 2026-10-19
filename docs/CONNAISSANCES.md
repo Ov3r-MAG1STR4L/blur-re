@@ -95,6 +95,17 @@ Tables de données du jeu (voitures, IA, épreuves, bonus…). 26 fichiers `.bin
 - Chaîne de chargement dans l'exe : `0x585660` (entrée) → `0x584700` (validation, « Flask failed validation »)
   → `0x5850D0` (schéma).
 
+**Écriture** (2026-10-19) :
+- `encode_names` (inverse de `0x5871B0`) : aller-retour **identique à l'octet** sur les 49 fichiers KSLF
+  (zones de noms) et sur les 6 622 zones de chaînes des enregistrements. **Confirmé.**
+- Modification **sur place** d'un nombre, booléen ou énumération, par chemin :
+  `blurxt.py --set ENTREE.bin SORTIE.bin "Enregistrement" "engine.engineTorque_Rpm.dataPoints[7]" 1.5`.
+  Testé sur 7 cas (réel, élément de tableau, réel imbriqué, énumération, booléen, profil IA, voiture) :
+  la valeur se relit, et un seul enregistrement change. **Confirmé** hors jeu ; **jamais testé en jeu**.
+- Pas encore possible : changer une chaîne ou la taille d'un tableau, ajouter un enregistrement
+  (il faut reconstruire tout le fichier).
+- Attention : une fiche physique peut être partagée par plusieurs voitures (ex. `*_Shannon`).
+
 Commandes : `blurxt.py FICHIER` (schéma), `blurxt.py --json FICHIER`,
 `blurxt.py --all DOSSIER_XT SORTIE levels/*/actorpack.xt` (tout, références résolues :
 **0 référence non résolue**).

@@ -22,7 +22,7 @@ Dernière mise à jour : 2026-10-19.
 | Capacité | Lire | Écrire |
 |---|---|---|
 | `.pak` | oui | non (signatures RSA ; fichiers non empaquetés à tester) |
-| `.bin` / `.xt` (KSLF) | oui, à 100 % | non (encodeur des noms connu : `0x5871F0`) |
+| `.bin` / `.xt` (KSLF) | oui, à 100 % | en partie : valeurs modifiables sur place (nombres, booléens, énumérations) ; pas d'ajout d'enregistrement |
 | `.loc` (textes) | oui | non |
 | Textures de `.model` | oui | oui (réinjection, jamais testée en jeu) |
 | `.aid` (IA / logique de piste) | oui, à 100 % de la structure | non |
@@ -148,3 +148,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Orientation ; formats « CP » des niveaux ; `.aid` décodés en entier (33/33) ; restes du DoubleTap ; dépôt GitHub créé |
 | 2026-10-19 | Nœuds `.aid` compris : en-tête (position, largeur, axe latéral avec dévers) + 11 lignes parallèles (fraction, hauteur, longueur) |
 | 2026-10-19 | Menus : listes explicites (`MultiplayerConfig.routes` = 30 routes jouables, paliers de carrière) ; 70 routes déclarées pour 33 `.aid` |
+| 2026-10-19 | KSLF : encodeur des noms (aller-retour identique, 49 fichiers) ; modification de valeurs sur place (`blurxt.py --set`), non testée en jeu |
