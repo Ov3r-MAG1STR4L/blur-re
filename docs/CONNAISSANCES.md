@@ -74,10 +74,20 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   `[hash, nameOfs, dirOfs, usize, crc, ?, startPage, flags, hash2, csize]`.
 - Données à `startPage*0x800` : boot/root = blocs deflate ; gamedata = flux zlib ; root_streaming = brut.
 - `shaders-speed.pak` (version 1) : non décodé.
-- Le jeu vérifie des signatures RSA (`.sig`) sur les paks. Les fichiers en clair passent avant les paks :
-  voir 3.1 bis (**Fort**, à confirmer en jeu).
+- Le jeu vérifie des signatures RSA (`.sig`) sur les paks. Fichiers en clair : voir 3.1 bis
+  (**contredit en jeu**).
 
-### 3.1 bis Chargement des fichiers (« LogicalFs ») : **Fort** (lu dans le code, pas encore testé)
+### 3.1 bis Chargement des fichiers (« LogicalFs ») : **contredit en jeu**, à revoir
+
+- **Essai en jeu (2026-10-19)** : `gamedata/xt/amax.bin` et `gamedata/xt/multiplayer.bin` posés en clair dans la
+  copie ont été **ignorés**. En mémoire, la liste du menu a toujours 30 routes et la chaîne `JPN_MHaruna_7` est
+  absente. Le montage du dossier du jeu est pourtant inconditionnel (`0xCB2400` renvoie toujours 1, montage
+  sur `/` en `0xCB1610`). Pistes : mauvais chemin logique (les noms internes du pak commencent par `\gamedata\`,
+  d'où un essai en `gamedata/gamedata/...`), ou des paks lus sans passer par cette recherche. À trancher avec
+  Process Monitor.
+- `gamedata_boot.pak` (2010) contient 48 fichiers aussi présents dans `gamedata.pak` (2013). `xt/amax.bin` est
+  identique dans les deux, mais **`xt/multiplayer.bin` diffère** (`MultiplayerConfig` = `#735` d'un côté,
+  `#736` de l'autre, 30 routes chacun). On ne sait pas encore lequel est chargé.
 
 - Les sources de fichiers sont rangées en **couches** (`0xCB54C0`, un tableau par couche).
   - **Couche 0** : `CFileSystem` = le système de fichiers Windows, monté à la racine, donc **le dossier du jeu**
