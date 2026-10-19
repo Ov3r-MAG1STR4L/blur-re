@@ -206,6 +206,14 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
   Haruna : `_1`). Il y a parfois plus de grilles de 20 que de routes (Haruna : 2 grilles, toutes deux en haut,
   dans le même sens ; sans doute une par mode). Chemin construit par l'exe en `0xBBDD80` :
   `.\gamedata\levels\%s\%s.aid`.
+- **Les hauteurs des `.aid` ne décrivent pas fidèlement le relief** : certains tronçons sont plats à hauteur
+  constante (Amboy `Catch` à 0 m, `CrossRamp` à 4,31 m ; boucles de Brighton 1 et 5, figure de 8), et `AltRamp`
+  ne montre qu'une descente douce. Le jeu trouve sans doute le sol par la collision. Les `.aid` seuls ne
+  permettent donc pas de détecter un saut. **Confirmé.**
+- Indices de sauts dans les actorpacks : Brighton `Jump_Entry/Exit_Trigger_Box` ×4 + `JumpFailResetPosition` ×4
+  (sur la boucle de la route 2) ; Downtown `Building_TopofJump` (à 92 m de haut, 40 m des routes 1 et 6) ;
+  River `FloodgateLanding` ×6 et Docks `Ramp` ×2 (110 à 600 m des tracés). Tronçons nommés : Amboy 1
+  (`AltRamp`, `CrossRamp`, `FlatbedRamp`), Docks 3 (`Ramp`, `RampCatch`), River 3 et 6 (`Altjump`).
 - Non validé en course.
 
 ---
