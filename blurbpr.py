@@ -63,6 +63,34 @@ class Bpr:
         struct.pack_into("<HII", head, 6, tbl + len(names), tbl, len(data))   # u16 at 6 = table + names bytes
         return bytes(head) + b"".join(struct.pack("<2H4I4H", *r) for r in recs) + bytes(names) + junk + bytes(data)
 
+    def spare_slot(self, fmt, mips, w, h):
+        """Index of the 2nd copy of a duplicated name whose 2 images are identical, in this format (free to reuse)."""
+        seen = {}
+        for i, (n, r) in enumerate(zip(self.names, self.recs)):
+            if n in seen and r[6:] == [fmt, mips, w, h]:
+                j = seen[n]
+                a, b = self.recs[j], r
+                if self.b[self.data0 + a[2]:self.data0 + a[2] + a[4]] == self.b[self.data0 + b[2]:self.data0 + b[2] + b[4]]:
+                    return i
+            seen.setdefault(n, i)
+        raise LookupError("no identical duplicate in this format")
+
+    def reuse(self, slot, name, raw):
+        """Same-size file: record `slot` gets `name` (written in the unused bytes after the names) and `raw` data.
+        Tested 2026-10-19: an image APPENDED at the end was found by the game but shown black (UI texture budget?)."""
+        b = bytearray(self.b)
+        r = self.recs[slot]
+        assert len(raw) == r[4], "same size only"
+        names_len = sum(len(n) + 1 for n in self.names)
+        nt = 0x14 + REC * len(self.recs)
+        enc = name.encode("latin-1") + b"\0"
+        assert names_len + len(enc) <= self.data0 - nt, "no room after the names"
+        b[nt + names_len:nt + names_len + len(enc)] = enc
+        struct.pack_into("<H", b, 0x14 + REC * slot + 2, names_len)
+        struct.pack_into("<H", b, 6, struct.unpack_from("<H", b, 6)[0] + len(enc))
+        b[self.data0 + r[2]:self.data0 + r[2] + r[4]] = raw
+        return bytes(b)
+
     def image(self, name):
         r, raw = self.raw(name)
         fl, no, data, one, size, z, fmt, mips, w, h = r

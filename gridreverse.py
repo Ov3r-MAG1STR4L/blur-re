@@ -21,21 +21,33 @@ CAR_ABOVE_GROUND = 2.0          # m; a small drop at spawn is safer than a car i
 # line, and centred on the road.
 MAX_BEHIND = 205.0              # m behind the reversed start line; calibration knob (end wall ~230 m, driven)
 CENTRE_GRID = True
+# Tested 2026-10-19: the original multiplayer grid starts 124 m before the start gate (the solo one 4 m), so the
+# start text looked far away; every grid now starts FRONT_GAP m before the gate, like the original solo grid.
+FRONT_GAP = 4.0                 # m
+# The reversed finish gate is the old start gate driven the other way: the race ends ~77 m into it (player
+# report: text at +90 m was 10-15 m too far, at +8 m too early). Calibration knob.
+FINISH_TEXT_AFTER = 77.0        # m after the reversed finish gate's first node
 GROUND_LISTS = ("#37", "#16")
 
 
+def _centre(n):
+    """Road centre at a node (the node itself is one road EDGE: road = node + lateral * 0..width)."""
+    return np.array([n["x"] + n["lateral"][0] * n["width"] / 2, n["y"], n["z"] + n["lateral"][1] * n["width"] / 2])
+
+
 def _route(path):
+    """Centre line (same length both ways, unlike an edge), arc length, lateral axis, width, gates."""
     d = blurroute.parse(open(path, "rb").read())
     S = {s["name"]: s for s in d["sections"]}
     M = S["Main"]["nodes"]
-    P = np.array([[n["x"], n["y"], n["z"]] for n in M])
+    P = np.array([_centre(n) for n in M])
     arc = np.r_[0, np.cumsum(np.linalg.norm(np.diff(P[:, [0, 2]], axis=0), axis=1))]
     lat = np.array([n["lateral"] for n in M])
     W = np.array([n["width"] for n in M])
     gate = {}
     for name in ("Start", "Finish"):                  # Main index of the first node of each gate
-        g = S[name]["nodes"][0]
-        gate[name] = int(np.argmin(np.hypot(P[:, 0] - g["x"], P[:, 2] - g["z"])))
+        g = _centre(S[name]["nodes"][0])
+        gate[name] = int(np.argmin(np.hypot(P[:, 0] - g[0], P[:, 2] - g[2])))
     _route.gates = gate
     return P, arc, lat, W, gate["Start"]
 
@@ -54,9 +66,9 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
     gates1 = _route.gates
 
     def measure(p, gate):
-        """(m after the gate's first node, fraction across the road from the node edge, height above node)."""
+        """(m after the gate's first node, fraction across the road (0.5 = centre), height above node)."""
         i = int(np.argmin(np.hypot(P0[:, 0] - p[0], P0[:, 2] - p[2])))
-        return (arc0[i] - arc0[gates0[gate]], float(np.dot(p[[0, 2]] - P0[i, [0, 2]], lat0[i])) / W0[i],
+        return (arc0[i] - arc0[gates0[gate]], 0.5 + float(np.dot(p[[0, 2]] - P0[i, [0, 2]], lat0[i])) / W0[i],
                 p[1] - P0[i, 1])
 
     def place(along, frac, gate):
@@ -65,7 +77,7 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
         j = int(np.clip(np.searchsorted(arc1, s), 1, len(arc1) - 2))
         t = (s - arc1[j - 1]) / max(arc1[j] - arc1[j - 1], 1e-6)
         c = P1[j - 1] + t * (P1[j] - P1[j - 1])
-        c[[0, 2]] += lat1[j] * frac * W1[j]
+        c[[0, 2]] += lat1[j] * (frac - 0.5) * W1[j]
         return c, j
 
     def ground(p):
@@ -84,6 +96,8 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
             if x["Name"].startswith("StartPosition"):
                 meas[k] = measure(_vec(x["WorldMatrix"], "aw"), "Start")[:2]          # node = road edge
         mid = float(np.mean([f for _, f in meas.values()])) - 0.5 if CENTRE_GRID else 0.0
+        front = max(a for a, _ in meas.values())
+        meas = {k: (a - front - FRONT_GAP, f) for k, (a, f) in meas.items()}
         squeeze = min(1.0, MAX_BEHIND / -min(a for a, _ in meas.values()))
         meas = {k: (a * squeeze, f) for k, (a, f) in meas.items()}
         for k, x in enumerate(actors):
@@ -112,6 +126,8 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
                 src = st if typ == "Finish" else fin            # orientation: the other text, turned 180 deg
                 gate = "Finish" if typ == "Finish" else "Start"
                 along, frac, dy = measure(_vec(x["WorldMatrix"], "aw"), gate)
+                if typ == "Finish":
+                    along = FINISH_TEXT_AFTER
                 pos, j = place(along, frac, gate)
                 pos[1] = P1[j, 1] + dy
                 new.append((k, x["Name"], {"ax": -_vec(src, "ax"), "ay": _vec(src, "ay"),
