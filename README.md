@@ -15,6 +15,7 @@ Aucun fichier du jeu n'est inclus. Les outils lisent une installation existante 
 |---|---|
 | `blurpak.py` | lister / extraire les `.pak` (« 2KAP ») |
 | `blurxt.py` | lire les `.bin` / `.xt` (KSLF) : schéma, JSON, export complet avec références résolues |
+| `kslfwrite.py` | écrire du KSLF : reconstruction identique, clonage d'enregistrement, ajout à une liste de références |
 | `blurloc.py` | textes `.loc` → JSON |
 | `blurmodel.py`, `blurtex.py` | textures des `.model` : extraction et réinjection |
 | `carsummary.py` | tableau récapitulatif des voitures (CSV) |

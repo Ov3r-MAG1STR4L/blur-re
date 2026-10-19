@@ -102,8 +102,21 @@ Tables de données du jeu (voitures, IA, épreuves, bonus…). 26 fichiers `.bin
   `blurxt.py --set ENTREE.bin SORTIE.bin "Enregistrement" "engine.engineTorque_Rpm.dataPoints[7]" 1.5`.
   Testé sur 7 cas (réel, élément de tableau, réel imbriqué, énumération, booléen, profil IA, voiture) :
   la valeur se relit, et un seul enregistrement change. **Confirmé** hors jeu ; **jamais testé en jeu**.
-- Pas encore possible : changer une chaîne ou la taille d'un tableau, ajouter un enregistrement
-  (il faut reconstruire tout le fichier).
+- **Reconstruction complète** (`kslfwrite.py`, 2026-10-19) : les 49 fichiers sont relus puis réécrits
+  **identiques à l'octet**. **Confirmé.** Règles de disposition : sections contiguës à partir de 0x48, seule la
+  section données alignée sur 4 (zéros) ; l'`idx` d'un enregistrement est toujours son emplacement dans l'index ;
+  enregistrements alignés sur 4, zone de chaînes multiple de 4.
+- **Ajouts** :
+  - `clone(source, nouveau_nom, hash)` : copie un enregistrement avec un nouveau nom ;
+  - `add_external(hash, type)` : déclare une référence vers un enregistrement d'un autre fichier ;
+  - `append_to_array(propriétaire, champ, emplacement)` : ajoute une référence à une liste et **décale les
+    tableaux et pointeurs qui suivent** dans le même chunk.
+  - Test : route `JPN_MHaruna_7` clonée dans `amax.bin` et ajoutée à `MultiplayerConfig.routes` (30 → 31,
+    arènes intactes) ; relecture complète : seuls ces deux enregistrements changent. **Confirmé hors jeu.**
+  - Les nouveaux enregistrements reçoivent un hash au-dessus de tous les existants (le plus haut : 0xFFFE3216),
+    donc ajoutés en fin d'index sans décaler les emplacements. La fonction de hash du jeu (nom → hash) reste
+    inconnue : une recherche par nom pourrait ne pas trouver un ajout. **Risque, non testé en jeu.**
+- Pas encore possible : modifier une chaîne existante, insérer dans un tableau d'éléments non-référence.
 - Attention : une fiche physique peut être partagée par plusieurs voitures (ex. `*_Shannon`).
 
 Commandes : `blurxt.py FICHIER` (schéma), `blurxt.py --json FICHIER`,

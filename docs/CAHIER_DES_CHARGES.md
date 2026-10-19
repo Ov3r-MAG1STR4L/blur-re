@@ -16,13 +16,27 @@ Dernière mise à jour : 2026-10-19.
    (aller-retour octet pour octet, ou relecture par notre propre parseur sans erreur).
 4. **Une hypothèse reste une hypothèse** tant qu'elle n'a pas son test de validation (voir chaque projet).
 5. Chaque découverte met à jour `CONNAISSANCES.md` dans le même commit que le code.
+6. **Copie de test coupée du réseau** : dans la copie du jeu, retirer `d3d9.dll` et `amax/` (au minimum la
+   redirection), pour qu'un fichier modifié ne puisse jamais atteindre une partie en ligne.
+
+### Fichiers à risque
+
+| Catégorie | Fichiers | Risque |
+|---|---|---|
+| Démarrage | `Blur.exe`, `d3d9.dll`, `amax/`, `cache/*.pak` (signés : `.sig`) | jeu ou AMAX qui ne démarre plus |
+| Solo **et** en ligne | `racingphysics.bin`, `amax.bin`, `pickups.bin`, `multiplayer.bin` (`pack_version`, `matching_version`), `levels/*`, `actorpack.xt`, `finalracebook.bin`, `air.bin`, `events/*.csv` | triche, désynchronisation entre joueurs |
+| Surtout solo | `singleplayer.bin`, `events/*_easy\|medium\|hard.csv`, `splitscreen.bin` | faible hors ligne |
+| Cosmétique, local | textures, skins, `.loc`, interface | faible (mais dans des `.pak` signés) |
+| Progression | sauvegarde, fans, rang | à ne pas toucher (synchronisée par AMAX ?) |
+
+Classement établi à partir des données ; l'effet réel en ligne n'est **pas vérifié**.
 
 ## État des capacités
 
 | Capacité | Lire | Écrire |
 |---|---|---|
 | `.pak` | oui | non (signatures RSA ; fichiers non empaquetés à tester) |
-| `.bin` / `.xt` (KSLF) | oui, à 100 % | en partie : valeurs modifiables sur place (nombres, booléens, énumérations) ; pas d'ajout d'enregistrement |
+| `.bin` / `.xt` (KSLF) | oui, à 100 % | oui : reconstruction identique (49/49), modification de valeurs, clonage d'enregistrement, ajout à une liste de références ; non testé en jeu |
 | `.loc` (textes) | oui | non |
 | Textures de `.model` | oui | oui (réinjection, jamais testée en jeu) |
 | `.aid` (IA / logique de piste) | oui, à 100 % de la structure | non |
@@ -92,6 +106,9 @@ règles de jonction, le bit 0x400.
 | Décor | flèches, barrières, bonus et déclencheurs pensés pour la descente | à évaluer en jeu |
 | Chargement | fichiers non empaquetés acceptés par le jeu ? | à tester sur une copie |
 
+**Avant tout** : repérer les circuits inversables (sauts et rampes à sens unique) hors jeu, via les noms de
+tronçons (`*Ramp*`) et les ruptures de hauteur le long des 11 lignes des `.aid`.
+
 **Première étape proposée** : écrire `Haruna_reverse.aid`, puis le relire avec `blurroute.py` (aucune erreur,
 jusqu'au dernier octet) et le tracer. Cette étape ne touche pas au jeu.
 
@@ -149,3 +166,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Nœuds `.aid` compris : en-tête (position, largeur, axe latéral avec dévers) + 11 lignes parallèles (fraction, hauteur, longueur) |
 | 2026-10-19 | Menus : listes explicites (`MultiplayerConfig.routes` = 30 routes jouables, paliers de carrière) ; 70 routes déclarées pour 33 `.aid` |
 | 2026-10-19 | KSLF : encodeur des noms (aller-retour identique, 49 fichiers) ; modification de valeurs sur place (`blurxt.py --set`), non testée en jeu |
+| 2026-10-19 | Écrivain KSLF complet : reconstruction identique (49/49), clonage, ajout à une liste ; test « JPN_MHaruna_7 » ajoutée au menu de course perso (hors jeu) |
