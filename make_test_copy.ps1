@@ -88,6 +88,18 @@ if (-not $Run) { $rc += "/L" }                         # /L = list only
 & robocopy @rc | Select-Object -Last 12
 if ($LASTEXITCODE -ge 8) { throw "robocopy a échoué (code $LASTEXITCODE)" }
 
+# 3 bis. gamedata.pak wins over loose files (Process Monitor): lay its files loose and set the pak aside
+$unpacked = Join-Path (Split-Path $Mod -Parent | Split-Path -Parent | Split-Path -Parent) "gamedata\gamedata"
+Write-Host "gamedata en clair : $unpacked -> $dst\gamedata ; cache\gamedata.pak/.sig -> .off"
+if ($Run) {
+    & robocopy $unpacked (Join-Path $dst "gamedata") /E /XC /XN /XO /NFL /NDL /NP /NJH /NJS | Out-Null
+    if ($LASTEXITCODE -ge 8) { throw "robocopy gamedata a échoué (code $LASTEXITCODE)" }
+    foreach ($f in "gamedata.pak", "gamedata.sig") {
+        $p = Join-Path $dst "cache\$f"
+        if (Test-Path $p) { Move-Item $p "$p.off" -Force }
+    }
+}
+
 # 4. mod files
 Get-ChildItem $Mod -Recurse -File | ForEach-Object {
     $rel = $_.FullName.Substring((Resolve-Path $Mod).Path.Length).TrimStart('\')
