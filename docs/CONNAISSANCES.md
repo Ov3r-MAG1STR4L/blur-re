@@ -320,7 +320,10 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
   (n × 28), u32 octets des données, u32 0.
 - n entrées de 28 o à 0x14 : u16 0x1C, u16 début du nom (table des noms), u32 début des données, u32 1, u32 taille,
   u32 0, u16 format (1 = DXT1, 5 = DXT5, 6 = RGBA), u16 nombre de mips, u16 largeur, u16 hauteur.
-- Puis la table des noms, quelques octets inutilisés, et les données, qui finissent le fichier.
+- Puis la table des noms, puis les données, qui commencent **juste après les noms** (`0x14 + u16 à +6`), puis
+  du bourrage jusqu'à la fin du fichier (1 392 o pour `ui_frontend.bpr`). **Confirmé** en jeu : lues depuis
+  « fin − taille des données », toutes les images sortaient décalées de 1 392 o (= 174 blocs DXT1 = une rangée
+  + 184 px : coupure verticale et image enroulée, le même genre de décalage que sur NFS).
 - Vérifié sur les 4 `.bpr` : réécriture identique à l'octet ; 224/226 tailles égales au calcul (format, mips).
 - **Images de présentation des circuits** (menu « Track » et écran de chargement) : dans
   `root.pak` `ui\data\ui_frontend.bpr`, **nommées comme la route** (`JPN_MHaruna_1` : DXT1 512×256, 2 mips ; le menu
@@ -336,7 +339,9 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
   14 octets a décalé toutes les images. **Essai 3** : l'en-tête et la table ne changent plus ; le 2e
   `USA_LA_Downtown_FigureOf8` (images identiques, nom de 25 caractères) reçoit « JPN_MHaruna_7 » écrit **sur son
   propre nom** (complété de zéros) et notre image. À voir en jeu.
-- **Règle d'écriture d'un `.bpr`** : ne jamais changer la taille de la table ni des noms ; remplacer en place.
+- **Règle d'écriture d'un `.bpr`** : ne jamais changer la taille de la table ni des noms (le début des données
+  en dépend) ; remplacer en place. Doublon réellement identique (bonne lecture) : `JPN_Tokyo_Shutoko_4` (n° 17 et
+  101), le 2e est repris pour `JPN_MHaruna_7`.
 
 ### 3.7 Inventaire du dossier du jeu (2026-10-19) : ce qui reste non lu
 

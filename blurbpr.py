@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Blur UI texture bundle (.bpr, magic '2RZB', e.g. root.pak ui/data/ui_frontend.bpr): read / add images.
+"""Blur UI texture bundle (.bpr, magic '2RZB', e.g. root.pak ui/data/ui_frontend.bpr): read / export / replace images in place.
 
 Layout (LE), checked on ui_frontend.bpr (226 images, every size matches its format):
-  0x00 '2RZB'  u16 version (0x203)  u16 ?  u32 table bytes (= n * 28)  u32 data bytes  u32 0  u16 28 (record size) u16 ?
+  0x00 '2RZB'  u16 version (0x203)  u16 table + names bytes  u32 table bytes (= n * 28)  u32 data bytes  u32 0
   0x14 n records of 28 B: u16 flag (0x1C), u16 name offset (into the name table), u32 data offset (into the data),
        u32 1, u32 data size, u32 0, u16 format (1 = DXT1, 5 = DXT5, 6 = RGBA8), u16 mip count, u16 width, u16 height
-  then the name table (NUL-terminated names), then the data, which ends the file (data starts at len - data bytes).
+  then the name table (NUL-terminated names), then the data, starting RIGHT AFTER THE NAMES (0x14 + u16 at +6),
+  then padding to the end of the file. (Read from len - data bytes, every picture came out shifted by the
+  1392-byte padding = a wrapped horizontal shift, seen in game 2026-10-19; the game uses 0x14 + u16 at +6.)
 Route thumbnails / loading pictures are named after the Route Name (e.g. JPN_MHaruna_1, DXT1 512x256, 2 mips).
 
 usage: blurbpr.py FILE.bpr                      list
@@ -34,34 +36,18 @@ class Bpr:
         b = self.b = open(path, "rb").read()
         assert b[:4] == b"2RZB", "not a 2RZB bundle"
         self.head = b[:0x14]
+        tbl_names, = struct.unpack_from("<H", b, 6)
         tbl, datasz = struct.unpack_from("<II", b, 8)
         n = tbl // REC
         self.recs = [list(struct.unpack_from("<2H4I4H", b, 0x14 + REC * i)) for i in range(n)]
         nt = 0x14 + tbl
-        self.data0 = len(b) - datasz
+        self.data0 = 0x14 + tbl_names                         # the game reads the data from here
         self.names_raw = b[nt:self.data0]
         self.names = [self.names_raw[r[1]:self.names_raw.index(b"\0", r[1])].decode("latin-1") for r in self.recs]
 
     def raw(self, name):
         r = self.recs[self.names.index(name)]
         return r, self.b[self.data0 + r[2]:self.data0 + r[2] + r[4]]
-
-    def build(self, extra=()):
-        """Rebuild the file; `extra` = [(name, fmt, mips, w, h, raw)] appended (record, name, data at the end).
-        The bytes between the names and the data (junk / padding in the originals) are kept."""
-        recs = [list(r) for r in self.recs]
-        names_len = sum(len(n) + 1 for n in self.names)
-        assert self.names_raw[:names_len].count(b"\0") == len(self.names), "names not packed"
-        names, junk = bytearray(self.names_raw[:names_len]), self.names_raw[names_len:]
-        data = bytearray(self.b[self.data0:])
-        for name, fmt, mips, w, h, raw in extra:
-            recs.append([0x1C, len(names), len(data), 1, len(raw), 0, fmt, mips, w, h])
-            names += name.encode("latin-1") + b"\0"
-            data += raw
-        tbl = REC * len(recs)
-        head = bytearray(self.head)
-        struct.pack_into("<HII", head, 6, tbl + len(names), tbl, len(data))   # u16 at 6 = table + names bytes
-        return bytes(head) + b"".join(struct.pack("<2H4I4H", *r) for r in recs) + bytes(names) + junk + bytes(data)
 
     def spare_slot(self, fmt, mips, w, h, min_name=0):
         """Index of the 2nd copy of a duplicated name whose 2 images are identical, in this format (free to reuse),
