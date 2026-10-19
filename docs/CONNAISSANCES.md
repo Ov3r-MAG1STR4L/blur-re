@@ -74,10 +74,24 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   `[hash, nameOfs, dirOfs, usize, crc, ?, startPage, flags, hash2, csize]`.
 - Données à `startPage*0x800` : boot/root = blocs deflate ; gamedata = flux zlib ; root_streaming = brut.
 - `shaders-speed.pak` (version 1) : non décodé.
-- Le jeu vérifie des signatures RSA (`.sig`) sur les paks. Fichiers en clair : voir 3.1 bis
-  (**contredit en jeu**).
+- Le jeu vérifie des signatures RSA (`.sig`) sur les paks. Fichiers en clair : seulement pour
+  les fichiers absents du pak, voir 3.1 bis (**Confirmé**).
 
-### 3.1 bis Chargement des fichiers (« LogicalFs ») : **contredit en jeu**, à revoir
+### 3.1 bis Chargement des fichiers (« LogicalFs ») : **Confirmé** (Process Monitor, 2026-10-19)
+
+- **Le pak passe avant le dossier.** Le jeu ne cherche `<jeu>\gamedata\<chemin>` en clair que pour un fichier
+  **absent** de `gamedata.pak` (vu : `gamedata\xt\loc\racebookscripts\pressday.loc` et
+  `gamedata\levels\showroom\showroom.aid` → PATH NOT FOUND). Un fichier présent dans le pak n'est jamais
+  remplacé par un fichier en clair.
+- Donc : un fichier **nouveau** (ex. `jpn_mharuna_7.aid`) peut être posé en clair ; pour **modifier** un fichier
+  existant (`amax.bin`, `multiplayer.bin`, `actorpack.xt`), il faut retirer le pak et tout poser en clair
+  (« unpacked files » de la commu), ou reconstruire le pak.
+- `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
+- Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
+  `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),
+  `%APPDATA%\bizarre creations\blur\settings.xml` et `save\blursave`.
+
+Ancien constat (avant Process Monitor) :
 
 - **Essai en jeu (2026-10-19)** : `gamedata/xt/amax.bin` et `gamedata/xt/multiplayer.bin` posés en clair dans la
   copie ont été **ignorés**. En mémoire, la liste du menu a toujours 30 routes et la chaîne `JPN_MHaruna_7` est
