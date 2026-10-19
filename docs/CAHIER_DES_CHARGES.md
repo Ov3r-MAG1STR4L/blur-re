@@ -252,3 +252,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | **Brighton « Route 1 Reverse » fonctionne en jeu** : bon sens, bien placés. 1re boucle inversée. Suite : routes à une jonction (support des jonctions dans `aidreverse`) |
 | 2026-10-19 | Limite d'IA en LAN : `max_ai_per_console` 4 → 19 (seul : jusqu'aux 18 IA du menu). Plus de 20 voitures : limite moteur, non |
 | 2026-10-19 | **18 IA seul en LAN : confirmé en jeu** (`max_ai_per_console` = 19). Au-delà de 20 voitures : limite du moteur |
+| 2026-10-19 | Scripts Lua des menus trouvés dans `Blur.exe` (archive BZUI, 144 scripts) et extraits. Plafond Max AI 18 = constante ; plugin AMAX `ai19` livré avec le mod de test |

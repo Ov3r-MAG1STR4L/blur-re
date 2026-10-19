@@ -158,6 +158,14 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   Aussi : `ai_padding_limit` = 10 (rôle inconnu), `number_of_ai_players` = [19, 8, 5, 4] (écran partagé 1 à 4
   joueurs ?), 20 `ai_characters`. `GetCustomRaceLimits` (0xC60140) ne renvoie que max_laps, max_time, time_step.
   **20 voitures est une limite du moteur** (20 places de départ, 20 colonnes de difficulté, classement à 20 cases).
+- **Scripts des menus et du HUD** : dans `Blur.exe`, archive **`BZUI`** (après la chaîne de révision du build) :
+  gros-boutiste, u32 nombre (144), puis 144 × (u32 nom, u32 données, u32 taille compressée, u32 taille), table des
+  noms, données (positions comptées depuis la table des noms) ; chaque script = flux zlib d'un chunk Lua 5.1
+  compilé (petit-boutiste). **Confirmé** (`blurui.py` extrait les 144, `luadis.py` les désassemble).
+- **Plafond « Max AI » = 18** : constante du script `Screens\Multiplayer\Shared\MpCustomRaceAdvanced.lua`,
+  `for i = 2, 18 do UIButtons.AddItem(GUI.ai_padding_id, i, "GAME_NUM_" .. i, true) end`. Sans toucher l'exe :
+  plugin AMAX `ai19` (dans `mod_static/`) qui enveloppe `UIButtons.AddItem` et ajoute 19 après 18. À tester.
+- Plugin AMAX `laps` : met aussi `point_to_point = false` pour `JPN_MHaruna_1` (tours sur Haruna).
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
   `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),
@@ -387,7 +395,7 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
 | `root.pak` `ui\data\*.bpr` (4) | 46 Mo | images des menus / HUD, magie `2RZB` | **décodé** (3.6 bis) ; pas de Lua dedans |
 | `root.pak` `ui\data\ipf\*.ipf` (75) | 29 Mo | images d'interface, dont une **mini-carte par carte** (`minimap\jpn_mharuna_game.ipf`) | **non décodé** (utile pour le HUD) |
 | `root.pak` `ui\data\pf\*.pf`, `ui_font_eur.*` | | polices | non décodé |
-| scripts Lua des menus (`Screens\...\MpCustomRace.lua`…) | | noms dans l'exe ; **introuvables** dans les paks extraits et pas en clair dans l'exe | à chercher (peut-être dans les `.bpr`) |
+| scripts Lua des menus (`Screens\...\MpCustomRace.lua`…) | ~0,4 Mo | **dans `Blur.exe`** : archive `BZUI` (144 scripts Lua 5.1 compilés, zlib) | **extraits** (`blurui.py`), lisibles (`luadis.py`) |
 | `root.pak` `animations` (`.cycle`, `.skeleton`) | ~1 300 fichiers | animations (pilotes, foule…) | non décodé |
 | `root.pak` `audio` (`.baf`, `.dat`, `.wbl`) + `root_streaming.pak` | ~700 Mo | sons, musique | non décodé |
 | `shaders-speed.pak` | 6 Mo | shaders | non décodé |
