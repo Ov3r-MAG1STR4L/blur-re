@@ -25,8 +25,10 @@ MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4; 
 # Experiment 2: factors 1.2 -> median AI 13 s faster (the row is the speed cap). Experiment 3: 1.5. {} = original.
 AI_ROWS = {}   # experiments closed 2026-10-19 (player: catch-up not really fixed, failure); values above for reference
 # DoubleTap experiment (2026-10-19): the combine-two-pickups trigger is orphaned code; instead every pickup with a
-# DoubleTap level (Nitro rift, Shield 12 s, Mine, Shunt, Shock) uses it as its Normal level. False = original.
-PICKUPS_DOUBLETAP = True
+# DoubleTap level (Nitro rift, Shield 12 s, Mine, Shunt, Shock) uses it as its Normal level. Test 1 (all five): the
+# AI use them fine, but the game crashes as soon as the PLAYER fires a pickup -> one pickup at a time.
+# Pickup Type names: "Bomb", "Shunt", "Shock", "Shield", "Nitrous". Empty = original.
+PICKUPS_DOUBLETAP = {"Shield"}
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
 G = os.path.join(E, "gamedata", "gamedata")
@@ -244,7 +246,7 @@ def main(out):
         b = bytearray(x.b)
         done = []
         for name, typ, v, _ in x.records():
-            if typ == "PickupType" and v.get("DoubleTap"):
+            if typ == "PickupType" and v.get("DoubleTap") and v["Type"] in PICKUPS_DOUBLETAP:
                 n_at, d_at = x.locate(name, "Normal")[0], x.locate(name, "DoubleTap")[0]
                 b[n_at:n_at + 4] = b[d_at:d_at + 4]           # reference = index slot of the PickupLevel
                 done.append(v["Type"])
