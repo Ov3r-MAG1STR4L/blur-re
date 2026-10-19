@@ -245,3 +245,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | `.bpr` : changer la taille des noms décale toutes les images (corruption). Correctif : remplacement en place d'un doublon. Relevé des lignes Start/Finish en Descent en cours |
 | 2026-10-19 | `.bpr` : les données commencent juste après les noms (décalage de 1 392 o corrigé, vu grâce à l'image en jeu). Image Ascent régénérée, logo en bas à gauche |
 | 2026-10-19 | Image Ascent vue en jeu. Lignes peintes mesurées en Descent : textes et grille calés dessus. Encodeur DXT1 maison (flèche plus lisse) |
+| 2026-10-19 | Images OK en jeu, textes OK. Arrivée trop tôt / grille dans la porte : portes Start/Finish déplacées sur les lignes peintes (`move_gate`) |

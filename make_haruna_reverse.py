@@ -18,6 +18,7 @@ E = os.path.join(os.path.dirname(__file__), "..", "blur_extracted")
 G = os.path.join(E, "gamedata", "gamedata")
 H_ROUTE, H_SOLO, H_MULTI = 0xFFFF0001, 0xFFFF0002, 0xFFFF0003   # above every existing hash (max 0xFFFE3216)
 LOC_ASCENT = 226956641   # hash of CRN_MOUNT_HARUNA_2 = "Ascent" / "Montée", unused string left in cityandroutenames.loc
+GATE_BEFORE_LINE, GATE_AFTER_LINE = -15.9, 4.0   # m from the painted line to the gate's first node (original)
 
 
 def main(out):
@@ -29,6 +30,18 @@ def main(out):
     aid = os.path.join(lvl, "jpn_mharuna_7.aid")
     orig_aid = os.path.join(G, "levels", "jpn_mharuna", "jpn_mharuna_1.aid")
     d = aidreverse.reverse(blurroute.parse(open(orig_aid, "rb").read(), raw=True))
+    # gates back on the painted lines, as in the original: start gate 16 m before its line, finish gate 4 m after
+    main = next(b for b in d["blocks"] if b["name"] == "Main")["nodes"]
+    mc = aidreverse._centres(main)
+    arc = [0.0]
+    for (x0, z0), (x1, z1) in zip(mc, mc[1:]):
+        arc.append(arc[-1] + ((x1 - x0) ** 2 + (z1 - z0) ** 2) ** 0.5)
+    for gate, after in (("Start", GATE_BEFORE_LINE), ("Finish", GATE_AFTER_LINE)):
+        x, z = gridreverse.LINES[gate]
+        i = min(range(len(mc)), key=lambda k: (mc[k][0] - x) ** 2 + (mc[k][1] + z) ** 2)   # file frame: z negated
+        target = arc[i] + after
+        first = min(range(len(arc)), key=lambda k: abs(arc[k] - target))
+        print(gate, "gate moved by", aidreverse.move_gate(d, gate, first), "nodes")
     open(aid, "wb").write(blurroute.build(d))
 
     # actorpack: clone the two start lists, then move cars and start/finish texts
