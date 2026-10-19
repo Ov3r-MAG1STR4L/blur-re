@@ -225,3 +225,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Script de copie de test hors ligne (`make_test_copy.ps1`), sauvegarde Blur protégée ; simulation OK |
 | 2026-10-19 | 1er essai en jeu : la montée n'est pas sélectionnable. La copie sans AMAX n'a plus le plugin `solo` (partie perso seul, F1). Menu course perso lu dans le code. Route renommée « Ascent » (texte inutilisé des devs), Index 3 |
 | 2026-10-19 | Copie de test : AMAX hors ligne (chargeur Lua + plugin `solo`, sans module en ligne), `-Update` |
+| 2026-10-19 | 2e essai : le menu affiche seulement « Descent ». Lu en mémoire : 30 routes, pas de `JPN_MHaruna_7` → fichiers en clair ignorés. Essai suivant : chemin `gamedata/gamedata/...`, puis Process Monitor |
