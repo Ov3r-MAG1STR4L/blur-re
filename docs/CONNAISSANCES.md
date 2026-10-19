@@ -331,7 +331,12 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
   **Essai 1** : image ajoutée à la fin du fichier → le jeu trouve le nom (écran noir au lieu de blanc) mais
   n'affiche rien (budget mémoire des textures d'interface ? **Hypothèse**). **Essai 2** : `ui_frontend.bpr` contient
   6 noms en double ; `USA_Amboy_3` a deux copies identiques, la 2e est reprise pour `JPN_MHaruna_7` (nom écrit
-  dans les octets libres après les noms, données remplacées à taille égale : fichier de même taille). À voir en jeu.
+  dans les octets libres après les noms). **Résultat : TOUTES les images d'interface corrompues.** Cause
+  (**Confirmé** par l'effet) : le u16 à +6 (table + noms) donne au jeu le **début des données** ; l'augmenter de
+  14 octets a décalé toutes les images. **Essai 3** : l'en-tête et la table ne changent plus ; le 2e
+  `USA_LA_Downtown_FigureOf8` (images identiques, nom de 25 caractères) reçoit « JPN_MHaruna_7 » écrit **sur son
+  propre nom** (complété de zéros) et notre image. À voir en jeu.
+- **Règle d'écriture d'un `.bpr`** : ne jamais changer la taille de la table ni des noms ; remplacer en place.
 
 ### 3.7 Inventaire du dossier du jeu (2026-10-19) : ce qui reste non lu
 
