@@ -21,6 +21,7 @@ Aucun fichier du jeu n'est inclus. Les outils lisent une installation existante 
 | `carsummary.py` | tableau récapitulatif des voitures (CSV) |
 | `cpdump.py` | arborescence des fichiers « CP » (`.level`, `.levelphysics`, `.levelrender`, `.model`) |
 | `blurroute.py` | données de piste de l'IA (`.aid`) → JSON + image |
+| `aidreverse.py` | inverser une route d'un point à un autre (`.aid`) : nœuds, 11 lignes, portes, table logique |
 | `blur_live.py` | lecture **seule** de la mémoire en course (véhicules, positions, vitesses, profils IA) |
 | `deeprec.py` | enregistrement mémoire profond (objets pointés) pour l'analyse hors ligne |
 | `memscan.py`, `ptrwalk.py`, `aiwalk.py` | recherches en mémoire (lecture seule) |

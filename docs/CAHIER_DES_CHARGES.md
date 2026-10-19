@@ -123,7 +123,17 @@ sens unique sans objet nommé passent inaperçus, et les hauteurs des `.aid` son
 plus raides à l'envers (pente de la descente d'origine, sur les hauteurs des `.aid`) : Sausalito 1 (34 %),
 Russian Hill (33 %), Gracia 1 (31 %), **Haruna (29 %)**. Seul un essai en jeu (copie hors ligne) tranche.
 
-**Première étape proposée** : écrire `Haruna_reverse.aid`, puis le relire avec `blurroute.py` (aucune erreur,
+**Fait (2026-10-19, hors jeu)** : `aidreverse.py` génère `jpn_mharuna_7.aid` (dans
+`blur_extracted/mods/haruna_reverse/`, avec `comparaison.png`). Vérifications :
+relu intégralement ; points des 11 lignes au même endroit (écart max 1e-6 m) ; même convention d'axe latéral que
+le jeu ; longueurs conformes au nouveau trajet (écart médian 4 mm) ; départ en bas (~500 m), arrivée en haut
+(~1050 m), portes et intermédiaires échangés ; table logique valide ; inverser deux fois redonne l'original
+(à des arrondis près). Incertitude restante : le champ « virage » (+0) des lignes, changé de signe par hypothèse.
+
+**Reste pour le projet C** : grille de départ en bas (actorpack), route `JPN_MHaruna_7` (+ menu), copie hors
+ligne, essai en jeu.
+
+**Première étape proposée** (faite) : écrire `Haruna_reverse.aid`, puis le relire avec `blurroute.py` (aucune erreur,
 jusqu'au dernier octet) et le tracer. Cette étape ne touche pas au jeu.
 
 **Validation finale** : la course se lance depuis la copie du jeu, les IA montent sans se bloquer, l'arrivée
@@ -184,3 +194,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | Tri des 33 routes pour l'inversion : 1 saut sur boucle (Brighton 2), 2 doutes, 4 rampes sur raccourci, 26 sans indice (dont Haruna) ; hauteurs `.aid` parfois aplaties |
 | 2026-10-19 | Système de fichiers : le dossier du jeu (couche 0) est consulté avant les paks (couche 1) ; chemins où poser nos fichiers |
 | 2026-10-19 | Écriture des `.aid` : réécriture identique des 33 fichiers (`blurroute.build`) |
+| 2026-10-19 | Haruna inversé généré (`aidreverse.py` → `jpn_mharuna_7.aid`) et vérifié hors jeu |
