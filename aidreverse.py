@@ -4,8 +4,9 @@
 usage: aidreverse.py IN.aid OUT.aid
 
 Per node (323 B, layout in blurroute.py):
-  header: position / width / height bounds kept; lateral axis (+16 2D, +24 3D) negated.
-  11 lines: order reversed and frac -> 1 - frac (each line point stays exactly where it was);
+  header: position moved to the opposite road edge (+ lateral2D * width), y / width / height bounds kept;
+          lateral axis (+16 2D, +24 3D) negated.
+  11 lines: order reversed and frac -> 1 - frac (point = node + lateral * frac * width stays in place);
             +4 length-to-next and +0 turn hint are taken from the previous original node
             (turn sign flipped: HYPOTHESIS, the field is not fully understood); last node gets 0.
 Blocks: node order reversed; gates swapped (Start <-> Finish, Inter1 <-> Inter2: nodes exchanged,
@@ -25,7 +26,12 @@ def _reverse_nodes(nodes):
         cur = nodes[i]
         prev = nodes[i - 1] if i > 0 else None       # next node in the reversed direction
         b = bytearray(cur[:48])
-        lx, lz, bx, by, bz = struct.unpack_from("<5f", b, 16)
+        x, y, z, w, lx, lz, bx, by, bz = struct.unpack_from("<9f", b, 0)
+        # the node is one EDGE of the road (driven 2026-10-19: road = node + lateral * 0..width), so the
+        # reversed node moves to the opposite edge along the UNIT 2D axis (+16; the +24 vector has a large y part,
+        # its XZ part is not unit); y kept (line heights are stored per line, ylow == y). File frame for both.
+        struct.pack_into("<f", b, 0, x + lx * w)
+        struct.pack_into("<f", b, 8, z + lz * w)
         struct.pack_into("<5f", b, 16, -lx, -lz, -bx, -by, -bz)
         for m in range(11):
             k = 10 - m

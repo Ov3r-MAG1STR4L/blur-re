@@ -19,7 +19,8 @@ NODE (323 B) = 48-byte header + 11 "lines" of 25 bytes (stats over all 99 181 no
     +0 x, +4 y, +8 z   position (Z NEGATED vs level coordinates; this module re-negates every z)
     +12 width (m)      lateral scale of the 11 lines (logic nodes are wider: corridor)
     +16 f32[2]         lateral unit direction in XZ (dot with road perpendicular = -0.999 median)
-    +24 f32[3]         same lateral axis in 3D, tilted by the road bank (XZ part == +16 at 100 %)
+    +24 f32[3]         unit 3D vector whose XZ DIRECTION == +16, but with a large y part (0.8 seen):
+                       not a usable lateral offset [meaning unknown]
     +36 / +40          low / high height bounds, wider than the 11 line heights (track volume?) [hypothesis]
     +44                always 0
     line k (k = 0..10) at 48 + 25*k:
@@ -28,7 +29,7 @@ NODE (323 B) = 48-byte header + 11 "lines" of 25 bytes (stats over all 99 181 no
         +8  u32  always 0
         +12 f32  height of the line point (median error 0 vs y + bank * lateral offset)
         +16 f32  lateral position across the width, 0..1 (medians 0.24 ... 0.77, centre line k=5 at 0.5);
-                 point = (x,y,z) + lateral3D * (frac - 0.5) * width
+                 point XZ = (x,z) + lateral2D * frac * width  (node = road EDGE: driven 2026-10-19)
         +20..+24 always 0
 
 Writing: build(parse(b, raw=True)) == b on all 33 files (raw mode keeps block order and node bytes).

@@ -167,6 +167,10 @@ est détectée en haut.
 
 ---
 
+**À faire plus tard (demandé le 2026-10-19)** :
+- déplacer les **bonus** (power-ups) pour le sens montant (listes de l'actorpack de la route) ;
+- corriger le **HUD** (mini-carte, textes de départ/arrivée…) pour le sens inversé.
+
 ## Projet D : DoubleTap (combiner deux bonus)
 
 **Objectif** : savoir si le DoubleTap coupé peut être réactivé.
@@ -231,3 +235,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | 1re course « Ascent » : départ sur la grille d'origine (en haut), chute dans le lac. Uids des acteurs clonés renouvelés (`make_haruna_reverse.py`) |
 | 2026-10-19 | 2e course : départ sur notre grille du bas, mais chute à travers la route (`RouteNumber` 7 = pas de physique de route). Passé à 1 |
 | 2026-10-19 | 3e course : route solide, mais une colonne hors route et le fond de grille au-delà de la collision. Grille centrée et resserrée |
+| 2026-10-19 | Descent enregistrée en roulant : le nœud `.aid` est un bord de la route. Inversion `.aid` corrigée (lignes IA exactes), grille replacée sur le sol mesuré |
