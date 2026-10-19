@@ -101,8 +101,10 @@ def main(out):
     pic = thumbreverse.make(bpr.image("JPN_MHaruna_1"))
     ui = os.path.join(out, "ui", "data")
     os.makedirs(ui, exist_ok=True)
+    # appended at the end, the picture was found but shown black: reuse a spare slot instead (same file size)
+    slot = bpr.spare_slot(fmt, mips, w, h)                      # 2nd copy of USA_Amboy_3 (both copies identical)
     open(os.path.join(ui, "ui_frontend.bpr"), "wb").write(
-        bpr.build([("JPN_MHaruna_7", fmt, mips, w, h, blurbpr.encode(pic, fmt, mips))]))
+        bpr.reuse(slot, "JPN_MHaruna_7", blurbpr.encode(pic, fmt, mips)))
 
     m = KSLF(os.path.join(G, "xt", "multiplayer.bin"))
     m.append_to_array("#735", "routes", m.add_external(H_ROUTE, "Route"))

@@ -119,6 +119,11 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   chute. Seul défaut vu : texte d'arrivée trop loin. Règle mesurée sur l'original : un texte `Start_Text_*` est
   posé **juste après le premier nœud de sa porte** (Start : +20 m, Finish : +4 m), au milieu de la route.
   Recopiés tels quels, nos textes étaient ~90 m après le début des portes ; corrigé dans `gridreverse.py`.
+- **Mesurer sur l'axe central** : le nœud est un bord, et le bord ne fait pas la même longueur dans les deux sens
+  (écarts jusqu'à ~75 m en bas d'Haruna). `gridreverse.py` travaille sur `nœud + latéral × largeur / 2`
+  (13 975 m dans les deux sens). Sur l'original : grille solo 4 m avant la porte Start, grille multi **124 m**
+  avant, texte « Start » 16 m après la porte, texte « Finish » au début de la porte Finish. En sens inverse,
+  l'arrivée se déclenche ~77 m dans la porte (retour joueur), et le texte y est placé (`FINISH_TEXT_AFTER`).
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
   `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),
@@ -321,9 +326,12 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
   `root.pak` `ui\data\ui_frontend.bpr`, **nommées comme la route** (`JPN_MHaruna_1` : DXT1 512×256, 2 mips ; le menu
   montre la partie gauche ~330 px). Le champ `Thumbnail` de la `Route` n'est pas utilisé pour ça : le Lua reçoit
   le nom (`+0x10`). Sans image du bon nom → fond blanc lumineux (vu en jeu).
-- `JPN_MHaruna_7` ajoutée : image de la Descent + symbole demi-tour néon (`thumbreverse.py`). `root.pak` passe avant
-  les fichiers en clair : dans la copie de test, `root.pak` est mis de côté et son contenu posé en clair. Non
-  encore vu en jeu.
+- `JPN_MHaruna_7` : image de la Descent + symbole demi-tour néon (`thumbreverse.py`). `root.pak` passe avant
+  les fichiers en clair : dans la copie de test, `root.pak` est mis de côté et son contenu posé en clair.
+  **Essai 1** : image ajoutée à la fin du fichier → le jeu trouve le nom (écran noir au lieu de blanc) mais
+  n'affiche rien (budget mémoire des textures d'interface ? **Hypothèse**). **Essai 2** : `ui_frontend.bpr` contient
+  6 noms en double ; `USA_Amboy_3` a deux copies identiques, la 2e est reprise pour `JPN_MHaruna_7` (nom écrit
+  dans les octets libres après les noms, données remplacées à taille égale : fichier de même taille). À voir en jeu.
 
 ### 3.7 Inventaire du dossier du jeu (2026-10-19) : ce qui reste non lu
 
