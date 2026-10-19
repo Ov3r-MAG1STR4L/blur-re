@@ -124,6 +124,13 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   (13 975 m dans les deux sens). Sur l'original : grille solo 4 m avant la porte Start, grille multi **124 m**
   avant, texte « Start » 16 m après la porte, texte « Finish » au début de la porte Finish. En sens inverse,
   l'arrivée se déclenche ~77 m dans la porte (retour joueur), et le texte y est placé (`FINISH_TEXT_AFTER`).
+- **Lignes peintes d'Haruna** (arrêt dessus en Descent, `trackrec.py`, 2026-10-19) : départ (−2474,1 ; 1051,0 ;
+  −1305,1) = 547,6 m de l'axe central, **exactement** le texte « Start » d'origine ; arrivée (1112,4 ; 524,5 ;
+  −3071,2) = 13 439 m, au début de la porte Finish (13 443). **Confirmé.** Ascent : textes posés sur ces lignes
+  (inversées), première rangée 20 m derrière la ligne de départ (comme la grille solo d'origine). Reste à vérifier
+  en jeu que l'arrivée se déclenche bien sur la ligne (les portes du `.aid` ne sont pas déplacées).
+- **Encodeur DXT1** (`blurbpr.dxt1`) : axe principal des couleurs + moindres carrés ; ~40 % d'erreur en moins que
+  Pillow sur le symbole néon (Pillow donnait un halo pixélisé en jeu).
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
   `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),

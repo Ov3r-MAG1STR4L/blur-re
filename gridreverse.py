@@ -19,14 +19,15 @@ CAR_ABOVE_GROUND = 2.0          # m; a small drop at spawn is safer than a car i
 # fell through), and the original grid sits off-centre on a 36 m road (copied as is, one column was off the
 # 20 m road at the bottom). So the grid is squeezed (front row kept) to end MAX_BEHIND m behind the start
 # line, and centred on the road.
-MAX_BEHIND = 205.0              # m behind the reversed start line; calibration knob (end wall ~230 m, driven)
+MAX_BEHIND = 295.0              # m behind the start line; calibration knob (driven down to 324 m, 2026-10-19)
 CENTRE_GRID = True
-# Tested 2026-10-19: the original multiplayer grid starts 124 m before the start gate (the solo one 4 m), so the
-# start text looked far away; every grid now starts FRONT_GAP m before the gate, like the original solo grid.
-FRONT_GAP = 4.0                 # m
-# The reversed finish gate is the old start gate driven the other way: the race ends ~77 m into it (player
-# report: text at +90 m was 10-15 m too far, at +8 m too early). Calibration knob.
-FINISH_TEXT_AFTER = 77.0        # m after the reversed finish gate's first node
+# Painted lines, measured by stopping on them in a Descent (trackrec.py, 2026-10-19): the original texts sit
+# exactly on them. Reversed: the start line is the old finish line and the other way round. Texts go on the
+# lines; the grid's front row FRONT_GAP behind the start line (original solo grid: 20 m; the original multi
+# grid starts 140 m back, which looked far away once reversed).
+LINES = {"Start": (1112.4, -3071.2),            # bottom line (old finish), x z
+         "Finish": (-2474.1, -1305.1)}          # top line (old start)
+FRONT_GAP = 20.0                # m
 GROUND_LISTS = ("#37", "#16")
 
 
@@ -63,7 +64,7 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
     P0, arc0, lat0, W0, ig0 = _route(orig_aid)
     gates0 = _route.gates
     P1, arc1, lat1, W1, ig1 = _route(rev_aid)
-    gates1 = _route.gates
+    gates1 = {k: int(np.argmin(np.hypot(P1[:, 0] - x, P1[:, 2] - z))) for k, (x, z) in LINES.items()}
 
     def measure(p, gate):
         """(m after the gate's first node, fraction across the road (0.5 = centre), height above node)."""
@@ -125,10 +126,8 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
             for typ, (k, x) in texts.items():
                 src = st if typ == "Finish" else fin            # orientation: the other text, turned 180 deg
                 gate = "Finish" if typ == "Finish" else "Start"
-                along, frac, dy = measure(_vec(x["WorldMatrix"], "aw"), gate)
-                if typ == "Finish":
-                    along = FINISH_TEXT_AFTER
-                pos, j = place(along, frac, gate)
+                _, frac, dy = measure(_vec(x["WorldMatrix"], "aw"), gate)
+                pos, j = place(0.0, frac, gate)                 # on the painted line
                 pos[1] = P1[j, 1] + dy
                 new.append((k, x["Name"], {"ax": -_vec(src, "ax"), "ay": _vec(src, "ay"),
                                            "az": -_vec(src, "az"), "aw": pos}))
