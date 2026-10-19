@@ -136,6 +136,20 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   en jeu.
 - **Encodeur DXT1** (`blurbpr.dxt1`) : axe principal des couleurs + moindres carrés ; ~40 % d'erreur en moins que
   Pillow sur le symbole néon (Pillow donnait un halo pixélisé en jeu).
+- **Routes : point à point ou boucle** (`.aid`) : **Haruna est la seule route point à point** (Main type 0, portes
+  Start 0x02 + Finish 0x04). Les 32 autres sont des **boucles** (bloc de course type 0x01, une seule porte Start qui sert
+  de départ et d'arrivée, logique 0x21) ; presque toutes ont des jonctions. Sans jonction : `uk_brighton_1`,
+  `uk_brighton_5`, `usa_la_downtown_multiplayer_figureof8`. Une jonction : `jpn_tokyo_shutoko_2`,
+  `uk_london_hackney_2` / `_4`, `usa_la_downtown_3` / `_4`, `usa_sanfran_russianhill_1`. Les noms de sections varient
+  (`mainLoop`, `START`, `Start_line`…) : `aidreverse.roles` les reconnaît par les bits de type.
+- **Brighton 1 d'origine** (axe central) : porte Start à 1 036 m, les 4 textes sur la ligne à 1 040 m, grille solo
+  (`#27`) de 664 à 996 m. La liste multi (`#97`) n'a **que les textes**, pas de grille (d'où vient la grille multi ?
+  à voir en jeu).
+- **Textes inutilisés « Reverse »** (`cityandroutenames.loc`) : `CRN_ROUTE_1_REVERSE` « Route 1 Reverse » / « Route 1
+  Miroir », `CRN_ROUTE_2_REVERSE`, `CRN_TOKYO_SHUTOKO_R1` « Tokyo Shutoko Reverse 1 » ; aussi `RBC_REVERSED`
+  « reversed » / « miroir ». **Les développeurs avaient prévu des routes inversées.**
+- `.bpr` : avec la bonne lecture, **les 6 doublons ont des images identiques** → 6 emplacements libres pour les
+  images des routes inversées (noms d'au plus 11, 14, 19, 22, 23, 25 caractères).
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
   `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),

@@ -21,7 +21,7 @@ Le jeu installé n'est jamais modifié (il n'est que lu).
 param(
     [string]$Source = "C:\Program Files (x86)\Activision\Blur(TM)",
     [string]$Dest   = "C:\Users\sanqu\Jeux_WII\Blur_test",
-    [string]$Mod    = "C:\Users\sanqu\Jeux_WII\blur_extracted\mods\haruna_reverse\files",
+    [string]$Mod    = "C:\Users\sanqu\Jeux_WII\blur_extracted\mods\reverse\files",
     [string]$Backups = "C:\Users\sanqu\Jeux_WII\blur_save_backups",
     [switch]$Run,
     [switch]$Update,
