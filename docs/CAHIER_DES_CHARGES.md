@@ -273,3 +273,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-19 | DoubleTap : Mine OK pour le joueur (dure ~3 s, mêmes dégâts que la normale). Test suivant : Bouclier + Shunt |
 | 2026-10-19 | DoubleTap : **Shunt = plantage** quand le joueur l'utilise (réglages incomplets). Test suivant : Bouclier + Shock |
 | 2026-10-19 | DoubleTap, bilan : Bouclier 12 s OK ; Mine OK mais éphémère ; Shock sans différence ; Nitro sans effet ; Shunt plante. Faille du nitro : voie BossNitroRift |
+| 2026-10-19 | Restes de développement : menu de débogage complet (verrou `UIGlobals.DevMode`), triche chrome inachevée, mode « Motor Mash » coupé, notes de devs ; pistes IA « coupées » = doublons |
