@@ -84,8 +84,8 @@ def encode(img, fmt, mips):
 
 
 class Bpr:
-    def __init__(self, path):
-        b = self.b = open(path, "rb").read()
+    def __init__(self, path=None, data=None):
+        b = self.b = data if data is not None else open(path, "rb").read()
         assert b[:4] == b"2RZB", "not a 2RZB bundle"
         self.head = b[:0x14]
         tbl_names, = struct.unpack_from("<H", b, 6)
@@ -101,12 +101,13 @@ class Bpr:
         r = self.recs[self.names.index(name)]
         return r, self.b[self.data0 + r[2]:self.data0 + r[2] + r[4]]
 
-    def spare_slot(self, fmt, mips, w, h, min_name=0):
+    def spare_slot(self, fmt, mips, w, h, min_name=0, skip=()):
         """Index of the 2nd copy of a duplicated name whose 2 images are identical, in this format (free to reuse),
         whose own name string is at least `min_name` bytes (so a new name can be written in its place)."""
         seen = {}
         for i, (n, r) in enumerate(zip(self.names, self.recs)):
-            if n in seen and r[6:] == [fmt, mips, w, h] and len(n) >= min_name and r[1] != self.recs[seen[n]][1]:
+            if (n in seen and i not in skip and r[6:] == [fmt, mips, w, h] and len(n) >= min_name
+                    and r[1] != self.recs[seen[n]][1]):
                 j = seen[n]
                 a, b = self.recs[j], r
                 if self.b[self.data0 + a[2]:self.data0 + a[2] + a[4]] == self.b[self.data0 + b[2]:self.data0 + b[2] + b[4]]:

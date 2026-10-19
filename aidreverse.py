@@ -18,13 +18,13 @@ import blurroute
 SWAP_FLAG = {0x02: 0x04, 0x04: 0x02, 0x08: 0x10, 0x10: 0x08}
 
 
-def _reverse_nodes(nodes):
+def _reverse_nodes(nodes, loop=False):
     n = len(nodes)
     out = []
     for j in range(n):
         i = n - 1 - j
         cur = nodes[i]
-        prev = nodes[i - 1] if i > 0 else None       # next node in the reversed direction
+        prev = nodes[i - 1] if i > 0 or loop else None   # next node in the reversed direction (a loop wraps)
         b = bytearray(cur[:48])
         x, y, z, w, lx, lz, bx, by, bz = struct.unpack_from("<9f", b, 0)
         # the node is one EDGE of the road (driven 2026-10-19: road = node + lateral * 0..width), so the
@@ -55,7 +55,7 @@ def reverse(d):
         bit = blk["type"] & 0x1E
         src = gate[SWAP_FLAG[bit]] if bit in SWAP_FLAG and SWAP_FLAG[bit] in gate else blk
         rename[src["name"]] = blk["name"]
-        blk["nodes"] = _reverse_nodes(old_nodes[src["name"]])
+        blk["nodes"] = _reverse_nodes(old_nodes[src["name"]], loop=bool(src["type"] & 1))
     count = {name: len(nodes) for name, nodes in old_nodes.items()}
     d["logic_table"] = [[[count[sec] - 1 - idx, rename[sec]] for idx, sec in reversed(refs)]
                         for refs in reversed(d["logic_table"])]
@@ -71,14 +71,27 @@ def _centres(nodes):
     return out
 
 
+def roles(d):
+    """Blocks by role, whatever their names (mainLoop, START, Start_line...): racing line = the biggest block with
+    no gate / logic bit; start / finish / inter gates by type bit (0x02 / 0x04 / 0x08 / 0x10), logic 0x20."""
+    secs = [b for b in d["blocks"] if "nodes" in b]
+    out = {"main": max((b for b in secs if not b["type"] & 0x3E), key=lambda b: len(b["nodes"]))}
+    for role, bit in (("start", 0x02), ("finish", 0x04), ("inter1", 0x08), ("inter2", 0x10), ("logic", 0x20)):
+        found = [b for b in secs if b["type"] & bit]
+        if found:
+            out[role] = found[0]
+    return out
+
+
 def move_gate(d, name, first_main):
     """Slide gate block `name` along the road so its first node lies on Main node `first_main` (same node count,
     same gate width, centred on the road). Logic-table references to the gate are re-attached by geometry.
     Why: reversed, each gate's first node lies ~92 m before the painted line it belongs to, and a race starts /
     ends at the first node of its gate (original Haruna: start gate 16 m before the painted start line, finish
     gate 4 m after the painted finish line; player report: the finish fired before the line)."""
-    blk = {b["name"]: b for b in d["blocks"]}
-    main, gate = blk["Main"]["nodes"], blk[name]["nodes"]
+    blk = {b["name"]: b for b in d["blocks"] if "nodes" in b}
+    main_name = roles(d)["main"]["name"]
+    main, gate = blk[main_name]["nodes"], blk[name]["nodes"]
     mc = _centres(main)
 
     def nearest(p):
@@ -88,7 +101,7 @@ def move_gate(d, name, first_main):
     shift = first_main - old[0]
     new_nodes, under = [], []
     for nd, m in zip(gate, old):
-        j = max(0, min(len(main) - 1, m + shift))
+        j = (m + shift) % len(main)                       # wraps on a loop; a point-to-point gate stays inside
         src = main[j]
         wg = struct.unpack_from("<f", nd, 12)[0]
         x, y, z, wm, lx, lz = struct.unpack_from("<6f", src, 0)
@@ -109,7 +122,7 @@ def move_gate(d, name, first_main):
     table = []
     for refs in d["logic_table"]:
         keep = [r for r in refs if r[1] != name]
-        mains = [r[0] for r in refs if r[1] == "Main"]
+        mains = [r[0] for r in refs if r[1] == main_name]
         keep += [[k, name] for j in mains for k in at.get(j, [])]
         table.append(keep)
     d["logic_table"] = table

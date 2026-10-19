@@ -1,34 +1,37 @@
 #!/usr/bin/env python3
-"""Compute a start grid for a reversed point-to-point route (projet C, Haruna).
+"""Start grid and start/finish texts of a reversed route (projet C), point-to-point or loop.
 
-Each original StartPosition is measured against the original route (Main section of the .aid):
-distance along the road from the Start gate (negative = behind the line) and position across the
-road as a fraction of the road width. The same measures are applied from the reversed route's Start
-gate. Facts used (measured on Haruna, see docs/CONNAISSANCES.md):
-- actor WorldMatrix rows ax, ay, az, aw: az = forward (dot road tangent 1.00), ax = -(aid lateral axis);
-- .aid heights are ~11-14 m below the real ground on Haruna, so ground height is estimated from nearby
-  ground objects (cones list #37, lamps list #16) and cars are placed CAR_ABOVE_GROUND above it.
-Start_Text_* effects: Start/Final/Checkpoint texts move to the old Finish text and vice versa, turned 180 deg.
+Measures are taken on the road CENTRE line (a .aid node is one road EDGE: road = node + lateral * 0..width, and an
+edge is not the same length both ways). Each original StartPosition is measured from the original start line
+(along the road, negative = behind) and across the road (fraction of the width, 0.5 = centre); the same measures
+are applied from the reversed start line. Facts (docs/CONNAISSANCES.md):
+- actor WorldMatrix rows: az = forward, ax = -(aid lateral axis), aw = position;
+- the original Start_Text_* effects sit exactly on the painted lines (Haruna, measured by driving);
+- .aid heights are below the real ground (Haruna: 11-14 m): spawn height comes from nearby ground objects
+  (cfg ground_lists) or, by default, from the original grid's own height above the .aid.
+Point-to-point (Haruna): the reversed start line is the old finish line and the other way round.
+Loop: one line, driven the other way: grid on the other side, texts turned 180 deg.
+
+cfg keys: lines = {"orig_start", "start", "finish"} world (x, z) points; loop; front_gap (m, None = keep the
+original gap); max_behind (m, None = no limit); ground_lists + car_above (m) for the ground-object method.
 """
 import json
 import numpy as np
 import blurroute
+import aidreverse
 
-CAR_ABOVE_GROUND = 2.0          # m; a small drop at spawn is safer than a car inside the ground (1.0 gave 0.7 m under a driven car)
-# Tested 2026-10-19 on Haruna: the road collision ends ~250 m after the old finish line (cars spawned past it
-# fell through), and the original grid sits off-centre on a 36 m road (copied as is, one column was off the
-# 20 m road at the bottom). So the grid is squeezed (front row kept) to end MAX_BEHIND m behind the start
-# line, and centred on the road.
-MAX_BEHIND = 295.0              # m behind the start line; calibration knob (driven down to 324 m, 2026-10-19)
+# Haruna (point-to-point), tested in game 2026-10-19:
+# - the road collision ends ~250 m after the old finish line; driven down to 324 m behind the reversed start line;
+# - the original grid sits off-centre on a 36 m road (copied as is, a column was off the 20 m road at the bottom);
+# - the original multiplayer grid starts 140 m behind the line (looked far away once reversed); solo: 20 m;
+# - painted lines measured by stopping on them in a Descent (trackrec.py); the original texts sit on them.
+HARUNA = dict(
+    lines={"orig_start": (-2474.1, -1305.1),      # top line (old start)
+           "start": (1112.4, -3071.2),            # bottom line (old finish) = reversed start
+           "finish": (-2474.1, -1305.1)},         # top line = reversed finish
+    loop=False, front_gap=20.0, max_behind=295.0,
+    ground_lists=("#37", "#16"), car_above=2.0)   # 1.0 gave 0.7 m under a driven car
 CENTRE_GRID = True
-# Painted lines, measured by stopping on them in a Descent (trackrec.py, 2026-10-19): the original texts sit
-# exactly on them. Reversed: the start line is the old finish line and the other way round. Texts go on the
-# lines; the grid's front row FRONT_GAP behind the start line (original solo grid: 20 m; the original multi
-# grid starts 140 m back, which looked far away once reversed).
-LINES = {"Start": (1112.4, -3071.2),            # bottom line (old finish), x z
-         "Finish": (-2474.1, -1305.1)}          # top line (old start)
-FRONT_GAP = 20.0                # m
-GROUND_LISTS = ("#37", "#16")
 
 
 def _centre(n):
@@ -37,98 +40,122 @@ def _centre(n):
 
 
 def _route(path):
-    """Centre line (same length both ways, unlike an edge), arc length, lateral axis, width, gates."""
+    """Centre line of the racing line (closed for a loop), arc length, lateral axis, width, loop flag."""
+    raw = blurroute.parse(open(path, "rb").read(), raw=True)
+    main_name = aidreverse.roles(raw)["main"]["name"]
     d = blurroute.parse(open(path, "rb").read())
     S = {s["name"]: s for s in d["sections"]}
-    M = S["Main"]["nodes"]
+    M = S[main_name]["nodes"]
+    loop = bool(S[main_name]["type"] & 1)
+    if loop:
+        M = M + M[:1]
     P = np.array([_centre(n) for n in M])
     arc = np.r_[0, np.cumsum(np.linalg.norm(np.diff(P[:, [0, 2]], axis=0), axis=1))]
     lat = np.array([n["lateral"] for n in M])
     W = np.array([n["width"] for n in M])
-    gate = {}
-    for name in ("Start", "Finish"):                  # Main index of the first node of each gate
-        g = _centre(S[name]["nodes"][0])
-        gate[name] = int(np.argmin(np.hypot(P[:, 0] - g[0], P[:, 2] - g[2])))
-    _route.gates = gate
-    return P, arc, lat, W, gate["Start"]
+    return P, arc, lat, W, loop
 
 
 def _vec(m, k):
     return np.array([m[k]["vx"], m[k]["vy"], m[k]["vz"]])
 
 
-def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
+def start_line(actors):
+    """(x, z) of the Start text of an original start list = the painted line (loops: start = finish)."""
+    for x in actors:
+        if x and x.get("Name", "").startswith("Start_Text") and x.get("Type") == "Start":
+            p = _vec(x["WorldMatrix"], "aw")
+            return float(p[0]), float(p[2])
+    return None
+
+
+def compute(orig_aid, rev_aid, actorpack_json, lists, cfg):
     A = json.load(open(actorpack_json, encoding="utf-8"))["LevelActorList"]
-    refs = np.array([_vec(x["WorldMatrix"], "aw") for key in GROUND_LISTS
-                     for x in A[key]["LevelActors"] if x and x.get("WorldMatrix")])
-    P0, arc0, lat0, W0, ig0 = _route(orig_aid)
-    gates0 = _route.gates
-    P1, arc1, lat1, W1, ig1 = _route(rev_aid)
-    gates1 = {k: int(np.argmin(np.hypot(P1[:, 0] - x, P1[:, 2] - z))) for k, (x, z) in LINES.items()}
+    P0, arc0, lat0, W0, loop = _route(orig_aid)
+    P1, arc1, lat1, W1, _ = _route(rev_aid)
+    L0, L1 = arc0[-1], arc1[-1]
 
-    def measure(p, gate):
-        """(m after the gate's first node, fraction across the road (0.5 = centre), height above node)."""
-        i = int(np.argmin(np.hypot(P0[:, 0] - p[0], P0[:, 2] - p[2])))
-        return (arc0[i] - arc0[gates0[gate]], 0.5 + float(np.dot(p[[0, 2]] - P0[i, [0, 2]], lat0[i])) / W0[i],
-                p[1] - P0[i, 1])
+    def near(P, xz):
+        return int(np.argmin(np.hypot(P[:, 0] - xz[0], P[:, 2] - xz[1])))
 
-    def place(along, frac, gate):
-        """Point `along` m after the reversed gate's first node, at `frac` across the road; returns (pos, j)."""
-        s = arc1[gates1[gate]] + along
-        j = int(np.clip(np.searchsorted(arc1, s), 1, len(arc1) - 2))
+    line0 = near(P0, cfg["lines"]["orig_start"])
+    line1 = {k: near(P1, cfg["lines"][k]) for k in ("start", "finish")}
+    refs = None
+    if cfg.get("ground_lists"):
+        refs = np.array([_vec(x["WorldMatrix"], "aw") for key in cfg["ground_lists"]
+                         for x in A[key]["LevelActors"] if x and x.get("WorldMatrix")])
+
+    def measure(p):
+        """(m from the original start line, fraction across the road (0.5 = centre), height above the node)."""
+        i = near(P0, (p[0], p[2]))
+        a = arc0[i] - arc0[line0]
+        if loop:
+            a = (a + L0 / 2) % L0 - L0 / 2
+        return a, 0.5 + float(np.dot(p[[0, 2]] - P0[i, [0, 2]], lat0[i])) / W0[i], p[1] - P0[i, 1]
+
+    def place(along, frac, line):
+        """Point `along` m after a reversed line, at `frac` across the road; returns (pos, j)."""
+        s = arc1[line1[line]] + along
+        if loop:
+            s %= L1
+        j = int(np.clip(np.searchsorted(arc1, s), 1, len(arc1) - 1))
         t = (s - arc1[j - 1]) / max(arc1[j] - arc1[j - 1], 1e-6)
         c = P1[j - 1] + t * (P1[j] - P1[j - 1])
         c[[0, 2]] += lat1[j] * (frac - 0.5) * W1[j]
         return c, j
 
     def ground(p):
-        near = np.hypot(refs[:, 0] - p[0], refs[:, 2] - p[2]) < 30
-        k = int(np.argmin(np.hypot(P1[:, 0] - p[0], P1[:, 2] - p[2])))
-        if near.sum() >= 3:                           # offset between real ground and .aid height, locally
-            ks = [int(np.argmin(np.hypot(P1[:, 0] - r[0], P1[:, 2] - r[2]))) for r in refs[near]]
-            return P1[k, 1] + float(np.median(refs[near, 1] - P1[ks, 1]))
+        k = near(P1, (p[0], p[2]))
+        close = np.hypot(refs[:, 0] - p[0], refs[:, 2] - p[2]) < 30
+        if close.sum() >= 3:                          # offset between real ground and .aid height, locally
+            ks = [near(P1, (r[0], r[2])) for r in refs[close]]
+            return P1[k, 1] + float(np.median(refs[close, 1] - P1[ks, 1]))
         return P1[k, 1] + 12.0                        # typical Haruna offset
+
+    def along_road(j):
+        n = len(P1)
+        a, b = (j + 2) % n if loop else min(j + 2, n - 1), (j - 2) % n if loop else max(j - 2, 0)
+        f = P1[a] - P1[b]
+        return f / np.linalg.norm(f)
 
     out = {}
     for key in lists:
         actors = A[key]["LevelActors"]
-        new, meas = [], {}
+        new, meas = [], {k: measure(_vec(x["WorldMatrix"], "aw")) for k, x in enumerate(actors)
+                         if x["Name"].startswith("StartPosition")}
+        if meas:
+            mid = float(np.mean([f for _, f, _ in meas.values()])) - 0.5 if CENTRE_GRID else 0.0
+            dy = float(np.median([h for _, _, h in meas.values()]))   # original spawn height above the .aid
+            if cfg.get("front_gap") is not None:
+                front = max(a for a, _, _ in meas.values())
+                meas = {k: (a - front - cfg["front_gap"], f, h) for k, (a, f, h) in meas.items()}
+            if cfg.get("max_behind"):
+                squeeze = min(1.0, cfg["max_behind"] / -min(a for a, _, _ in meas.values()))
+                meas = {k: (a * squeeze, f, h) for k, (a, f, h) in meas.items()}
         for k, x in enumerate(actors):
-            if x["Name"].startswith("StartPosition"):
-                meas[k] = measure(_vec(x["WorldMatrix"], "aw"), "Start")[:2]          # node = road edge
-        mid = float(np.mean([f for _, f in meas.values()])) - 0.5 if CENTRE_GRID else 0.0
-        front = max(a for a, _ in meas.values())
-        meas = {k: (a - front - FRONT_GAP, f) for k, (a, f) in meas.items()}
-        squeeze = min(1.0, MAX_BEHIND / -min(a for a, _ in meas.values()))
-        meas = {k: (a * squeeze, f) for k, (a, f) in meas.items()}
-        for k, x in enumerate(actors):
-            name = x["Name"]
-            m = x["WorldMatrix"]
             if k in meas:
-                along, frac = meas[k]
-                pos, j = place(along, frac - mid, "Start")
-                lat = lat1[j]
-                pos[1] = ground(pos) + CAR_ABOVE_GROUND
-                fwd = P1[min(j + 2, len(P1) - 1)] - P1[max(j - 2, 0)]
-                az = fwd / np.linalg.norm(fwd)
-                ax = -np.array([lat[0], 0.0, lat[1]])
+                along, frac, _ = meas[k]
+                pos, j = place(along, frac - mid, "start")
+                pos[1] = ground(pos) + cfg["car_above"] if refs is not None else P1[j, 1] + dy
+                az = along_road(j)
+                ax = -np.array([lat1[j][0], 0.0, lat1[j][1]])
                 ax -= az * np.dot(ax, az)
                 ax /= np.linalg.norm(ax)
-                ay = np.cross(az, ax)                 # sign checked against the original matrices below
-                if np.dot(ay, _vec(m, "ay")) < 0:
+                ay = np.cross(az, ax)                 # sign checked against the original matrix
+                if np.dot(ay, _vec(x["WorldMatrix"], "ay")) < 0:
                     ay = -ay
-                new.append((k, name, {"ax": ax, "ay": ay, "az": az, "aw": pos}))
-        # texts keep the original rule (tested 2026-10-19: copied as is, Finish sat 90 m past the finish gate):
-        # same distance after the first node of their gate, same fraction across, same height above the node
+                new.append((k, x["Name"], {"ax": ax, "ay": ay, "az": az, "aw": pos}))
+        # texts on the reversed lines (the original ones sit on the painted lines), turned 180 deg; a
+        # point-to-point route swaps them: the Finish text takes the old Start text's orientation and the reverse
         texts = {x["Type"]: (k, x) for k, x in enumerate(actors) if x["Name"].startswith("Start_Text")}
         if "Finish" in texts and "Start" in texts:
             fin, st = texts["Finish"][1]["WorldMatrix"], texts["Start"][1]["WorldMatrix"]
             for typ, (k, x) in texts.items():
-                src = st if typ == "Finish" else fin            # orientation: the other text, turned 180 deg
-                gate = "Finish" if typ == "Finish" else "Start"
-                _, frac, dy = measure(_vec(x["WorldMatrix"], "aw"), gate)
-                pos, j = place(0.0, frac, gate)                 # on the painted line
-                pos[1] = P1[j, 1] + dy
+                src = (st if typ == "Finish" else fin) if not loop else x["WorldMatrix"]
+                line = "finish" if typ == "Finish" else "start"
+                _, frac, h = measure(_vec(x["WorldMatrix"], "aw"))
+                pos, j = place(0.0, frac, line)
+                pos[1] = P1[j, 1] + h
                 new.append((k, x["Name"], {"ax": -_vec(src, "ax"), "ay": _vec(src, "ay"),
                                            "az": -_vec(src, "az"), "aw": pos}))
         out[key] = new
