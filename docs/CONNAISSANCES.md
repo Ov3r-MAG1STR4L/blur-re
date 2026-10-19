@@ -115,6 +115,10 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   des IA sont symétriques, hors de la route : les IA « allaient tout droit ») ; la grille doit se placer avec ce
   modèle. Fond d'Haruna : murs invisibles de 0 à ~19 m, mur du fond vers 13 760 m du tracé, sol à +13 à +14 m
   au-dessus des nœuds.
+- **Haruna montée jouable (2026-10-19)** : départ en bas, IA qui suivent la route, bonus en place, pas de
+  chute. Seul défaut vu : texte d'arrivée trop loin. Règle mesurée sur l'original : un texte `Start_Text_*` est
+  posé **juste après le premier nœud de sa porte** (Start : +20 m, Finish : +4 m), au milieu de la route.
+  Recopiés tels quels, nos textes étaient ~90 m après le début des portes ; corrigé dans `gridreverse.py`.
 - `gamedata_boot.pak` n'est **pas ouvert** en jeu normal : le `multiplayer.bin` utilisé est celui de `gamedata.pak`.
 - Fichiers ouverts au démarrage : `boot.pak`, `root.pak`, `root_streaming.pak`, `shaders-speed.pak`,
   `lut_rampak.pak`, `gamedata.sig` puis `gamedata.pak`, `levels\<carte>\level.*`, `amax\...` (Lua),

@@ -32,9 +32,12 @@ def _route(path):
     arc = np.r_[0, np.cumsum(np.linalg.norm(np.diff(P[:, [0, 2]], axis=0), axis=1))]
     lat = np.array([n["lateral"] for n in M])
     W = np.array([n["width"] for n in M])
-    g = S["Start"]["nodes"][0]
-    ig = int(np.argmin(np.hypot(P[:, 0] - g["x"], P[:, 2] - g["z"])))
-    return P, arc, lat, W, ig
+    gate = {}
+    for name in ("Start", "Finish"):                  # Main index of the first node of each gate
+        g = S[name]["nodes"][0]
+        gate[name] = int(np.argmin(np.hypot(P[:, 0] - g["x"], P[:, 2] - g["z"])))
+    _route.gates = gate
+    return P, arc, lat, W, gate["Start"]
 
 
 def _vec(m, k):
@@ -46,7 +49,24 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
     refs = np.array([_vec(x["WorldMatrix"], "aw") for key in GROUND_LISTS
                      for x in A[key]["LevelActors"] if x and x.get("WorldMatrix")])
     P0, arc0, lat0, W0, ig0 = _route(orig_aid)
+    gates0 = _route.gates
     P1, arc1, lat1, W1, ig1 = _route(rev_aid)
+    gates1 = _route.gates
+
+    def measure(p, gate):
+        """(m after the gate's first node, fraction across the road from the node edge, height above node)."""
+        i = int(np.argmin(np.hypot(P0[:, 0] - p[0], P0[:, 2] - p[2])))
+        return (arc0[i] - arc0[gates0[gate]], float(np.dot(p[[0, 2]] - P0[i, [0, 2]], lat0[i])) / W0[i],
+                p[1] - P0[i, 1])
+
+    def place(along, frac, gate):
+        """Point `along` m after the reversed gate's first node, at `frac` across the road; returns (pos, j)."""
+        s = arc1[gates1[gate]] + along
+        j = int(np.clip(np.searchsorted(arc1, s), 1, len(arc1) - 2))
+        t = (s - arc1[j - 1]) / max(arc1[j] - arc1[j - 1], 1e-6)
+        c = P1[j - 1] + t * (P1[j] - P1[j - 1])
+        c[[0, 2]] += lat1[j] * frac * W1[j]
+        return c, j
 
     def ground(p):
         near = np.hypot(refs[:, 0] - p[0], refs[:, 2] - p[2]) < 30
@@ -62,10 +82,7 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
         new, meas = [], {}
         for k, x in enumerate(actors):
             if x["Name"].startswith("StartPosition"):
-                p = _vec(x["WorldMatrix"], "aw")
-                i = int(np.argmin(np.hypot(P0[:, 0] - p[0], P0[:, 2] - p[2])))
-                meas[k] = (arc0[i] - arc0[ig0],
-                           float(np.dot(p[[0, 2]] - P0[i, [0, 2]], lat0[i])) / W0[i])   # node = road edge
+                meas[k] = measure(_vec(x["WorldMatrix"], "aw"), "Start")[:2]          # node = road edge
         mid = float(np.mean([f for _, f in meas.values()])) - 0.5 if CENTRE_GRID else 0.0
         squeeze = min(1.0, MAX_BEHIND / -min(a for a, _ in meas.values()))
         meas = {k: (a * squeeze, f) for k, (a, f) in meas.items()}
@@ -74,14 +91,8 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
             m = x["WorldMatrix"]
             if k in meas:
                 along, frac = meas[k]
-                frac -= mid
-                s = arc1[ig1] + along
-                j = int(np.clip(np.searchsorted(arc1, s), 1, len(arc1) - 2))
-                t = (s - arc1[j - 1]) / max(arc1[j] - arc1[j - 1], 1e-6)
-                c = P1[j - 1] + t * (P1[j] - P1[j - 1])
+                pos, j = place(along, frac - mid, "Start")
                 lat = lat1[j]
-                pos = np.array([c[0], 0.0, c[2]])
-                pos[[0, 2]] += lat * frac * W1[j]
                 pos[1] = ground(pos) + CAR_ABOVE_GROUND
                 fwd = P1[min(j + 2, len(P1) - 1)] - P1[max(j - 2, 0)]
                 az = fwd / np.linalg.norm(fwd)
@@ -92,15 +103,18 @@ def compute(orig_aid, rev_aid, actorpack_json, lists=("#62", "#15")):
                 if np.dot(ay, _vec(m, "ay")) < 0:
                     ay = -ay
                 new.append((k, name, {"ax": ax, "ay": ay, "az": az, "aw": pos}))
+        # texts keep the original rule (tested 2026-10-19: copied as is, Finish sat 90 m past the finish gate):
+        # same distance after the first node of their gate, same fraction across, same height above the node
         texts = {x["Type"]: (k, x) for k, x in enumerate(actors) if x["Name"].startswith("Start_Text")}
-        if "Finish" in texts:
-            fin = texts["Finish"][1]["WorldMatrix"]
-            st = texts.get("Start", (None, None))[1]
+        if "Finish" in texts and "Start" in texts:
+            fin, st = texts["Finish"][1]["WorldMatrix"], texts["Start"][1]["WorldMatrix"]
             for typ, (k, x) in texts.items():
-                src = (st["WorldMatrix"] if typ == "Finish" else fin) if st else None
-                if src is None:
-                    continue
+                src = st if typ == "Finish" else fin            # orientation: the other text, turned 180 deg
+                gate = "Finish" if typ == "Finish" else "Start"
+                along, frac, dy = measure(_vec(x["WorldMatrix"], "aw"), gate)
+                pos, j = place(along, frac, gate)
+                pos[1] = P1[j, 1] + dy
                 new.append((k, x["Name"], {"ax": -_vec(src, "ax"), "ay": _vec(src, "ay"),
-                                           "az": -_vec(src, "az"), "aw": _vec(src, "aw")}))
+                                           "az": -_vec(src, "az"), "aw": pos}))
         out[key] = new
     return out
