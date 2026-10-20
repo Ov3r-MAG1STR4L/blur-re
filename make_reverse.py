@@ -23,7 +23,9 @@ MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4; 
 # (+4), 2 factors 1 / 0.84..0.87 (+8, corrected by difficulty), 3 0.55 (+0xC), 4 i32 flags, 5 i32, 6 AIPerkSkillz
 # Index, 7 AIPerkPrefs Index. Experiment 1 ({6: 70}, Tier 10 Skills): same race times as the original.
 # Experiment 2: factors 1.2 -> median AI 13 s faster (the row is the speed cap). Experiment 3: 1.5. {} = original.
-AI_ROWS = {"multiplayer_hard.csv": {2: 1.2, 6: 900}}   # "no handicap" Hard (2026-10-20): no speed cap + Shannon profile for all
+# "no handicap" Hard (2026-10-20): no speed cap + Shannon profile for all. Rival pack test (2026-10-20): every AI in the
+# rival group (row 4 = 1) with a target gap around the player (row 1, m, -18..+18), instead of 4 rivals + 15 fillers.
+AI_ROWS = {"multiplayer_hard.csv": {1: [2 * i - 18 for i in range(19)], 2: 1.2, 4: 1, 6: 900}}
 # DoubleTap experiment (2026-10-19): the combine-two-pickups trigger is orphaned code; instead every pickup with a
 # DoubleTap level (Nitro rift, Shield 12 s, Mine, Shunt, Shock) uses it as its Normal level. Test 1 (all five): the
 # AI use them fine, but the game crashes as soon as the PLAYER fires a pickup -> one pickup at a time.
@@ -235,7 +237,8 @@ def main(out):
         for k in range(n_stages):                    # header 4 rows, then 9 rows per stage (8 + a blank one)
             for row, value in changes.items():
                 r = rows[4 + 9 * k + row]
-                rows[4 + 9 * k + row] = [r[0]] + [f"{value:g}"] * (len(r) - 1)   # column 0 = the player
+                vals = value if isinstance(value, list) else [value] * (len(r) - 1)   # one value or one per AI
+                rows[4 + 9 * k + row] = [r[0]] + [f"{v:g}" for v in vals]           # column 0 = the player
         ev = os.path.join(out, "gamedata", "events")
         os.makedirs(ev, exist_ok=True)
         open(os.path.join(ev, name), "w", encoding="latin-1", newline="").write("".join(",".join(r) + "\r\n" for r in rows))
