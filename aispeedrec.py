@@ -13,7 +13,7 @@ DT = 0.1
 
 
 def main(out, secs=1800):
-    pm, t0 = None, time.time()
+    pm, t0, last = None, time.time(), ""
     with open(out, "w") as o:
         o.write("t,car,player,x,z,kmh,target_kmh\n")
         while time.time() - t0 < secs:
@@ -31,7 +31,10 @@ def main(out, secs=1800):
                                 f"{f(ob + 0x134) * 3.6:.1f},{f(ob + 0x36C) * 3.6:.1f}\n")
                 o.write("".join(rows))
                 o.flush()
-            except Exception:                              # menus / loading / game restarted: re-attach
+            except Exception as e:                         # menus / loading / game restarted: re-attach
+                if str(e) != last:                         # a silent failure lost a whole race once
+                    print(f"{time.time() - t0:.0f}s : {type(e).__name__} {e}", flush=True)
+                    last = str(e)
                 try:
                     pm = pymem.Pymem("Blur.exe")
                 except Exception:

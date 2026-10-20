@@ -678,6 +678,19 @@ Trois couches :
   `BrakeTrackSpeedPercentage` → frein 1, accélérateur 0. La vitesse cible est écrite en `0xB0507A` : valeur de base
   (+0x40) × facteur borné à [0,2 ; 1] (`0xB04EE0`). Hypothèse : les IA freinent après un nitro parce qu'elles
   dépassent cette vitesse cible. À confirmer en lisant la mémoire pendant une course.
+- **Vitesse cible des IA : confirmé en mémoire (2026-10-20, `aispeedrec.py`)**. Chaîne : gestionnaire IA `0x1134D88`,
+  interface `[+0x2C]`, tableau `[I+0x4C]` ; objet de suivi = `[[tableau + 4·i] + 0x10] + 8` : `+0x134` vitesse (m/s),
+  `+0x36C` vitesse cible (m/s, entière). Course LA River 3 (Hard modifié) : cible médiane 259 km/h (p90 306) ; en
+  ligne droite 266–295 km/h, alors que le joueur roule à 330–360. **Nitros des IA (65)** : 232 → pic 354 km/h pour une
+  cible de 266 → **retombée à 214 en 1,6 s** : la vérification de freinage s'applique aussi aux IA (**Confirmé**).
+- **Origine de la cible** (`0xB04EC0`) : `octet[voiture][nœud][ligne] × échelle (+0x354)`, puis × facteur borné à
+  [0,2 ; 1] (d'où l'absence d'effet des facteurs > 1 du CSV). Les tables d'octets (m/s) sont **calculées au chargement
+  pour chaque voiture** (`0xB178B0`, 11 lignes, deux passes, message « SECOND : Potentially bad data ») en simulant
+  sa physique (`0xB11E00`) : c'est la vitesse que la voiture peut tenir **sans nitro**. Dispersion entre voitures sur un
+  même nœud ≈ 19 km/h. Pas de table dans les fichiers du niveau.
+- Conséquence : un nitro d'IA est toujours « coupé » par le frein dès qu'il dépasse la vitesse sans nitro. Leviers
+  possibles sans toucher à l'exe : la physique des voitures (touche aussi le joueur), ou l'échelle `+0x354`
+  (origine à trouver).
 - Pistes restantes : la physique des IA (`AI.Air_Default` : FrictionCoefficient 1,212, BrakingCoefficient 1,0), la
   ligne 0,55 (rôle inconnu), les variables `AmaxAI.DebugCar.CorneringBoost` / `AISpeed`.
 
