@@ -626,6 +626,24 @@ Trois couches :
   Aggression, Blocking, Slamming 1,0, Mistakes 0 : aucun profil d'origine n'a ces valeurs). Avec le Hard « sans
   bridage » (facteurs 1,2, profil 900 pour toutes les IA), toutes les IA ont ce profil. À tester.
 
+### Mods (Mod Shop) et IA (2026-10-20)
+
+- Mods = `MultiplayerAbility` (`multiplayer.bin`, 33) ; slots 1 à 3 pour les joueurs (`MultiplayerAbilityLoadOut`
+  Default1 / Custom1..3, **joueur seulement**) ; slot 4 = pouvoirs de boss (`Boss*`).
+- **Aucun champ de loadout pour les IA** dans les données : ni dans `RaceBookCharacter` (seulement `PerkLevel`), ni dans
+  `air.bin`, ni dans les CSV. Le seul mod d'IA trouvé : `AmaxVehicle.BossAbilitySlot` (`amax.bin`), lié à la
+  **voiture de boss** : Shannon (Mégane R26) BossAdditionalBlindfireShots, Carver BossNitroRift, Khan BossDoubleShield,
+  Talon BossRepairBonus, Ayumi / Harumi BossShotgunBlindfire, Rhymer BossFansNitroGift, Natalya
+  BossAdditionalShockDomes, Drayke BossShuntDamage. Modèles d'effets dédiés aux IA (`shuntbuildai`,
+  `silentrunningai`…). Si les IA de course perso reçoivent des mods (rang `ai_average_mp_rank_*`) : **à établir**.
+- Solo : `OpponentSetup` (`singleplayer.bin`) : `HealthOverride`, `AlwaysShields`, `OnlyAttacksPlayer`,
+  `PerkSlotsOverride`, `PerkGiftTimer` / `PerkGiftTypes` (bonus offerts) ; `DifficultySettings.AIPerkUse`
+  (`PerkToGrant`, `GrantTimeMin/Max`), `AIBalancingFileName` (le CSV). Rien de tel en course perso.
+- **Lecture du Race Director (Hypothèse forte)** : chaque palier place un **groupe de 4 rivales** (drapeau 1,
+  plafond 1,0) à ±5 m du joueur, et les 15 autres IA (plafond 0,84–0,87) à des écarts fixes (`distances`, m, positif
+  = derrière le joueur). Palier 1 : toutes derrière ; dernier palier : toutes devant (−210 m). Le groupe de rivales
+  change de colonnes d'un palier à l'autre : le palier suit la place du joueur.
+
 ### Course perso (LAN) : Easy / Medium / Hard (2026-10-20)
 
 - `events/multiplayer_easy|medium|hard.csv` sont **identiques sauf la ligne des facteurs** (plafond de vitesse) :
