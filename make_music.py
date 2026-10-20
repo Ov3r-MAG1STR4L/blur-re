@@ -32,7 +32,7 @@ FORCE_LAST = False    # test: every selector entry plays the last added track (F
 F1 = 0x3F800000                                           # 1.0f
 
 
-LUFS = -10.2          # median loudness of the 24 original race tracks (measured 2026-10-20: -11.7 .. -8.6)
+LUFS = -9.0           # added tracks: a bit above the originals (median -10.2, full tracks -12.2 .. -8.7) to cut through engines
 
 
 def pcm48(src, start=None, end=None):
