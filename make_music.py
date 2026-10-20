@@ -25,8 +25,12 @@ _MIX_CUTS = [("Wonderdawgs", "00:00"), ("Primal", "01:54"), ("FreshToDeath", "04
              ("BlackOutDays", "27:46"), ("Pressure", "30:19"), ("Doubt", "33:15"), ("NeonBeams", "35:28"),
              ("TheDifference", "38:15"), ("RubixCube", "41:35"), ("Spooked", "44:12"), ("NarcoTourists", "46:26"),
              ("Tomorrow", "51:23")]
+# removed after listening in game (2026-10-21, player's choice: too calm / too strange / too long)
+_DROPPED = {"RightAway", "SwagDCBreaks", "OrbitofrontalEntourage", "Pressure", "NeonBeams", "TheDifference",
+            "RubixCube", "Tomorrow"}
 TRACKS = [("ShutUpAndDrive", r"C:\Users\sanqu\Downloads\Rihanna - Shut Up And Drive(Lyrics)🎶.mp3", None, None)] + \
-         [(n, MIX, t, _MIX_CUTS[k + 1][1] if k + 1 < len(_MIX_CUTS) else None) for k, (n, t) in enumerate(_MIX_CUTS)]
+         [(n, MIX, t, _MIX_CUTS[k + 1][1] if k + 1 < len(_MIX_CUTS) else None) for k, (n, t) in enumerate(_MIX_CUTS)
+          if n not in _DROPPED]
 FF = 0xFFFF
 FORCE_LAST = False    # test: every selector entry plays the last added track (False = random among all)
 F1 = 0x3F800000                                           # 1.0f
