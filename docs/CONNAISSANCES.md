@@ -614,6 +614,18 @@ Trois couches :
   facteurs `1, 0.84…0.87` des CSV ?) ou `BrakeTrackSpeedPercentage*`. À vérifier sur les enregistrements
   (`trackrec.py --all`) : hausse brutale de vitesse suivie d'une chute immédiate.
 
+### Evil Shannon (2026-10-20)
+
+- `ShannonEvil` et `Shannon` (`finalracebook.bin`) sont **le même pilote** : même modèle 3D, même `AITemplate`, mêmes
+  voitures (Mégane R26, Opel Astra Extreme à physique propre), même nom affiché ; seuls l'identifiant et
+  `AvatarID` (16 / 22) diffèrent. Sa force en finale (T9E6, contre le joueur) vient du fichier de difficulté :
+  aucun réglage spécial (pas de bouclier permanent, santé normale, pas de bonus offerts).
+- `ShannonEvil` n'est pas référencée dans `multiplayer.bin` (l'y ajouter demande d'insérer un hash dans un index
+  trié : pas encore géré par `kslfwrite`).
+- Mod (copie) : avatar 22 pour `Shannon` (liste des IA de course perso) et profil `T9 Shannon` « ultime » (Racing,
+  Aggression, Blocking, Slamming 1,0, Mistakes 0 : aucun profil d'origine n'a ces valeurs). Avec le Hard « sans
+  bridage » (facteurs 1,2, profil 900 pour toutes les IA), toutes les IA ont ce profil. À tester.
+
 ### Course perso (LAN) : Easy / Medium / Hard (2026-10-20)
 
 - `events/multiplayer_easy|medium|hard.csv` sont **identiques sauf la ligne des facteurs** (plafond de vitesse) :
