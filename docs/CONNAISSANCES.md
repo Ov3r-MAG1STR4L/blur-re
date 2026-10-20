@@ -691,6 +691,16 @@ Trois couches :
 - Conséquence : un nitro d'IA est toujours « coupé » par le frein dès qu'il dépasse la vitesse sans nitro. Leviers
   possibles sans toucher à l'exe : la physique des voitures (touche aussi le joueur), ou l'échelle `+0x354`
   (origine à trouver).
+- **Échelle `+0x354` de la vitesse cible = adhérence de surface vue par l'IA** (`0x4BF9F0`, écrite en `0x4C01F2` /
+  `0x4C0297`). Trois sources : (1) initialisation = variable de débogage `AmaxAI.DebugCar.Friction` (1,05) ; (2) normal =
+  surface sous la voiture (`0x7BC290`) : `GripScaleStatic + (GripScaleDynamic − GripScaleStatic) × min(v / GripScaleDynamicSpeed_Mph, 1)`
+  (`racingphysics.bin`, `RP_SurfaceMappingList.properties` : Tarmac 1/1, Dirt et Grass 1 → 0,8 à 60…) ;
+  (3) si l'épreuve a `OverrideAISurface` : `OverrideAISurfaceValue` bornée à **[0,8 ; 1,5]**, pour les IA seulement.
+  Lu en course (LA River 3) : 0,80 à 1,00 selon les voitures.
+- `OverrideAISurface` n'existe que dans `AmaxEvent` (**carrière**, `singleplayer.bin` : 15 épreuves sur 86 à True / 1,0 ;
+  `splitscreen.bin` n'a aucune épreuve). La course perso (`MultiplayerRace`) n'a pas ce champ : **en course perso, pas
+  de levier « IA seulement » sur la vitesse cible** sans toucher à l'exe ; en carrière, `OverrideAISurfaceValue` 1,5
+  relèverait la cible des IA (à tester).
 - Pistes restantes : la physique des IA (`AI.Air_Default` : FrictionCoefficient 1,212, BrakingCoefficient 1,0), la
   ligne 0,55 (rôle inconnu), les variables `AmaxAI.DebugCar.CorneringBoost` / `AISpeed`.
 
