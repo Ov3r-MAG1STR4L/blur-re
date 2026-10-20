@@ -22,11 +22,19 @@ FORCE_LAST = False    # test: every selector entry plays the last added track (F
 F1 = 0x3F800000                                           # 1.0f
 
 
+LUFS = -10.2          # median loudness of the 24 original race tracks (measured 2026-10-20: -11.7 .. -8.6)
+
+
 def pcm48(src):
+    """48 kHz stereo int16, gain set so the integrated loudness matches the original tracks (limiter at -1 dBFS)."""
+    m = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", src, "-af", "ebur128", "-f", "null", "-"],
+                       capture_output=True, text=True).stderr
+    gain = LUFS - float(m.rsplit("I:", 1)[1].split("LUFS")[0])
+    print(f"  volume {gain:+.1f} dB vers {LUFS} LUFS")
     with tempfile.TemporaryDirectory() as d:
         out = os.path.join(d, "a.wav")
-        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-ar", "48000", "-ac", "2", out],
-                       check=True)
+        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-ar", "48000", "-ac", "2",
+                        "-af", f"volume={gain}dB,alimiter=limit=0.89:level=false", out], check=True)
         with wave.open(out) as w:
             return np.frombuffer(w.readframes(w.getnframes()), "<i2").reshape(-1, 2).copy()
 
