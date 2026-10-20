@@ -655,6 +655,15 @@ Trois couches :
 - **Essai adhérence** (`Air_Default` FrictionCoefficient 1,212 → 1,6, LA River 3) : **aucun effet** (même écart, IA
   217 → 216 km/h de moyenne). Joueur 270 km/h de moyenne contre 217 pour les IA (+25 %) : l'écart vient sans doute
   des **voitures** (rang moyen des IA Hard 44, `ai_average_mp_rank_hard`), pas du pilotage. À vérifier.
+- **Profil de vitesse le long de la piste** (LA River 3, tronçons de 400 m) : dans les virages, IA ≈ joueur (96–98 %) ;
+  **en ligne droite, les IA plafonnent vers 240–250 km/h** (joueur 300–370 en enchaînant les nitros). Après chaque
+  nitro, une IA reperd ≈ 100 km/h en 2 à 4 s (médiane sur 207 nitros), souvent sous sa vitesse d'avant ; joueur 65.
+  Ce n'est ni la voiture (Audi R8, classe A jugée moyenne), ni une physique propre aux IA (`UseAiDynamics` = false
+  pour les 81 voitures), ni l'adhérence.
+- **Essai facteur 2,0** : identique au facteur 1,2 (même profil, même écart). Au-delà d'environ 1,2, le facteur du
+  Race Director ne bride plus : **le freinage après nitro vient du pilote IA lui-même (code)** (**Fort**). Réglages
+  candidats seulement en variables de débogage (`AmaxAI.DebugCar.CorneringBoost`, `AmaxAI.Perks.General.NitroCoolDown`),
+  non modifiables sans toucher à l'exe.
 - Pistes restantes : la physique des IA (`AI.Air_Default` : FrictionCoefficient 1,212, BrakingCoefficient 1,0), la
   ligne 0,55 (rôle inconnu), les variables `AmaxAI.DebugCar.CorneringBoost` / `AISpeed`.
 
