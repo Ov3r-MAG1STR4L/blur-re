@@ -701,6 +701,9 @@ Trois couches :
   `splitscreen.bin` n'a aucune épreuve). La course perso (`MultiplayerRace`) n'a pas ce champ : **en course perso, pas
   de levier « IA seulement » sur la vitesse cible** sans toucher à l'exe ; en carrière, `OverrideAISurfaceValue` 1,5
   relèverait la cible des IA (à tester).
+- Lu en course perso (2026-10-20) : la configuration lue par l'IA (`[0x111EDBC]+8`) a le drapeau +0x51 à 0 et la valeur
+  +0x54 à 0 ; les IA prennent l'adhérence de la surface (0,94 à 1,0). Rien dans `MultiplayerRace` ne remplit ce
+  drapeau : **pas de levier en course perso** sans écrire en mémoire ni modifier l'exe (interdits).
 - Pistes restantes : la physique des IA (`AI.Air_Default` : FrictionCoefficient 1,212, BrakingCoefficient 1,0), la
   ligne 0,55 (rôle inconnu), les variables `AmaxAI.DebugCar.CorneringBoost` / `AISpeed`.
 
