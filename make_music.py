@@ -18,7 +18,7 @@ import blurbaf
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
 TRACKS = [("23", "ShutUpAndDrive", r"C:\Users\sanqu\Downloads\Rihanna - Shut Up And Drive(Lyrics)🎶.mp3")]
 FF = 0xFFFF
-FORCE_LAST = True     # test: every selector entry plays the last added track (False = random among all)
+FORCE_LAST = False    # test: every selector entry plays the last added track (False = random among all)
 F1 = 0x3F800000                                           # 1.0f
 
 

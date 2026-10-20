@@ -811,4 +811,14 @@ Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes
   `InGameMusicSelectorIndex` à **23 entrées** (valeur, poids 1). Ajouter un morceau = ajouter le son dans
   `ingamemusic.baf` (reconstruire la banque, données alignées sur 0x800) + un objet `InGameMusic23` + une entrée au
   sélecteur (+ mixeur si nécessaire), sans casser les index d'objets.
+- **Ajout d'un morceau de course : Confirmé en jeu (2026-10-20)** avec `make_music.py` (« Shut Up And Drive » =
+  `InGameMusic23`) : MP3 → ffmpeg 48 kHz stéréo → ADPCM (`blurbaf.encode_psx`, aller-retour 33 dB) → ajouté à
+  `ingamemusic.baf` (entrée dans le remplissage avant 0x800, données en fin de banque, alignées sur 0x800, précédées de
+  `DATA` + taille + 8) ; objet son ajouté **en fin de liste** du graphe (index 115 : aucune référence ne bouge) ;
+  sélecteur 24 entrées (type 33 : `[33, nom, FFFF, 0, n]` + n × 8 mots `[FFFF, k.0, FFFF, 1.0, FFFF, 0, FFFF, 1.0]`) ;
+  mixeur (type 73, n << 16 en +6, 17 mots par entrée dont `(19 << 16) | objet`) ; script de lecture (`[189, nom, long]`,
+  n cas `[4887, sélecteur, k.0, 4353, cible]`, `4610`, n corps `[4096, objet, 0, 4610]`, cible = index de mot dans le
+  script) ; script d'arrêt (`long | long << 16`, n × `[4096, objet, 1]`). Le morceau suivant est retiré au hasard à la
+  fin du précédent (test forcé = boucle sur le même morceau, normal).
+- Copie de test : `root_streaming.pak` → `.off`, ses 67 fichiers en clair dans `audio\` (le pak l'emporte sinon).
 
