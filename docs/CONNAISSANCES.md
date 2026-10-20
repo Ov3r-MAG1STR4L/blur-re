@@ -828,4 +828,13 @@ Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes
   (`MusicMixerPerkDuckAmount`), passe-bas pendant le nitro (`NitrousLowPass`), « bit crusher » selon les dégâts
   (`RGBBitCrusher`, `RGBMedium` / `RGBHard`). `system` : compresseur maître, fondus musique (`StartMusicFadeIn/Out`).
   C'est l'endroit où brancher une musique qui réagit aux actions.
+- **Musique étouffée en épave : Confirmé en jeu (2026-10-20)** (`make_music.wreck_muffle`, `finalsubmix.dat`) : objets
+  de contrôle ajoutés en fin de liste (variable `WreckMusicVariable`, courbe `WreckMusicCutOff` 0 → 0,02 / 1 → 1),
+  ajoutés au minimum `PerkFilterCutOff` (type 42) qui pilote le passe-bas `PerkSurroundLowPass` du mixage final
+  (musique, IA, décor ; pas la voiture du joueur) ; `WreckedInput` lance une copie de `RaceFinishedScript` qui met la
+  variable à 0, `ResetLevelScript` la remet à 1. Formats : variable `[0x14, nom, f32]` ; courbe type 21 `[entrée,
+  FFFF 1.0, n, x0, (FFFF y0), x1, (FFFF y1)…]` (un y peut être `(objet, 0)`) ; type 42 `(0x34 << 16) | n` + paires
+  `(objet, 0)` ; scripts : `0x1004 val` empiler, `0x1002 objet<<16` affecter, `0x1000 objet<<16 arg` déclencher,
+  `0x1202` fin. Des objets de contrôle placés après leurs lecteurs fonctionnent. Outil `jboadump.py`.
+- 45 morceaux de course (24 + Rihanna + 20 de la sélection « BLUR reimagined ») : rotation aléatoire OK en jeu.
 
