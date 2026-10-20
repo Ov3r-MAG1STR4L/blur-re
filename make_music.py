@@ -130,6 +130,48 @@ def add_track(j, suffix, wave_name):
     j.w[s + 2] = (ln + 3) | ((ln + 3) << 16)
 
 
+def split_selector(j):
+    """Selectors above 32 entries misbehave in game (2026-10-20, 44 entries: entry 32 played 3 races out of 4, entries
+    33+ never; no original selector has more than 23). Split the race-music selector in two halves A / B (<= 32 each)
+    plus a 2-entry group selector (heads or tails), so every track keeps the same chance.
+    NextTrackScript: [0x1000 sel 0, 0x1200 play, 0x1202] -> also picks B and the group.
+    PlayScript: if group == 0 -> A cases, else B cases; bodies unchanged (one per track, same order)."""
+    f32 = lambda v: struct.unpack("<I", struct.pack("<f", v))[0]
+    s = j.find(33, "InGameMusicSelectorIndex")
+    n = j.w[s + 4]
+    if n <= 32:
+        return
+    a = (n + 1) // 2
+    entries = j.w[s + 5:s + 5 + 8 * n]
+    nt = j.find(189, "InGameLicensedMusicNextTrackScript")
+    sel_a = j.w[nt + 4] >> 16                               # object index of the selector (31), from its first use
+    j.w[s + 4] = a
+    del j.w[s + 5 + 8 * a:s + 5 + 8 * n]
+    sel_b, group = j.count, j.count + 1
+    j.w += [33, j.name("InGameMusicSelectorIndexB"), FF, 0, n - a] + entries[8 * a:]
+    j.w += [33, j.name("InGameMusicGroupSelector"), FF, 0, 2] + entries[:16]           # entries 0.0 and 1.0
+    j.count += 2
+    s = j.find(189, "InGameLicensedMusicNextTrackScript")
+    code = j.w[s + 3:s + 3 + j.w[s + 2]]
+    assert code[:3] == [0x1000, sel_a << 16, 0] and code[-1] == 0x1202, code
+    code2 = code[:3] + [0x1000, sel_b << 16, 0, 0x1000, group << 16, 0] + code[3:]
+    j.w[s + 2] = len(code2)
+    j.w[s + 3:s + 3 + len(code)] = code2
+    s = j.find(189, "InGameLicensedMusicPlayScript")
+    code = j.w[s + 3:s + 3 + j.w[s + 2]]
+    assert len(code) == 5 * n + 1 + 4 * n and code[5 * n] == 4610
+    bodies = code[5 * n + 1:]
+    head = 5 + 5 * (n - a) + 1 + 5 * a + 1                    # group test, B cases, end, A cases, end
+    b_cases = sum(([4887, sel_b << 16, f32(k), 4353, head + 4 * k] for k in range(a, n)), [])
+    a_cases = sum(([4887, sel_a << 16, f32(k), 4353, head + 4 * k] for k in range(a)), [])
+    a_start = 5 + len(b_cases) + 1
+    code2 = [4887, group << 16, 0, 4353, a_start] + b_cases + [4610] + a_cases + [4610] + bodies
+    assert len(code2) == head + 4 * n
+    j.w[s + 2] = len(code2)
+    j.w[s + 3:s + 3 + len(code)] = code2
+    print(f"sélecteur coupé en {a} + {n - a} morceaux (+ pile ou face)")
+
+
 WRECK_CUTOFF = 0.02   # wrecked: final-mix low-pass at 0.02 x 48 kHz (~1 kHz) on music, AI, world (not the player car)
 
 
@@ -178,6 +220,8 @@ def main(out, graphs_only=False):
         if not graphs_only:
             bank = blurbaf.add_wave(bank, wave_name, pcm48(src, start, end), 48000)
         add_track(j, suffix, wave_name)
+    if not FORCE_LAST:
+        split_selector(j)
     fs = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalsubmix.dat"), "rb").read())
     wreck_muffle(fs)
     if FORCE_LAST:

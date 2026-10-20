@@ -837,4 +837,10 @@ Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes
   `(objet, 0)` ; scripts : `0x1004 val` empiler, `0x1002 objet<<16` affecter, `0x1000 objet<<16 arg` déclencher,
   `0x1202` fin. Des objets de contrôle placés après leurs lecteurs fonctionnent. Outil `jboadump.py`.
 - 45 morceaux de course (24 + Rihanna + 20 de la sélection « BLUR reimagined ») : rotation aléatoire OK en jeu.
+- **Sélecteur à plus de 32 entrées : défaillant (Fort)**. Avec 44 entrées, l'entrée n° 32 (« Rabbit In Your
+  Headlights ») passait 3 courses sur 4 et les entrées suivantes jamais ; aucun sélecteur d'origine ne dépasse 23
+  entrées. Contournement (`make_music.split_selector`) : deux sélecteurs de 22 (`InGameMusicSelectorIndex`,
+  `…IndexB`) + un pile ou face (`InGameMusicGroupSelector`) tirés par `InGameLicensedMusicNextTrackScript`
+  (`0x1000 objet 0` = tirer, `0x1200 script` = appeler) ; le script de lecture teste le groupe puis le bon sélecteur.
+  Simulation : 44 tirages → 44 morceaux distincts. À confirmer en jeu.
 
