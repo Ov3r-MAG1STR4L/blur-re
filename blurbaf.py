@@ -121,9 +121,12 @@ def add_wave(b, name, pcm, rate):
     bank = parse(b)
     first_data = min(w["start"] for w in bank["waves"])
     end_entries = bank["waves"][-1]["entry"] + 0x4C
-    assert end_entries + 0x4C <= first_data - 8, "no room for one more WAVE entry"
-    data = encode_psx(pcm)
     out = bytearray(b)
+    if end_entries + 0x4C > first_data - 8:                   # no room: shift every sound by one 0x800 page
+        out[first_data - 8:first_data - 8] = b"\0" * 0x800
+        for w in bank["waves"]:
+            struct.pack_into("<I", out, w["entry"] + 0x2C, w["start"] + 0x800)
+    data = encode_psx(pcm)
     out += b"\0" * ((-(len(out) + 8)) % 0x800)
     out += b"DATA" + struct.pack("<I", len(data) + 8)
     start = len(out)

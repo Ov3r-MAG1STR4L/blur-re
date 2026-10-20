@@ -16,7 +16,17 @@ import numpy as np
 import blurbaf
 
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
-TRACKS = [("23", "ShutUpAndDrive", r"C:\Users\sanqu\Downloads\Rihanna - Shut Up And Drive(Lyrics)🎶.mp3")]
+# (wave name in the bank, source file, start, end) ; start / end "mm:ss" cut a long mix, None = whole file.
+# Object names follow: InGameMusic23, 24, ...
+MIX = r"C:\Users\sanqu\Downloads\『BLUR』reimagined SOUNDTRACK.mp3"     # unofficial fan selection, 20 tracks
+_MIX_CUTS = [("Wonderdawgs", "00:00"), ("Primal", "01:54"), ("FreshToDeath", "04:12"), ("StarGuitarRemake", "06:06"),
+             ("RightAway", "10:51"), ("TheDeep", "13:40"), ("DirtyBoxing", "15:56"), ("SwagDCBreaks", "18:57"),
+             ("RabbitInYourHeadlights", "22:05"), ("Freefall", "24:08"), ("OrbitofrontalEntourage", "26:01"),
+             ("BlackOutDays", "27:46"), ("Pressure", "30:19"), ("Doubt", "33:15"), ("NeonBeams", "35:28"),
+             ("TheDifference", "38:15"), ("RubixCube", "41:35"), ("Spooked", "44:12"), ("NarcoTourists", "46:26"),
+             ("Tomorrow", "51:23")]
+TRACKS = [("ShutUpAndDrive", r"C:\Users\sanqu\Downloads\Rihanna - Shut Up And Drive(Lyrics)🎶.mp3", None, None)] + \
+         [(n, MIX, t, _MIX_CUTS[k + 1][1] if k + 1 < len(_MIX_CUTS) else None) for k, (n, t) in enumerate(_MIX_CUTS)]
 FF = 0xFFFF
 FORCE_LAST = False    # test: every selector entry plays the last added track (False = random among all)
 F1 = 0x3F800000                                           # 1.0f
@@ -25,15 +35,17 @@ F1 = 0x3F800000                                           # 1.0f
 LUFS = -10.2          # median loudness of the 24 original race tracks (measured 2026-10-20: -11.7 .. -8.6)
 
 
-def pcm48(src):
-    """48 kHz stereo int16, gain set so the integrated loudness matches the original tracks (limiter at -1 dBFS)."""
-    m = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", src, "-af", "ebur128", "-f", "null", "-"],
-                       capture_output=True, text=True).stderr
+def pcm48(src, start=None, end=None):
+    """48 kHz stereo int16 of src[start:end], gain set so the integrated loudness matches the original tracks
+    (limiter at -1 dBFS)."""
+    cut = (["-ss", start] if start else []) + (["-to", end] if end else [])
+    m = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", *cut, "-i", src, "-af", "ebur128", "-f", "null", "-"],
+                       capture_output=True, encoding="utf-8", errors="replace").stderr   # file names like 『BLUR』
     gain = LUFS - float(m.rsplit("I:", 1)[1].split("LUFS")[0])
     print(f"  volume {gain:+.1f} dB vers {LUFS} LUFS")
     with tempfile.TemporaryDirectory() as d:
         out = os.path.join(d, "a.wav")
-        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-ar", "48000", "-ac", "2",
+        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", *cut, "-i", src, "-ar", "48000", "-ac", "2",
                         "-af", f"volume={gain}dB,alimiter=limit=0.89:level=false", out], check=True)
         with wave.open(out) as w:
             return np.frombuffer(w.readframes(w.getnframes()), "<i2").reshape(-1, 2).copy()
@@ -118,23 +130,69 @@ def add_track(j, suffix, wave_name):
     j.w[s + 2] = (ln + 3) | ((ln + 3) << 16)
 
 
-def main(out):
+WRECK_CUTOFF = 0.02   # wrecked: final-mix low-pass at 0.02 x 48 kHz (~1 kHz) on music, AI, world (not the player car)
+
+
+def wreck_muffle(j):
+    """finalsubmix.dat: muffle the mix while the player is wrecked. Control objects only, appended at the end:
+    WreckMusicVariable (1 normal, 0 wrecked) -> WreckMusicCutOff curve (0 -> WRECK_CUTOFF, 1 -> 1) -> one more term of
+    PerkFilterCutOff (type 42, min of the perk cut-offs that drive PerkSurroundLowPass, enabled below 1 by
+    PerkLPFilterGateSwitch). WreckedInput used to run RaceFinishedScript: it now runs a copy that also sets the
+    variable to 0; ResetLevelScript (level start, and back above health -0.5 via WreckedStopSwitch) sets it to 1."""
+    f32 = lambda v: struct.unpack("<I", struct.pack("<f", v))[0]
+    var = j.count
+    j.w += [20, j.name("WreckMusicVariable"), F1]
+    curve = j.count + 1
+    j.w += [21, j.name("WreckMusicCutOff"), var, FF, F1, 2, 0, FF, f32(WRECK_CUTOFF), F1, FF, F1]
+    j.count += 2
+    s = j.find(42, "PerkFilterCutOff")
+    n = j.w[s + 2] & 0xFFFF
+    j.w[s + 2] += 1
+    j.w[s + 3 + 2 * n:s + 3 + 2 * n] = [curve, 0]
+    # wreck script = RaceFinishedScript + "var = 0"
+    s = j.find(189, "RaceFinishedScript")
+    code = j.w[s + 3:s + 3 + j.w[s + 2]]
+    assert code[-1] == 0x1202 and j.w[s + 2] >> 16 == 0
+    code = code[:-1] + [0x1004, 0, 0x1002, var << 16, 0x1202]
+    script = j.count
+    j.w += [189, j.name("WreckedMusicScript"), len(code)] + code
+    j.count += 1
+    s = j.find(8, "WreckedInput")
+    assert j.w[s + 2] == 132, j.w[s + 2]
+    j.w[s + 2] = script
+    # reset script: "var = 1" before the end
+    s = j.find(189, "ResetLevelScript")
+    ln = j.w[s + 2]
+    assert ln >> 16 == 0 and j.w[s + 2 + ln] == 0x1202
+    j.w[s + 2 + ln:s + 2 + ln] = [0x1004, F1, 0x1002, var << 16]
+    j.w[s + 2] = ln + 4
+
+
+def main(out, graphs_only=False):
+    """graphs_only: keep the already built OUTDIR/audio/ingamemusic.baf (encoding takes ~20 min), redo the graphs."""
     bank = open(os.path.join(E, "root_streaming", "ingamemusic.baf"), "rb").read()
     j = Jboa(open(os.path.join(E, "root", "audio", "dat", "music_controller.dat"), "rb").read())
-    for suffix, wave_name, src in TRACKS:
-        bank = blurbaf.add_wave(bank, wave_name, pcm48(src), 48000)
+    for k, (wave_name, src, start, end) in enumerate(TRACKS):
+        suffix = "%02d" % (23 + k)
+        print("piste", "InGameMusic" + suffix, "=", wave_name, start or "", end or "")
+        if not graphs_only:
+            bank = blurbaf.add_wave(bank, wave_name, pcm48(src, start, end), 48000)
         add_track(j, suffix, wave_name)
-        print("piste", "InGameMusic" + suffix, "=", wave_name)
+    fs = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalsubmix.dat"), "rb").read())
+    wreck_muffle(fs)
     if FORCE_LAST:
         s = j.find(33, "InGameMusicSelectorIndex")
         for k in range(j.w[s + 4]):
             j.w[s + 6 + 8 * k] = j.w[s + 6 + 8 * (j.w[s + 4] - 1)]
         print("test : toutes les entrées du sélecteur jouent la dernière piste")
     os.makedirs(os.path.join(out, "audio", "dat"), exist_ok=True)
-    open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
+    if not graphs_only:
+        open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
+    open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
+    print("épave : mixage étouffé à", WRECK_CUTOFF)
     print("écrit dans", out)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], "--graphes" in sys.argv)
