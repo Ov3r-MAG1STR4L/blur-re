@@ -34,6 +34,9 @@ PICKUPS_DOUBLETAP = set()   # set aside 2026-10-19. Player results: Shield OK (1
 AI_FRICTION = None            # AI grip test (2026-10-20): AI.Air_Default FrictionCoefficient, original 1.212; None = original
 # AI steering test (2026-10-20): the AI weave slightly (PID P ~32, D ~3.7). Every AISteering profile gets these values.
 AI_STEERING = {"SteeringParams.PID.D": 7.0, "SteeringParams.ForwardsDist": 20.0}   # {} = original
+# Career AI grip test (2026-10-20): AmaxEvent OverrideAISurface on every career event; the value scales the AI target
+# speed (clamped 0.8..1.5 by the game, AI only). None = original. Custom races have no such field.
+CAREER_AI_SURFACE = 1.5
 EVIL_SHANNON = True            # custom races: Shannon with the evil avatar + ultimate profile (see step 9)
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
@@ -290,6 +293,15 @@ def main(out):
                 b = XT(p_air).patched(name, path, v)
                 open(p_air, "wb").write(b)
         print("AI steering:", AI_STEERING)
+    if CAREER_AI_SURFACE:
+        p_sp = os.path.join(xt, "singleplayer.bin")
+        x = XT(os.path.join(G, "xt", "singleplayer.bin"))
+        events = [r[0] for r in x.records() if r[1] == "AmaxEvent"]
+        for name in events:
+            for path, v in (("OverrideAISurface", True), ("OverrideAISurfaceValue", CAREER_AI_SURFACE)):
+                x.b = x.patched(name, path, v)
+        open(p_sp, "wb").write(x.b)
+        print("career AI surface", CAREER_AI_SURFACE, "on", len(events), "events")
 
     # 10. AMAX Lua plugins shipped with the mod (test copy only): mod_static/amax/plugins/<name>/<name>.lua, plus
     # the copy's plugins.lua = the installed one (read only) + a require line per plugin
