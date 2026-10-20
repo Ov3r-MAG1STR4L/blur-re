@@ -63,6 +63,81 @@ def decode_psx(data, channels, samples):
     return out[:samples]
 
 
+def _encode_channel(x):
+    """PS-ADPCM encoder for one channel (int array) -> (frames, 0x21) uint8; exact mirror of decode_psx."""
+    import numba
+
+    @numba.njit(cache=True)
+    def enc(x, coefs):
+        n = len(x) // 64
+        out = np.zeros((n, 0x21), np.uint8)
+        h1 = h2 = 0
+        for i in range(n):
+            best_err, best = 1e30, (0, 0, 0, 0)
+            for filt in range(5):
+                c1, c2 = coefs[filt]
+                for shift in range(13):
+                    a1, a2, err = h1, h2, 0.0
+                    for k in range(64):
+                        pred = (a1 * c1 + a2 * c2 + 32) >> 6
+                        q = ((x[i * 64 + k] - pred) * (1 << shift) + (1 << 11)) >> 12   # round to nibble
+                        q = -8 if q < -8 else 7 if q > 7 else q
+                        v = ((q << 12) >> shift) + pred
+                        v = -32768 if v < -32768 else 32767 if v > 32767 else v
+                        d = x[i * 64 + k] - v
+                        err += d * d
+                        if err >= best_err:
+                            break
+                        a2, a1 = a1, v
+                    if err < best_err:
+                        best_err, best = err, (filt, shift, a1, a2)
+            filt, shift = best[0], best[1]
+            c1, c2 = coefs[filt]
+            out[i, 0] = (filt << 4) | shift
+            for k in range(64):
+                pred = (h1 * c1 + h2 * c2 + 32) >> 6
+                q = ((x[i * 64 + k] - pred) * (1 << shift) + (1 << 11)) >> 12
+                q = -8 if q < -8 else 7 if q > 7 else q
+                v = ((q << 12) >> shift) + pred
+                v = -32768 if v < -32768 else 32767 if v > 32767 else v
+                h2, h1 = h1, v
+                out[i, 1 + k // 2] |= (q & 0xF) << (4 * (k & 1))
+        return out
+
+    return enc(x.astype(np.int64), np.array(FILTERS, np.int64))
+
+
+def encode_psx(pcm):
+    """int16 (samples, channels) -> PS-ADPCM bytes, frames interleaved per channel (padded to 64 samples)."""
+    pad = (-len(pcm)) % 64
+    pcm = np.vstack([pcm, np.zeros((pad, pcm.shape[1]), pcm.dtype)])
+    frames = [_encode_channel(pcm[:, c]) for c in range(pcm.shape[1])]
+    return np.stack(frames, axis=1).tobytes()
+
+
+def add_wave(b, name, pcm, rate):
+    """Return bank bytes with one more codec-7 WAVE appended (entry written in the padding before the first data;
+    data at the end, 0x800-aligned, preceded by 'DATA' + u32 size+8 like the existing ones)."""
+    bank = parse(b)
+    first_data = min(w["start"] for w in bank["waves"])
+    end_entries = bank["waves"][-1]["entry"] + 0x4C
+    assert end_entries + 0x4C <= first_data - 8, "no room for one more WAVE entry"
+    data = encode_psx(pcm)
+    out = bytearray(b)
+    out += b"\0" * ((-(len(out) + 8)) % 0x800)
+    out += b"DATA" + struct.pack("<I", len(data) + 8)
+    start = len(out)
+    out += data + b"\0" * ((-len(data)) % 0x800)
+    e = bytearray(b[bank["waves"][-1]["entry"]:bank["waves"][-1]["entry"] + 0x4C])   # copy flags of a sibling
+    e[0x0C:0x2C] = name.encode().ljust(0x20, b"\0")
+    struct.pack_into("<2I", e, 0x2C, start, len(data))
+    struct.pack_into("<2I", e, 0x40, rate, len(pcm))
+    e[0x4B] = pcm.shape[1]
+    out[end_entries:end_entries + 0x4C] = e
+    struct.pack_into("<I", out, 0x0C, len(bank["waves"]) + 1)
+    return bytes(out)
+
+
 def decode(b, w):
     data = b[w["start"]:w["start"] + w["size"]]
     if w["codec"] == 3:

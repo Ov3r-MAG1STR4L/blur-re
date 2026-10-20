@@ -89,9 +89,10 @@ if (-not $Run) { $rc += "/L" }                         # /L = list only
 if ($LASTEXITCODE -ge 8) { throw "robocopy a échoué (code $LASTEXITCODE)" }
 
 # 3 bis. a pak wins over loose files (Process Monitor): lay the files of the paks the mod touches loose and set
-# the paks aside. gamedata.pak (data) -> <copy>\gamedata ; root.pak (models, UI pictures...) -> <copy>\
+# the paks aside. gamedata.pak (data) -> <copy>\gamedata ; root.pak (models, UI pictures...) -> <copy>\ ;
+# root_streaming.pak (music, ambiences; mounted on /audio/) -> <copy>\audio (music mod, 2026-10-20)
 $extracted = Split-Path $Mod -Parent | Split-Path -Parent | Split-Path -Parent
-foreach ($u in @(@("gamedata", "gamedata\gamedata", "gamedata"), @("root", "root", ""))) {
+foreach ($u in @(@("gamedata", "gamedata\gamedata", "gamedata"), @("root", "root", ""), @("root_streaming", "root_streaming", "audio"))) {
     $pak, $from, $to = $u[0], (Join-Path $extracted $u[1]), (Join-Path $dst $u[2])
     Write-Host "$pak en clair : $from -> $to ; cache\$pak.pak (+ .sig) -> .off"
     if ($Run) {
