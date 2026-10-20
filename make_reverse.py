@@ -36,7 +36,7 @@ AI_FRICTION = None            # AI grip test (2026-10-20): AI.Air_Default Fricti
 AI_STEERING = {"SteeringParams.PID.D": 7.0, "SteeringParams.ForwardsDist": 20.0}   # {} = original
 # Career AI grip test (2026-10-20): AmaxEvent OverrideAISurface on every career event; the value scales the AI target
 # speed (clamped 0.8..1.5 by the game, AI only). None = original. Custom races have no such field.
-CAREER_AI_SURFACE = 1.5
+CAREER_AI_SURFACE = None   # 1.5 tested 2026-10-20: applied, post-nitro braking unchanged
 EVIL_SHANNON = True            # custom races: Shannon with the evil avatar + ultimate profile (see step 9)
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
