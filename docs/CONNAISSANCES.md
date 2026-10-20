@@ -664,6 +664,11 @@ Trois couches :
   Race Director ne bride plus : **le freinage après nitro vient du pilote IA lui-même (code)** (**Fort**). Réglages
   candidats seulement en variables de débogage (`AmaxAI.DebugCar.CorneringBoost`, `AmaxAI.Perks.General.NitroCoolDown`),
   non modifiables sans toucher à l'exe.
+- **Zigzag des IA** : régulateur de direction `AISteering` (`air.bin`, 6 profils ; `AI_Steering_Controller_Default`
+  pour 52 voitures sur 81) : PID P ≈ 32, D ≈ 3,7 (peu amorti), visée `ForwardsDist` ≈ 15 m, `AIOffset` désactivé.
+  **Essai D 7 + visée 20 m + ligne 0,55 → 1,0** (LA River 3) : oscillation latérale mesurée (écart au tracé lissé
+  sur 2 s, médiane des IA) 5,2 → 3,7 m ; **rythme inchangé** (même écart au joueur). La ligne 0,55 n'a pas d'effet
+  visible sur la vitesse.
 - Pistes restantes : la physique des IA (`AI.Air_Default` : FrictionCoefficient 1,212, BrakingCoefficient 1,0), la
   ligne 0,55 (rôle inconnu), les variables `AmaxAI.DebugCar.CorneringBoost` / `AISpeed`.
 
