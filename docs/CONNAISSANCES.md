@@ -644,6 +644,17 @@ Trois couches :
   = derrière le joueur). Palier 1 : toutes derrière ; dernier palier : toutes devant (−210 m). Le groupe de rivales
   change de colonnes d'un palier à l'autre : le palier suit la place du joueur.
 
+### Essai « meute de rivales » (2026-10-20)
+
+- Hard modifié : les 19 IA avec le drapeau de rivale (ligne 4 = 1), des distances de −18 à +18 m, un facteur de 1,2 et le
+  profil 900. Mesure avec `racegaps.py` (écart de chaque IA au joueur toutes les 20 s) sur trois courses gagnées par le
+  joueur : Brighton 1, LA River 3 (Concrete Basin) et Sausalito 2 (Bay Area Tour).
+- Résultat : **aucun rattrapage**. Les IA restent toutes derrière ; l'écart grandit sans cesse (la meilleure IA perd
+  ≈ 10 m/s ; 2,8 km après 300 s à LA River) et ne se referme jamais. Le Race Director ne sait que **ralentir** les IA (un
+  plafond) ; il ne les pousse pas au-delà de leur limite physique. Le peloton reste groupé derrière (**Fort**).
+- Pistes restantes : la physique des IA (`AI.Air_Default` : FrictionCoefficient 1,212, BrakingCoefficient 1,0), la
+  ligne 0,55 (rôle inconnu), les variables `AmaxAI.DebugCar.CorneringBoost` / `AISpeed`.
+
 ### Course perso (LAN) : Easy / Medium / Hard (2026-10-20)
 
 - `events/multiplayer_easy|medium|hard.csv` sont **identiques sauf la ligne des facteurs** (plafond de vitesse) :
