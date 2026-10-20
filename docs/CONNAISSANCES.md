@@ -821,4 +821,11 @@ Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes
   script) ; script d'arrêt (`long | long << 16`, n × `[4096, objet, 1]`). Le morceau suivant est retiré au hasard à la
   fin du précédent (test forcé = boucle sur le même morceau, normal).
 - Copie de test : `root_streaming.pak` → `.off`, ses 67 fichiers en clair dans `audio\` (le pak l'emporte sinon).
+- **Volume des morceaux** (EBU R128, 60 s au milieu de chaque morceau) : originaux de −11,7 à −8,6 LUFS, médiane −10,2 ;
+  `make_music.py` règle chaque ajout sur −10,2 LUFS (gain + limiteur à −1 dBFS).
+- **La musique passe par `finalsubmix`** (entrée `MusicSurroundInput`, volume `MusicMixerVolume`), qui reçoit aussi les
+  événements nitro, épave, tirs et impacts. Effets déjà présents : baisse de la musique sur les bonus
+  (`MusicMixerPerkDuckAmount`), passe-bas pendant le nitro (`NitrousLowPass`), « bit crusher » selon les dégâts
+  (`RGBBitCrusher`, `RGBMedium` / `RGBHard`). `system` : compresseur maître, fondus musique (`StartMusicFadeIn/Out`).
+  C'est l'endroit où brancher une musique qui réagit aux actions.
 
