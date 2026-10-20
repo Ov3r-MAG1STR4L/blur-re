@@ -669,6 +669,15 @@ Trois couches :
   **Essai D 7 + visée 20 m + ligne 0,55 → 1,0** (LA River 3) : oscillation latérale mesurée (écart au tracé lissé
   sur 2 s, médiane des IA) 5,2 → 3,7 m ; **rythme inchangé** (même écart au joueur). La ligne 0,55 n'a pas d'effet
   visible sur la vitesse.
+- **Code IA (lecture seule de l'exe, 2026-10-20)** : les 70 variables `AmaxAI.*` sont des objets (constructeur
+  `0x4F6BA0`, valeur en +0x24) ; défauts : `NitroCoolDown` 6 s (obj `0x1134F40`, lu en `0x4BCB8B`), `CorneringBoost`
+  2,25 (lu en `0x4BDFB6`), `Friction` 1,05 (`0x4C01EE`), `Torque` 0,1, `TorqueDamp` 5, `AirForce` 1000 ; contrôleur de
+  direction `SteeringRate` 30 / `SteeringTimeStep` 0,03 (module `0xB05xxx`).
+  Application des commandes : `0x4C28F0` (accélérateur, frein, direction bornés à [0,1] / [−1,1]). Aide au freinage du
+  joueur : si vitesse (`voiture+0x134`) > **vitesse cible de piste** (`+0x36C` d'un objet de suivi) ×
+  `BrakeTrackSpeedPercentage` → frein 1, accélérateur 0. La vitesse cible est écrite en `0xB0507A` : valeur de base
+  (+0x40) × facteur borné à [0,2 ; 1] (`0xB04EE0`). Hypothèse : les IA freinent après un nitro parce qu'elles
+  dépassent cette vitesse cible. À confirmer en lisant la mémoire pendant une course.
 - Pistes restantes : la physique des IA (`AI.Air_Default` : FrictionCoefficient 1,212, BrakingCoefficient 1,0), la
   ligne 0,55 (rôle inconnu), les variables `AmaxAI.DebugCar.CorneringBoost` / `AISpeed`.
 
