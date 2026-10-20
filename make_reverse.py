@@ -23,7 +23,7 @@ MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4; 
 # (+4), 2 factors 1 / 0.84..0.87 (+8, corrected by difficulty), 3 0.55 (+0xC), 4 i32 flags, 5 i32, 6 AIPerkSkillz
 # Index, 7 AIPerkPrefs Index. Experiment 1 ({6: 70}, Tier 10 Skills): same race times as the original.
 # Experiment 2: factors 1.2 -> median AI 13 s faster (the row is the speed cap). Experiment 3: 1.5. {} = original.
-AI_ROWS = {}   # experiments closed 2026-10-19 (player: catch-up not really fixed, failure); values above for reference
+AI_ROWS = {"multiplayer_hard.csv": {2: 1.2, 6: 900}}   # "no handicap" Hard (2026-10-20): no speed cap + Shannon profile for all
 # DoubleTap experiment (2026-10-19): the combine-two-pickups trigger is orphaned code; instead every pickup with a
 # DoubleTap level (Nitro rift, Shield 12 s, Mine, Shunt, Shock) uses it as its Normal level. Test 1 (all five): the
 # AI use them fine, but the game crashes as soon as the PLAYER fires a pickup -> one pickup at a time.
