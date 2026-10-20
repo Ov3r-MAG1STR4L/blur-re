@@ -802,4 +802,13 @@ Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes
   tirs / impacts de chaque bonus, `CurrentHealthLevel` ; `ingameuistereo` = `MPPositionIn`, `PassedCheckpoint`,
   `HealthLow`, `Wrecked` ; `ingameui` = fans, `RaceFinished` ; `aisubmix` = bonus des IA. Piste pour une musique qui
   réagit aux actions : faire jouer des couches musicales depuis ces graphes (à condition de savoir ajouter des objets JBOA).
+- **JBOA, structure (partielle)** : en-tête `JBOA`, u32 version 0x2000B, u32 taille jusqu'aux noms, u32 0, u32 nombre
+  d'objets, puis objets à la suite `[u32 type][u32 nom = position dans la table de noms finale][paramètres]`.
+  Références d'objet = index << 16 ; constantes = `0xFFFF` + valeur. Types vus : 1 / 32 / 40 entrées du jeu, 20
+  variable, 52 variable lissée, 54 porte (seuil), 60 son en mémoire `[banque][son]`, 64 son en streaming
+  `[banque][son]`, 73 mixeur, 189 script (bytecode, opcodes 0x1000–0x1317 : affecter, comparer, sauter, jouer).
+- Morceaux de course : un objet par morceau (`InGameMusic00..22` → banque `InGameMusic` + nom du son) et un sélecteur
+  `InGameMusicSelectorIndex` à **23 entrées** (valeur, poids 1). Ajouter un morceau = ajouter le son dans
+  `ingamemusic.baf` (reconstruire la banque, données alignées sur 0x800) + un objet `InGameMusic23` + une entrée au
+  sélecteur (+ mixeur si nécessaire), sans casser les index d'objets.
 
