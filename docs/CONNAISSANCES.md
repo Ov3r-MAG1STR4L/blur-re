@@ -704,6 +704,11 @@ Trois couches :
 - Lu en course perso (2026-10-20) : la configuration lue par l'IA (`[0x111EDBC]+8`) a le drapeau +0x51 à 0 et la valeur
   +0x54 à 0 ; les IA prennent l'adhérence de la surface (0,94 à 1,0). Rien dans `MultiplayerRace` ne remplit ce
   drapeau : **pas de levier en course perso** sans écrire en mémoire ni modifier l'exe (interdits).
+- **Essai carrière `OverrideAISurfaceValue` 1,5 (86 épreuves, T1E0 Barcelona Oval)** : appliqué (adhérence lue 1,5
+  pour toutes les IA). Cible médiane 223 km/h (p90 236), IA 198 km/h, joueur 227. **Le freinage après nitro reste** : 78
+  nitros, pic 251 pour une cible de 223 → retombée à 185. La cible en ligne droite reste la vitesse de pointe sans nitro
+  (limitée par la physique, pas par l'adhérence). Gain dans les virages : non mesuré (il manque une course de
+  référence sans le mod).
 - Pistes restantes : la physique des IA (`AI.Air_Default` : FrictionCoefficient 1,212, BrakingCoefficient 1,0), la
   ligne 0,55 (rôle inconnu), les variables `AmaxAI.DebugCar.CorneringBoost` / `AISpeed`.
 
