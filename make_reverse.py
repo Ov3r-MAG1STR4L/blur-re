@@ -25,13 +25,13 @@ MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4; 
 # Experiment 2: factors 1.2 -> median AI 13 s faster (the row is the speed cap). Experiment 3: 1.5. {} = original.
 # "no handicap" Hard (2026-10-20): no speed cap + Shannon profile for all. Rival pack test (2026-10-20): every AI in the
 # rival group (row 4 = 1) with a target gap around the player (row 1, m, -18..+18), instead of 4 rivals + 15 fillers.
-AI_ROWS = {"multiplayer_hard.csv": {1: [2 * i - 18 for i in range(19)], 2: 1.2, 4: 1, 6: 900}}
+AI_ROWS = {"multiplayer_hard.csv": {1: [2 * i - 18 for i in range(19)], 2: 2.0, 4: 1, 6: 900}}   # factor 2.0: straight-line cap test
 # DoubleTap experiment (2026-10-19): the combine-two-pickups trigger is orphaned code; instead every pickup with a
 # DoubleTap level (Nitro rift, Shield 12 s, Mine, Shunt, Shock) uses it as its Normal level. Test 1 (all five): the
 # AI use them fine, but the game crashes as soon as the PLAYER fires a pickup -> one pickup at a time.
 # Pickup Type names: "Bomb", "Shunt", "Shock", "Shield", "Nitrous". Empty = original.
 PICKUPS_DOUBLETAP = set()   # set aside 2026-10-19. Player results: Shield OK (12 s); Bomb OK (3 s); Shock OK (no visible change); Nitrous no effect; Shunt CRASH
-AI_FRICTION = 1.6             # AI grip test (2026-10-20): AI.Air_Default FrictionCoefficient, original 1.212; None = original
+AI_FRICTION = None            # AI grip test (2026-10-20): AI.Air_Default FrictionCoefficient, original 1.212; None = original
 EVIL_SHANNON = True            # custom races: Shannon with the evil avatar + ultimate profile (see step 9)
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
