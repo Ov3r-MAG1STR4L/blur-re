@@ -25,13 +25,15 @@ MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4; 
 # Experiment 2: factors 1.2 -> median AI 13 s faster (the row is the speed cap). Experiment 3: 1.5. {} = original.
 # "no handicap" Hard (2026-10-20): no speed cap + Shannon profile for all. Rival pack test (2026-10-20): every AI in the
 # rival group (row 4 = 1) with a target gap around the player (row 1, m, -18..+18), instead of 4 rivals + 15 fillers.
-AI_ROWS = {"multiplayer_hard.csv": {1: [2 * i - 18 for i in range(19)], 2: 2.0, 4: 1, 6: 900}}   # factor 2.0: straight-line cap test
+AI_ROWS = {"multiplayer_hard.csv": {1: [2 * i - 18 for i in range(19)], 2: 2.0, 3: 1.0, 4: 1, 6: 900}}   # factor 2.0 = 1.2 (measured); row 3 (0.55, unknown) test
 # DoubleTap experiment (2026-10-19): the combine-two-pickups trigger is orphaned code; instead every pickup with a
 # DoubleTap level (Nitro rift, Shield 12 s, Mine, Shunt, Shock) uses it as its Normal level. Test 1 (all five): the
 # AI use them fine, but the game crashes as soon as the PLAYER fires a pickup -> one pickup at a time.
 # Pickup Type names: "Bomb", "Shunt", "Shock", "Shield", "Nitrous". Empty = original.
 PICKUPS_DOUBLETAP = set()   # set aside 2026-10-19. Player results: Shield OK (12 s); Bomb OK (3 s); Shock OK (no visible change); Nitrous no effect; Shunt CRASH
 AI_FRICTION = None            # AI grip test (2026-10-20): AI.Air_Default FrictionCoefficient, original 1.212; None = original
+# AI steering test (2026-10-20): the AI weave slightly (PID P ~32, D ~3.7). Every AISteering profile gets these values.
+AI_STEERING = {"SteeringParams.PID.D": 7.0, "SteeringParams.ForwardsDist": 20.0}   # {} = original
 EVIL_SHANNON = True            # custom races: Shannon with the evil avatar + ultimate profile (see step 9)
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
@@ -279,6 +281,15 @@ def main(out):
         b = XT(p_air).patched("Air_Default", "PersonalityParams.Speed.FrictionCoefficient", AI_FRICTION)   # read before truncating
         open(p_air, "wb").write(b)
         print("AI grip: Air_Default FrictionCoefficient", AI_FRICTION)
+    if AI_STEERING:
+        p_air = os.path.join(xt, "air.bin")
+        if not os.path.exists(p_air):
+            open(p_air, "wb").write(open(os.path.join(G, "xt", "air.bin"), "rb").read())
+        for name in [r[0] for r in XT(p_air).records() if r[1] == "AISteering"]:
+            for path, v in AI_STEERING.items():
+                b = XT(p_air).patched(name, path, v)
+                open(p_air, "wb").write(b)
+        print("AI steering:", AI_STEERING)
 
     # 10. AMAX Lua plugins shipped with the mod (test copy only): mod_static/amax/plugins/<name>/<name>.lua, plus
     # the copy's plugins.lua = the installed one (read only) + a require line per plugin
