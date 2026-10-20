@@ -777,3 +777,29 @@ Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes
   TimberStalker : « ajouter des cartes, c'est dans les fichiers xt ; les fichiers de niveau sont plus durs ».
 - Vidéo d'un moddeur (2026-10-14) : lieu « Flat Earth », circuit « Home Run v1 », lancé avec `Blur_mod.exe`
   (exe modifié) via Local Network → Custom Game.
+
+## Audio et musique (2026-10-20)
+
+- **Banques `.baf`** (`root.pak` `audio/*.baf` ; musiques dans `root_streaming.pak` : `ingamemusic.baf` 329 Mo,
+  `ingamecustommusic.baf`, `menumusic.baf`, `vistamusic.baf`) : format « BANK » v4 décrit par vgmstream (`meta/baf.c`,
+  Blur PS3 = même disposition). Entrées `WAVE` de 0x4C : codec +0x08, nom +0x0C, position absolue +0x2C, taille +0x30,
+  fréquence +0x40, échantillons par canal +0x44, boucle +0x48, canaux +0x4B. Données alignées sur 0x800 dans les banques
+  en streaming. **Codec 7 = ADPCM PlayStation, trames de 0x21 octets** (1 octet filtre/décalage + 64 quartets),
+  entrelacées par canal ; codec 3 = PCM16. Outil : `blurbaf.py` (liste, décodage WAV ; **Confirmé** : décodage propre).
+- `InGameMusic` : **24 morceaux** de course en 48 kHz stéréo (AtomicMoog, BLUR_track1..5, Bump, Coleen, Delucid,
+  DemNaLikeMe, EverythingIsUnderControl, GadgetFunk, HarvestDance, LetThereBeLight, MakeItSo, Nothing2Step2, OnTheRun,
+  PatPong, RedLaserBeam, Stompbox, SWAG, TeQuiero, ThatGirl, BLUR_menu). `InGameCustomMusic` = **musique adaptative déjà
+  existante** : Checkpoint (`MX_Chk_Low/Med/High/Last`), Destruction (`MX_Destruct_Low/Med/High`), duels de boss
+  (`MX_OOO_Boss_Lead/Neutral/Player_Leads`, intro par boss), chacun avec une piste `sync_loop` (PCM 16 Hz, repères).
+- **Contrôleurs `audio/dat/*.dat`, format « JBOA »** (365 graphes : moteurs, roues, interface, ambiances, musique) :
+  graphe d'objets (variables, portes, scripts, boucles, mixeurs, sorties ; constantes `ffff0000 <f32>`). Musique :
+  `music_controller` (menu, chargement, jingles de circuit `VistaID`, morceaux de course `InGameMusic00..22`, fin de
+  course), `music_boss`, `music_checkpoint`, `music_destruction`, `music_upmixer` (volumes, `DuckMusic`). Format
+  interne : **à décoder**.
+- **Entrées envoyées par le jeu aux graphes** (noms `*Input` / `*ActionIn`) : musique = `RaceStart`, `RaceFinishPass/
+  Fail`, `LevelStart/Finish`, `MusicType`, `VistaID`, `BossID/Distance/RelativeSpeed`, `RacePosition`,
+  `CheckpointTimeRemaining`, `DestructionTimeRemaining`. Ailleurs : `finalsubmix` = `PerkNitrousActivated`, `Wrecked`,
+  tirs / impacts de chaque bonus, `CurrentHealthLevel` ; `ingameuistereo` = `MPPositionIn`, `PassedCheckpoint`,
+  `HealthLow`, `Wrecked` ; `ingameui` = fans, `RaceFinished` ; `aisubmix` = bonus des IA. Piste pour une musique qui
+  réagit aux actions : faire jouer des couches musicales depuis ces graphes (à condition de savoir ajouter des objets JBOA).
+
