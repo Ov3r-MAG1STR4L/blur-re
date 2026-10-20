@@ -31,6 +31,7 @@ AI_ROWS = {"multiplayer_hard.csv": {1: [2 * i - 18 for i in range(19)], 2: 1.2, 
 # AI use them fine, but the game crashes as soon as the PLAYER fires a pickup -> one pickup at a time.
 # Pickup Type names: "Bomb", "Shunt", "Shock", "Shield", "Nitrous". Empty = original.
 PICKUPS_DOUBLETAP = set()   # set aside 2026-10-19. Player results: Shield OK (12 s); Bomb OK (3 s); Shock OK (no visible change); Nitrous no effect; Shunt CRASH
+AI_FRICTION = 1.6             # AI grip test (2026-10-20): AI.Air_Default FrictionCoefficient, original 1.212; None = original
 EVIL_SHANNON = True            # custom races: Shannon with the evil avatar + ultimate profile (see step 9)
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
@@ -271,6 +272,13 @@ def main(out):
         p_rb = os.path.join(xt, "finalracebook.bin")
         open(p_rb, "wb").write(XT(os.path.join(G, "xt", "finalracebook.bin")).patched("Shannon", "AvatarID", 22))
         print("Evil Shannon: avatar 22, T9 Shannon profile ultimate")
+    if AI_FRICTION:                                   # every AI driver uses the Air_Default template
+        p_air = os.path.join(xt, "air.bin")
+        if not os.path.exists(p_air):
+            open(p_air, "wb").write(open(os.path.join(G, "xt", "air.bin"), "rb").read())
+        b = XT(p_air).patched("Air_Default", "PersonalityParams.Speed.FrictionCoefficient", AI_FRICTION)   # read before truncating
+        open(p_air, "wb").write(b)
+        print("AI grip: Air_Default FrictionCoefficient", AI_FRICTION)
 
     # 10. AMAX Lua plugins shipped with the mod (test copy only): mod_static/amax/plugins/<name>/<name>.lua, plus
     # the copy's plugins.lua = the installed one (read only) + a require line per plugin
