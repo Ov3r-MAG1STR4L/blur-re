@@ -843,4 +843,10 @@ Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes
   `…IndexB`) + un pile ou face (`InGameMusicGroupSelector`) tirés par `InGameLicensedMusicNextTrackScript`
   (`0x1000 objet 0` = tirer, `0x1200 script` = appeler) ; le script de lecture teste le groupe puis le bon sélecteur.
   Simulation : 44 tirages → 44 morceaux distincts. À confirmer en jeu.
+- **Départ de course** : `RaceStartScript` tire lui-même le sélecteur (`0x1000 sélecteur 0`) puis appelle le script de
+  lecture (`0x1200`), sans passer par `NextTrackScript` ; le morceau suivant n'est tiré qu'à la fin d'un morceau. Après
+  la coupure en deux sélecteurs, seul le groupe A sortait au départ (2026-10-21 : 15 min d'originaux) ; corrigé :
+  B et le pile ou face sont aussi tirés au départ (cibles de saut `0x1101` décalées de 6). Longueurs des
+  instructions : `0x1000` 3, `0x1002` 2, `0x1004` 2, `0x1101` 2 (saut si vrai), `0x1200` 2, `0x1202` 1, `0x1317` 3
+  (comparer) (`make_music.script_ops`).
 
