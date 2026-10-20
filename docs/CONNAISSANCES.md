@@ -652,6 +652,9 @@ Trois couches :
 - Résultat : **aucun rattrapage**. Les IA restent toutes derrière ; l'écart grandit sans cesse (la meilleure IA perd
   ≈ 10 m/s ; 2,8 km après 300 s à LA River) et ne se referme jamais. Le Race Director ne sait que **ralentir** les IA (un
   plafond) ; il ne les pousse pas au-delà de leur limite physique. Le peloton reste groupé derrière (**Fort**).
+- **Essai adhérence** (`Air_Default` FrictionCoefficient 1,212 → 1,6, LA River 3) : **aucun effet** (même écart, IA
+  217 → 216 km/h de moyenne). Joueur 270 km/h de moyenne contre 217 pour les IA (+25 %) : l'écart vient sans doute
+  des **voitures** (rang moyen des IA Hard 44, `ai_average_mp_rank_hard`), pas du pilotage. À vérifier.
 - Pistes restantes : la physique des IA (`AI.Air_Default` : FrictionCoefficient 1,212, BrakingCoefficient 1,0), la
   ligne 0,55 (rôle inconnu), les variables `AmaxAI.DebugCar.CorneringBoost` / `AISpeed`.
 
