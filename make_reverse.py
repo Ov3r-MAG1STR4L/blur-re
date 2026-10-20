@@ -29,6 +29,7 @@ AI_ROWS = {"multiplayer_hard.csv": {2: 1.2, 6: 900}}   # "no handicap" Hard (202
 # AI use them fine, but the game crashes as soon as the PLAYER fires a pickup -> one pickup at a time.
 # Pickup Type names: "Bomb", "Shunt", "Shock", "Shield", "Nitrous". Empty = original.
 PICKUPS_DOUBLETAP = set()   # set aside 2026-10-19. Player results: Shield OK (12 s); Bomb OK (3 s); Shock OK (no visible change); Nitrous no effect; Shunt CRASH
+EVIL_SHANNON = True            # custom races: Shannon with the evil avatar + ultimate profile (see step 9)
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
 G = os.path.join(E, "gamedata", "gamedata")
@@ -253,7 +254,22 @@ def main(out):
         open(os.path.join(xt, "pickups.bin"), "wb").write(b)
         print("DoubleTap as Normal:", done)
 
-    # 8. AMAX Lua plugins shipped with the mod (test copy only): mod_static/amax/plugins/<name>/<name>.lua, plus
+    # 9. "Evil Shannon": Shannon and ShannonEvil are the same driver (same model, AI template, cars, displayed name);
+    # only the avatar differs (16 / 22). Custom races list Shannon: give her the evil avatar, and make her profile
+    # (AIPerkSkillz T9 Shannon, Index 900, the only one at 1.0 for every pickup) "ultimate": Racing, Aggression,
+    # Blocking, Slamming 1.0 and Mistakes 0 (every profile of the game has 0.5 / 0.5 / 0 / 0 / 0). In custom races
+    # the profile is per grid slot, not per driver: the no-handicap Hard (AI_ROWS) gives it to every AI.
+    if EVIL_SHANNON:
+        p_air = os.path.join(xt, "air.bin")
+        open(p_air, "wb").write(open(os.path.join(G, "xt", "air.bin"), "rb").read())
+        for field, v in (("Racing", 1.0), ("Aggression", 1.0), ("Blocking", 1.0), ("Slamming", 1.0), ("Mistakes", 0.0)):
+            b = XT(p_air).patched("T9 Shannon", field, v)
+            open(p_air, "wb").write(b)
+        p_rb = os.path.join(xt, "finalracebook.bin")
+        open(p_rb, "wb").write(XT(os.path.join(G, "xt", "finalracebook.bin")).patched("Shannon", "AvatarID", 22))
+        print("Evil Shannon: avatar 22, T9 Shannon profile ultimate")
+
+    # 10. AMAX Lua plugins shipped with the mod (test copy only): mod_static/amax/plugins/<name>/<name>.lua, plus
     # the copy's plugins.lua = the installed one (read only) + a require line per plugin
     static = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mod_static")
     for root, _, files in os.walk(static):
