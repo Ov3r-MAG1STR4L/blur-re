@@ -614,6 +614,17 @@ Trois couches :
   facteurs `1, 0.84…0.87` des CSV ?) ou `BrakeTrackSpeedPercentage*`. À vérifier sur les enregistrements
   (`trackrec.py --all`) : hausse brutale de vitesse suivie d'une chute immédiate.
 
+### Course perso (LAN) : Easy / Medium / Hard (2026-10-20)
+
+- `events/multiplayer_easy|medium|hard.csv` sont **identiques sauf la ligne des facteurs** (plafond de vitesse) :
+  Easy 0,8 pour les 3 premières IA, 0,60–0,62 pour les autres ; Medium 0,99 puis 0,79–0,81 ; Hard 1,0 puis 0,84–0,87.
+  Mêmes distances (−210 à +200), même ligne 0,55, mêmes profils (« Difficulty 1..10 », tous identiques entre eux),
+  mêmes préférences (Balanced, Defensive Rules 1, Aggressive, Short Distance, Catch Up, Nitro…).
+- **La difficulté de la course perso = uniquement le plafond de vitesse des IA.**
+- `multiplayer_default.csv` : 1 palier, profils par défaut, facteurs 0,75–0,90, distances 0.
+- `MultiplayerConfig` : rang multijoueur moyen des IA easy 4, medium 24, hard 44 (écart 5) : sans doute leurs
+  voitures et mods.
+
 ### Boss : profils et duels (2026-10-19)
 
 - `AIPerkSkillz`, somme sur les 8 bonus (max 8) attaque / défense / esquive : **T9 Shannon (900) 8 / 8 / 8, le seul
