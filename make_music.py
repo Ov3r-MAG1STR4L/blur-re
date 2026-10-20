@@ -18,6 +18,7 @@ import blurbaf
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
 TRACKS = [("23", "ShutUpAndDrive", r"C:\Users\sanqu\Downloads\Rihanna - Shut Up And Drive(Lyrics)🎶.mp3")]
 FF = 0xFFFF
+FORCE_LAST = True     # test: every selector entry plays the last added track (False = random among all)
 F1 = 0x3F800000                                           # 1.0f
 
 
@@ -116,6 +117,11 @@ def main(out):
         bank = blurbaf.add_wave(bank, wave_name, pcm48(src), 48000)
         add_track(j, suffix, wave_name)
         print("piste", "InGameMusic" + suffix, "=", wave_name)
+    if FORCE_LAST:
+        s = j.find(33, "InGameMusicSelectorIndex")
+        for k in range(j.w[s + 4]):
+            j.w[s + 6 + 8 * k] = j.w[s + 6 + 8 * (j.w[s + 4] - 1)]
+        print("test : toutes les entrées du sélecteur jouent la dernière piste")
     os.makedirs(os.path.join(out, "audio", "dat"), exist_ok=True)
     open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
