@@ -173,7 +173,34 @@ def split_selector(j):
     assert len(code2) == head + 4 * n
     j.w[s + 2] = len(code2)
     j.w[s + 3:s + 3 + len(code)] = code2
-    print(f"sélecteur coupé en {a} + {n - a} morceaux (+ pile ou face)")
+    # RaceStartScript draws the selector itself ([0x1000 sel 0][0x1200 play]) instead of calling NextTrack: without
+    # this, B and the group kept their start values at every race start (only group A = originals, seen 2026-10-21)
+    s = j.find(189, "RaceStartScript")
+    code = j.w[s + 3:s + 3 + (j.w[s + 2] & 0xFFFF)]
+    at = [p for p, op in script_ops(code) if code[p:p + 3] == [0x1000, sel_a << 16, 0]]
+    assert len(at) == 1, at
+    ins = at[0] + 3
+    code2 = code[:ins] + [0x1000, sel_b << 16, 0, 0x1000, group << 16, 0] + code[ins:]
+    for p, op in script_ops(code2):
+        if op == 0x1101 and code2[p + 1] >= ins:
+            code2[p + 1] += 6
+    j.w[s + 2] = (j.w[s + 2] & 0xFFFF0000) | len(code2)
+    j.w[s + 3:s + 3 + len(code)] = code2
+    print(f"sélecteur coupé en {a} + {n - a} morceaux (+ pile ou face), aussi au départ de course")
+
+
+# script opcode -> length in words (measured on the music scripts; unknown opcode = stop, layout not understood)
+OPS = {0x1000: 3, 0x1002: 2, 0x1004: 2, 0x1101: 2, 0x1200: 2, 0x1202: 1, 0x1317: 3}
+
+
+def script_ops(code):
+    """(position, opcode) of every instruction of a script."""
+    out, p = [], 0
+    while p < len(code):
+        assert code[p] in OPS, f"opcode inconnu {code[p]:#x} en {p}"
+        out.append((p, code[p]))
+        p += OPS[code[p]]
+    return out
 
 
 WRECK_CUTOFF = 0.02   # wrecked: final-mix low-pass at 0.02 x 48 kHz (~1 kHz) on music, AI, world (not the player car)
