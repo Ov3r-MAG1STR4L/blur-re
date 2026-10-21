@@ -38,9 +38,7 @@ def main():
         print("Réponds avec un ou plusieurs numéros de la liste.")
     rep = input("\nEffets du jeu sur la musique (baisse quand on tire un bonus, son étouffé en épave) ? [O/n] : ")
     effects = not rep.strip().lower().startswith("n")
-    rep = input("Qualité des morceaux ajoutés : 1 = normale (format du jeu), 2 = haute (sans compression, 4x plus "
-                "lourd) [1] : ")
-    pcm16 = rep.strip() == "2"
+    pcm16 = False     # uncompressed PCM16 tracks: silent in game (tested 2026-10-21), kept in make_music for research
     chosen = [os.path.join(root, lists[p - 1]) for p in dict.fromkeys(picks)]
     print("\nPréparation de :", ", ".join(lists[p - 1] for p in dict.fromkeys(picks)))
     print("(un morceau jamais utilisé est encodé une seule fois : ça peut prendre quelques minutes)\n")
