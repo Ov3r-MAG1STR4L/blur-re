@@ -64,12 +64,25 @@ ROUTES = [
     dict(orig="UK_Brighton_1", new="UK_Brighton_1R", index=None, hash=0xFFFF0010,
          loc="CRN_ROUTE_1_REVERSE",              # "Route 1 Reverse" / "Route 1 Miroir", unused dev string
          grid=dict(loop=True), gates=None),       # loop: line and gate relation read from the original
+    dict(orig="USA_SanFran_RussianHill_1", new="USA_SanFran_RussianHill_R", index=None, hash=0xFFFF0020,
+         loc="CRN_ROUTE_1_REVERSE",              # "Route 1 Reverse" (shared with Brighton); name <= 25: picture slot
+         grid=dict(loop=True), gates=None,
+         drop=("Carpark", "JunctionCarpark")),   # car-park shortcut: AI no longer use it (2026-10-21)
 ]
+
+
+def load_aid(path, drop=()):
+    """Parsed .aid (raw) without the blocks named in `drop` (a shortcut and its junction: aidreverse refuses junctions;
+    the AI then ignore the shortcut, the player can still take it) nor their logic-table references."""
+    d = blurroute.parse(open(path, "rb").read(), raw=True)
+    d["blocks"] = [b for b in d["blocks"] if b["name"] not in drop]
+    d["logic_table"] = [[ref for ref in refs if ref[1] not in drop] for refs in d["logic_table"]]
+    return d
 
 
 def build_aid(r, orig_aid, out_aid, start_xz):
     """Reverse, then slide the start (and finish) gates so each first node keeps the original distance to its line."""
-    d = aidreverse.reverse(blurroute.parse(open(orig_aid, "rb").read(), raw=True))
+    d = aidreverse.reverse(load_aid(orig_aid, r.get("drop", ())))
     roles = aidreverse.roles(d)
     mc = aidreverse._centres(roles["main"]["nodes"])
     loop = bool(roles["main"]["type"] & 1)
@@ -89,7 +102,7 @@ def build_aid(r, orig_aid, out_aid, start_xz):
         lines = r["grid"]["lines"]
         moves = [("start", lines["start"], r["gates"]["start"]), ("finish", lines["finish"], r["gates"]["finish"])]
     else:                                          # loop: same offset as the original, the other way
-        o = blurroute.parse(open(orig_aid, "rb").read(), raw=True)
+        o = load_aid(orig_aid, r.get("drop", ()))
         oroles = aidreverse.roles(o)
         omc = aidreverse._centres(oroles["main"]["nodes"])
         oarc = [0.0]
