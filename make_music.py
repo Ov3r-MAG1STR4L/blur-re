@@ -355,6 +355,20 @@ def no_perk_duck(j):
     j.w[s + 3:s + 3 + 2 * n] = sum(pairs, [])
 
 
+def no_nitro_lowpass(j):
+    """finalsubmix.dat: no muffling during nitro. NitrousLowPass (curve on NitrousForwardTimer: 0.003 = ~150 Hz for
+    1.5 s) is one term of PerkFilterCutOff (type 42, the min that drives PerkSurroundLowPass on the whole final mix
+    except the player car): removed. The shield terms stay."""
+    nitro = obj_index(j, "NitrousLowPass")
+    s = j.find(42, "PerkFilterCutOff")
+    n = j.w[s + 2] & 0xFFFF
+    pairs = [j.w[s + 3 + 2 * k:s + 5 + 2 * k] for k in range(n)]
+    assert [nitro, 0] in pairs, pairs
+    pairs.remove([nitro, 0])
+    j.w[s + 2] -= 1
+    j.w[s + 3:s + 3 + 2 * n] = sum(pairs, [])
+
+
 def wave_name(path, used):
     """Bank sound name from the file name: letters and digits only, at most 31 bytes, unique."""
     base = "".join(c for c in os.path.splitext(os.path.basename(path))[0] if c.isascii() and c.isalnum())[:28] or "Track"
@@ -368,7 +382,8 @@ def wave_name(path, used):
 def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     """Bank + controller + final mix for the chosen playlist folders. Returns a summary.
     shuffle: Spotify-like looping shuffle (new order at each build), else independent random picks.
-    effects: game effects on the music (duck on power-ups, muffled when wrecked).
+    effects: game effects on the sound (music duck on power-ups, muffled when wrecked; off also removes the nitro
+    muffle, which acts on the whole final mix).
     pcm16: added tracks stored uncompressed (codec 3, like the game's own *_sync_loop sounds) instead of PS-ADPCM."""
     bank = open(os.path.join(E, "root_streaming", "ingamemusic.baf"), "rb").read()
     j = Jboa(open(os.path.join(E, "root", "audio", "dat", "music_controller.dat"), "rb").read())
@@ -410,11 +425,12 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         wreck_muffle(fs)
     else:
         no_perk_duck(fs)
+        no_nitro_lowpass(fs)
     os.makedirs(os.path.join(out, "audio", "dat"), exist_ok=True)
     open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
     open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
-    return f"{len(objs)} morceaux en course ({mode}) ; effets du jeu sur la musique : {'oui' if effects else 'non'} ; qualité : {'haute (non compressée)' if pcm16 else 'normale'}"
+    return f"{len(objs)} morceaux en course ({mode}) ; effets du jeu sur le son : {'oui' if effects else 'non'} ; qualité : {'haute (non compressée)' if pcm16 else 'normale'}"
 
 
 def install(out=OUT, test=TEST):
