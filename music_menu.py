@@ -8,8 +8,8 @@ import make_music
 LAST = os.path.join(make_music.MUSIC_DIR, "derniere_selection.json")
 
 
-def run(folders, effects):
-    print(make_music.build(folders, effects=effects))
+def run(folders, effects, pcm16=False):
+    print(make_music.build(folders, effects=effects, pcm16=pcm16))
     make_music.install()
 
 
@@ -19,7 +19,7 @@ def main():
             return                                            # music never chosen: nothing to shuffle
         last = json.load(open(LAST, encoding="utf-8"))
         print("Nouvel ordre aléatoire pour la musique...")
-        run(last["dossiers"], last["effets"])
+        run(last["dossiers"], last["effets"], last.get("haute_qualite", False))
         return
     root = os.path.abspath(make_music.MUSIC_DIR)
     lists = sorted(d for d in os.listdir(root) if os.path.isdir(os.path.join(root, d)))
@@ -38,11 +38,14 @@ def main():
         print("Réponds avec un ou plusieurs numéros de la liste.")
     rep = input("\nEffets du jeu sur la musique (baisse quand on tire un bonus, son étouffé en épave) ? [O/n] : ")
     effects = not rep.strip().lower().startswith("n")
+    rep = input("Qualité des morceaux ajoutés : 1 = normale (format du jeu), 2 = haute (sans compression, 4x plus "
+                "lourd) [1] : ")
+    pcm16 = rep.strip() == "2"
     chosen = [os.path.join(root, lists[p - 1]) for p in dict.fromkeys(picks)]
     print("\nPréparation de :", ", ".join(lists[p - 1] for p in dict.fromkeys(picks)))
     print("(un morceau jamais utilisé est encodé une seule fois : ça peut prendre quelques minutes)\n")
-    run(chosen, effects)
-    json.dump({"dossiers": chosen, "effets": effects}, open(LAST, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    run(chosen, effects, pcm16)
+    json.dump({"dossiers": chosen, "effets": effects, "haute_qualite": pcm16}, open(LAST, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print("\nC'est prêt. Lance le jeu avec « Tester le mod.bat » (il remélange l'ordre à chaque lancement).")
 
 

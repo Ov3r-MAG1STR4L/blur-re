@@ -50,15 +50,17 @@ def pcm48(src):
             return np.frombuffer(w.readframes(w.getnframes()), "<i2").reshape(-1, 2).copy()
 
 
-def encoded(src):
-    """(PS-ADPCM bytes, samples) of src, from the cache when the same file was already encoded at this LUFS."""
+def encoded(src, pcm16=False):
+    """(bytes, samples) of src, from the cache when the same file was already prepared at this LUFS:
+    PS-ADPCM (the game's format, 4 bits) or, pcm16, uncompressed 16 bits (4x bigger, no codec loss)."""
+    kind = "pcm16" if pcm16 else "adpcm"
     h = hashlib.sha1(open(src, "rb").read() + f"|{LUFS}|v1".encode()).hexdigest()
-    data_p, meta_p = os.path.join(CACHE, h + ".adpcm"), os.path.join(CACHE, h + ".json")
+    data_p, meta_p = os.path.join(CACHE, f"{h}.{kind}"), os.path.join(CACHE, h + ".json")
     if not (os.path.exists(data_p) and os.path.exists(meta_p)):
-        print("  encodage (une seule fois) :", os.path.basename(src))
+        print(f"  préparation ({kind}, une seule fois) :", os.path.basename(src))
         pcm = pcm48(src)
         os.makedirs(CACHE, exist_ok=True)
-        open(data_p, "wb").write(blurbaf.encode_psx(pcm))
+        open(data_p, "wb").write(pcm.astype("<i2").tobytes() if pcm16 else blurbaf.encode_psx(pcm))
         json.dump({"samples": len(pcm), "source": os.path.basename(src)}, open(meta_p, "w", encoding="utf-8"))
     return open(data_p, "rb").read(), json.load(open(meta_p, encoding="utf-8"))["samples"]
 
@@ -363,10 +365,11 @@ def wave_name(path, used):
     return name
 
 
-def build(folders, out=OUT, shuffle=True, effects=True):
+def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     """Bank + controller + final mix for the chosen playlist folders. Returns a summary.
     shuffle: Spotify-like looping shuffle (new order at each build), else independent random picks.
-    effects: game effects on the music (duck on power-ups, muffled when wrecked)."""
+    effects: game effects on the music (duck on power-ups, muffled when wrecked).
+    pcm16: added tracks stored uncompressed (codec 3, like the game's own *_sync_loop sounds) instead of PS-ADPCM."""
     bank = open(os.path.join(E, "root_streaming", "ingamemusic.baf"), "rb").read()
     j = Jboa(open(os.path.join(E, "root", "audio", "dat", "music_controller.dat"), "rb").read())
     originals = original_tracks(j)
@@ -385,8 +388,11 @@ def build(folders, out=OUT, shuffle=True, effects=True):
     for k, path in enumerate(files):
         name = wave_name(path, used)
         print("morceau", "InGameMusic%02d" % (23 + k), "=", os.path.basename(path))
-        data, samples = encoded(path)
-        bank = blurbaf.add_wave(bank, name, None, 48000, data=data, samples=samples)
+        data, samples = encoded(path, pcm16)
+        if pcm16:
+            bank = blurbaf.add_pcm_wave(bank, name, np.frombuffer(data, "<i2").reshape(-1, 2), 48000)
+        else:
+            bank = blurbaf.add_wave(bank, name, None, 48000, data=data, samples=samples)
         objs.append(add_track(j, "%02d" % (23 + k), name))
     if not objs:
         raise SystemExit("playlist vide : aucun morceau choisi")
@@ -408,7 +414,7 @@ def build(folders, out=OUT, shuffle=True, effects=True):
     open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
     open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
-    return f"{len(objs)} morceaux en course ({mode}) ; effets du jeu sur la musique : {'oui' if effects else 'non'}"
+    return f"{len(objs)} morceaux en course ({mode}) ; effets du jeu sur la musique : {'oui' if effects else 'non'} ; qualité : {'haute (non compressée)' if pcm16 else 'normale'}"
 
 
 def install(out=OUT, test=TEST):

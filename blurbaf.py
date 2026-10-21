@@ -31,8 +31,12 @@ def parse(b):
         start, length = struct.unpack_from("<2I", b, off + 0x2C)
         rate, samples = struct.unpack_from("<2I", b, off + 0x40)
         loop, tracks, unk, ch = b[off + 0x48:off + 0x4C]
+        ch *= tracks or 1
+        if codec == 3 and size == 0x50:          # PCM16 entry: +0x3C rate, +0x40 bits, +0x44 channels
+            rate, bits, ch = struct.unpack_from("<3I", b, off + 0x3C)
+            samples, loop, tracks, unk = length // (2 * max(ch, 1)), 0, 0, 0
         waves.append(dict(name=name, codec=codec, start=start, size=length, rate=rate, samples=samples,
-                          loop=loop, tracks=tracks, unk=unk, channels=ch * (tracks or 1), entry=off))
+                          loop=loop, tracks=tracks, unk=unk, channels=ch, entry=off))
         off += size
     return dict(version=version, name=b[0x12:0x34].split(b"\0")[0].decode(), waves=waves)
 
@@ -115,15 +119,28 @@ def encode_psx(pcm):
     return np.stack(frames, axis=1).tobytes()
 
 
-def add_wave(b, name, pcm, rate, data=None, samples=None, channels=2):
+def add_pcm_wave(b, name, pcm, rate):
+    """Like add_wave, uncompressed: codec 3 = PCM16, entry 0x50 bytes as the game's own PCM sounds (the *_sync_loop
+    tracks of ingamecustommusic.baf, streamed): +0x3C rate, +0x40 bits (16), +0x44 channels, +0x48 0, +0x4C 0xFF."""
+    data = pcm.astype("<i2").tobytes()
+    out = bytearray(add_wave(b, name, None, rate, data=data, samples=len(pcm), channels=pcm.shape[1], entry_size=0x50))
+    bank = parse(bytes(out))
+    e = bank["waves"][-1]["entry"]
+    struct.pack_into("<I", out, e + 0x08, 3)
+    struct.pack_into("<5I", out, e + 0x3C, rate, 16, pcm.shape[1], 0, 0xFF)
+    return bytes(out)
+
+
+def add_wave(b, name, pcm, rate, data=None, samples=None, channels=2, entry_size=0x4C):
     """Return bank bytes with one more codec-7 WAVE appended (entry written in the padding before the first data;
     data at the end, 0x800-aligned, preceded by 'DATA' + u32 size+8 like the existing ones).
     pcm = int16 (samples, channels), or pcm=None with data (already encoded, encode_psx) + samples."""
     bank = parse(b)
     first_data = min(w["start"] for w in bank["waves"])
-    end_entries = bank["waves"][-1]["entry"] + 0x4C
+    last = bank["waves"][-1]["entry"]
+    end_entries = last + struct.unpack_from("<I", b, last + 4)[0]     # entries are 0x4C (ADPCM) or 0x50 (PCM)
     out = bytearray(b)
-    if end_entries + 0x4C > first_data - 8:                   # no room: shift every sound by one 0x800 page
+    if end_entries + entry_size > first_data - 8:                   # no room: shift every sound by one 0x800 page
         out[first_data - 8:first_data - 8] = b"\0" * 0x800
         for w in bank["waves"]:
             struct.pack_into("<I", out, w["entry"] + 0x2C, w["start"] + 0x800)
@@ -133,12 +150,14 @@ def add_wave(b, name, pcm, rate, data=None, samples=None, channels=2):
     out += b"DATA" + struct.pack("<I", len(data) + 8)
     start = len(out)
     out += data + b"\0" * ((-len(data)) % 0x800)
-    e = bytearray(b[bank["waves"][-1]["entry"]:bank["waves"][-1]["entry"] + 0x4C])   # copy flags of a sibling
+    sib = next(w["entry"] for w in reversed(bank["waves"]) if w["codec"] == 7)
+    e = bytearray(b[sib:sib + 0x4C]).ljust(entry_size, b"\0")            # copy the flags of an ADPCM sibling
+    struct.pack_into("<I", e, 4, entry_size)
     e[0x0C:0x2C] = name.encode().ljust(0x20, b"\0")
     struct.pack_into("<2I", e, 0x2C, start, len(data))
     struct.pack_into("<2I", e, 0x40, rate, samples)
     e[0x4B] = channels
-    out[end_entries:end_entries + 0x4C] = e
+    out[end_entries:end_entries + entry_size] = e
     struct.pack_into("<I", out, 0x0C, len(bank["waves"]) + 1)
     return bytes(out)
 
