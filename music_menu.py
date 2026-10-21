@@ -36,7 +36,8 @@ def main():
         if picks and all(1 <= p <= len(lists) for p in picks):
             break
         print("Réponds avec un ou plusieurs numéros de la liste.")
-    rep = input("\nEffets du jeu sur la musique (baisse quand on tire un bonus, son étouffé en épave) ? [O/n] : ")
+    rep = input("\nEffets du jeu sur le son (musique baissée quand on tire un bonus, son étouffé en épave et pendant "
+                "le nitro) ? [O/n] : ")
     effects = not rep.strip().lower().startswith("n")
     pcm16 = False     # uncompressed PCM16 tracks: silent in game (tested 2026-10-21), kept in make_music for research
     chosen = [os.path.join(root, lists[p - 1]) for p in dict.fromkeys(picks)]
