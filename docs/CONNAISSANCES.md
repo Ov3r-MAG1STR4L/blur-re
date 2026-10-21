@@ -878,3 +878,15 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   ~1 min par morceau, ensuite ~5 s. `playlist()` construit le tirage pour n'importe quelle liste d'objets son : groupes de
   32 au plus (sélecteur du jeu + sélecteurs ajoutés + sélecteur de groupe), script de lecture réécrit, tirages ajoutés à
   `NextTrackScript` et `RaceStartScript` ; `play_targets()` simule le tirage et bloque si un morceau est inatteignable.
+- **Qualité (2026-10-21)** : morceaux ajoutés en PCM 16 bits non compressé (codec 3, entrée 0x50 copiée des
+  `*_sync_loop` : +0x3C fréquence, +0x40 16, +0x44 canaux, +0x48 0, +0x4C 0xFF ; `blurbaf.add_pcm_wave`) : **silence en
+  jeu** pour les objets son de course (type 60) ; les seuls PCM du jeu passent par des objets type 64. Encodeur ADPCM
+  avec recherche en faisceau (8) : 33,1 → 33,9 dB pour 15x plus de temps, abandonné. Plafond = ADPCM 4 bits du jeu
+  (comme les originaux) ; sources actuelles MP3 192 kb/s.
+- **Lecture « aléatoire en boucle » (2026-10-21)** : `make_music.shuffle_loop` : un ordre tiré à chaque préparation,
+  variable `InGameMusicShuffleIndex` (type 20) ; script de lecture = cas sur la variable, chaque bloc joue son morceau
+  puis range l'index suivant (`0x1004 val`, `0x1002 var`) ; `NextTrackScript` = appel du script de lecture ;
+  `RaceStartScript` ne tire plus le sélecteur. `Tester le mod.bat` remélange à chaque lancement
+  (`music_menu.py --remelanger`, choix mémorisé dans `Blur_musiques\derniere_selection.json`). Option « effets non » :
+  plus d'étouffement en épave et `MusicMixerVolume` sans le terme `MusicMixerPerkDuckVolume` (plus de baisse sur les
+  bonus) ; le passe-bas du nitro agit sur tout le mixage final.
