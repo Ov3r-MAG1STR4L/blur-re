@@ -871,4 +871,10 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
 - Divers : objets plaçables par location, limites 144 (décor, physique, animés) et 356 (cassables) ; IDs d'acteurs
   libres pris dans `0x7A000000..0x7AFFFFFF` ; plugin AMAX `quickstart` (lance une course LAN sur la carte) ; outils de
   recherche (`research/tools` : désassemblage, recherche des tours, des seuils).
-
+- **Playlists (2026-10-21)** : `C:\Users\sanqu\Jeux_WII\Blur_musiques\<playlist>\` (hors dépôt), un dossier par
+  playlist ; un dossier sans fichier audio dont le nom contient « original » = les 23 morceaux du jeu. Menu
+  `Choisir la musique.bat` → `music_menu.py` → `make_music.build()` + `install()` dans la copie de test. Encodage une
+  seule fois par fichier (cache `blur_extracted/music_cache`, clé = contenu + niveau visé) : première préparation
+  ~1 min par morceau, ensuite ~5 s. `playlist()` construit le tirage pour n'importe quelle liste d'objets son : groupes de
+  32 au plus (sélecteur du jeu + sélecteurs ajoutés + sélecteur de groupe), script de lecture réécrit, tirages ajoutés à
+  `NextTrackScript` et `RaceStartScript` ; `play_targets()` simule le tirage et bloque si un morceau est inatteignable.
