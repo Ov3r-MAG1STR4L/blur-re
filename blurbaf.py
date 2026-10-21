@@ -115,9 +115,10 @@ def encode_psx(pcm):
     return np.stack(frames, axis=1).tobytes()
 
 
-def add_wave(b, name, pcm, rate):
+def add_wave(b, name, pcm, rate, data=None, samples=None, channels=2):
     """Return bank bytes with one more codec-7 WAVE appended (entry written in the padding before the first data;
-    data at the end, 0x800-aligned, preceded by 'DATA' + u32 size+8 like the existing ones)."""
+    data at the end, 0x800-aligned, preceded by 'DATA' + u32 size+8 like the existing ones).
+    pcm = int16 (samples, channels), or pcm=None with data (already encoded, encode_psx) + samples."""
     bank = parse(b)
     first_data = min(w["start"] for w in bank["waves"])
     end_entries = bank["waves"][-1]["entry"] + 0x4C
@@ -126,7 +127,8 @@ def add_wave(b, name, pcm, rate):
         out[first_data - 8:first_data - 8] = b"\0" * 0x800
         for w in bank["waves"]:
             struct.pack_into("<I", out, w["entry"] + 0x2C, w["start"] + 0x800)
-    data = encode_psx(pcm)
+    if pcm is not None:
+        data, samples, channels = encode_psx(pcm), len(pcm), pcm.shape[1]
     out += b"\0" * ((-(len(out) + 8)) % 0x800)
     out += b"DATA" + struct.pack("<I", len(data) + 8)
     start = len(out)
@@ -134,8 +136,8 @@ def add_wave(b, name, pcm, rate):
     e = bytearray(b[bank["waves"][-1]["entry"]:bank["waves"][-1]["entry"] + 0x4C])   # copy flags of a sibling
     e[0x0C:0x2C] = name.encode().ljust(0x20, b"\0")
     struct.pack_into("<2I", e, 0x2C, start, len(data))
-    struct.pack_into("<2I", e, 0x40, rate, len(pcm))
-    e[0x4B] = pcm.shape[1]
+    struct.pack_into("<2I", e, 0x40, rate, samples)
+    e[0x4B] = channels
     out[end_entries:end_entries + 0x4C] = e
     struct.pack_into("<I", out, 0x0C, len(bank["waves"]) + 1)
     return bytes(out)

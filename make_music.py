@@ -1,58 +1,66 @@
 #!/usr/bin/env python3
-"""Music mod: add licensed race tracks to Blur (test copy only).
+"""Music mod: race-music playlists for Blur (test copy only).
 
-usage: make_music.py OUTDIR        (OUTDIR mirrors the game root: audio/ingamemusic.baf, audio/dat/music_controller.dat)
+usage: make_music.py PLAYLIST_DIR [PLAYLIST_DIR ...]     build + install the chosen playlists into the test copy
+       (music_menu.py / "Choisir la musique.bat" pick the folders in MUSIC_DIR)
 
-TRACKS: (object name suffix, wave name, source audio file). Each track:
-  - audio converted with ffmpeg to 48 kHz stereo, encoded PS-ADPCM, appended to ingamemusic.baf (blurbaf.add_wave);
+A playlist = a folder of audio files (mp3, wav, flac, ogg, m4a). A folder with no audio file whose name contains
+"original" = the game's own 23 race tracks. Each new file:
+  - converted with ffmpeg to 48 kHz stereo at LUFS, encoded PS-ADPCM ONCE (cache in CACHE, keyed by the file's
+    content), appended to ingamemusic.baf (blurbaf.add_wave);
   - music_controller.dat (JBOA): a sound object copied from InGameMusic22 is APPENDED at the end of the object list
-    (index = old count, so no existing reference moves), then the race-music selector (type 33, 8 words per entry),
-    the licensed-music mixer (type 73, 17 words per input), the play script (switch on the selector: 5 words per case,
-    4 per body, jump targets = word index in the script) and the stop script (3 words per track) get one entry more.
-Layouts measured 2026-10-20 (docs/CONNAISSANCES.md, "Audio et musique").
+    (index = old count, so no existing reference moves) with its mixer input (type 73, 17 words) and stop-script line.
+Then playlist() rebuilds the race-music choice from the chosen sound objects: groups of at most 32 (selectors above
+32 entries misbehave in game), one selector per group (type 33) + a group selector, the play script (switch), and the
+draws in NextTrackScript and RaceStartScript. finalsubmix.dat: muffled mix while wrecked (wreck_muffle).
+Layouts measured 2026-10-20/21 (docs/CONNAISSANCES.md, "Audio et musique").
 """
-import os, struct, subprocess, sys, tempfile, wave
+import hashlib, json, os, shutil, struct, subprocess, sys, tempfile, wave
 import numpy as np
 import blurbaf
 
-E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
-# (wave name in the bank, source file, start, end) ; start / end "mm:ss" cut a long mix, None = whole file.
-# Object names follow: InGameMusic23, 24, ...
-MIX = r"C:\Users\sanqu\Downloads\『BLUR』reimagined SOUNDTRACK.mp3"     # unofficial fan selection, 20 tracks
-_MIX_CUTS = [("Wonderdawgs", "00:00"), ("Primal", "01:54"), ("FreshToDeath", "04:12"), ("StarGuitarRemake", "06:06"),
-             ("RightAway", "10:51"), ("TheDeep", "13:40"), ("DirtyBoxing", "15:56"), ("SwagDCBreaks", "18:57"),
-             ("RabbitInYourHeadlights", "22:05"), ("Freefall", "24:08"), ("OrbitofrontalEntourage", "26:01"),
-             ("BlackOutDays", "27:46"), ("Pressure", "30:19"), ("Doubt", "33:15"), ("NeonBeams", "35:28"),
-             ("TheDifference", "38:15"), ("RubixCube", "41:35"), ("Spooked", "44:12"), ("NarcoTourists", "46:26"),
-             ("Tomorrow", "51:23")]
-# removed after listening in game (2026-10-21, player's choice: too calm / too strange / too long)
-_DROPPED = {"RightAway", "SwagDCBreaks", "OrbitofrontalEntourage", "Pressure", "NeonBeams", "TheDifference",
-            "RubixCube", "Tomorrow"}
-TRACKS = [("ShutUpAndDrive", r"C:\Users\sanqu\Downloads\Rihanna - Shut Up And Drive(Lyrics)🎶.mp3", None, None)] + \
-         [(n, MIX, t, _MIX_CUTS[k + 1][1] if k + 1 < len(_MIX_CUTS) else None) for k, (n, t) in enumerate(_MIX_CUTS)
-          if n not in _DROPPED]
+HERE = os.path.dirname(os.path.abspath(__file__))
+E = os.path.join(HERE, "..", "blur_extracted")
+MUSIC_DIR = os.path.join(HERE, "..", "Blur_musiques")          # one sub-folder per playlist (not in the repository)
+CACHE = os.path.join(E, "music_cache")                          # encoded tracks, reused between builds
+OUT = os.path.join(E, "mods", "music", "files")
+TEST = os.path.join(HERE, "..", "Blur_test")
+AUDIO_EXT = (".mp3", ".wav", ".flac", ".ogg", ".m4a")
 FF = 0xFFFF
-FORCE_LAST = False    # test: every selector entry plays the last added track (False = random among all)
-F1 = 0x3F800000                                           # 1.0f
-
-
+F1 = 0x3F800000                                                 # 1.0f
+GROUP_MAX = 32
 LUFS = -9.0           # added tracks: a bit above the originals (median -10.2, full tracks -12.2 .. -8.7) to cut through engines
 
 
-def pcm48(src, start=None, end=None):
-    """48 kHz stereo int16 of src[start:end], gain set so the integrated loudness matches the original tracks
-    (limiter at -1 dBFS)."""
-    cut = (["-ss", start] if start else []) + (["-to", end] if end else [])
-    m = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", *cut, "-i", src, "-af", "ebur128", "-f", "null", "-"],
+def f32(v):
+    return struct.unpack("<I", struct.pack("<f", v))[0]
+
+
+def pcm48(src):
+    """48 kHz stereo int16 of src, gain set to LUFS integrated loudness (limiter at -1 dBFS)."""
+    m = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", src, "-af", "ebur128", "-f", "null", "-"],
                        capture_output=True, encoding="utf-8", errors="replace").stderr   # file names like 『BLUR』
     gain = LUFS - float(m.rsplit("I:", 1)[1].split("LUFS")[0])
     print(f"  volume {gain:+.1f} dB vers {LUFS} LUFS")
     with tempfile.TemporaryDirectory() as d:
         out = os.path.join(d, "a.wav")
-        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", *cut, "-i", src, "-ar", "48000", "-ac", "2",
+        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-ar", "48000", "-ac", "2",
                         "-af", f"volume={gain}dB,alimiter=limit=0.89:level=false", out], check=True)
         with wave.open(out) as w:
             return np.frombuffer(w.readframes(w.getnframes()), "<i2").reshape(-1, 2).copy()
+
+
+def encoded(src):
+    """(PS-ADPCM bytes, samples) of src, from the cache when the same file was already encoded at this LUFS."""
+    h = hashlib.sha1(open(src, "rb").read() + f"|{LUFS}|v1".encode()).hexdigest()
+    data_p, meta_p = os.path.join(CACHE, h + ".adpcm"), os.path.join(CACHE, h + ".json")
+    if not (os.path.exists(data_p) and os.path.exists(meta_p)):
+        print("  encodage (une seule fois) :", os.path.basename(src))
+        pcm = pcm48(src)
+        os.makedirs(CACHE, exist_ok=True)
+        open(data_p, "wb").write(blurbaf.encode_psx(pcm))
+        json.dump({"samples": len(pcm), "source": os.path.basename(src)}, open(meta_p, "w", encoding="utf-8"))
+    return open(data_p, "rb").read(), json.load(open(meta_p, encoding="utf-8"))["samples"]
 
 
 class Jboa:
@@ -80,6 +88,15 @@ class Jboa:
         assert len(hits) == 1, (typ, name, hits)
         return hits[0]
 
+    def code(self, name):
+        """(word index of the script object, its code words)."""
+        s = self.find(189, name)
+        return s, self.w[s + 3:s + 3 + (self.w[s + 2] & 0xFFFF)]
+
+    def set_code(self, s, old, new):
+        self.w[s + 2] = (self.w[s + 2] & 0xFFFF0000) | len(new)
+        self.w[s + 3:s + 3 + len(old)] = new
+
     def build(self):
         body = struct.pack("<%dI" % len(self.w), *self.w)
         struct.pack_into("<I", self.head, 8, 0x14 + len(body))
@@ -87,109 +104,9 @@ class Jboa:
         return bytes(self.head) + body + bytes(self.names)
 
 
-def add_track(j, suffix, wave_name):
-    f32 = lambda v: struct.unpack("<I", struct.pack("<f", v))[0]
-    ref = lambda i: i << 16
-    # sound object: copy of InGameMusic22 (14 words), new name / wave, appended at the end of the object list
-    s = j.find(60, "InGameMusic22")
-    obj = j.w[s:s + 14]
-    assert obj[2] == j.name("InGameMusic") and obj[10] == 29, obj
-    obj[1], obj[3] = j.name("InGameMusic" + suffix), j.name(wave_name)
-    new = j.count
-    j.w += obj
-    j.count += 1
-    # selector: [33, name, FF, 0, count] + count * [FF, k.0, FF, 1.0, FF, 0, FF, 1.0]
-    s = j.find(33, "InGameMusicSelectorIndex")
-    n = j.w[s + 4]
-    j.w[s + 4] = n + 1
-    j.w[s + 5 + 8 * n:s + 5 + 8 * n] = [FF, f32(n), FF, F1, FF, 0, FF, F1]
-    # mixer: [73, name, FF, 0, FF, 1.0, count<<16] + count * 17 words, the last one = (19 << 16) | track object
-    s = j.find(73, "InGameLicensedMusicMixer")
-    m = j.w[s + 6] >> 16
-    assert m == n, (m, n)
-    last = s + 7 + 17 * (m - 1)
-    entry = j.w[last:last + 17]
-    assert entry[0] == 88 and entry[12] == 88 and entry[16] >> 16 == 19, entry
-    entry[16] = (19 << 16) | new
-    j.w[s + 6] = (m + 1) << 16
-    j.w[last + 17:last + 17] = entry
-    # play script: [189, name, len] + n cases [4887, sel, k.0, 4353, target] + [4610] + n bodies [4096, obj, 0, 4610]
-    s = j.find(189, "InGameLicensedMusicPlayScript")
-    code = j.w[s + 3:s + 3 + j.w[s + 2]]
-    assert len(code) == 5 * n + 1 + 4 * n and code[5 * n] == 4610
-    cases = [code[5 * k:5 * k + 5] for k in range(n)]
-    bodies = [code[5 * n + 1 + 4 * k:5 * n + 5 + 4 * k] for k in range(n)]
-    cases.append([4887, cases[0][1], f32(n), 4353, 0])
-    bodies.append([4096, ref(new), 0, 4610])
-    for k, c in enumerate(cases):
-        c[4] = 5 * (n + 1) + 1 + 4 * k
-    code2 = sum(cases, []) + [4610] + sum(bodies, [])
-    j.w[s + 2] = len(code2)
-    j.w[s + 3:s + 3 + len(code)] = code2
-    # stop script: [189, name, len|len<<16] + n * [4096, obj, 1] + [4610]
-    s = j.find(189, "InGameLicensedMusicStopScript")
-    ln = j.w[s + 2] & 0xFFFF
-    assert ln == 3 * n + 1 and j.w[s + 2] >> 16 == ln, hex(j.w[s + 2])
-    j.w[s + 3 + 3 * n:s + 3 + 3 * n] = [4096, ref(new), 1]
-    j.w[s + 2] = (ln + 3) | ((ln + 3) << 16)
-
-
-def split_selector(j):
-    """Selectors above 32 entries misbehave in game (2026-10-20, 44 entries: entry 32 played 3 races out of 4, entries
-    33+ never; no original selector has more than 23). Split the race-music selector in two halves A / B (<= 32 each)
-    plus a 2-entry group selector (heads or tails), so every track keeps the same chance.
-    NextTrackScript: [0x1000 sel 0, 0x1200 play, 0x1202] -> also picks B and the group.
-    PlayScript: if group == 0 -> A cases, else B cases; bodies unchanged (one per track, same order)."""
-    f32 = lambda v: struct.unpack("<I", struct.pack("<f", v))[0]
-    s = j.find(33, "InGameMusicSelectorIndex")
-    n = j.w[s + 4]
-    if n <= 32:
-        return
-    a = (n + 1) // 2
-    entries = j.w[s + 5:s + 5 + 8 * n]
-    nt = j.find(189, "InGameLicensedMusicNextTrackScript")
-    sel_a = j.w[nt + 4] >> 16                               # object index of the selector (31), from its first use
-    j.w[s + 4] = a
-    del j.w[s + 5 + 8 * a:s + 5 + 8 * n]
-    sel_b, group = j.count, j.count + 1
-    j.w += [33, j.name("InGameMusicSelectorIndexB"), FF, 0, n - a] + entries[8 * a:]
-    j.w += [33, j.name("InGameMusicGroupSelector"), FF, 0, 2] + entries[:16]           # entries 0.0 and 1.0
-    j.count += 2
-    s = j.find(189, "InGameLicensedMusicNextTrackScript")
-    code = j.w[s + 3:s + 3 + j.w[s + 2]]
-    assert code[:3] == [0x1000, sel_a << 16, 0] and code[-1] == 0x1202, code
-    code2 = code[:3] + [0x1000, sel_b << 16, 0, 0x1000, group << 16, 0] + code[3:]
-    j.w[s + 2] = len(code2)
-    j.w[s + 3:s + 3 + len(code)] = code2
-    s = j.find(189, "InGameLicensedMusicPlayScript")
-    code = j.w[s + 3:s + 3 + j.w[s + 2]]
-    assert len(code) == 5 * n + 1 + 4 * n and code[5 * n] == 4610
-    bodies = code[5 * n + 1:]
-    head = 5 + 5 * (n - a) + 1 + 5 * a + 1                    # group test, B cases, end, A cases, end
-    b_cases = sum(([4887, sel_b << 16, f32(k), 4353, head + 4 * k] for k in range(a, n)), [])
-    a_cases = sum(([4887, sel_a << 16, f32(k), 4353, head + 4 * k] for k in range(a)), [])
-    a_start = 5 + len(b_cases) + 1
-    code2 = [4887, group << 16, 0, 4353, a_start] + b_cases + [4610] + a_cases + [4610] + bodies
-    assert len(code2) == head + 4 * n
-    j.w[s + 2] = len(code2)
-    j.w[s + 3:s + 3 + len(code)] = code2
-    # RaceStartScript draws the selector itself ([0x1000 sel 0][0x1200 play]) instead of calling NextTrack: without
-    # this, B and the group kept their start values at every race start (only group A = originals, seen 2026-10-21)
-    s = j.find(189, "RaceStartScript")
-    code = j.w[s + 3:s + 3 + (j.w[s + 2] & 0xFFFF)]
-    at = [p for p, op in script_ops(code) if code[p:p + 3] == [0x1000, sel_a << 16, 0]]
-    assert len(at) == 1, at
-    ins = at[0] + 3
-    code2 = code[:ins] + [0x1000, sel_b << 16, 0, 0x1000, group << 16, 0] + code[ins:]
-    for p, op in script_ops(code2):
-        if op == 0x1101 and code2[p + 1] >= ins:
-            code2[p + 1] += 6
-    j.w[s + 2] = (j.w[s + 2] & 0xFFFF0000) | len(code2)
-    j.w[s + 3:s + 3 + len(code)] = code2
-    print(f"sélecteur coupé en {a} + {n - a} morceaux (+ pile ou face), aussi au départ de course")
-
-
-# script opcode -> length in words (measured on the music scripts; unknown opcode = stop, layout not understood)
+# script opcode -> length in words (measured on the music scripts; unknown opcode = stop, layout not understood):
+# 0x1000 obj arg = trigger, 0x1002 obj = store, 0x1004 val = push, 0x1101 target = jump if true, 0x1200 script = call,
+# 0x1202 = end, 0x1317 obj val = compare (4887), 4610 = 0x1202
 OPS = {0x1000: 3, 0x1002: 2, 0x1004: 2, 0x1101: 2, 0x1200: 2, 0x1202: 1, 0x1317: 3}
 
 
@@ -203,6 +120,129 @@ def script_ops(code):
     return out
 
 
+def original_tracks(j):
+    """Sound objects of the 23 original race tracks, in selector order (bodies of the untouched play script)."""
+    _, code = j.code("InGameLicensedMusicPlayScript")
+    n = (len(code) - 1) // 9
+    assert len(code) == 9 * n + 1 and code[5 * n] == 0x1202
+    return [code[5 * n + 1 + 4 * k + 1] >> 16 for k in range(n)]
+
+
+def add_track(j, suffix, wave_name):
+    """Sound object InGameMusic<suffix> (copy of InGameMusic22) + its mixer input + its stop line. Returns its index."""
+    s = j.find(60, "InGameMusic22")
+    obj = j.w[s:s + 14]
+    assert obj[2] == j.name("InGameMusic") and obj[10] == 29, obj
+    obj[1], obj[3] = j.name("InGameMusic" + suffix), j.name(wave_name)
+    new = j.count
+    j.w += obj
+    j.count += 1
+    # mixer: [73, name, FF, 0, FF, 1.0, count<<16] + count * 17 words, the last one = (19 << 16) | track object
+    s = j.find(73, "InGameLicensedMusicMixer")
+    m = j.w[s + 6] >> 16
+    last = s + 7 + 17 * (m - 1)
+    entry = j.w[last:last + 17]
+    assert entry[0] == 88 and entry[12] == 88 and entry[16] >> 16 == 19, entry
+    entry[16] = (19 << 16) | new
+    j.w[s + 6] = (m + 1) << 16
+    j.w[last + 17:last + 17] = entry
+    # stop script: [189, name, len|len<<16] + n * [4096, obj, 1] + [4610]
+    s = j.find(189, "InGameLicensedMusicStopScript")
+    ln = j.w[s + 2] & 0xFFFF
+    assert j.w[s + 2] >> 16 == ln and j.w[s + 2 + ln] == 0x1202, hex(j.w[s + 2])
+    j.w[s + 2 + ln:s + 2 + ln] = [0x1000, new << 16, 1]
+    j.w[s + 2] = (ln + 3) | ((ln + 3) << 16)
+    return new
+
+
+def playlist(j, objs):
+    """Race music = a random pick among the sound objects `objs` (each the same chance, up to group rounding).
+    Groups of <= GROUP_MAX: group 0 reuses the game's selector (InGameMusicSelectorIndex), others are new selectors,
+    plus a group selector when there is more than one group. Selector = [33, name, FF, 0, n] + n * [FF, k.0, FF, 1.0,
+    FF, 0, FF, 1.0]. Play script = (group tests) + per group (cases on its selector) + one body per track.
+    ponytail: groups differ by at most one track (37 tracks: 1/38 vs 1/36), weighted group pick if that matters."""
+    entry = lambda k: [FF, f32(k), FF, F1, FF, 0, FF, F1]
+    g = -(-len(objs) // GROUP_MAX)
+    groups = [objs[k * len(objs) // g:(k + 1) * len(objs) // g] for k in range(g)]
+    s_nt, nt = j.code("InGameLicensedMusicNextTrackScript")
+    assert nt[0] == 0x1000 and nt[-3] == 0x1200 and nt[-1] == 0x1202, nt
+    sel0, play = nt[1] >> 16, nt[-2] >> 16
+    s = j.find(33, "InGameMusicSelectorIndex")
+    n0 = j.w[s + 4]
+    j.w[s + 4] = len(groups[0])
+    j.w[s + 5:s + 5 + 8 * n0] = sum((entry(k) for k in range(len(groups[0]))), [])
+    sels = [sel0]
+    for k, grp in enumerate(groups[1:], 1):
+        sels.append(j.count)
+        j.w += [33, j.name("InGameMusicSelectorIndex%d" % k), FF, 0, len(grp)] + sum((entry(i) for i in range(len(grp))), [])
+        j.count += 1
+    group_sel = None
+    if g > 1:
+        group_sel = j.count
+        j.w += [33, j.name("InGameMusicGroupSelector"), FF, 0, g] + sum((entry(i) for i in range(g)), [])
+        j.count += 1
+    # play script layout: [tests of groups 1..g-1, 5 words each; no match falls through into group 0's block]
+    # then per group [cases 5 * len] [end], then the bodies (4 words per track, in objs order)
+    tests = 5 * (g - 1)
+    starts, p = [], tests
+    for grp in groups:
+        starts.append(p)
+        p += 5 * len(grp) + 1
+    body0, b = p, 0
+    code = sum(([0x1317, group_sel << 16, f32(k), 0x1101, starts[k]] for k in range(1, g)), [])
+    for k, grp in enumerate(groups):
+        for i in range(len(grp)):
+            code += [0x1317, sels[k] << 16, f32(i), 0x1101, body0 + 4 * (b + i)]
+        code += [0x1202]
+        b += len(grp)
+    code += sum(([0x1000, o << 16, 0, 0x1202] for grp in groups for o in grp), [])
+    s_play, old = j.code("InGameLicensedMusicPlayScript")
+    j.set_code(s_play, old, code)
+    # the draws: NextTrack and RaceStart draw the game's selector then call play; draw the others too
+    extra = sum(([0x1000, x << 16, 0] for x in sels[1:] + ([group_sel] if group_sel is not None else [])), [])
+    s_nt, nt = j.code("InGameLicensedMusicNextTrackScript")          # again: the selector edit moved the words
+    j.set_code(s_nt, nt, nt[:3] + extra + nt[3:])
+    s_rs, rs = j.code("RaceStartScript")
+    at = [p_ for p_, op in script_ops(rs) if rs[p_:p_ + 3] == [0x1000, sel0 << 16, 0]]
+    assert len(at) == 1, at
+    ins = at[0] + 3
+    rs2 = rs[:ins] + extra + rs[ins:]
+    for p_, op in script_ops(rs2):
+        if op == 0x1101 and rs2[p_ + 1] >= ins:
+            rs2[p_ + 1] += len(extra)
+    j.set_code(s_rs, rs, rs2)
+    return [len(grp) for grp in groups]
+
+
+def play_targets(j):
+    """Simulation of the play script for every (group, value): the sound objects reached (check of playlist())."""
+    _, code = j.code("InGameLicensedMusicPlayScript")
+    sels = sorted({code[p + 1] >> 16 for p, op in script_ops(code) if op == 0x1317})
+    seen = set()
+
+    def run(vals):
+        p = 0
+        while True:
+            op = code[p]
+            if op == 0x1317:
+                if vals.get(code[p + 1] >> 16) == struct.unpack("<f", struct.pack("<I", code[p + 2]))[0]:
+                    p = code[p + 4]
+                    continue
+                p += 5
+            elif op == 0x1202:
+                return None
+            elif op == 0x1000:
+                return code[p + 1] >> 16
+
+    for a in sels:                                  # any track needs at most 2 selectors: its group's and the group pick
+        for b in sels:
+            for va in range(GROUP_MAX):
+                for vb in range(GROUP_MAX):
+                    seen.add(run({a: float(va), b: float(vb)}))
+    seen.discard(None)
+    return seen
+
+
 WRECK_CUTOFF = 0.02   # wrecked: final-mix low-pass at 0.02 x 48 kHz (~1 kHz) on music, AI, world (not the player car)
 
 
@@ -212,7 +252,6 @@ def wreck_muffle(j):
     PerkFilterCutOff (type 42, min of the perk cut-offs that drive PerkSurroundLowPass, enabled below 1 by
     PerkLPFilterGateSwitch). WreckedInput used to run RaceFinishedScript: it now runs a copy that also sets the
     variable to 0; ResetLevelScript (level start, and back above health -0.5 via WreckedStopSwitch) sets it to 1."""
-    f32 = lambda v: struct.unpack("<I", struct.pack("<f", v))[0]
     var = j.count
     j.w += [20, j.name("WreckMusicVariable"), F1]
     curve = j.count + 1
@@ -241,33 +280,64 @@ def wreck_muffle(j):
     j.w[s + 2] = ln + 4
 
 
-def main(out, graphs_only=False):
-    """graphs_only: keep the already built OUTDIR/audio/ingamemusic.baf (encoding takes ~20 min), redo the graphs."""
+def wave_name(path, used):
+    """Bank sound name from the file name: letters and digits only, at most 31 bytes, unique."""
+    base = "".join(c for c in os.path.splitext(os.path.basename(path))[0] if c.isascii() and c.isalnum())[:28] or "Track"
+    name, k = base, 2
+    while name.lower() in used:
+        name, k = base[:28] + str(k), k + 1
+    used.add(name.lower())
+    return name
+
+
+def build(folders, out=OUT):
+    """Bank + controller + final mix for the chosen playlist folders. Returns a summary."""
     bank = open(os.path.join(E, "root_streaming", "ingamemusic.baf"), "rb").read()
     j = Jboa(open(os.path.join(E, "root", "audio", "dat", "music_controller.dat"), "rb").read())
-    for k, (wave_name, src, start, end) in enumerate(TRACKS):
-        suffix = "%02d" % (23 + k)
-        print("piste", "InGameMusic" + suffix, "=", wave_name, start or "", end or "")
-        if not graphs_only:
-            bank = blurbaf.add_wave(bank, wave_name, pcm48(src, start, end), 48000)
-        add_track(j, suffix, wave_name)
-    if not FORCE_LAST:
-        split_selector(j)
+    originals = original_tracks(j)
+    used = {w["name"].lower() for w in blurbaf.parse(bank)["waves"]}
+    objs, files, seen = [], [], set()
+    for d in folders:
+        audio = sorted(f for f in os.listdir(d) if f.lower().endswith(AUDIO_EXT))
+        if not audio and "original" in os.path.basename(d).lower():
+            objs += [o for o in originals if o not in objs]
+        for f in audio:
+            path = os.path.join(d, f)
+            key = hashlib.sha1(open(path, "rb").read()).hexdigest()
+            if key not in seen:
+                seen.add(key)
+                files.append(path)
+    for k, path in enumerate(files):
+        name = wave_name(path, used)
+        print("morceau", "InGameMusic%02d" % (23 + k), "=", os.path.basename(path))
+        data, samples = encoded(path)
+        bank = blurbaf.add_wave(bank, name, None, 48000, data=data, samples=samples)
+        objs.append(add_track(j, "%02d" % (23 + k), name))
+    if not objs:
+        raise SystemExit("playlist vide : aucun morceau choisi")
+    sizes = playlist(j, objs)
+    reached = play_targets(j)
+    assert reached == set(objs), ("simulation", sorted(set(objs) - reached), sorted(reached - set(objs)))
     fs = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalsubmix.dat"), "rb").read())
     wreck_muffle(fs)
-    if FORCE_LAST:
-        s = j.find(33, "InGameMusicSelectorIndex")
-        for k in range(j.w[s + 4]):
-            j.w[s + 6 + 8 * k] = j.w[s + 6 + 8 * (j.w[s + 4] - 1)]
-        print("test : toutes les entrées du sélecteur jouent la dernière piste")
     os.makedirs(os.path.join(out, "audio", "dat"), exist_ok=True)
-    if not graphs_only:
-        open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
+    open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
     open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
-    print("épave : mixage étouffé à", WRECK_CUTOFF)
-    print("écrit dans", out)
+    return f"{len(objs)} morceaux en course ({' + '.join(map(str, sizes))}), chacun environ 1 chance sur {len(objs)}"
+
+
+def install(out=OUT, test=TEST):
+    """Copy the built files into the test copy (Blur must be closed)."""
+    if b"Blur.exe" in subprocess.run(["tasklist", "/fi", "imagename eq Blur.exe"], capture_output=True).stdout:
+        raise SystemExit("Blur est lancé : ferme-le puis recommence.")
+    for rel in ("audio/ingamemusic.baf", "audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat"):
+        src, dst = os.path.join(out, rel), os.path.join(test, rel)
+        if not os.path.exists(dst) or open(src, "rb").read() != open(dst, "rb").read():
+            shutil.copyfile(src, dst)
+            print("installé :", rel)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], "--graphes" in sys.argv)
+    print(build(sys.argv[1:]))
+    install()
