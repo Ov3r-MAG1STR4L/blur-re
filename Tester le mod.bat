@@ -25,6 +25,10 @@ if errorlevel 8 (echo Echec de la sauvegarde. Arret. & pause & exit /b 1)
 copy /y "%SAVE%\settings.xml" "%BK%\settings.xml" >nul || (echo Echec de la sauvegarde. Arret. & pause & exit /b 1)
 echo %date% %time%> "%BK%\EN_COURS"
 
+rem musique de course : nouvel ordre aleatoire (si une playlist a ete choisie avec "Choisir la musique.bat")
+set PYTHONIOENCODING=utf-8
+python "%~dp0music_menu.py" --remelanger
+
 echo Lancement de la copie de test (hors ligne). Ferme le jeu pour revenir ici.
 cd /d "%TEST%"
 start "" /wait "%TEST%\Blur.exe"

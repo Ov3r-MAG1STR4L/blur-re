@@ -214,6 +214,57 @@ def playlist(j, objs):
     return [len(grp) for grp in groups]
 
 
+def shuffle_loop(j, objs, seed=None):
+    """Race music = Spotify-like shuffle that loops: one random order (drawn here, at each build), every track once, then
+    the same order again. State = a new variable InGameMusicShuffleIndex (type 20, starts at 0). Play script: switch on
+    it, each body plays its track then stores the next index ([0x1000 obj 0][0x1004 next.0][0x1002 var][0x1202]).
+    Advancing at play time: a new race starts the next track even when the previous race stopped one half-way.
+    NextTrack = just call play; RaceStart no longer draws the selector (its 3 words removed, jumps moved back)."""
+    import random
+    order = list(objs)
+    random.Random(seed).shuffle(order)
+    var = j.count
+    j.w += [20, j.name("InGameMusicShuffleIndex"), 0]
+    j.count += 1
+    n = len(order)
+    code = sum(([0x1317, var << 16, f32(k), 0x1101, 5 * n + 1 + 8 * k] for k in range(n)), []) + [0x1202]
+    code += sum(([0x1000, o << 16, 0, 0x1004, f32((k + 1) % n), 0x1002, var << 16, 0x1202]
+                 for k, o in enumerate(order)), [])
+    s_play, old = j.code("InGameLicensedMusicPlayScript")
+    j.set_code(s_play, old, code)
+    s_nt, nt = j.code("InGameLicensedMusicNextTrackScript")
+    assert nt[0] == 0x1000 and nt[-3] == 0x1200 and nt[-1] == 0x1202, nt
+    sel0 = nt[1] >> 16
+    j.set_code(s_nt, nt, nt[-3:])
+    s_rs, rs = j.code("RaceStartScript")
+    at = [p_ for p_, op in script_ops(rs) if rs[p_:p_ + 3] == [0x1000, sel0 << 16, 0]]
+    assert len(at) == 1, at
+    cut = at[0]
+    rs2 = rs[:cut] + rs[cut + 3:]
+    for p_, op in script_ops(rs2):
+        if op == 0x1101 and rs2[p_ + 1] > cut:
+            rs2[p_ + 1] -= 3
+    j.set_code(s_rs, rs, rs2)
+    return order
+
+
+def shuffle_sequence(j, steps):
+    """Simulation of the shuffle play script from index 0: the sound objects played, in order (check)."""
+    _, code = j.code("InGameLicensedMusicPlayScript")
+    fl = lambda w: struct.unpack("<f", struct.pack("<I", w))[0]
+    idx, out = 0.0, []
+    for _ in range(steps):
+        p = 0
+        while code[p] == 0x1317 and fl(code[p + 2]) != idx:
+            p += 5
+        assert code[p] == 0x1317, "index sans morceau"
+        b = code[p + 4]
+        assert code[b] == 0x1000 and code[b + 3] == 0x1004 and code[b + 5] == 0x1002
+        out.append(code[b + 1] >> 16)
+        idx = fl(code[b + 4])
+    return out
+
+
 def play_targets(j):
     """Simulation of the play script for every (group, value): the sound objects reached (check of playlist())."""
     _, code = j.code("InGameLicensedMusicPlayScript")
@@ -280,6 +331,28 @@ def wreck_muffle(j):
     j.w[s + 2] = ln + 4
 
 
+def obj_index(j, name):
+    """Index of an ORIGINAL object (object i is named names[i + 1]; objects we append break this rule)."""
+    names = bytes(j.names).split(b"\0")
+    k = names.index(name.encode()) - 1
+    assert 0 <= k < j.count
+    return k
+
+
+def no_perk_duck(j):
+    """finalsubmix.dat: the music no longer ducks when power-ups fire. MusicMixerVolume (type 37) = product of
+    (obj, 0) pairs; its MusicMixerPerkDuckVolume term is removed (the game-pause term stays). The nitro low-pass
+    acts on the whole final mix (PerkSurroundLowPass), not only on the music: left as it is."""
+    duck = obj_index(j, "MusicMixerPerkDuckVolume")
+    s = j.find(37, "MusicMixerVolume")
+    n = j.w[s + 2] & 0xFFFF
+    pairs = [j.w[s + 3 + 2 * k:s + 5 + 2 * k] for k in range(n)]
+    assert [duck, 0] in pairs, pairs
+    pairs.remove([duck, 0])
+    j.w[s + 2] -= 1
+    j.w[s + 3:s + 3 + 2 * n] = sum(pairs, [])
+
+
 def wave_name(path, used):
     """Bank sound name from the file name: letters and digits only, at most 31 bytes, unique."""
     base = "".join(c for c in os.path.splitext(os.path.basename(path))[0] if c.isascii() and c.isalnum())[:28] or "Track"
@@ -290,8 +363,10 @@ def wave_name(path, used):
     return name
 
 
-def build(folders, out=OUT):
-    """Bank + controller + final mix for the chosen playlist folders. Returns a summary."""
+def build(folders, out=OUT, shuffle=True, effects=True):
+    """Bank + controller + final mix for the chosen playlist folders. Returns a summary.
+    shuffle: Spotify-like looping shuffle (new order at each build), else independent random picks.
+    effects: game effects on the music (duck on power-ups, muffled when wrecked)."""
     bank = open(os.path.join(E, "root_streaming", "ingamemusic.baf"), "rb").read()
     j = Jboa(open(os.path.join(E, "root", "audio", "dat", "music_controller.dat"), "rb").read())
     originals = original_tracks(j)
@@ -315,16 +390,25 @@ def build(folders, out=OUT):
         objs.append(add_track(j, "%02d" % (23 + k), name))
     if not objs:
         raise SystemExit("playlist vide : aucun morceau choisi")
-    sizes = playlist(j, objs)
-    reached = play_targets(j)
-    assert reached == set(objs), ("simulation", sorted(set(objs) - reached), sorted(reached - set(objs)))
+    if shuffle:
+        order = shuffle_loop(j, objs)
+        assert shuffle_sequence(j, 2 * len(objs)) == order * 2, "simulation de l'ordre aléatoire"
+        mode = f"aléatoire en boucle, nouvel ordre à chaque préparation"
+    else:
+        sizes = playlist(j, objs)
+        reached = play_targets(j)
+        assert reached == set(objs), ("simulation", sorted(set(objs) - reached), sorted(reached - set(objs)))
+        mode = f"tirage au hasard, groupes {' + '.join(map(str, sizes))}"
     fs = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalsubmix.dat"), "rb").read())
-    wreck_muffle(fs)
+    if effects:
+        wreck_muffle(fs)
+    else:
+        no_perk_duck(fs)
     os.makedirs(os.path.join(out, "audio", "dat"), exist_ok=True)
     open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
     open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
-    return f"{len(objs)} morceaux en course ({' + '.join(map(str, sizes))}), chacun environ 1 chance sur {len(objs)}"
+    return f"{len(objs)} morceaux en course ({mode}) ; effets du jeu sur la musique : {'oui' if effects else 'non'}"
 
 
 def install(out=OUT, test=TEST):
