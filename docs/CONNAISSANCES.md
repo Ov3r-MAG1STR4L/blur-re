@@ -890,3 +890,8 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   (`music_menu.py --remelanger`, choix mémorisé dans `Blur_musiques\derniere_selection.json`). Option « effets non » :
   plus d'étouffement en épave et `MusicMixerVolume` sans le terme `MusicMixerPerkDuckVolume` (plus de baisse sur les
   bonus) ; le passe-bas du nitro agit sur tout le mixage final.
+- **Russian Hill Route 1 Reverse (2026-10-21)** : `USA_SanFran_RussianHill_R` (nom ≤ 25 car. : plus long emplacement
+  d'image libre `USA_LA_Downtown_FigureOf8`, n° 121 ; plus aucun emplacement libre ensuite pour ce format), texte
+  `CRN_ROUTE_1_REVERSE` (partagé avec Brighton). La route a un raccourci (bloc `Carpark` + `JunctionCarpark`) : retirés du
+  tracé IA avant l'inversion (`make_reverse.load_aid(drop=…)`) ; les IA ne prennent plus le parking, le joueur oui.
+  Longueurs de voie nulles : 33, comme l'original (nœuds 0, 689, 690 = jonction de la boucle). À tester en jeu.
