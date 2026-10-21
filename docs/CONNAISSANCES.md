@@ -850,3 +850,25 @@ Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes
   instructions : `0x1000` 3, `0x1002` 2, `0x1004` 2, `0x1101` 2 (saut si vrai), `0x1200` 2, `0x1202` 1, `0x1317` 3
   (comparer) (`make_music.script_ops`).
 
+## Blur Map Builder (MDPRO, v1.0.0, 2026-10-20) : ce que son code nous apprend
+
+Source MIT lue le 2026-10-21 (zip de la page GitHub `MdPro64/blur-map-builder`, rien d'exécuté). Éditeur de circuits
+complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blurmap`).
+- **Installation** : « Blur REBORN.exe » = copie de `Blur.exe` + 4 changements : **vérification de signature des paks
+  coupée** (`0x8B667A` : `75` → `EB`) et `gamedata.pak` / `root.pak` lus dans `rebrn\` (chaînes `0xA668F8`,
+  `0xA66628`, `0xA66978`). Il reconstruit des paks complets. Notre méthode (paks d'origine mis de côté en `.off`,
+  fichiers en clair) évite toute modification de l'exe.
+- **`.aid`** (complète nos notes) : point = 11 f32 `{x, hauteur, −z, largeur, a, b, c, inclinaison, d, h1, h2}` ;
+  (a, −b) = direction latérale ; (c, d) = la même multipliée par le dévers, `inclinaison` = sa part verticale (= notre
+  « vecteur +24 ») ; `hauteur`, h1, h2 = un « tube » où circulent IA et projectiles (mesuré sur LA River 6 : ligne IA
+  route +7,8 / −2,9 / +7,8 ; Logic et portes à la hauteur de la route, sinon l'arrivée ne se déclenche pas).
+  Table des liens en fin de fichier : point Logic p → points p−1..p+1 de la ligne IA et points de porte proches.
+  **Longueurs de voie (échantillon +4) à 0 = gel au chargement** : la recherche de distance de freinage de l'IA
+  (`0xB1A8B0`) fait le tour de la boucle à l'infini.
+- **KSLF** : `kslf_write.insert_uid` ajoute une entrée **à sa place dans l'index trié** et renumérote toutes les
+  références (u32 index de la section 4) et la première valeur de chaque ligne de la section 5. C'est ce qui manquait à
+  notre `kslfwrite` (ajout de `ShannonEvil` dans `multiplayer.bin`).
+- Divers : objets plaçables par location, limites 144 (décor, physique, animés) et 356 (cassables) ; IDs d'acteurs
+  libres pris dans `0x7A000000..0x7AFFFFFF` ; plugin AMAX `quickstart` (lance une course LAN sur la carte) ; outils de
+  recherche (`research/tools` : désassemblage, recherche des tours, des seuils).
+
