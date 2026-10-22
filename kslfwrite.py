@@ -79,6 +79,17 @@ class KSLF:
         self.records.append([len(self.index) - 1, list(chunks), bytes(data), strings])
         return len(self.records) - 1
 
+    def get_array_refs(self, owner, field):
+        """Index slots (u32) of a top-level reference array of `owner`, in order."""
+        k = self._record_pos(owner)
+        x = self.x
+        ft, fo, fl = x._field(x._ch[0][0], field)
+        idx, chunks, data, strings = self.records[k]
+        ref, n = struct.unpack_from("<II", data, fo)
+        c, start = ref & 0xFFFF, ref >> 16
+        at = sum((4 if z else ts_size(x, t2)) * n2 for t2, n2, z in chunks[:c]) + start * 4
+        return list(struct.unpack_from("<%dI" % n, data, at))
+
     def set_array_ref(self, owner, field, i, slot):
         """Replace element i of a top-level reference array of `owner` by index slot `slot`."""
         k = self._record_pos(owner)
