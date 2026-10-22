@@ -27,8 +27,9 @@ def pack_normal(n):
         (int(round(n[2] * 511)) & 0x3FF) << 22
 
 
-def ramp_object(bottom, top, width):
-    """bytes of a type-0 road mesh object: a flat strip from bottom to top (centre points), `width` m wide."""
+def ramp_object(bottom, top, width, steps=12):
+    """bytes of a type-0 road mesh object: a strip from bottom to top (centre points), `width` m wide, in `steps`
+    bands following a smoothstep height profile (flat at both ends: no kicker that throws the AI in the air)."""
     t = open(TEMPLATE, "rb").read()
     m = lp.read_mesh(TEMPLATE)
     body, _ = lp.find_chunk(t, "Main")
@@ -53,11 +54,19 @@ def ramp_object(bottom, top, width):
     side = np.array([-f[2], 0.0, f[0]])
     side /= np.linalg.norm(side)
     h = side * width / 2
-    verts = np.array([b - h, b + h, e + h, e - h], np.float32)
+    rows = []
+    for k in range(steps + 1):
+        u = k / steps
+        p = b + f * u
+        p[1] = b[1] + f[1] * (u * u * (3 - 2 * u))           # smoothstep: slope 0 at the bottom and at the top
+        rows += [p - h, p + h]
+    verts = np.array(rows, np.float32)
     tris = []
-    for a, bb, c in ((0, 1, 2), (0, 2, 3)):
-        cr = np.cross(verts[bb] - verts[a], verts[c] - verts[a])
-        tris.append((a, bb, c) if cr[1] * sign > 0 else (a, c, bb))
+    for k in range(steps):
+        l0, r0, l1, r1 = 2 * k, 2 * k + 1, 2 * k + 2, 2 * k + 3
+        for a, bb, c in ((l0, r0, r1), (l0, r1, l1)):
+            cr = np.cross(verts[bb] - verts[a], verts[c] - verts[a])
+            tris.append((a, bb, c) if cr[1] * sign > 0 else (a, c, bb))
     lo, hi = verts.min(0), verts.max(0)
     out = bytearray(header)
     out += struct.pack("<4I", len(verts), len(m["table"]), 16 + 12 * len(tris), 1)
@@ -65,6 +74,7 @@ def ramp_object(bottom, top, width):
     out += verts.tobytes()
     out += table
     out += lp.NODE.pack(*root[:6], len(tris), 0, 0, len(verts))
+    assert len(tris) <= 255 and len(verts) <= 256
     out += lp.GROUP.pack(g[0], g[1], g[2], g[3], len(tris))
     for a, bb, c in tris:
         n = np.cross(verts[bb] - verts[a], verts[c] - verts[a]) * sign
