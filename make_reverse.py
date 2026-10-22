@@ -14,7 +14,7 @@ The game folder rules (pak before loose files, header of .bpr...) are in docs/CO
 usage: make_reverse.py OUT_DIR
 """
 import collections, json, os, struct, sys
-import aidreverse, blurbpr, blurroute, gridreverse, thumbreverse
+import addramp, aidreverse, blurbpr, blurroute, gridreverse, thumbreverse
 from blurxt import XT
 from kslfwrite import KSLF
 
@@ -37,6 +37,10 @@ AI_STEERING = {"SteeringParams.PID.D": 7.0, "SteeringParams.ForwardsDist": 20.0}
 # Career AI grip test (2026-10-20): AmaxEvent OverrideAISurface on every career event; the value scales the AI target
 # speed (clamped 0.8..1.5 by the game, AI only). None = original. Custom races have no such field.
 CAREER_AI_SURFACE = None   # 1.5 tested 2026-10-20: applied, post-nitro braking unchanged
+# Invisible ramps (collision only) {level: [(bottom centre, top centre, width)]}, game coordinates (trackrec.py).
+# New York Dumbo 3 reversed (East River Run): the dock platform, a ~3 m step down in the original direction (player
+# stuck at (1006, 3.8, 43), back on the platform at (1012, 5.8..6.6, 35)); 25 m long, 3 m rise, 16 m wide.
+RAMPS = {"usa_ny_dumbo": [((1003.1, 3.8, 53.9), (1013.0, 6.8, 31.0), 16.0)]}
 EVIL_SHANNON = True            # custom races: Shannon with the evil avatar + ultimate profile (see step 9)
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
@@ -327,6 +331,18 @@ def main(out):
                 x.b = x.patched(name, path, v)
         open(p_sp, "wb").write(x.b)
         print("career AI surface", CAREER_AI_SURFACE, "on", len(events), "events")
+
+    # 9b. invisible ramps added to a level's collision (addramp.py): steps a reversed route can only go down
+    for level, ramps in RAMPS.items():
+        src = os.path.join(GAME, "levels", level, "Level.levelphysics")     # read only
+        data = open(src, "rb").read()
+        tmp = os.path.join(out, "levels", level, "Level.levelphysics")
+        os.makedirs(os.path.dirname(tmp), exist_ok=True)
+        for bottom, top, width in ramps:
+            open(tmp, "wb").write(data)
+            data = addramp.add_ramp(tmp, bottom, top, width)
+        open(tmp, "wb").write(data)
+        print(f"{level}: {len(ramps)} rampe(s) invisible(s) dans la collision")
 
     # 10. AMAX Lua plugins shipped with the mod (test copy only): mod_static/amax/plugins/<name>/<name>.lua, plus
     # the copy's plugins.lua = the installed one (read only) + a require line per plugin
