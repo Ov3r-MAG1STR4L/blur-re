@@ -40,7 +40,9 @@ CAREER_AI_SURFACE = None   # 1.5 tested 2026-10-20: applied, post-nitro braking 
 # Invisible ramps (collision only) {level: [(bottom centre, top centre, width)]}, game coordinates (trackrec.py).
 # New York Dumbo 3 reversed (East River Run): the dock platform, a ~3 m step down in the original direction (player
 # stuck at (1006, 3.8, 43), back on the platform at (1012, 5.8..6.6, 35)); 25 m long, 3 m rise, 16 m wide.
-RAMPS = {"usa_ny_dumbo": [((1003.1, 3.8, 53.9), (1013.0, 6.8, 31.0), 16.0)]}
+# 2026-10-22 second version: the whole step, measured by driving along it: left end (1010, 46), right end (986, 30)
+# (28.8 m), platform top y 5.7..6.0 -> 35 m wide (3 m margin each side), from 18 m before the step to 3 m onto it.
+RAMPS = {"usa_ny_dumbo": [((988.0, 3.8, 53.0), (999.7, 6.4, 35.5), 35.0)]}   # top 6.4: ~6.0 at the step line
 EVIL_SHANNON = True            # custom races: Shannon with the evil avatar + ultimate profile (see step 9)
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
