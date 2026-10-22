@@ -44,7 +44,9 @@ CAREER_AI_SURFACE = None   # 1.5 tested 2026-10-20: applied, post-nitro braking 
 # (28.8 m), platform top y 5.7..6.0 -> 35 m wide (3 m margin each side), from 18 m before the step to 3 m onto it.
 # 3rd version (2026-10-23, player: AI took off and crashed): 45 m wide, 35 m long (30 m before the step, 5 m onto the
 # platform), smoothstep profile in 12 bands (flat at both ends), ends at 6.0 = the platform top.
-RAMPS = {"usa_ny_dumbo": [((981.4, 3.8, 63.0), (1000.8, 6.0, 33.8), 45.0)]}
+# 4th (2026-10-23, player: small step between the road and the ramp start): starts 40 m before the step, sunk to
+# y 3.2 under the road (the recorded y 3.8 is the car, not the ground): it comes out of the ground with no edge.
+RAMPS = {"usa_ny_dumbo": [((975.8, 3.2, 71.3), (1000.8, 6.0, 33.8), 45.0)]}
 EVIL_SHANNON = True            # custom races: Shannon with the evil avatar + ultimate profile (see step 9)
 GAME = r"C:\Program Files (x86)\Activision\Blur(TM)"   # read only (installed plugins.lua)
 E = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted")
