@@ -895,3 +895,12 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   `CRN_ROUTE_1_REVERSE` (partagé avec Brighton). La route a un raccourci (bloc `Carpark` + `JunctionCarpark`) : retirés du
   tracé IA avant l'inversion (`make_reverse.load_aid(drop=…)`) ; les IA ne prennent plus le parking, le joueur oui.
   Longueurs de voie nulles : 33, comme l'original (nœuds 0, 689, 690 = jonction de la boucle). À tester en jeu.
+- **New York à l'envers (2026-10-22)** : `USA_NY_Dumbo2R` (« Route 2 Reverse », `CRN_ROUTE_2_REVERSE`) et
+  `USA_NY_Dumbo_3R` (« East River Run », `CRN_NY_DUMBO_4`, nom de route prévu et jamais utilisé ; `CRN_NY_DUMBO_1`
+  « Fulton Loop » est aussi libre). Tous les chemins alternatifs retirés du tracé IA (4 sur Dumbo 2, 6 sur Dumbo 3).
+  Images dans les deux derniers emplacements libres (`USA_Amboy_Bowl`, 14 car. ; `USA_LA_LongBeachDocks_2`, 23 car.) :
+  **plus aucun emplacement d'image 512 × 256 libre** dans `ui_frontend.bpr` (route suivante : sans image, ou trouver une
+  autre méthode). À tester en jeu.
+- **Trajectoire IA du Map Builder** : il ne touche pas aux 11 lignes ; il rétrécit le couloir de la ligne IA (position
+  et largeur des nœuds de `Main`) à ~12 m autour d'une trajectoire qui coupe l'intérieur des virages (rayon ≤ 70 m =
+  corde complète, lissage ±40 m). Piste pour améliorer nos routes inversées (à mesurer).

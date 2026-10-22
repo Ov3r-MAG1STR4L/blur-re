@@ -68,6 +68,18 @@ ROUTES = [
          loc="CRN_ROUTE_1_REVERSE",              # "Route 1 Reverse" (shared with Brighton); name <= 25: picture slot
          grid=dict(loop=True), gates=None,
          drop=("Carpark", "JunctionCarpark")),   # car-park shortcut: AI no longer use it (2026-10-21)
+    # New York (2026-10-22): every alternative route dropped (AI on the main loop only). Names fit the last free
+    # picture slots (USA_Amboy_Bowl 14 chars, USA_LA_LongBeachDocks_2 23 chars).
+    dict(orig="USA_NY_Dumbo_2", new="USA_NY_Dumbo2R", index=None, hash=0xFFFF0030,
+         loc="CRN_ROUTE_2_REVERSE",              # "Route 2 Reverse" / "Route 2 Miroir", unused dev string
+         grid=dict(loop=True), gates=None,
+         drop=("AltOne", "AltTwo", "AltThree", "Truckstop",
+               "JunctionAltOne", "JunctionAltTwo", "JunctionAltThree", "JunctionStop")),
+    dict(orig="USA_NY_Dumbo_3", new="USA_NY_Dumbo_3R", index=None, hash=0xFFFF0040,
+         loc="CRN_NY_DUMBO_4",                   # "East River Run" / "Course sur l'East River", unused dev route name
+         grid=dict(loop=True), gates=None,
+         drop=("AltrouteOne", "AltrouteTwo", "AltrouteThree", "AltrouteFour", "SideAlt", "NewAltRoute",
+               "JunctionOne", "JunctionTwo", "JunctionThree", "JunctionFour", "SideJunction")),
 ]
 
 
