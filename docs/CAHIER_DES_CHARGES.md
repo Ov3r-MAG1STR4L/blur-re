@@ -216,6 +216,22 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 
 ---
 
+## Projet G : choix des chemins par les IA (embranchements) — à faire
+
+Constat (2026-10-22, Concrete Basin = LA River 3) : au premier pont après la grille (~370 m du départ), le raccourci à
+gauche (`bank`, jonction `JunctionSidebank`) n'est pris que par 7 à 12 IA sur 19 au premier tour (13 à 16 sur une course
+de 3 tours) ; celles de tête passent à droite, le joueur les double toutes en coupant. Chaque jonction a une règle :
+type 5 (3 valeurs) ou 9 (2 valeurs), ou aucune (drapeaux 0x40). LA River 3 : `JunctionSidebank` 5 [3, 0, 3],
+`JunctionsSwerve` 5 [4, 0, 3], `Junctionside` 9 [3, 5], `Junctionjump` 5 [2, 0, 2], `Junctionbridge` 5 [4, 0, 4],
+`JunctionLeftBank` / `JunctionSide` sans règle.
+
+Étapes :
+1. Lire dans l'exe (lecture seule) le code qui applique ces règles : sens de « type 5 / 6 / 9 / 2 » et des valeurs
+   (probabilité ? condition de place, de vitesse, de nombre de voitures ?).
+2. Mesurer la vitesse réelle de chaque branche (enregistrements du joueur et des IA).
+3. Régler les règles pour que les IA prennent le chemin le plus rapide (données du circuit seulement), un essai mesuré.
+4. Plus tard : inverser aussi les jonctions pour les routes à raccourcis (Russian Hill : parking retiré pour l'instant).
+
 ## Journal
 
 | Date | Avancée |
@@ -278,3 +294,4 @@ Ne publier aucun fichier du jeu. Le dépôt reste privé tant que ce n'est pas d
 | 2026-10-20 | Vitesse des IA : sujet clos. Freinage après nitro expliqué (vitesse cible calculée au chargement depuis la physique de chaque voiture, frein forcé au-dessus) ; aucun levier « IA seulement » en course perso sans toucher à l'exe ; en carrière, `OverrideAISurfaceValue` 1,5 testé sans effet sur le freinage (retiré). Gardé : direction amortie, Hard sans bridage, meute de rivales. Outils `racegaps.py`, `aispeedrec.py` |
 | 2026-10-20 | Musique : banques `.baf` décodées / encodées (`blurbaf.py`), contrôleur JBOA compris en partie ; 24e morceau de course ajouté et entendu en jeu (`make_music.py`). Suite : musique qui réagit aux actions (nitro, épave, place) |
 | 2026-10-21 | Musique : sélecteur limité à 32 (coupé en deux), départ de course corrigé, 8 morceaux retirés (36 au total). Lecture du code de Blur Map Builder (MDPRO) : signature des paks, `.aid` complet, insertion triée dans les `.bin` |
+| 2026-10-22 | Russian Hill Route 1 Reverse OK en jeu ; projet G (choix des chemins par les IA) ajouté |
