@@ -904,3 +904,11 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
 - **Trajectoire IA du Map Builder** : il ne touche pas aux 11 lignes ; il rétrécit le couloir de la ligne IA (position
   et largeur des nœuds de `Main`) à ~12 m autour d'une trajectoire qui coupe l'intérieur des virages (rayon ≤ 70 m =
   corde complète, lissage ±40 m). Piste pour améliorer nos routes inversées (à mesurer).
+- **Rampe invisible (2026-10-23, Confirmé en jeu)** : East River Run (Dumbo 3 inversé) bloquait sur un quai (marche
+  d'environ 2 m, à descendre dans le sens d'origine). `addramp.py` ajoute à `Level.levelphysics` un petit maillage
+  de type route (copie du modèle d'objet de LA River : en-tête, table des surfaces, nœud racine, groupe, fin de 84
+  octets), **inséré en premier objet** du flux `Main` (après `Head` + version), sans toucher aux objets du niveau
+  (types 0, 2, 6, 7 selon les niveaux). Lecteur repris du Map Builder (`bmb_levelphysics.py`, MIT). Réglage final :
+  45 m de large, 40 m avant la marche à 5 m sur le quai, départ enfoui sous la route (y 3,2), profil en S sur
+  12 bandes (plat aux deux bouts : les IA ne décollent plus). Mesures prises en longeant la marche
+  (`trackrec.py`).
