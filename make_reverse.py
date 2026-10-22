@@ -72,16 +72,16 @@ ROUTES = [
          grid=gridreverse.HARUNA,
          gates={"start": -15.9, "finish": 4.0}),  # m from the painted line to the gate's first node (original)
     dict(orig="UK_Brighton_1", new="UK_Brighton_1R", index=None, hash=0xFFFF0010,
-         loc="CRN_ROUTE_1_REVERSE",              # "Route 1 Reverse" / "Route 1 Miroir", unused dev string
+         loc="CRN_BRIGHTON_MULTIPLAYER",         # "Ocean Pier" / "Jetée océanique", unused dev name (was Route 1 Reverse)
          grid=dict(loop=True), gates=None),       # loop: line and gate relation read from the original
     dict(orig="USA_SanFran_RussianHill_1", new="USA_SanFran_RussianHill_R", index=None, hash=0xFFFF0020,
-         loc="CRN_ROUTE_1_REVERSE",              # "Route 1 Reverse" (shared with Brighton); name <= 25: picture slot
+         loc="CRN_SANFRAN_RUSSIANHILL_3",        # "Cable Car Chase" / "Poursuite du tram", unused dev name; name <= 25: picture slot
          grid=dict(loop=True), gates=None,
          drop=("Carpark", "JunctionCarpark")),   # car-park shortcut: AI no longer use it (2026-10-21)
     # New York (2026-10-22): every alternative route dropped (AI on the main loop only). Names fit the last free
     # picture slots (USA_Amboy_Bowl 14 chars, USA_LA_LongBeachDocks_2 23 chars).
     dict(orig="USA_NY_Dumbo_2", new="USA_NY_Dumbo2R", index=None, hash=0xFFFF0030,
-         loc="CRN_ROUTE_2_REVERSE",              # "Route 2 Reverse" / "Route 2 Miroir", unused dev string
+         loc="CRN_NY_DUMBO_1",                   # "Fulton Loop" / "Boucle de Fulton", unused dev name (was Route 2 Reverse)
          grid=dict(loop=True), gates=None,
          drop=("AltOne", "AltTwo", "AltThree", "Truckstop",
                "JunctionAltOne", "JunctionAltTwo", "JunctionAltThree", "JunctionStop")),
