@@ -262,10 +262,24 @@ def main(out):
 
     # 4. custom race menu
     m = KSLF(os.path.join(G, "xt", "multiplayer.bin"))
+    orig_hashes = [int(h[1:], 16) for h in
+                   next(v for n, t, v, _ in XT(os.path.join(G, "xt", "multiplayer.bin")).records() if n == "#735")["routes"]]
     for r in ROUTES:
         m.append_to_array("#735", "routes", m.add_external(r["hash"], "Route"))
+    # menu order: each reversed route right after its original (2026-10-23), the others as in the game
+    slots = m.get_array_refs("#735", "routes")
+    slot_of = dict(zip(orig_hashes + [r["hash"] for r in ROUTES], slots))
+    amax_hash = {n: h for n, t, v, h in XT(os.path.join(G, "xt", "amax.bin")).records() if t == "Route"}
+    order = []
+    for h in orig_hashes:
+        order.append(h)
+        order += [r["hash"] for r in ROUTES if amax_hash[r["orig"]] == h]
+    order += [r["hash"] for r in ROUTES if r["hash"] not in order]
+    for i, h in enumerate(order):
+        m.set_array_ref("#735", "routes", i, slot_of[h])
     mp = os.path.join(xt, "multiplayer.bin")
     open(mp, "wb").write(m.build())
+    print("menu :", len(order), "routes, chaque inversée après son original")
     # 5. AI in custom races: the game allows max_ai_per_console AI per player in the lobby (4: alone = 4 AI);
     # the menu's "Max AI" goes up to 18 (20 cars - 2 players assumed). 19: alone, up to the menu's 18 AI.
     b = XT(mp).patched("#735", "max_ai_per_console", MAX_AI_PER_CONSOLE)
