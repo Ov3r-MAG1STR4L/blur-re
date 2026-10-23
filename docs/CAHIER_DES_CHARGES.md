@@ -296,3 +296,4 @@ type 5 (3 valeurs) ou 9 (2 valeurs), ou aucune (drapeaux 0x40). LA River 3 : `Ju
 | 2026-10-21 | Musique : sélecteur limité à 32 (coupé en deux), départ de course corrigé, 8 morceaux retirés (36 au total). Lecture du code de Blur Map Builder (MDPRO) : signature des paks, `.aid` complet, insertion triée dans les `.bin` |
 | 2026-10-22 | Russian Hill Route 1 Reverse OK en jeu ; projet G (choix des chemins par les IA) ajouté |
 | 2026-10-23 | New York à l'envers OK en jeu : Route 2 Reverse et East River Run (rampe invisible ajoutée à la collision) |
+| 2026-10-23 | Passation : docs/PASSATION.md (règles, méthode, tâches en cours dont l'option musique « non » à 3 niveaux) |
