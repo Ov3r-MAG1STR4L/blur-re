@@ -82,33 +82,72 @@ def slot_matrix(actorpack, def_uid):
     return [[m[k]["vx"], m[k]["vy"], m[k]["vz"]] for k in ("ax", "ay", "az", "aw")]
 
 
-def hp_model(mesh_name, mat, matrix, out_path):
-    """géométrie HP (un matériau d'un maillage .stm) -> .model Blur, en coordonnées locales de l'emplacement
+def hp_model(mesh_name, mat, matrix, out_path, glow=160):
+    """géométrie HP (un matériau d'un maillage .stm) -> .model Blur posé dans l'emplacement `matrix`"""
+    import stm2obj
+    d = open(STM, "rb").read()
+    b = next(b for t, n, b in stm2obj.entries(d) if t == 6 and n == mesh_name)
+    pos, uvs, faces = stm2obj.mesh(b, mat)
+    tris = [([pos[a] for a, _ in f], [uvs[c] for _, c in f]) for f in faces]
+    write_model(tris, stm2obj.material_name(d, mat), matrix, out_path, glow)
+
+
+def write_model(tris, texture, matrix, out_path, glow=160):
+    """triangles HP [(3 positions, 3 uv)] + texture HP -> .model Blur, en coordonnées locales de l'emplacement
     (monde = x*ax + y*ay + z*az + aw) ; faces doublées (sens d'enroulement Wii / PC pas vérifié)"""
     import numpy as np
     import stm2obj
     import blurmodel_write
-    d = open(STM, "rb").read()
-    b = next(b for t, n, b in stm2obj.entries(d) if t == 6 and n == mesh_name)
-    pos, uvs, faces = stm2obj.mesh(b, mat)
     M = np.array(matrix[:3]).T
     o = np.array(matrix[3])
     inv = np.linalg.inv(M)
-    verts, idx, seen = [], [], {}
-    for tri in faces:
-        P = [inv @ (np.array(pos[a]) + (0, 1.0 - HP_GROUND, 0) - o) for a, _ in tri]
+    verts, idx = [], []
+    for ps, us in tris:
+        P = [inv @ (np.array(p) + (0, 1.0 - HP_GROUND, 0) - o) for p in ps]
         n = np.cross(P[1] - P[0], P[2] - P[0])
         n = n / (np.linalg.norm(n) or 1)
-        ids = []
-        for p, (a, c) in zip(P, tri):
-            u, v = uvs[c]
-            ids.append(len(verts))
-            verts.append((*p, *n, u, 1 - v))
+        ids = list(range(len(verts), len(verts) + 3))
+        verts += [(*p, *n, u, 1 - v) for p, (u, v) in zip(P, us)]
         idx += ids + ids[::-1]
-    img = stm2obj.texture_image(d, stm2obj.material_name(d, mat)).convert("RGB")
-    data = blurmodel_write.build(open(TEMPLATE, "rb").read(), verts, idx, img.tobytes(), *img.size)
+    d = open(STM, "rb").read()
+    img = stm2obj.texture_image(d, texture).convert("RGB")
+    data = blurmodel_write.build(open(TEMPLATE, "rb").read(), verts, idx, img.tobytes(), *img.size, glow=glow)
     open(out_path, "wb").write(data)
-    print(mesh_name, hex(mat), stm2obj.material_name(d, mat), len(verts), "sommets ->", out_path)
+    print(texture, len(verts), "sommets ->", out_path)
+
+
+ROAD_SLOTS = [0xF1A72101 + 2 * k for k in range(11)]    # morceaux de route Map Builder (un acteur visible chacun)
+
+
+def road_models(files, world_json, radius=40.0, glow=110):
+    """route visible : les 11 matériaux HP les plus présents le long du tracé, un par emplacement de route Map
+    Builder (son modèle road_21_KK.model est remplacé : sa route lumineuse disparaît)"""
+    import collections
+    import json
+    import numpy as np
+    import stm2obj
+    pts = np.array([(p["x"], p["z"]) for p in json.load(open(world_json))["locations"][0]["maps"][0]["points"]])
+    dense = np.concatenate([np.linspace(a, b, 20, endpoint=False) for a, b in zip(pts, np.roll(pts, -1, 0))])
+    d = open(STM, "rb").read()
+    by_mat = collections.defaultdict(list)
+    for t, n, b in stm2obj.entries(d):
+        if t != 6 or not n.startswith("ROAD"):
+            continue
+        try:
+            pos, uvs, _ = stm2obj.mesh(b)
+            P = np.array(pos)
+            for m in {s[0] for s in stm2obj.submeshes(b)}:
+                for f in stm2obj.mesh(b, m)[2]:
+                    ids = [a for a, _ in f]
+                    if np.hypot(*(dense - P[ids].mean(0)[[0, 2]]).T).min() < radius:
+                        by_mat[m].append(([pos[a] for a in ids], [uvs[c] for _, c in f]))
+        except (struct.error, ValueError, IndexError):
+            continue
+    ap = os.path.join(files, "gamedata", "levels", "flat_earth", "actorpack.xt")
+    mats = [m for m in sorted(by_mat, key=lambda m: -len(by_mat[m])) if stm2obj.material_name(d, m)][:len(ROAD_SLOTS)]
+    for k, (slot, m) in enumerate(zip(ROAD_SLOTS, mats)):
+        write_model(by_mat[m], stm2obj.material_name(d, m), slot_matrix(ap, slot),
+                    os.path.join(files, "models", "objects", "flat_earth", "road_21_%02d.model" % k), glow)
 
 
 def road_collision(src, out, world_json, radius=40.0):
