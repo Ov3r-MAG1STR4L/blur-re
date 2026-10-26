@@ -953,3 +953,19 @@ posent en clair dans `Blur_test` (méthode de PASSATION).
 des maillages `ROAD`, écrire le `.blurmap`, le construire avec Map Builder lancé en Python dans une copie séparée
 (`setup_game.py` télécharge le lecteur de modèles BlurImportExport : demander d'abord), puis poser ses fichiers
 dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun circuit chargé en jeu à ce stade.
+- **Circuit Hot Pursuit construit et installé (2026-10-26, à tester en jeu)** : route 1 de Dubaï. Ligne centrale =
+  carte HUD `route_1.twi` recalée sur les maillages `ROAD` (corrélation FFT, échelle 4,3 m/pixel, 79 % des pixels
+  sur la route), 90 points recentrés sur la route (moyenne des sommets à < 20 m), 4,2 km. Trou d'environ 600 m dans
+  les maillages `ROAD` le long de l'autoroute du bas (tracé HUD seul à cet endroit). `world.json` : lieu « NFS Dubai »,
+  route « Dubai Loop », largeur 24 m. Map Builder lancé en Python dans un dossier de jeu séparé `Jeux_WII\bmb_game`
+  (copies de `Blur.exe`, paks, `levels\showroom` ; ni Blur REBORN ni plugin Amax ; `Construire NFS Dubai.bat`) :
+  préparation lourde (catalogue d'objets 1,4 Go, mémoire saturée chez l'utilisateur), puis build OK.
+  Il produit 45 fichiers neufs, le dossier `levels\flat_earth` (le 1er lieu garde ce nom de dossier, uids
+  `FFFFFF20/21`, route `Flat_Earth_1`) et change 6 fichiers : `ui.bin`, `racingphysics.bin` (d'origine dans
+  Blur_test) et `amax.bin`, `multiplayer.bin`, `cityandroutenames.loc`, `ui_frontend.bpr` (déjà moddés).
+  **Fusion** : on remplace sa base (`base/unpacked/gamedata/xt`) par les fichiers de Blur_test et on relance
+  `build.py --no-root` : ses ajouts se font par-dessus nos mods (100 → 101 routes dans `amax.bin`, 60 → 61 dans
+  `MultiplayerConfig.routes`, aucune perdue). Vignette : son entrée ajoutée à NOTRE bpr (`blurbpr.rebuild`, 256 → 257
+  images, les 256 identiques). `make_nfs_map.py` extrait le tout dans `blur_extracted\mods\nfs_dubai\files` ;
+  installé dans Blur_test (sauvegarde des 6 fichiers remplacés dans `mods\nfs_dubai\backup_blur_test`).
+  **Attention** : une réinstallation des routes inversées écrase ces 4 fichiers : relancer alors la fusion.
