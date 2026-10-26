@@ -71,11 +71,12 @@ TEMPLATE = r"C:\Users\sanqu\Jeux_WII\blur_extracted\nfs_models\sign_wetfloor.mod
 
 
 def slot_matrix(actorpack, def_uid):
-    """matrice monde (3 axes + origine) de l'unique acteur qui utilise ce DynamicObjDef"""
+    """matrice monde (3 axes + origine) de l'unique acteur visible qui utilise ce DynamicObjDef"""
     from blurxt import XT
     hits = [a["WorldMatrix"] for n, t, v, _ in XT(actorpack).records() for a in v.get("LevelActors", [])
-            if a.get("DynamicObjType") == "@%08x" % def_uid]
-    assert len(hits) == 1, hits
+            if a.get("DynamicObjType") == "@%08x" % def_uid and a["WorldMatrix"]["aw"]["vy"] > -100]
+    # (décor coupé : Map Builder remplit les listes avec des copies cachées sous le sol, y = -299)
+    assert len(hits) == 1, len(hits)
     m = hits[0]
     return [[m[k]["vx"], m[k]["vy"], m[k]["vz"]] for k in ("ax", "ay", "az", "aw")]
 
