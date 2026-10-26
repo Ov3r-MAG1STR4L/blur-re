@@ -63,7 +63,7 @@ def build(template, verts, indices, rgb, w, h, glow=160):
     j = toff - 12                                   # "DXT1"
     assert d[j:j + 4] == b"DXT1"
     old_len = struct.unpack_from("<I", d, j - 20)[0]
-    mips = int(math.log2(min(w, h))) + 1
+    mips = int(math.log2(max(w, h))) + 1         # jusqu'au grand côté (gabarit 32x128 : 8 niveaux)
     tex = cpmodel.encode_mips(rgb, w, h, mips)
     rep.append((j - 20, j - 8, struct.pack("<3I", 0x1C + len(tex), w, h)))
     rep.append((j - 4, j, struct.pack("<I", mips)))
