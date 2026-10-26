@@ -297,3 +297,4 @@ type 5 (3 valeurs) ou 9 (2 valeurs), ou aucune (drapeaux 0x40). LA River 3 : `Ju
 | 2026-10-22 | Russian Hill Route 1 Reverse OK en jeu ; projet G (choix des chemins par les IA) ajouté |
 | 2026-10-23 | New York à l'envers OK en jeu : Route 2 Reverse et East River Run (rampe invisible ajoutée à la collision) |
 | 2026-10-23 | Passation : docs/PASSATION.md (règles, méthode, tâches en cours dont l'option musique « non » à 3 niveaux) |
+| 2026-10-26 | Projet J : `.stm` de Hot Pursuit Wii décodés (route séparée du décor, `stm2obj.py`, Dubaï exporté) ; Map Builder n'importe pas de maillage (ligne centrale `map.json`) ; prochaine étape : tracé HP → `.blurmap` |
