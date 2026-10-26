@@ -50,8 +50,17 @@ def _sections(d):
     return out
 
 
-def build(template, verts, indices, rgb, w, h, glow=160):
-    """verts = [(x, y, z, nx, ny, nz, u, v)], indices = triangles (u16), rgb = octets RGB w x h -> .model"""
+def build(template, verts, indices, rgb, w, h, glow=160, salt=None, pad_verts=None, pad_indices=None):
+    """verts = [(x, y, z, nx, ny, nz, u, v)], indices = triangles (u16), rgb = octets RGB w x h -> .model
+    salt : nouveaux identifiants de texture (le jeu garde une texture par identifiant ; Map Builder fait pareil) ;
+    pad_verts / pad_indices : taille fixe (sommets répétés, triangles vides) - tous les modèles Map Builder issus
+    d'un même gabarit ont la même taille ; les nôtres de tailles différentes plantent au chargement (0x6DB2EB)"""
+    if pad_verts:
+        assert len(verts) <= pad_verts, (len(verts), pad_verts)
+        verts = list(verts) + [verts[0]] * (pad_verts - len(verts))
+    if pad_indices:
+        assert len(indices) <= pad_indices, (len(indices), pad_indices)
+        indices = list(indices) + [indices[0]] * (pad_indices - len(indices))
     assert len(verts) <= 0xFFFF
     d = template
     P = cpmodel.parse(d)
@@ -122,7 +131,7 @@ def build(template, verts, indices, rgb, w, h, glow=160):
             struct.pack_into("<I", out, lf + shift(lf), L + grow)
     xs, ys, zs = zip(*((v[0], v[1], v[2]) for v in verts))
     cpmodel.write_bbox(out, cpmodel.parse(bytes(out)), (min(xs), min(ys), min(zs), max(xs), max(ys), max(zs)))
-    return bytes(out)
+    return cpmodel.new_texture_ids(bytes(out), salt) if salt else bytes(out)
 
 
 def cube(size=10.0):
