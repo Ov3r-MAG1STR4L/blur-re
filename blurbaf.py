@@ -162,6 +162,33 @@ def add_wave(b, name, pcm, rate, data=None, samples=None, channels=2, entry_size
     return bytes(out)
 
 
+def replace_wave(b, name, pcm=None, rate=None, data=None):
+    """Return bank bytes where the existing codec-7 WAVE `name` plays `pcm` (int16 (samples, channels)) instead.
+    In-memory banks (ingameui, frontendui...) are packed: one 'DATA' + u32 (size + 8) block per sound, in entry order,
+    back to back, the last one ending the file. Appending 0x800-aligned blocks there (the streamed music banks' layout)
+    broke other sounds in game (2026-10-26): the bank is rebuilt in that packed layout instead.
+    data = already encoded bytes (pcm only gives the sample count then); used to check the identical round trip."""
+    bank = parse(b)
+    w = bank["waves"]
+    starts = [x["start"] for x in w]
+    assert all(starts[i] + w[i]["size"] + 8 == starts[i + 1] for i in range(len(w) - 1)), "not a packed bank"
+    assert starts[-1] + w[-1]["size"] == len(b), "not a packed bank"
+    k = next(i for i, x in enumerate(w) if x["name"] == name)
+    assert w[k]["codec"] == 7, name
+    if data is None:
+        data = encode_psx(pcm)
+    out = bytearray(b[:starts[0] - 8])
+    for i, x in enumerate(w):
+        blob = data if i == k else b[x["start"]:x["start"] + x["size"]]
+        out += b"DATA" + struct.pack("<I", len(blob) + 8)
+        struct.pack_into("<2I", out, x["entry"] + 0x2C, len(out), len(blob))
+        out += blob
+    if pcm is not None:
+        struct.pack_into("<2I", out, w[k]["entry"] + 0x40, rate, len(pcm))
+        out[w[k]["entry"] + 0x4B] = pcm.shape[1]
+    return bytes(out)
+
+
 def decode(b, w):
     data = b[w["start"]:w["start"] + w["size"]]
     if w["codec"] == 3:
