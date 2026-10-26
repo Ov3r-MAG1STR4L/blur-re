@@ -969,3 +969,24 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   images, les 256 identiques). `make_nfs_map.py` extrait le tout dans `blur_extracted\mods\nfs_dubai\files` ;
   installé dans Blur_test (sauvegarde des 6 fichiers remplacés dans `mods\nfs_dubai\backup_blur_test`).
   **Attention** : une réinstallation des routes inversées écrase ces 4 fichiers : relancer alors la fusion.
+- **Matériaux et textures Hot Pursuit (2026-10-27, Confirmé hors jeu)** : sous-maillages = entrées de 16 o
+  `(0, mat << 16, offset liste GX, n)` dans les nœuds ; une liste GX va jusqu'à la suivante, avec bourrage `0x00`
+  (NOP) entre primitives (le 1er essai s'arrêtait au bourrage : bâtiments en morceaux). Matériau `mat` ≥ 0x8D =
+  (mat − 0x8D)-ième entrée `.mp1` du lieu (routes → `road_*`, bâtiments → `bldg_*`, parkings → voitures) ; < 0x8D =
+  table commune non trouvée (beaucoup de murs d'immeubles). Texture : en-tête 0x60 (u32 l, h, f32 l, h, mips,
+  format @0x14, taille palette @0x1C, offset pixels @0x24, offset palette @0x28). Formats : `0xFB` CMPR (converti
+  en DXT1 sans perte : tuiles 8x8, couleurs big-endian, index inversés) et `5` C8 (tuiles 8x4, palette RGB5A3).
+  `stm2obj.texture_image`, `mesh(b, mat)`. Échelle confirmée par le portique de départ (24,7 x 5,8 m) ; « PVS_burj »
+  = l'île Palm (Y), pas la tour.
+- **`.model` de taille libre (2026-10-27, Confirmé hors jeu, à tester en jeu)** : `blurmodel_write.py` part du
+  gabarit `sign_wetfloor.model` et remplace sommets, index (liste de triangles) et texture couleur de taille libre,
+  puis corrige les longueurs des sections qui les contiennent (section = titre 8 o + u32 longueur + drapeaux ;
+  données alignées sur pos % 16 == 12). Relu par le lecteur BlurImportExport : cube, et 3 000 sommets + 256x256 ;
+  chaîne des sections cohérente. Limites : 1 matériau, ≤ 65 535 sommets, shader du gabarit, lumière propre
+  (VERT de la texture matériau) car le niveau Map Builder n'éclaire pas les objets.
+- **Premier bâtiment HP dans Blur (2026-10-27, à tester en jeu)** : repère HP = repère Blur en x/z (morceaux de route
+  Map Builder à 3-4 m de notre ligne centrale), y + 324,8 (route HP à −323,8, sol Map Builder à 1). Emplacements
+  uniques de Map Builder : arche de tour (`F1E20005`, à la ligne) et 11 morceaux de route (`F1A72101..15`). Le
+  modèle `arch_lap.model` est remplacé par l'immeuble « en vague » (`PVS9992`, matériau `bldg_dub1_waveshaped`,
+  864 sommets, faces doublées) exprimé dans le repère de l'arche (`make_nfs_map.hp_model`) : il doit apparaître à
+  sa vraie place, ~130 m de la ligne. Original Map Builder gardé dans `nfs_models\arch_lap_mapbuilder.model`.

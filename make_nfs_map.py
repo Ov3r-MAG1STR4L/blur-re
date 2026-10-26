@@ -62,3 +62,48 @@ def add_thumbnail(test_bpr, out_bpr, route="Flat_Earth_1"):
 
 if __name__ == "__main__":
     main()
+
+
+# --- bâtiment de Hot Pursuit posé dans un emplacement d'objet de Map Builder (2026-10-27) ---
+STM = r"C:\Users\sanqu\Jeux_WII\nfs_extracted\files\Data\Environments\Location1\location11.stm"
+HP_GROUND = -323.8           # hauteur de la route HP près de la ligne de départ ; Blur (Map Builder) : sol à y = 1
+TEMPLATE = r"C:\Users\sanqu\Jeux_WII\blur_extracted\nfs_models\sign_wetfloor.model"
+
+
+def slot_matrix(actorpack, def_uid):
+    """matrice monde (3 axes + origine) de l'unique acteur qui utilise ce DynamicObjDef"""
+    from blurxt import XT
+    hits = [a["WorldMatrix"] for n, t, v, _ in XT(actorpack).records() for a in v.get("LevelActors", [])
+            if a.get("DynamicObjType") == "@%08x" % def_uid]
+    assert len(hits) == 1, hits
+    m = hits[0]
+    return [[m[k]["vx"], m[k]["vy"], m[k]["vz"]] for k in ("ax", "ay", "az", "aw")]
+
+
+def hp_model(mesh_name, mat, matrix, out_path):
+    """géométrie HP (un matériau d'un maillage .stm) -> .model Blur, en coordonnées locales de l'emplacement
+    (monde = x*ax + y*ay + z*az + aw) ; faces doublées (sens d'enroulement Wii / PC pas vérifié)"""
+    import numpy as np
+    import stm2obj
+    import blurmodel_write
+    d = open(STM, "rb").read()
+    b = next(b for t, n, b in stm2obj.entries(d) if t == 6 and n == mesh_name)
+    pos, uvs, faces = stm2obj.mesh(b, mat)
+    M = np.array(matrix[:3]).T
+    o = np.array(matrix[3])
+    inv = np.linalg.inv(M)
+    verts, idx, seen = [], [], {}
+    for tri in faces:
+        P = [inv @ (np.array(pos[a]) + (0, 1.0 - HP_GROUND, 0) - o) for a, _ in tri]
+        n = np.cross(P[1] - P[0], P[2] - P[0])
+        n = n / (np.linalg.norm(n) or 1)
+        ids = []
+        for p, (a, c) in zip(P, tri):
+            u, v = uvs[c]
+            ids.append(len(verts))
+            verts.append((*p, *n, u, 1 - v))
+        idx += ids + ids[::-1]
+    img = stm2obj.texture_image(d, stm2obj.material_name(d, mat)).convert("RGB")
+    data = blurmodel_write.build(open(TEMPLATE, "rb").read(), verts, idx, img.tobytes(), *img.size)
+    open(out_path, "wb").write(data)
+    print(mesh_name, hex(mat), stm2obj.material_name(d, mat), len(verts), "sommets ->", out_path)

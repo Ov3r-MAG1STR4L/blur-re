@@ -24,7 +24,7 @@ def entries(d):
         yield t, name, d[f[2]:f[2] + f[3]]
 
 
-def mesh(b):
+def mesh(b, mat=None):
     """-> (positions, uvs, faces[(pi,ti)x3]) d'un maillage STM."""
     vb = struct.unpack_from('>I', b, 0x14)[0]
     p0, p1, p2 = struct.unpack_from('>3I', b, vb)
@@ -34,22 +34,40 @@ def mesh(b):
            for j in range((p1 - p0) // 6)]
     uvs = [(u * UV_SCALE, 1 - v * UV_SCALE) for u, v in
            (struct.unpack_from('>2h', b, p2 + 4 * j) for j in range((len(b) - p2) // 4))]
-    # listes GX : du premier offset de nœud jusqu'au bloc sommets
-    starts = []
-    o = 0x40
-    while o + 0x20 <= vb and (not starts or o < min(starts)):
-        dl = struct.unpack_from('>I', b, o + 8)[0]
-        if not 0 < dl < vb:
-            break
-        starts.append(dl)
-        o += 0x38
+    subs = submeshes(b)
+    ends = sorted({o for _, o, _ in subs}) + [vb]
     faces = []
-    p = min(starts)
-    while p < vb:
+    for m, p in sorted({(m, o) for m, o, _ in subs}, key=lambda x: x[1]):
+        if mat is None or m == mat:
+            faces += _dl(b, p, ends[ends.index(p) + 1], sizes)
+    return pos, uvs, faces
+
+
+def submeshes(b):
+    """[(matériau, offset liste GX, n ?)] : entrées de 16 o (0, mat << 16, offset, n) des nœuds ; une liste va
+    jusqu'à la suivante (bourrage 0x00 = NOP GX entre les primitives)."""
+    vb = struct.unpack_from('>I', b, 0x14)[0]
+    out, o, first = [], 0x40, vb
+    while o + 16 <= first:
+        w = struct.unpack_from('>4I', b, o)
+        if w[0] == 0 and w[1] & 0xFFFF == 0 and 0x40 < w[2] < vb and b[w[2]] in (0x90, 0x98, 0xA0) and 0 < w[3] < 5000:
+            out.append((w[1] >> 16, w[2], w[3]))
+            first = min(first, w[2])
+            o += 16
+        else:
+            o += 4
+    return out
+
+
+def _dl(b, p, end, sizes):
+    faces = []
+    while p < end:
         op = b[p]
-        if op not in (0x90, 0x98, 0xA0):
+        if op == 0:
             p += 1
             continue
+        if op not in (0x90, 0x98, 0xA0):
+            break
         cnt = struct.unpack_from('>H', b, p + 1)[0]
         p += 3
         vs = []
@@ -67,7 +85,79 @@ def mesh(b):
         else:
             tri = [(vs[0], vs[i], vs[i + 1]) for i in range(1, cnt - 1)]
         faces += [t for t in tri if len({v[0] for v in t}) == 3]
-    return pos, uvs, faces
+    return faces
+
+
+# matériau m (u16 des sous-maillages) = m - MAT_BASE-ième entrée .mp1 du lieu ; en dessous : table commune pas
+# encore trouvée (vérifié à l'œil : routes -> road_*, bâtiments -> bldg_*)
+MAT_BASE = 0x8D  # ponytail: mesuré sur location11 seulement
+
+
+def material_name(d, m):
+    t5 = [n for t, n, _ in entries(d) if t == 5]
+    return t5[m - MAT_BASE] if m >= MAT_BASE else None
+
+
+def texture_dxt1(d, name):
+    """texture .tex/.mp1 (CMPR Wii) -> (largeur, hauteur, niveaux DXT1 [bytes]) ; en-tête 0x60 : u32 l, u32 h, …
+    @0x14 = 0xFB (CMPR), puis niveaux de mip. CMPR = DXT1 en tuiles 8x8 de 4 blocs, couleurs big-endian,
+    index 2 bits dans l'ordre inverse : conversion sans perte."""
+    b = next(b for t, n, b in entries(d) if n == name)
+    w, h = struct.unpack_from('>2I', b, 0)
+    assert struct.unpack_from('>I', b, 0x14)[0] == 0xFB, 'pas du CMPR'
+    p, levels = 0x60, []
+    while w >= 4 and h >= 4 and p + w * h // 2 <= len(b):
+        bx, by = w // 4, h // 4
+        out = bytearray(bx * by * 8)
+        k = p
+        for ty in range(0, by, 2):
+            for tx in range(0, bx, 2):
+                for sy, sx in ((0, 0), (0, 1), (1, 0), (1, 1)):
+                    c0, c1 = struct.unpack_from('>2H', b, k)
+                    idx = bytes(sum(((v >> (2 * i)) & 3) << (6 - 2 * i) for i in range(4)) for v in b[k + 4:k + 8])
+                    if ty + sy < by and tx + sx < bx:
+                        struct.pack_into('<2H4s', out, ((ty + sy) * bx + tx + sx) * 8, c0, c1, idx)
+                    k += 8
+        levels.append(bytes(out))
+        p += w * h // 2
+        w, h = w // 2, h // 2
+    w0, h0 = struct.unpack_from('>2I', b, 0)
+    return w0, h0, levels
+
+
+def texture_image(d, name):
+    """texture -> image Pillow RGBA. En-tête : u32 l, h, f32 l, h, u32 mips, format @0x14, …, taille palette @0x1C,
+    offset pixels @0x24, offset palette @0x28. Formats vus : 0xFB CMPR (via DXT1 + DDS en mémoire) ; 5 = C8
+    (tuiles 8x4, palette RGB5A3)."""
+    import io
+    from PIL import Image
+    b = next(b for t, n, b in entries(d) if n == name)
+    w, h, _, _, _, fmt, _, pal, _, pix, poff = struct.unpack_from('>11I', b, 0)
+    if fmt == 0xFB:
+        w, h, lv = texture_dxt1(d, name)
+        hdr = struct.pack('<4s7I44x2I4s20x I16x', b'DDS ', 124, 0x1007, h, w, len(lv[0]), 0, 1,
+                          32, 4, b'DXT1', 0x1000)
+        return Image.open(io.BytesIO(hdr + lv[0])).convert('RGBA')
+    assert fmt == 5, 'format %#x pas géré' % fmt
+    cols = []
+    for v in struct.unpack_from('>%dH' % (pal // 2), b, poff):
+        if v & 0x8000:
+            cols.append(((v >> 10 & 31) * 255 // 31, (v >> 5 & 31) * 255 // 31, (v & 31) * 255 // 31, 255))
+        else:
+            cols.append(((v >> 8 & 15) * 17, (v >> 4 & 15) * 17, (v & 15) * 17, (v >> 12 & 7) * 255 // 7))
+    img = Image.new('RGBA', (w, h))
+    px, k = img.load(), pix
+    for by in range(0, h, 4):
+        for bx in range(0, w, 8):
+            for y in range(4):
+                for x in range(8):
+                    px[bx + x, by + y] = cols[b[k]]
+                    k += 1
+    return img
+
+
+def texture_png(d, name, path):
+    texture_image(d, name).save(path)
 
 
 def export(stm, out, filters=()):
