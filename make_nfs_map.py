@@ -131,8 +131,10 @@ def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None
 
 
 ROAD_SLOTS = [0xF1A72101 + 2 * k for k in range(11)]    # morceaux de route Map Builder (un acteur visible chacun)
-# crash au chargement à 3 444 sommets (68 880 o de sommets), 1 353 passe : plafond supposé 65 535 o de sommets
-MAX_VERTS = 3000
+# crash au chargement (Blur.exe 0x6DB2EB, accès mémoire) dès 1 854 sommets (37 080 o) ; 1 353 (27 060 o) passe :
+# plafond supposé 32 768 o de sommets (1 638 à 20 o)
+MAX_VERTS = 1500
+ROAD_FIRST = ("road_plaintarmac", "road_whitedotrwhitelinel", "road_junction_arrows")   # priorité si place manque
 
 
 def road_models(files, world_json, radius=40.0, glow=110):
@@ -161,7 +163,11 @@ def road_models(files, world_json, radius=40.0, glow=110):
             continue
     ap = os.path.join(files, "gamedata", "levels", "flat_earth", "actorpack.xt")
     jobs = []                                       # (matériau, triangles) <= MAX_VERTS sommets partagés
-    for m in sorted(by_mat, key=lambda m: -len(by_mat[m])):
+    def prio(m):
+        n = stm2obj.material_name(d, m) or ""
+        first = [k for k, p in enumerate(ROAD_FIRST) if n.startswith(p)]
+        return (first[0] if first else len(ROAD_FIRST), -len(by_mat[m]))
+    for m in sorted(by_mat, key=prio):
         if not stm2obj.material_name(d, m):
             continue
         cur, keys = [], set()
