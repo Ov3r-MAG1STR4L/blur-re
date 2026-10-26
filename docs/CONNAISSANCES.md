@@ -912,3 +912,44 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   45 m de large, 40 m avant la marche à 5 m sur le quai, départ enfoui sous la route (y 3,2), profil en S sur
   12 bandes (plat aux deux bouts : les IA ne décollent plus). Mesures prises en longeant la marche
   (`trackrec.py`).
+
+## Projet J : circuit de NFS Hot Pursuit Wii vers Blur (2026-10-26, premier test hors jeu)
+
+**Ce qui s'extrait de Hot Pursuit Wii** (Confirmé hors jeu, `stm2obj.py`). Chaque lieu est un fichier
+`Data/Environments/LocationN/locationNM.stm` (~48 Mo, un par variante de lieu) : en-tête `STME`, `0x0101010F`,
+`WI01`, nombre d'entrées (1 295 pour `location11`), puis entrées de 64 o (u32 type, nom 28 o, 8 u32 dont offset @+8
+et taille @+12, big-endian). Types : 1 `.pvs` (visibilité), 2/3 `KDMetaData1.dat` / `kd1_0_0.dat` (6,7 Mo, arbre
+spatial, sans doute collision), 4/5 textures `.tex` / `.mp1` (239 paires), 6/7/8 maillages en 3 niveaux de détail
+(`.1f1`/`.011`, `.1f2`/`.012`, `.1f3`), un `.0` par objet (`Objt_Gen1_StartLineFlag_00`…).
+- **La route est séparée du décor** : maillages `ROAD*` (278 pour Dubaï), décor `PVS*`, `bldg_*`, `arc_*`…
+- Maillage : u32 0x18, f32 1.0, centre, u32 offset du bloc sommets @0x14, boîte (centre + demi-tailles) @0x28,
+  nœuds de 0x38 o dès 0x40 (+8 = offset de liste GX). Listes GX Wii (`0x98` bande, `0x90` triangles), 3 index par
+  sommet (position, normale, UV), sur 1 octet ou 2 selon 3 octets drapeaux après les 3 offsets du bloc sommets.
+  Positions s16 x3 × **échelle par axe fixe pour le lieu** : x 1/17,565, y 1/76,8, z 1/18,818 (lieu ≈ 3 730 × 853 ×
+  3 480 m, mesuré par les boîtes ; le rond-point sort rond). Normales s8 x3, UV s16 x2 (échelle 1/1024 supposée).
+- Résultat sur `location11` (Dubaï) : réseau routier complet, 21 976 sommets (5 maillages sur 278 ignorés,
+  index mal lus) ; lieu entier 599 316 sommets. Hors dépôt : `nfs_extracted/stm_work/loc11_*.obj`.
+- Pas encore : textures liées aux maillages (champ `0x00A20000` des nœuds ? format `.tex` Wii = CMPR/I8 déjà lu
+  par les outils NFS), tracé de course / IA (sans doute hors `.stm` ou dans `kd1_0_0.dat`), instances d'objets.
+
+**Ce qu'accepte Blur Map Builder** (lu dans le zip 1.0.0, rien d'exécuté). **Aucun import de maillage** (pas d'OBJ,
+FBX…). Entrée = `map.json` dans un `.blurmap` (zip) : ligne centrale `points` `{x, z, corner}`, largeur, ponts
+automatiques, bonus, tours, décor de SON catalogue, caméras. Il fabrique tout le reste lui-même : morceaux de route
+(clones de modèles du jeu réécrits, `cpmodel.make_mesh` : au plus autant de sommets / index que le modèle donneur),
+collision plate + boîtes / tabliers (`physics/write_flat.py`), `.aid` (`gen_aid.py`), `actorpack.xt`, ville et route
+clonées dans `amax.bin` (LA River 805, Haruna 1 395), entrée `multiplayer.bin`, noms `.loc`, minicarte, vignette,
+dossier de niveau copié d'un niveau existant. Il produit des paks complets pour « Blur REBORN » ; ses fichiers se
+posent en clair dans `Blur_test` (méthode de PASSATION).
+
+**Chaîne réaliste ?** En deux niveaux :
+1. **Tracé seul** (réaliste, court) : ligne centrale d'un circuit Hot Pursuit (milieu des maillages `ROAD`, ou du
+   tracé de course quand il sera trouvé) → `map.json` → Map Builder → circuit au plan de Hot Pursuit, avec la route,
+   le décor et la collision **de Map Builder** (sol plat, reliefs limités aux ponts).
+2. **Géométrie Hot Pursuit visible** (gros travail) : il faut écrire des CPModel neufs (taille libre, textures DXT1)
+   ou découper en morceaux dans des modèles donneurs, plus une collision `levelphysics` de la vraie route (notre
+   `addramp.py` sait déjà insérer un maillage de type route). Les hauteurs de Hot Pursuit (y) seraient alors gardées.
+
+**Prochaine étape concrète** : choisir un circuit de Dubaï (carte `HudMaps/route_N.twi`), extraire sa ligne centrale
+des maillages `ROAD`, écrire le `.blurmap`, le construire avec Map Builder lancé en Python dans une copie séparée
+(`setup_game.py` télécharge le lecteur de modèles BlurImportExport : demander d'abord), puis poser ses fichiers
+dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun circuit chargé en jeu à ce stade.
