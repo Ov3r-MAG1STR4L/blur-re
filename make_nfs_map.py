@@ -103,15 +103,23 @@ def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None
     M = np.array(matrix[:3]).T
     o = np.array(matrix[3])
     inv = np.linalg.inv(M)
-    verts, idx = [], []
+    verts, idx, seen = [], [], {}
     for ps, us in tris:
         P = [inv @ (np.array(p) + (0, 1.0 - HP_GROUND, 0) - o) for p in ps]
         n = np.cross(P[1] - P[0], P[2] - P[0])
         n = n / (np.linalg.norm(n) or 1)
-        ids = list(range(len(verts), len(verts) + 3))
         if up and n[1] < 0:
-            n, ids = -n, [ids[0], ids[2], ids[1]]
-        verts += [(*p, *n, u, 1 - v) for p, (u, v) in zip(P, us)]
+            n, P, us = -n, [P[0], P[2], P[1]], [us[0], us[2], us[1]]
+        ids = []
+        for p, (u, v) in zip(P, us):
+            key = (tuple(np.round(p, 3)), u, v) if up else None    # route : sommets partagés
+            if key is None or key not in seen:
+                if key is not None:
+                    seen[key] = len(verts)
+                ids.append(len(verts))
+                verts.append((*p, *n, u, 1 - v))
+            else:
+                ids.append(seen[key])
         idx += ids if up else ids + ids[::-1]
     d = open(STM, "rb").read()
     img = stm2obj.texture_image(d, texture).convert("RGB")
@@ -123,6 +131,8 @@ def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None
 
 
 ROAD_SLOTS = [0xF1A72101 + 2 * k for k in range(11)]    # morceaux de route Map Builder (un acteur visible chacun)
+# crash au chargement à 3 444 sommets (68 880 o de sommets), 1 353 passe : plafond supposé 65 535 o de sommets
+MAX_VERTS = 3000
 
 
 def road_models(files, world_json, radius=40.0, glow=110):
@@ -150,11 +160,24 @@ def road_models(files, world_json, radius=40.0, glow=110):
         except (struct.error, ValueError, IndexError):
             continue
     ap = os.path.join(files, "gamedata", "levels", "flat_earth", "actorpack.xt")
-    mats = [m for m in sorted(by_mat, key=lambda m: -len(by_mat[m])) if stm2obj.material_name(d, m)][:len(ROAD_SLOTS)]
-    for k, (slot, m) in enumerate(zip(ROAD_SLOTS, mats)):
-        write_model(by_mat[m], stm2obj.material_name(d, m), slot_matrix(ap, slot),
+    jobs = []                                       # (matériau, triangles) <= MAX_VERTS sommets partagés
+    for m in sorted(by_mat, key=lambda m: -len(by_mat[m])):
+        if not stm2obj.material_name(d, m):
+            continue
+        cur, keys = [], set()
+        for tri in by_mat[m]:
+            k = {(tuple(np.round(p, 3)), tuple(u)) for p, u in zip(*tri)}
+            if len(keys | k) > MAX_VERTS:
+                jobs.append((m, cur))
+                cur, keys = [], set()
+            cur.append(tri)
+            keys |= k
+        jobs.append((m, cur))
+    for k, (slot, (m, tris)) in enumerate(zip(ROAD_SLOTS, jobs)):
+        write_model(tris, stm2obj.material_name(d, m), slot_matrix(ap, slot),
                     os.path.join(files, "models", "objects", "flat_earth", "road_21_%02d.model" % k), glow,
                     up=True, square=256)
+    print("pas de place pour :", [(stm2obj.material_name(d, m), len(t)) for m, t in jobs[len(ROAD_SLOTS):]])
 
 
 def road_collision(src, out, world_json, radius=40.0):
