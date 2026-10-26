@@ -67,6 +67,33 @@ def ramp_object(bottom, top, width, steps=12):
         for a, bb, c in ((l0, r0, r1), (l0, r1, l1)):
             cr = np.cross(verts[bb] - verts[a], verts[c] - verts[a])
             tris.append((a, bb, c) if cr[1] * sign > 0 else (a, c, bb))
+    return mesh_object(verts, tris)
+
+
+def mesh_object(verts, tris, template=TEMPLATE):
+    """bytes of a type-0 road mesh object (template: the first object of a levelphysics, LA River by default; its
+    surface table is copied whole: a small one keeps the object small) for verts [(x, y, z)] (<= 256) and
+    triangles [(a, b, c)] (<= 255), wound so that cross(b - a, c - a) points up like the template's floor"""
+    t = open(template, "rb").read()
+    m = lp.read_mesh(template)
+    body, _ = lp.find_chunk(t, "Main")
+    start = body + 4 + 4 + 4 + 8 * 4 + 12 + 4 + (4 if m["version"] > 6 else 0)
+    header = t[body + 8:start]
+    nv = len(m["verts"])
+    table = t[start + 16 + 24 + nv * 12:start + 16 + 24 + nv * 12 + 4 * len(m["table"])]
+    p = m["stream_pos"]
+    end = p + 4 + 12 * struct.unpack_from("<I", t, p)[0]
+    trailer = t[end:end + TRAILER]
+    V, T = m["verts"], lp.triangles(m)
+    nrm = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]])
+    nrm /= np.linalg.norm(nrm, axis=1, keepdims=True) + 1e-12
+    floor = int(np.argmax(np.abs(nrm[:, 1])))
+    sign = 1 if nrm[floor, 1] > 0 else -1
+    flags = m["surfaces"][floor][1]
+    g = m["groups"][0][1]
+    root = m["nodes"][0]
+    verts = np.asarray(verts, np.float32)
+    assert len(tris) <= 255 and len(verts) <= 256
     lo, hi = verts.min(0), verts.max(0)
     out = bytearray(header)
     out += struct.pack("<4I", len(verts), len(m["table"]), 16 + 12 * len(tris), 1)
@@ -74,21 +101,26 @@ def ramp_object(bottom, top, width, steps=12):
     out += verts.tobytes()
     out += table
     out += lp.NODE.pack(*root[:6], len(tris), 0, 0, len(verts))
-    assert len(tris) <= 255 and len(verts) <= 256
     out += lp.GROUP.pack(g[0], g[1], g[2], g[3], len(tris))
     for a, bb, c in tris:
-        n = np.cross(verts[bb] - verts[a], verts[c] - verts[a]) * sign
-        out += lp.TRI.pack(a, bb, c, pack_normal(n), flags)
+        n = np.cross(verts[bb] - verts[a], verts[c] - verts[a])
+        if n[1] * sign < 0:
+            bb, c = c, bb
+            n = -n
+        out += lp.TRI.pack(a, bb, c, pack_normal(n * sign), flags)
     out += struct.pack("<I", 0)
     out += trailer
     return bytes(out)
 
 
 def add_ramp(src, bottom, top, width):
-    d = open(src, "rb").read()
+    return insert_objects(open(src, "rb").read(), ramp_object(bottom, top, width))
+
+
+def insert_objects(d, obj):
+    """`obj` (bytes of one or more mesh objects) inserted first in the Main stream of levelphysics bytes `d`"""
     body, _ = lp.find_chunk(d, "Main")
     assert d[body:body + 4] == b"Head"
-    obj = ramp_object(bottom, top, width)
     at = body + 8                                          # after "Head" + version: our object comes first
     new = bytearray(d[:at]) + obj + d[at:]
     main_hdr = body - 16

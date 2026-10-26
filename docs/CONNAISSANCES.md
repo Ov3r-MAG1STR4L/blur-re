@@ -993,3 +993,9 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   **Confirmé en jeu (2026-10-27)** : le modèle se charge sans plantage et s'affiche à sa place (socle et dalle de
   toit visibles), très clair : texture surtout blanche + lumière propre (VERT 160) à baisser. Décor Map Builder
   coupé (`scenery` à faux sauf feux et arche) : il remplit alors ses listes de copies cachées sous le sol (y −299).
+- **Collision de la vraie route HP (2026-10-27, à tester en jeu)** : `make_nfs_map.road_collision` prend les
+  triangles des maillages `ROAD` à moins de 40 m de la ligne centrale (16 065), hauteur HP + 324,8, en 63 objets
+  de type route (≤ 255 triangles / 256 sommets) insérés en tête du flux `Main` (`addramp.insert_objects`,
+  `addramp.mesh_object` : gabarit = 1er objet du niveau Map Builder, dont la table de surfaces est petite ; celui
+  de LA River copie 25 540 entrées, 100 Ko par objet). Le sol plat de Map Builder (y = 1) reste dessous en secours.
+  Profil de la route 1 : 0 à 3 m, quelques pointes (ponts au-dessus). Le `.aid` reste plat pour l'instant.
