@@ -990,3 +990,6 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   modèle `arch_lap.model` est remplacé par l'immeuble « en vague » (`PVS9992`, matériau `bldg_dub1_waveshaped`,
   864 sommets, faces doublées) exprimé dans le repère de l'arche (`make_nfs_map.hp_model`) : il doit apparaître à
   sa vraie place, ~130 m de la ligne. Original Map Builder gardé dans `nfs_models\arch_lap_mapbuilder.model`.
+  **Confirmé en jeu (2026-10-27)** : le modèle se charge sans plantage et s'affiche à sa place (socle et dalle de
+  toit visibles), très clair : texture surtout blanche + lumière propre (VERT 160) à baisser. Décor Map Builder
+  coupé (`scenery` à faux sauf feux et arche) : il remplit alors ses listes de copies cachées sous le sol (y −299).
