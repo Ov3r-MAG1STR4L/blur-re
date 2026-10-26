@@ -92,9 +92,11 @@ def hp_model(mesh_name, mat, matrix, out_path, glow=160):
     write_model(tris, stm2obj.material_name(d, mat), matrix, out_path, glow)
 
 
-def write_model(tris, texture, matrix, out_path, glow=160):
+def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None):
     """triangles HP [(3 positions, 3 uv)] + texture HP -> .model Blur, en coordonnées locales de l'emplacement
-    (monde = x*ax + y*ay + z*az + aw) ; faces doublées (sens d'enroulement Wii / PC pas vérifié)"""
+    (monde = x*ax + y*ay + z*az + aw). Face avant = cross(b - a, c - a) du côté de la normale (vérifié sur le
+    gabarit, 36/36). up=True : faces simples tournées vers le haut (route) ; sinon faces doublées (murs).
+    square=N : texture ramenée en N x N (prudence après un crash avec 128x1024 / > 32 767 index)"""
     import numpy as np
     import stm2obj
     import blurmodel_write
@@ -107,10 +109,14 @@ def write_model(tris, texture, matrix, out_path, glow=160):
         n = np.cross(P[1] - P[0], P[2] - P[0])
         n = n / (np.linalg.norm(n) or 1)
         ids = list(range(len(verts), len(verts) + 3))
+        if up and n[1] < 0:
+            n, ids = -n, [ids[0], ids[2], ids[1]]
         verts += [(*p, *n, u, 1 - v) for p, (u, v) in zip(P, us)]
-        idx += ids + ids[::-1]
+        idx += ids if up else ids + ids[::-1]
     d = open(STM, "rb").read()
     img = stm2obj.texture_image(d, texture).convert("RGB")
+    if square:
+        img = img.resize((square, square))
     data = blurmodel_write.build(open(TEMPLATE, "rb").read(), verts, idx, img.tobytes(), *img.size, glow=glow)
     open(out_path, "wb").write(data)
     print(texture, len(verts), "sommets ->", out_path)
@@ -147,7 +153,8 @@ def road_models(files, world_json, radius=40.0, glow=110):
     mats = [m for m in sorted(by_mat, key=lambda m: -len(by_mat[m])) if stm2obj.material_name(d, m)][:len(ROAD_SLOTS)]
     for k, (slot, m) in enumerate(zip(ROAD_SLOTS, mats)):
         write_model(by_mat[m], stm2obj.material_name(d, m), slot_matrix(ap, slot),
-                    os.path.join(files, "models", "objects", "flat_earth", "road_21_%02d.model" % k), glow)
+                    os.path.join(files, "models", "objects", "flat_earth", "road_21_%02d.model" % k), glow,
+                    up=True, square=256)
 
 
 def road_collision(src, out, world_json, radius=40.0):
