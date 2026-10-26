@@ -92,7 +92,7 @@ def hp_model(mesh_name, mat, matrix, out_path, glow=160):
     write_model(tris, stm2obj.material_name(d, mat), matrix, out_path, glow)
 
 
-def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None):
+def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None, salt=None, pad=None):
     """triangles HP [(3 positions, 3 uv)] + texture HP -> .model Blur, en coordonnées locales de l'emplacement
     (monde = x*ax + y*ay + z*az + aw). Face avant = cross(b - a, c - a) du côté de la normale (vérifié sur le
     gabarit, 36/36). up=True : faces simples tournées vers le haut (route) ; sinon faces doublées (murs).
@@ -125,7 +125,8 @@ def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None
     img = stm2obj.texture_image(d, texture).convert("RGB")
     if square:
         img = img.resize((square, square))
-    data = blurmodel_write.build(open(TEMPLATE, "rb").read(), verts, idx, img.tobytes(), *img.size, glow=glow)
+    data = blurmodel_write.build(open(TEMPLATE, "rb").read(), verts, idx, img.tobytes(), *img.size, glow=glow,
+                                 salt=salt, pad_verts=pad and pad[0], pad_indices=pad and pad[1])
     open(out_path, "wb").write(data)
     print(texture, len(verts), "sommets ->", out_path)
 
@@ -179,10 +180,11 @@ def road_models(files, world_json, radius=40.0, glow=110):
             cur.append(tri)
             keys |= k
         jobs.append((m, cur))
+    pad_idx = 3 * max(len(t) for _, t in jobs[:len(ROAD_SLOTS)])   # même nombre d'index partout
     for k, (slot, (m, tris)) in enumerate(zip(ROAD_SLOTS, jobs)):
         write_model(tris, stm2obj.material_name(d, m), slot_matrix(ap, slot),
                     os.path.join(files, "models", "objects", "flat_earth", "road_21_%02d.model" % k), glow,
-                    up=True, square=256)
+                    up=True, square=256, salt=0x4E465300 + k, pad=(MAX_VERTS, pad_idx))
     print("pas de place pour :", [(stm2obj.material_name(d, m), len(t)) for m, t in jobs[len(ROAD_SLOTS):]])
 
 
