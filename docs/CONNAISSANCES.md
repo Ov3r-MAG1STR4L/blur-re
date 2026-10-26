@@ -998,4 +998,11 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   de type route (≤ 255 triangles / 256 sommets) insérés en tête du flux `Main` (`addramp.insert_objects`,
   `addramp.mesh_object` : gabarit = 1er objet du niveau Map Builder, dont la table de surfaces est petite ; celui
   de LA River copie 25 540 entrées, 100 Ko par objet). Le sol plat de Map Builder (y = 1) reste dessous en secours.
-  Profil de la route 1 : 0 à 3 m, quelques pointes (ponts au-dessus). Le `.aid` reste plat pour l'instant.
+  Profil de la route 1 : 0 à 3 m, quelques pointes (ponts au-dessus). Le `.aid` reste plat pour l'instant. **Confirmé en jeu** : la voiture suit les bosses de la route HP.
+- **Plafond de taille d'un `.model` (2026-10-27, en jeu)** : 11 modèles de route de 846 à 17 439 sommets →
+  crash au chargement (aussi avec textures carrées 256 et < 32 767 index) ; seuls les 6 de 1 353 sommets ou moins
+  → charge. Plafond supposé : 65 535 o de sommets (3 276 à 20 o). Route refaite en sommets partagés et morceaux
+  ≤ 3 000 sommets : asphalte x4, terre x2, glissières, flèches, lignes, bandes rugueuses, sable dans les 11
+  emplacements (manquent talus, panneaux, bordures…). Mips : jusqu'au grand côté (gabarit 32x128 : 8 niveaux).
+  Face avant = cross(b − a, c − a) du côté de la normale (36/36 sur le gabarit). Murs lumineux Map Builder
+  (`edgewall01.model`) remplacés par un triangle minuscule sous le sol (leur collision reste).
