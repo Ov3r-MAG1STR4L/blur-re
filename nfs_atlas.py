@@ -123,12 +123,12 @@ def jobs(world_json):
 def atlas(texs):
     from PIL import Image
     d = open(M.STM, "rb").read()
-    img = Image.new("RGB", (GRID * CELL, GRID * CELL), (128, 128, 128))
+    img = Image.new("RGBA", (GRID * CELL, GRID * CELL), (128, 128, 128, 255))   # alpha gardé (feuillages, grillages)
     for k, tex in enumerate(texs):
         if tex.startswith("couleur:"):
-            cell = Image.new("RGB", (CELL, CELL), tuple(int(tex[8 + 2 * i:10 + 2 * i], 16) for i in range(3)))
+            cell = Image.new("RGBA", (CELL, CELL), tuple(int(tex[8 + 2 * i:10 + 2 * i], 16) for i in range(3)))
         else:
-            cell = stm2obj.texture_image(d, tex).convert("RGB").resize((CELL, CELL))
+            cell = stm2obj.texture_image(d, tex).convert("RGBA").resize((CELL, CELL))
         img.paste(cell, ((k % GRID) * CELL, (k // GRID) * CELL))
     return img
 

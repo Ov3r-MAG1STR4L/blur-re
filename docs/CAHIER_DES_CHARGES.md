@@ -305,3 +305,4 @@ type 5 (3 valeurs) ou 9 (2 valeurs), ou aucune (drapeaux 0x40). LA River 3 : `Ju
 | 2026-10-27 | Projet J : NFS Studio, réglage par rangée de bonus (nombre 1-9 et type, champs `n` / `type` de Map Builder), affiché sur le cube ; à vérifier en jeu |
 | 2026-10-27 | Projet J : UV HP = s16 / 2048 (prouvé par le VAT des captures FIFO), corrige les textures répétées 2×2 |
 | 2026-10-27 | Projet J : shaders de Blur recensés (objets vs `.levelrender`) ; plan pour embellir les cartes NFS (gabarits néon / eau / relief, multi-matériaux, ombre précalculée) |
+| 2026-10-27 | Projet J : transparence des textures HP gardée en jeu (DXT1 1 bit) ; plantes sans collision ; à vérifier en jeu |
