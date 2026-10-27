@@ -183,11 +183,11 @@ def road_models(files, world_json, radius=40.0, glow=110):
             cur.append(tri)
             keys |= k
         jobs.append((m, cur))
-    pad_idx = 3 * max(len(t) for _, t in jobs[:len(road_slots(ap))])   # même nombre d'index partout
-    slots = road_slots(ap)
-    for k, (slot, (m, tris)) in enumerate(zip(slots, jobs)):
+    pad_idx = 3 * max(len(t) for _, t in jobs[:len(road_slots(ap)) + 1])   # même nombre d'index partout
+    slots = [(u, "road_21_%02d.model" % k) for k, u in enumerate(road_slots(ap))] + [(0xF1E20005, "arch_lap.model")]
+    for k, ((slot, fname), (m, tris)) in enumerate(zip(slots, jobs)):
         write_model(tris, stm2obj.material_name(d, m), slot_matrix(ap, slot),
-                    os.path.join(files, "models", "objects", "flat_earth", "road_21_%02d.model" % k), glow,
+                    os.path.join(files, "models", "objects", "flat_earth", fname), glow,
                     up=True, square=256, salt=0x4E465300 + k, pad=(MAX_VERTS, pad_idx))
     print("pas de place pour :", [(stm2obj.material_name(d, m), len(t)) for m, t in jobs[len(slots):]])
 
@@ -243,27 +243,14 @@ def road_collision(src, out, world_json, radius=40.0):
 
 
 WORLD = r"C:\Users\sanqu\Jeux_WII\nfs_extracted\stm_work\world.json"
-BUILDING = ("PVS9992.1f1", 0xB9)                 # immeuble « en vague », posé dans l'emplacement de l'arche
 
 
 def rebuild_all():
-    """après un build Map Builder : fichiers en clair + collision HP + route HP + immeuble (tous à la même taille)"""
-    import blurmodel_write  # noqa: F401  (chemins Map Builder)
-    import cpmodel
-    import stm2obj
+    """après un build Map Builder : fichiers en clair + collision HP + route HP (12 modèles de même taille)"""
     main()
     road_collision(os.path.join(BMB, "levels", "flat_earth", "level.levelphysics"),
                    os.path.join(OUT, "levels", "flat_earth", "level.levelphysics"), WORLD)
-    road_models(OUT, WORLD)
-    flat = os.path.join(OUT, "models", "objects", "flat_earth")
-    P = cpmodel.parse(open(os.path.join(flat, "road_21_00.model"), "rb").read())
-    d = open(STM, "rb").read()
-    b = next(b for t, n, b in stm2obj.entries(d) if t == 6 and n == BUILDING[0])
-    pos, uvs, faces = stm2obj.mesh(b, BUILDING[1])
-    write_model([([pos[a] for a, _ in f], [uvs[c] for _, c in f]) for f in faces],
-                stm2obj.material_name(d, BUILDING[1]),
-                slot_matrix(os.path.join(OUT, "gamedata", "levels", "flat_earth", "actorpack.xt"), 0xF1E20005),
-                os.path.join(flat, "arch_lap.model"), glow=110, salt=0x4E4653FF, pad=(P["vcount"], P["fcount"]))
+    road_models(OUT, WORLD)       # 11 morceaux de route + l'emplacement de l'arche
 
 
 if __name__ == "__main__":

@@ -88,14 +88,35 @@ def _dl(b, p, end, sizes):
     return faces
 
 
-# matériau m (u16 des sous-maillages) = m - MAT_BASE-ième entrée .mp1 du lieu ; en dessous : table commune pas
-# encore trouvée (vérifié à l'œil : routes -> road_*, bâtiments -> bldg_*)
-MAT_BASE = 0x8D  # ponytail: mesuré sur location11 seulement
+# matériau m (u16 des sous-maillages) = fiche de la table des matériaux rangée dans l'entrée .pvs : fiches de
+# 0x160 o = nom (0x40), en-tête (0x20, souvent 00 00 41 1C DC DD), 4 emplacements de texture (0x40 : nom du
+# .tex sans sa 1re lettre, puis paramètres). La 1re fiche à signature est le matériau MAT_FIRST ; en dessous :
+# autre table, pas trouvée (murs d'immeubles surtout). Vérifié par l'orientation des surfaces (2026-10-27).
+MAT_FIRST = 0x9D  # ponytail: mesuré sur location11 seulement
+_MATS = {}
+
+
+def materials(d):
+    """{m: (nom du matériau, entrée .tex de sa 1re texture ou None)}"""
+    if id(d) in _MATS:
+        return _MATS[id(d)]
+    pvs = next(b for t, n, b in entries(d) if t == 1)
+    i = pvs.find(bytes.fromhex("0000411cdcdd0000")) - 0x40
+    tex = {n[1:]: n for t, n, _ in entries(d) if t == 4}
+    out, m = {}, MAT_FIRST
+    while i + 0x160 <= len(pvs) and 32 <= pvs[i] < 127:      # (certaines fiches n'ont pas la signature)
+        name = pvs[i:i + 0x40].split(b"\0")[0].decode("latin1")
+        t = pvs[i + 0x61:i + 0x80].split(b"\0")[0].decode("latin1")
+        out[m] = (name, tex.get(t))
+        i += 0x160
+        m += 1
+    _MATS[id(d)] = out
+    return out
 
 
 def material_name(d, m):
-    t5 = [n for t, n, _ in entries(d) if t == 5]
-    return t5[m - MAT_BASE] if m >= MAT_BASE else None
+    """entrée .tex de la 1re texture du matériau m (None si inconnu)"""
+    return materials(d).get(m, (None, None))[1]
 
 
 def texture_dxt1(d, name):
