@@ -209,8 +209,9 @@ def build():
             finally:
                 builtins.print = orig
             log("construction : terminée")
-        except Exception as ex:  # noqa: BLE001 - montré dans le journal
-            log("construction : ERREUR", ex)
+        except Exception:  # noqa: BLE001 - montré dans le journal, en entier
+            import traceback
+            log("construction : ERREUR " + traceback.format_exc())
 
 
 def install():
@@ -304,7 +305,12 @@ class Handler(SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     os.makedirs(CACHE, exist_ok=True)
-    srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    ThreadingHTTPServer.allow_reuse_address = False      # Windows : sinon un 2e studio écoute le même port sans erreur
+    try:
+        srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    except OSError:
+        print("NFS Studio est déjà ouvert : ferme l'autre fenêtre noire, puis relance.")
+        sys.exit(1)
     print("NFS Studio : http://127.0.0.1:%d  (Ctrl+C pour arrêter)" % PORT)
     if "--no-browser" not in sys.argv:
         threading.Timer(1.0, lambda: webbrowser.open("http://127.0.0.1:%d" % PORT)).start()
