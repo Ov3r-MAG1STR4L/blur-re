@@ -1053,3 +1053,18 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   5. diagnostic séparé des 4 causes : référence de texture, UV, décodage, paramètres du matériau / shader ;
   6. validation sur plusieurs matériaux et modèles, preuves et incertitudes notées ; corriger seulement ensuite.
   Puis les performances (découpage par zone, boîtes serrées, distance d'affichage, niveaux de détail HP).
+- **Diagnostic des textures du décor (2026-10-27, scripts `nfs_diag/`, sorties hors dépôt dans
+  `nfs_extracted\stm_work\diag`)** :
+  - `d1_textures.py` : planche + CSV des 255 textures ; décodage CMPR / C8 sans erreur (2 textures vraiment unies).
+  - `d4_dolphin.py` : comparaison au dump Dolphin existant (`Dump\Textures\SNHE69`, 13 417 images du 19/09) :
+    **239/255 identiques** (écart < 8/255), les 16 autres sont des textures à transparence (arbres, grillages,
+    herbe) comparées en RGB seul. **Cause « mauvais décodage » écartée.**
+  - `d2_materiaux.py` : `materiaux.csv` (266 matériaux utilisés, 0x0E..0x187, champs de fiche + offsets) et
+    `sousmaillages.csv` (41 528).
+  - **Fiches de matériaux (Confirmé)** : la table compte 0x18A = 394 fiches (compteur juste avant elle, la 1re fiche
+    est sans nom) ; une fiche n'a de texture que si l'octet 0 de son emplacement est la vraie 1re lettre du nom
+    (`road…`) et que le dernier u32 de l'en-tête vaut le nombre de textures (1). Les fiches « Material #… » ont 0
+    texture (octet 0 = 00, nom = reste de la fiche précédente) : surface de couleur unie (en-tête ff 95 95 95…).
+    C'était la cause des panneaux sur les immeubles.
+  - Échelle verticale : vérifiée (m par pixel de texture sur les murs, largeur / hauteur = 0,88).
+  - Reste inconnu : matériaux < 0x9C (hors table). Piste suivante : capture FIFO Dolphin d'une image à Dubaï.
