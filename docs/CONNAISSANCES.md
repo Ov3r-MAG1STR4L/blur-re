@@ -1014,4 +1014,14 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   256x256, compléments = sommet répété / triangles vides) - comme Map Builder (ses clones font tous 132 670 o).
   Résultat : route HP visible (asphalte, lignes, flèches) + immeuble, chargement OK, la voiture roule dessus.
   Reste : murs manquants par endroits, défauts de texture, terre / glissières / bordures faute d'emplacements.
-  Le plafond de 1 500 sommets n'est peut-être plus nécessaire (non retesté).
+  Le plafond de 1 500 sommets n'est peut-être plus nécessaire (non retesté). 3 000 sommets : OK en jeu.
+- **Vraie table des matériaux HP (2026-10-27)** : dans l'entrée `.pvs` du `.stm`, fiches de 0x160 o (nom 0x40,
+  en-tête 0x20 souvent `00 00 41 1C DC DD`, 4 emplacements de 0x40 : nom du `.tex` sans sa 1re lettre + paramètres).
+  Matériau m ≥ 0x9D = fiche (m − 0x9D) ; sa texture = 1er emplacement (le nom de fiche est souvent celui du
+  matériau voisin : se fier à la texture). Validé par l'orientation : asphalte → road_plaintarmac, verticales →
+  murs de tunnel / glissières, bas-côtés → sable, trottoirs → pavés. m < 0x9D : autre table, pas trouvée (murs
+  d'immeubles). L'ancienne règle « m − 0x8D-ième .mp1 » était fausse (l'« immeuble en vague » = panneaux).
+- **Tracé de Dubai Loop (2026-10-27)** : recentré sur l'asphalte HP (point / 10 m, milieu des bords, 3 m max par
+  passe pour ne pas sauter sur une route voisine), guidé par le dessin de l'utilisateur sur le plan des routes
+  (trait vert extrait de l'image, 89 % sur une route sans recalage) ; 432 points, 4,35 km. Départ au portique HP
+  (`Objt_Gen1_StartLineFlag`, −571 ; −282) via `start_m`. Sens de course HP pas encore confirmé.
