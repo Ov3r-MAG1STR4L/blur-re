@@ -1006,3 +1006,12 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   emplacements (manquent talus, panneaux, bordures…). Mips : jusqu'au grand côté (gabarit 32x128 : 8 niveaux).
   Face avant = cross(b − a, c − a) du côté de la normale (36/36 sur le gabarit). Murs lumineux Map Builder
   (`edgewall01.model`) remplacés par un triangle minuscule sous le sol (leur collision reste).
+- **Cause réelle du crash au chargement (2026-10-27, Confirmé en jeu)** : pas la taille seule. Les 5 crashes ont
+  lieu au même endroit, `Blur.exe` 0x6DB2EB (lecteur de la structure « ARCH » d'un modèle : octet de type 0/3/autre
+  puis objet), `0xC0000005`. Nos modèles issus d'un même gabarit gardaient ses identifiants internes avec des
+  tailles différentes. **Correctif qui marche** : identifiants de texture uniques (`cpmodel.new_texture_ids`, sel
+  par modèle) + **tous les modèles d'un même gabarit à la même taille** (1 500 sommets, 3 213 index, texture
+  256x256, compléments = sommet répété / triangles vides) - comme Map Builder (ses clones font tous 132 670 o).
+  Résultat : route HP visible (asphalte, lignes, flèches) + immeuble, chargement OK, la voiture roule dessus.
+  Reste : murs manquants par endroits, défauts de texture, terre / glissières / bordures faute d'emplacements.
+  Le plafond de 1 500 sommets n'est peut-être plus nécessaire (non retesté).
