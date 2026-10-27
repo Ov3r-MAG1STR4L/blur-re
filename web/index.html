@@ -50,6 +50,25 @@
     <label><input type="checkbox" id="l_hit"> Hitbox de la route (surface roulable)</label>
     <label><input type="checkbox" id="l_ai" checked> Trajet IA et largeurs</label>
     <label><input type="checkbox" id="l_bonus" checked> Bonus (HP orange, Blur bleu)</label>
+    <div class="row"><button id="delPicked" title="Ctrl + clic sur plusieurs boules, puis ce bouton (ou Suppr)">Effacer les points choisis</button></div>
+    <h2>Ambiance et ciel (Blur)</h2>
+    <select id="amb" style="width:100%">
+      <option>Amboy (desert day)</option><option>LA River (day)</option><option>LA Downtown</option><option>LA Observatory</option>
+      <option>Long Beach Docks</option><option>Barcelona Gracia (night)</option><option>Barcelona Oval</option><option>Brighton</option>
+      <option>London Hackney</option><option>Tokyo Shutoko</option><option>Mount Haruna</option><option>NY Dumbo</option>
+      <option>San Francisco Russian Hill</option><option>San Francisco Sausalito</option></select>
+    <label>Luminosité du ciel <input id="a_skyi" type="number" step="0.05" placeholder="ambiance"></label>
+    <label>Rotation du ciel (rad) <input id="a_skyr" type="number" step="0.1" placeholder="ambiance"></label>
+    <label>Exposition max <input id="a_exp" type="number" step="0.1" placeholder="ambiance"></label>
+    <h2>Décor ajouté (Map Builder)</h2>
+    <label><input type="checkbox" class="scn" value="lamps"> Lampadaires</label>
+    <label><input type="checkbox" class="scn" value="billboards"> Panneaux publicitaires</label>
+    <label><input type="checkbox" class="scn" value="chevrons"> Flèches de virage</label>
+    <label><input type="checkbox" class="scn" value="ships"> Bateaux (horizon)</label>
+    <label><input type="checkbox" class="scn" value="cranes"> Grues</label>
+    <label><input type="checkbox" class="scn" value="buildings"> Tours</label>
+    <label><input type="checkbox" class="scn" value="landmarks"> Grande roue + antenne</label>
+    <div style="color:var(--muted);font-size:11px">Chaque élément prend de la place au décor Hot Pursuit (liste de 144 objets).</div>
     <h2>4. Construction</h2>
     <label>Largeur par défaut (m) <input id="o_width" type="number" value="50"></label>
     <label>Tours <input id="o_laps" type="number" value="3"></label>
@@ -198,6 +217,12 @@ async function loadWorld() {
     S.validated = S.points.length > 2;
     if (mp.start_m != null && S.points.length) S.start = pointAt(mp.start_m);
     $('o_laps').value = mp.laps || 3;
+    const lt = w.locations[0].lighting || {};
+    if (lt.preset) $('amb').value = lt.preset;
+    const v = lt.values || {};
+    $('a_skyi').value = v.sky_intensity ? v.sky_intensity[0] : ''; $('a_skyr').value = v.sky_rotation ? v.sky_rotation[0] : '';
+    $('a_exp').value = v.exposure_max ? v.exposure_max[0] : '';
+    document.querySelectorAll('.scn').forEach(c => c.checked = !!(mp.scenery || {})[c.value]);
   }
   refresh();
 }
@@ -232,8 +257,8 @@ function refresh() {
   [...layers.bonus.children].filter(m => !m.userData.hp).forEach(m => layers.bonus.remove(m));
   if (S.points.length > 1) { layers.ai.add(line(S.points, true, 0xff2020)); layers.ai.add(ribbon(S.points, true, 0xff3030)); }
   S.branches.forEach(b => { if (b.length > 1) { layers.ai.add(line(b, false, 0xb040ff)); layers.ai.add(ribbon(b, false, 0xb040ff)); } });
-  S.points.forEach((p, i) => { const m = ball(p, sel && sel.kind === 'main' && sel.i === i ? 0xffff00 : 0xff2020); m.userData.h = { kind: 'main', i }; layers.handles.add(m); });
-  S.branches.forEach((b, k) => b.forEach((p, i) => { const m = ball(p, sel && sel.kind === 'branch' && sel.k === k && sel.i === i ? 0xffff00 : (k === curBranch ? 0xd080ff : 0x9030e0)); m.userData.h = { kind: 'branch', k, i }; layers.handles.add(m); }));
+  S.points.forEach((p, i) => { const m = ball(p, picked({ kind: 'main', i }) ? 0xffff00 : 0xff2020); m.userData.h = { kind: 'main', i }; layers.handles.add(m); });
+  S.branches.forEach((b, k) => b.forEach((p, i) => { const m = ball(p, picked({ kind: 'branch', k, i }) ? 0xffff00 : (k === curBranch ? 0xd080ff : 0x9030e0)); m.userData.h = { kind: 'branch', k, i }; layers.handles.add(m); }));
   S.pickups.forEach((p, i) => { const m = new THREE.Mesh(new THREE.BoxGeometry(6, 6, 6), new THREE.MeshBasicMaterial({ color: sel && sel.kind === 'pickup' && sel.i === i ? 0xffff00 : 0x2b7bff }));
     m.position.set(p.x, p.y + 3, p.z); m.userData.h = { kind: 'pickup', i }; layers.bonus.add(m); });
   if (S.start) { const m = ball(S.start, 0x00cc44, 4); m.userData.h = { kind: 'start' }; layers.handles.add(m); }
@@ -246,6 +271,24 @@ let hudPos = '';
 function hudStats() { const L = S.points.length > 1 ? lens(S.points).at(-1) : 0;
   $('hud').textContent = `${S.points.length} points · ${(L / 1000).toFixed(2)} km · ${S.branches.length} chemins · ${S.pickups.length} bonus`
     + (S.validated ? '' : ' · circuit non validé') + (hudPos ? ' | ' + hudPos : ''); }
+// sélection multiple (Ctrl + clic) : points du tracé / des chemins à effacer d'un coup
+let multi = [];
+const same = (a, b) => a && b && a.kind === b.kind && a.i === b.i && a.k === b.k;
+const picked = h => same(h, sel) || multi.some(m => same(m, h));
+function deletePicked() {
+  const all = [...multi, ...(sel ? [sel] : [])].filter((h, i, a) => a.findIndex(x => same(x, h)) === i);
+  if (!all.length) { say('choisis des points (clic, Ctrl + clic pour plusieurs)'); return; }
+  push();
+  all.sort((a, b) => (b.i ?? 0) - (a.i ?? 0));                 // du plus grand index au plus petit
+  for (const h of all) {
+    if (h.kind === 'main') { S.points.splice(h.i, 1); S.validated = false; }
+    else if (h.kind === 'branch' && S.branches[h.k]) S.branches[h.k].splice(h.i, 1);
+    else if (h.kind === 'pickup') S.pickups.splice(h.i, 1);
+    else if (h.kind === 'start') S.start = null;
+  }
+  S.branches = S.branches.filter(b => b.length); curBranch = Math.min(curBranch, S.branches.length - 1);
+  say(`${all.length} élément(s) effacé(s)`); sel = null; multi = []; refresh();
+}
 function selPoint() { if (!sel) return null; if (sel.kind === 'main') return S.points[sel.i]; if (sel.kind === 'branch') return S.branches[sel.k][sel.i]; return null; }
 $('pw').onchange = () => { const p = selPoint(); if (p) { push(); p.w = +$('pw').value; refresh(); } };
 
@@ -267,7 +310,11 @@ let dragging = null, lastMove = 0;
 renderer.domElement.addEventListener('pointerdown', e => {
   if (e.button !== 0 || mode === 'look') return;
   const h = cast(e, [...layers.handles.children, ...layers.bonus.children.filter(m => !m.userData.hp)]);
-  if (h.length && h[0].object.userData.h) { sel = h[0].object.userData.h; if (sel.kind === 'branch') curBranch = sel.k;
+  if (h.length && h[0].object.userData.h) {
+    const hh = h[0].object.userData.h;
+    if (e.ctrlKey) { const k = multi.findIndex(m => same(m, hh)); if (k >= 0) multi.splice(k, 1); else multi.push(hh);
+      if (sel && !multi.some(m => same(m, sel))) multi.push(sel); sel = null; refresh(); return; }
+    sel = hh; multi = []; if (sel.kind === 'branch') curBranch = sel.k;
     push(); dragging = sel; controls.enabled = false; refresh(); return; }
   const p = surface(e); if (!p) return;
   const q = { x: p.x, y: p.y, z: p.z, w: +$('o_width').value };
@@ -298,17 +345,14 @@ addEventListener('keydown', e => {
   if (e.ctrlKey && e.key === 'z') { $('undo').onclick(); e.preventDefault(); }
   else if (e.ctrlKey && e.key === 'y') { $('redo').onclick(); e.preventDefault(); }
   else if (e.ctrlKey && e.key === 's') { save(); e.preventDefault(); }
-  else if (e.key === 'Escape') { sel = null; refresh(); }
-  else if (e.key === 'Delete' && sel) { push();
-    if (sel.kind === 'main') { S.points.splice(sel.i, 1); S.validated = false; }
-    else if (sel.kind === 'branch') { S.branches[sel.k].splice(sel.i, 1); if (!S.branches[sel.k].length) { S.branches.splice(sel.k, 1); curBranch = -1; } }
-    else if (sel.kind === 'pickup') S.pickups.splice(sel.i, 1); else if (sel.kind === 'start') S.start = null;
-    sel = null; refresh(); }
+  else if (e.key === 'Escape') { sel = null; multi = []; refresh(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') { deletePicked(); e.preventDefault(); }
 });
 $('newBranch').onclick = () => { if (S.points.length < 3) { say('dessine d\'abord le tracé principal'); return; } push(); S.branches.push([]); curBranch = S.branches.length - 1; setMode('branch'); refresh(); };
 $('valid').onclick = () => { if (S.points.length < 3) { say('au moins 3 points'); return; } push(); S.validated = true; refresh(); setMode('bonus'); say('circuit validé : place les bonus et le départ'); };
 $('hpBonus').onclick = () => { push(); for (const [x, y, z] of info.hp_pickups) S.pickups.push({ x, y, z }); refresh(); };
 $('clrBonus').onclick = () => { push(); S.pickups = []; refresh(); };
+$('delPicked').onclick = deletePicked;
 $('clrMain').onclick = () => { if (!confirm('Effacer le tracé principal ?')) return; push(); S.points = []; S.start = null; S.validated = false; sel = null; refresh(); };
 $('clrBranch').onclick = () => { if (curBranch < 0 || !S.branches[curBranch]) { say('clique d\'abord sur une boule du chemin à effacer'); return; }
   push(); S.branches.splice(curBranch, 1); curBranch = -1; sel = null; refresh(); };
@@ -329,14 +373,18 @@ $('autoW').onclick = async () => {
 function worldJson() {
   const total = lens(S.points).at(-1), r2 = v => Math.round(v * 100) / 100;
   const mp = { id: 'nfs_map_1', name: 'NFS Loop', laps: +$('o_laps').value, width: +$('o_width').value, auto_bridges: false, obstacles: false,
-    scenery: { ships: false, cranes: false, landmarks: false, lamps: false, billboards: false, chevrons: false, signs: true, buildings: false, arch: true },
+    scenery: Object.fromEntries([['signs', true], ['arch', true], ...[...document.querySelectorAll('.scn')].map(c => [c.value, c.checked])]),
     points: S.points.map(p => ({ x: r2(p.x), z: r2(p.z), w: p.w })),
     branches: S.branches.filter(b => b.length > 1).map(b => { const a = arc(b[0]), e = arc(b.at(-1));
       return { from_m: Math.round(a), to_m: Math.round(e > a ? e : e + total), width: b[0].w, points: b.map(p => ({ x: r2(p.x), z: r2(p.z), w: p.w })) }; }),
     pickups: S.pickups.map(p => ({ kind: 'row', x: r2(p.x), z: r2(p.z) })) };
   if (S.start) mp.start_m = mp.finish_m = Math.round(arc(S.start));
   const stem = $('loc').value.split(/[\\/]/).pop().replace(/\.stm$/i, '');
-  return { locations: [{ id: 'nfs_' + stem.toLowerCase(), name: 'NFS ' + stem, maps: [mp] }] };
+  const values = {};                                   // vide = valeurs de l'ambiance choisie
+  if ($('a_skyi').value !== '') values.sky_intensity = [+$('a_skyi').value];
+  if ($('a_skyr').value !== '') values.sky_rotation = [+$('a_skyr').value];
+  if ($('a_exp').value !== '') values.exposure_max = [+$('a_exp').value];
+  return { locations: [{ id: 'nfs_' + stem.toLowerCase(), name: 'NFS ' + stem, lighting: { preset: $('amb').value, values }, maps: [mp] }] };
 }
 async function save() {
   if (S.points.length < 3) { say('rien à enregistrer : dessine le circuit'); return false; }
