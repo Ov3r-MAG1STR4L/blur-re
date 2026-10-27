@@ -1095,6 +1095,13 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   TEX0 des captures Dubaï et Las Vegas (les 30 maillages de lieu reconnus : tous 11 ; des dessins hors lieu sont en 12).
   L'ancienne échelle supposée 1/1024 répétait chaque texture 2×2 (panneaux « en x4 »). `stm2obj.UV_SCALE` corrigé ;
   vider `stm_work/web_cache` et reconstruire les modèles.
+- **Shaders de Blur (2026-10-27, lecture des fichiers)** : les `.model` d'objets n'utilisent qu'une poignée de
+  shaders : `default_NB_NL_NV.fx` (643 modèles, dont notre gabarit), `default_NB_NL_NM_NV` (357), `LightFlare` (51),
+  `HighVis_NB_NL_NV`, `AnimatedNeon_NL_NV` (12), `MeshEffect`, `HighVisBarrier_NL_NV`, `default_NL_NV` (2),
+  `ScrollUVNeon_NV`, `Puddle_NL_NV`, `Water_NL_NV` (1 chacun). Les shaders des circuits (`default_LN_NB_NM_NV` 3 367 fois
+  dans les `level.levelrender`, `Road_LN_*`, `RoadTwoSpec*`, `SpeedTree*`, `Foliage*`, `Puddle_LN_NV`, `Racification*`)
+  n'apparaissent que dans `levels/*/level.levelrender`. Suffixes probables (non vérifié) : N = « sans » (NB bump,
+  NL, NM, NV couleurs de sommets ?), LN = variante de niveau.
 - **Las Vegas (2026-10-27, 3 captures FIFO)** : la variante jouée est `Location42.stm` (856 dessins reconnus
   contre 21 à 548 pour les autres variantes). Règle « matériau m = fiche m − 1 » : 43/53, 56/73 et 31/38 matériaux
   identiques au jeu (environ 80 %), donc **elle vaut aussi hors de Dubaï**. Écarts : variantes de panneaux (gauche /
