@@ -1079,3 +1079,12 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
     la capture 2** (contrôle). Écarts restants : variantes a/b (panneaux, entrepôts) et lignes de route en
     plusieurs couches (seule la texture 0 du GX est lue). La table de 255 noms du `.pvs` n'est PAS un index de
     matériau (ordre de 1re utilisation).
+- **NFS Studio (2026-10-27)** : `nfs_web.py` + `web/index.html` (three.js, serveur local 127.0.0.1:8765,
+  `NFS Studio.bat`) : lieu texturé en 3D, tracé / chemins / largeurs éditables, hitbox, bonus, ambiance Blur
+  (préréglages Map Builder), décor Map Builder optionnel, bonus par rangée, construction (`nfs_atlas.rebuild`) et
+  installation. Problèmes ouverts : (1) fiches à 2 textures : la 2e est la bonne pour les panneaux (FIFO), mais
+  les palmiers reçoivent l'écorce sur les palmes -> règle à affiner avec une capture FIFO ; (2) traînées sur des
+  toits (UV en limite de texture : peut-être des textures en « clamp » côté Wii) ; (3) lieux autres que Dubaï :
+  table des matériaux non vérifiée (FIFO à faire par ville) ; (4) dévers : la collision HP le donne déjà à la
+  voiture, mais le `.aid` de Map Builder reste à plat (inclinaison du couloir IA à écrire depuis la pente HP) ;
+  (5) ciel HP non branché. Une seule carte installée à la fois (dossier flat_earth).
