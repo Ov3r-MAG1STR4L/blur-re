@@ -306,3 +306,4 @@ type 5 (3 valeurs) ou 9 (2 valeurs), ou aucune (drapeaux 0x40). LA River 3 : `Ju
 | 2026-10-27 | Projet J : UV HP = s16 / 2048 (prouvé par le VAT des captures FIFO), corrige les textures répétées 2×2 |
 | 2026-10-27 | Projet J : shaders de Blur recensés (objets vs `.levelrender`) ; plan pour embellir les cartes NFS (gabarits néon / eau / relief, multi-matériaux, ombre précalculée) |
 | 2026-10-27 | Projet J : transparence des textures HP gardée en jeu (DXT1 1 bit) ; plantes sans collision ; à vérifier en jeu |
+| 2026-10-28 | Projet J : arbres sur le shader des plantes de Blur (transparent noir en jeu) ; tracé sous le sol de référence accepté (voiture en vol corrigée) ; à vérifier en jeu |
