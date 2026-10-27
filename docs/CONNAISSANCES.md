@@ -1095,3 +1095,9 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   avec des listes qui commencent pareil), `terr_dirt_cliff2` / `terr_dirt1`, palmier `tree_veg1_twall01` /
   `prop_palmsm`. Prochaine étape : choisir la texture visible d'une fiche à 2 textures selon le jeu (tables d'écarts
   `stm_work/diag/lv*_42.csv`).
+  **Analyse des écarts (5 captures, Dubaï + Las Vegas)** : fiches à 2 textures distinctes : la 2e est vue 14 fois,
+  la 1re seule jamais (22 fois les deux identiques) ; avec `envmap` : la 1re, 34 fois sur 34. **La règle actuelle
+  (dernière hors envmap) est donc juste.** Les 43 écarts restants sont des fiches à 1 seule texture où le jeu
+  montre une variante voisine (werehousea / werehouseb2, whitea / whiteb, lignes de route, panneaux gauche /
+  droite) : objets de même géométrie, dont les listes GX commencent par les mêmes octets ; `d5_fifo` ne peut pas
+  les départager (limite de la mesure, pas de la règle). À vérifier autrement : palmes avec écorce (alpha / UV ?).
