@@ -138,9 +138,11 @@ def centre(tris):
     return [round(float(c[0]), 2), round(float(c[1] + 1.0 - M.HP_GROUND), 2), round(float(c[2]), 2)]
 
 
-def rebuild():
+def rebuild(auto_pickups=True, log=print):
+    """auto_pickups=False : garder la largeur / les bonus / le départ déjà écrits dans world.json (nfs_studio)"""
     M.set_heights(M.WORLD)
-    M.set_track(M.WORLD)
+    if auto_pickups:
+        M.set_track(M.WORLD)
     shutil.copyfile(M.WORLD, os.path.join(M.BMB, "Blur Map Builder", "maps", "world.json"))
     J = jobs(M.WORLD)
     decor = J[12:]
