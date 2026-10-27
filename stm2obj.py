@@ -11,7 +11,7 @@ import struct
 import sys
 
 SCALE = (1 / 17.565, 1 / 76.8, 1 / 18.818)  # Location1 ; recalculé pour chaque lieu par entries() (calibrate)
-UV_SCALE = 1 / 1024  # ponytail: supposé (2^10), à vérifier avec une texture
+UV_SCALE = 1 / 2048  # s16, 11 bits fractionnaires : VAT TEX0 des captures FIFO (Dubaï, Las Vegas), PROUVÉ 2026-10-27
 _CAL = {}
 
 
