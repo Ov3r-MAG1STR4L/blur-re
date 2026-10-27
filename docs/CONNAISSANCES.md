@@ -1110,6 +1110,13 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   surtout `default_NB_NL_NM_NV`. Collision (`make_nfs_map.see_through`) : matériaux à texture transparente à 50 % ou
   plus exclus (touffes, palmiers, haies, barbelés), sauf grillages / barrières / bornes / pylônes / glissières ;
   Location45 : 453 862 -> 411 561 triangles.
+- **Essai en jeu du 2026-10-28** : (1) le DXT1 1 bit ne suffit pas, le shader `default_NB_NL_NV` du gabarit affiche
+  le transparent en noir (arbres « à contours noirs ») -> un modèle à texture transparente prend désormais
+  `default_NB_NL_NM_NV.fx` (shader des plantes et grillages de Blur ; nom présent 2 fois dans le gabarit, liste des
+  shaders + matériau, précédé de sa longueur u32), à vérifier en jeu ; (2) voiture « en vol » au bord de la rivière :
+  `set_heights` coupait à 0 les hauteurs sous le sol de référence (5e percentile de la route HP), Map Builder posait
+  donc sa route invisible et sa collision jusqu'à 28,8 m au-dessus de la route HP. Désormais `HP_GROUND` est abaissé
+  jusqu'au point le plus bas du tracé (toute la carte remonte d'autant).
 - **Las Vegas (2026-10-27, 3 captures FIFO)** : la variante jouée est `Location42.stm` (856 dessins reconnus
   contre 21 à 548 pour les autres variantes). Règle « matériau m = fiche m − 1 » : 43/53, 56/73 et 31/38 matériaux
   identiques au jeu (environ 80 %), donc **elle vaut aussi hors de Dubaï**. Écarts : variantes de panneaux (gauche /

@@ -275,7 +275,11 @@ WORLD = r"C:\Users\sanqu\Jeux_WII\nfs_extracted\stm_work\world.json"
 
 def set_heights(world_json, ground=1.0):
     """hauteur de chaque point du tracé = route HP (médiane des sommets ROAD à moins de 6 m) : Map Builder y pose
-    sa grille de départ, ses bonus, son tracé IA et ses caméras (sinon départ sous la route HP, en hauteur)"""
+    sa grille de départ, ses bonus, son tracé IA et ses caméras (sinon départ sous la route HP, en hauteur).
+    Map Builder ne prend pas de hauteur négative : si le tracé descend sous le sol de référence, HP_GROUND est
+    abaissé d'autant (toute la carte remonte : modèles, collision, bonus restent alignés) au lieu de couper à 0
+    (Location45, bord de rivière : tracé à 0 m au-dessus de la vraie route, voiture « en vol »)"""
+    global HP_GROUND
     import json
     import numpy as np
     from scipy.spatial import cKDTree
@@ -292,12 +296,15 @@ def set_heights(world_json, ground=1.0):
     tree = cKDTree(V[:, [0, 2]])
     w = json.load(open(world_json))
     mp = w["locations"][0]["maps"][0]
-    for pts in [mp["points"]] + [br["points"] for br in mp.get("branches") or []]:   # route + chemins secondaires
-        hs = []
-        for p in pts:
-            near = tree.query_ball_point((p["x"], p["z"]), 6.0)
-            y = np.median(V[near, 1]) + 1.0 - HP_GROUND if near else None
-            hs.append(None if y is None else max(0.0, y - ground))
+    lines = [mp["points"]] + [br["points"] for br in mp.get("branches") or []]   # route + chemins secondaires
+    raw = [[float(np.median(V[near, 1])) if near else None
+            for near in (tree.query_ball_point((p["x"], p["z"]), 6.0) for p in pts)] for pts in lines]
+    low = min((y for ys in raw for y in ys if y is not None), default=HP_GROUND)
+    if low < HP_GROUND:
+        print("tracé sous le sol de référence : sol abaissé de %.1f m" % (HP_GROUND - low))
+        HP_GROUND = low
+    for pts, ys in zip(lines, raw):
+        hs = [None if y is None else max(0.0, y + 1.0 - HP_GROUND - ground) for y in ys]
         for k, h in enumerate(hs):                   # trous : valeur du voisin connu le plus proche
             if h is None:
                 h = next((hs[(k + i) % len(hs)] for i in range(1, len(hs)) if hs[(k + i) % len(hs)] is not None), 0.0)
