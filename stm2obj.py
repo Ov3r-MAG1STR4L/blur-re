@@ -10,11 +10,43 @@ Format (déduit le 2026-10-26, voir CONNAISSANCES.md « Projet J ») :
 import struct
 import sys
 
-SCALE = (1 / 17.565, 1 / 76.8, 1 / 18.818)  # ponytail: mesuré sur Location1, à vérifier sur les autres lieux
+SCALE = (1 / 17.565, 1 / 76.8, 1 / 18.818)  # Location1 ; recalculé pour chaque lieu par entries() (calibrate)
 UV_SCALE = 1 / 1024  # ponytail: supposé (2^10), à vérifier avec une texture
+_CAL = {}
+
+
+def calibrate(d):
+    """échelle par axe du lieu : médiane, sur les maillages, de (2 x demi-taille de la boîte d'en-tête @0x34) /
+    (étendue des positions s16) ; fixe pour tout un .stm (Location1 : 17,565 / 76,8 / 18,818 unités par m)"""
+    global SCALE
+    key = (len(d), d[:64])
+    if key not in _CAL:
+        r = [[], [], []]
+        for t, _, b in _entries(d):
+            if t != 6 or len(b) < 0x40:
+                continue
+            try:
+                vb = struct.unpack_from('>I', b, 0x14)[0]
+                p0, p1 = struct.unpack_from('>2I', b, vb)
+                q = [struct.unpack_from('>3h', b, p0 + 6 * j) for j in range((p1 - p0) // 6)]
+                half = struct.unpack_from('>3f', b, 0x34)
+            except struct.error:
+                continue
+            for a in range(3):
+                span = max(v[a] for v in q) - min(v[a] for v in q) if q else 0
+                if span > 50 and half[a] > 0.5:
+                    r[a].append(2 * half[a] / span)
+        _CAL[key] = tuple(sorted(x)[len(x) // 2] if x else s for x, s in zip(r, SCALE))
+    SCALE = _CAL[key]
+    return SCALE
 
 
 def entries(d):
+    calibrate(d)
+    return _entries(d)
+
+
+def _entries(d):
     n = struct.unpack_from('>I', d, 12)[0]
     for i in range(n):
         o = 16 + i * 64

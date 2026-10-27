@@ -159,7 +159,7 @@ def road_models(files, world_json, radius=40.0, glow=110, pad=None):
     d = open(STM, "rb").read()
     by_mat = collections.defaultdict(list)
     for t, n, b in stm2obj.entries(d):
-        if t != 6 or not n.startswith("ROAD"):
+        if t != 6 or not n.lower().startswith("road"):
             continue
         try:
             pos, uvs, _ = stm2obj.mesh(b)
@@ -211,7 +211,7 @@ def road_collision(src, out, world_json, radius=80.0, road_only=False):
     d = open(STM, "rb").read()
     tris = []
     for t, n, b in stm2obj.entries(d):
-        if t != 6 or (road_only and not n.startswith("ROAD")):
+        if t != 6 or (road_only and not n.lower().startswith("road")):
             continue                      # tout le LOD0 : route, trottoirs, terrains, glissières, murs, immeubles
         try:
             pos, _, faces = stm2obj.mesh(b)
@@ -261,7 +261,7 @@ def set_heights(world_json, ground=1.0):
     d = open(STM, "rb").read()
     V = []
     for t, n, b in stm2obj.entries(d):
-        if t == 6 and n.startswith("ROAD"):
+        if t == 6 and n.lower().startswith("road"):
             try:
                 V += stm2obj.mesh(b)[0]
             except (struct.error, ValueError, IndexError):
@@ -269,16 +269,18 @@ def set_heights(world_json, ground=1.0):
     V = np.array(V)
     tree = cKDTree(V[:, [0, 2]])
     w = json.load(open(world_json))
-    pts = w["locations"][0]["maps"][0]["points"]
-    hs = []
-    for p in pts:
-        near = tree.query_ball_point((p["x"], p["z"]), 6.0)
-        y = np.median(V[near, 1]) + 1.0 - HP_GROUND if near else None
-        hs.append(None if y is None else max(0.0, y - ground))
-    for k, h in enumerate(hs):                       # trous : valeur du voisin connu le plus proche
-        if h is None:
-            h = next((hs[(k + i) % len(hs)] for i in range(1, len(hs)) if hs[(k + i) % len(hs)] is not None), 0.0)
-        pts[k]["h"] = round(h, 2)
+    mp = w["locations"][0]["maps"][0]
+    for pts in [mp["points"]] + [br["points"] for br in mp.get("branches") or []]:   # route + chemins secondaires
+        hs = []
+        for p in pts:
+            near = tree.query_ball_point((p["x"], p["z"]), 6.0)
+            y = np.median(V[near, 1]) + 1.0 - HP_GROUND if near else None
+            hs.append(None if y is None else max(0.0, y - ground))
+        for k, h in enumerate(hs):                   # trous : valeur du voisin connu le plus proche
+            if h is None:
+                h = next((hs[(k + i) % len(hs)] for i in range(1, len(hs)) if hs[(k + i) % len(hs)] is not None), 0.0)
+            pts[k]["h"] = round(h, 2)
+    pts = mp["points"]
     json.dump(w, open(world_json, "w"), indent=1)
     print("hauteurs du tracé : %.1f à %.1f m" % (min(p["h"] for p in pts), max(p["h"] for p in pts)))
 
@@ -364,7 +366,7 @@ def decor_jobs(world_json, radius=300.0, road_radius=40.0, max_verts=DECOR_VERTS
                 tex = stm2obj.material_name(d, m) or "couleur:%02x%02x%02x" % stm2obj.material_color(d, m)
                 for f in stm2obj.mesh(b, m)[2]:
                     dm = float(dist[[a for a, _ in f]].min())
-                    if dm > radius or (n.startswith("ROAD") and dm < road_radius):
+                    if dm > radius or (n.lower().startswith("road") and dm < road_radius):
                         continue
                     cc = np.array([pos[a] for a, _ in f]).mean(0)
                     zone = (tex, int(cc[0] // ZONE), int(cc[2] // ZONE))

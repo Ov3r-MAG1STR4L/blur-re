@@ -30,6 +30,7 @@ VERTS = 52000          # sommets max par modèle (x 1,25 de marge <= 65 535 : in
 RADIUS = 300.0         # décor gardé jusqu'à cette distance du tracé
 INSET = 0.01           # marge dans chaque case (débordement des mips)
 MAX_MODELS = 12 + 110  # emplacements fixes + décor
+GLOW = 110            # lumière propre des modèles (le niveau Map Builder ne les éclaire pas)
 GRID_GAP = 25.0        # 1re rangée de la grille de départ à 25 m derrière la ligne (8 avant)
 
 
@@ -165,7 +166,7 @@ def rebuild(auto_pickups=True, log=print):
     for k, ((slot, fname), (_, texs, tris)) in enumerate(zip(slots, J)):
         # write_model attend des uv « stm » (u, 1 - v) et écrit (u, v) : on lui donne (u, 1 - v atlas)
         M.write_model([(ps, [(u, 1 - v) for u, v in us]) for ps, us in tris], "atlas", M.slot_matrix(ap, slot),
-                      os.path.join(flat, fname), 110, salt=0x4E465500 + k, pad=pad, image=atlas(texs))
+                      os.path.join(flat, fname), GLOW, salt=0x4E465500 + k, pad=pad, image=atlas(texs))
     print(len(J), "modèles atlas écrits")
 
 
