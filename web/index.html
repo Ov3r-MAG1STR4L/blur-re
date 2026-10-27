@@ -41,6 +41,7 @@
     <label>Largeur du point choisi (m) <input id="pw" type="number" step="1" min="6" max="120"></label>
     <h2>3. Bonus et départ</h2>
     <div class="row"><button data-mode="bonus" class="needv">Bonus Blur</button><button data-mode="start" class="needv">Départ</button></div>
+    <label>Bonus par rangée (1 à 9) <input id="o_ppr" type="number" min="1" max="9" value="4"></label>
     <div class="row"><button id="hpBonus" class="needv">Bonus aux emplacements HP</button><button id="clrBonus" class="needv">Retirer les bonus</button></div>
     <h2>Vue</h2>
     <div class="row"><button data-mode="look">Regarder</button><button id="top">Vue de dessus</button><button id="persp">Vue 3D</button></div>
@@ -217,6 +218,7 @@ async function loadWorld() {
     S.validated = S.points.length > 2;
     if (mp.start_m != null && S.points.length) S.start = pointAt(mp.start_m);
     $('o_laps').value = mp.laps || 3;
+    $('o_ppr').value = mp.pickup_per_row || 4;
     const lt = w.locations[0].lighting || {};
     if (lt.preset) $('amb').value = lt.preset;
     const v = lt.values || {};
@@ -377,7 +379,8 @@ function worldJson() {
     points: S.points.map(p => ({ x: r2(p.x), z: r2(p.z), w: p.w })),
     branches: S.branches.filter(b => b.length > 1).map(b => { const a = arc(b[0]), e = arc(b.at(-1));
       return { from_m: Math.round(a), to_m: Math.round(e > a ? e : e + total), width: b[0].w, points: b.map(p => ({ x: r2(p.x), z: r2(p.z), w: p.w })) }; }),
-    pickups: S.pickups.map(p => ({ kind: 'row', x: r2(p.x), z: r2(p.z) })) };
+    pickups: S.pickups.map(p => ({ kind: 'row', x: r2(p.x), z: r2(p.z) })),
+    pickup_per_row: Math.max(1, Math.min(9, +$('o_ppr').value || 4)) };
   if (S.start) mp.start_m = mp.finish_m = Math.round(arc(S.start));
   const stem = $('loc').value.split(/[\\/]/).pop().replace(/\.stm$/i, '');
   const values = {};                                   // vide = valeurs de l'ambiance choisie
