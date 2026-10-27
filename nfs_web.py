@@ -203,7 +203,10 @@ def build():
             log("construction : début (plusieurs minutes)")
             import builtins
             orig = builtins.print
-            builtins.print = log
+            # le lecteur de modèles (BlurImportExport) affiche toute son analyse : on ne garde que nos messages
+            noise = ("|", "Shaders", "Meshes", "Vert", "Face", "Rendering", "Textures", "FX ", "ARCH", "Len ", "StrTab",
+                     "Models", "Element", "Constr", "Render", "Header", "Scene", "Coll", "MtaDbg", "MdlDat")
+            builtins.print = lambda *a, **k: None if not a or str(a[0]).strip().startswith(noise)                 or not str(a[0]).strip() else log(*a)
             try:
                 A.rebuild(auto_pickups=False)
             finally:
