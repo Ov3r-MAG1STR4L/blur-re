@@ -61,10 +61,6 @@ def add_thumbnail(test_bpr, out_bpr, route="Flat_Earth_1"):
     print("vignette", route, "(modèle", tpl + ") ->", out_bpr)
 
 
-if __name__ == "__main__":
-    main()
-
-
 # --- bâtiment de Hot Pursuit posé dans un emplacement d'objet de Map Builder (2026-10-27) ---
 STM = r"C:\Users\sanqu\Jeux_WII\nfs_extracted\files\Data\Environments\Location1\location11.stm"
 HP_GROUND = -323.8           # hauteur de la route HP près de la ligne de départ ; Blur (Map Builder) : sol à y = 1
@@ -131,7 +127,14 @@ def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None
     print(texture, len(verts), "sommets ->", out_path)
 
 
-ROAD_SLOTS = [0xF1A72101 + 2 * k for k in range(11)]    # morceaux de route Map Builder (un acteur visible chacun)
+def road_slots(actorpack):
+    """DynamicObjDef des morceaux de route Map Builder (0xF1A721xx impairs, un acteur visible chacun), dans l'ordre
+    road_21_00, _01… (leur nombre dépend de la longueur du tracé : 420 m par morceau)"""
+    from blurxt import XT
+    u = sorted({int(a["DynamicObjType"][1:], 16) for n, t, v, _ in XT(actorpack).records()
+                for a in v.get("LevelActors", []) if str(a.get("DynamicObjType", "")).startswith("@f1a721")})
+    assert u == [0xF1A72101 + 2 * k for k in range(len(u))], [hex(x) for x in u]
+    return u
 # crash au chargement (Blur.exe 0x6DB2EB, accès mémoire) dès 1 854 sommets (37 080 o) ; 1 353 (27 060 o) passe :
 # plafond supposé 32 768 o de sommets (1 638 à 20 o)
 MAX_VERTS = 3000   # 1 500 avant le correctif « même taille » ; 3 000 à confirmer en jeu
@@ -180,12 +183,13 @@ def road_models(files, world_json, radius=40.0, glow=110):
             cur.append(tri)
             keys |= k
         jobs.append((m, cur))
-    pad_idx = 3 * max(len(t) for _, t in jobs[:len(ROAD_SLOTS)])   # même nombre d'index partout
-    for k, (slot, (m, tris)) in enumerate(zip(ROAD_SLOTS, jobs)):
+    pad_idx = 3 * max(len(t) for _, t in jobs[:len(road_slots(ap))])   # même nombre d'index partout
+    slots = road_slots(ap)
+    for k, (slot, (m, tris)) in enumerate(zip(slots, jobs)):
         write_model(tris, stm2obj.material_name(d, m), slot_matrix(ap, slot),
                     os.path.join(files, "models", "objects", "flat_earth", "road_21_%02d.model" % k), glow,
                     up=True, square=256, salt=0x4E465300 + k, pad=(MAX_VERTS, pad_idx))
-    print("pas de place pour :", [(stm2obj.material_name(d, m), len(t)) for m, t in jobs[len(ROAD_SLOTS):]])
+    print("pas de place pour :", [(stm2obj.material_name(d, m), len(t)) for m, t in jobs[len(slots):]])
 
 
 def road_collision(src, out, world_json, radius=40.0):
@@ -236,3 +240,31 @@ def road_collision(src, out, world_json, radius=40.0):
     open(out, "wb").write(data)
     print(len(tris), "triangles de route HP ->", len(objs), "objets de collision ->", out)
     return len(objs)
+
+
+WORLD = r"C:\Users\sanqu\Jeux_WII\nfs_extracted\stm_work\world.json"
+BUILDING = ("PVS9992.1f1", 0xB9)                 # immeuble « en vague », posé dans l'emplacement de l'arche
+
+
+def rebuild_all():
+    """après un build Map Builder : fichiers en clair + collision HP + route HP + immeuble (tous à la même taille)"""
+    import blurmodel_write  # noqa: F401  (chemins Map Builder)
+    import cpmodel
+    import stm2obj
+    main()
+    road_collision(os.path.join(BMB, "levels", "flat_earth", "level.levelphysics"),
+                   os.path.join(OUT, "levels", "flat_earth", "level.levelphysics"), WORLD)
+    road_models(OUT, WORLD)
+    flat = os.path.join(OUT, "models", "objects", "flat_earth")
+    P = cpmodel.parse(open(os.path.join(flat, "road_21_00.model"), "rb").read())
+    d = open(STM, "rb").read()
+    b = next(b for t, n, b in stm2obj.entries(d) if t == 6 and n == BUILDING[0])
+    pos, uvs, faces = stm2obj.mesh(b, BUILDING[1])
+    write_model([([pos[a] for a, _ in f], [uvs[c] for _, c in f]) for f in faces],
+                stm2obj.material_name(d, BUILDING[1]),
+                slot_matrix(os.path.join(OUT, "gamedata", "levels", "flat_earth", "actorpack.xt"), 0xF1E20005),
+                os.path.join(flat, "arch_lap.model"), glow=110, salt=0x4E4653FF, pad=(P["vcount"], P["fcount"]))
+
+
+if __name__ == "__main__":
+    rebuild_all()
