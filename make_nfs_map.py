@@ -134,7 +134,7 @@ def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None
 ROAD_SLOTS = [0xF1A72101 + 2 * k for k in range(11)]    # morceaux de route Map Builder (un acteur visible chacun)
 # crash au chargement (Blur.exe 0x6DB2EB, accès mémoire) dès 1 854 sommets (37 080 o) ; 1 353 (27 060 o) passe :
 # plafond supposé 32 768 o de sommets (1 638 à 20 o)
-MAX_VERTS = 1500
+MAX_VERTS = 3000   # 1 500 avant le correctif « même taille » ; 3 000 à confirmer en jeu
 ROAD_FIRST = ("road_plaintarmac", "road_whitedotrwhitelinel", "road_junction_arrows")   # priorité si place manque
 
 
