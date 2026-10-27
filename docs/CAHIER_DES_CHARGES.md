@@ -303,3 +303,4 @@ type 5 (3 valeurs) ou 9 (2 valeurs), ou aucune (drapeaux 0x40). LA River 3 : `Ju
 | 2026-10-27 | Projet J : **route de Dubaï (Hot Pursuit Wii) visible et roulable dans Blur** (collision HP, 11 modèles générés de même taille, identifiants uniques ; crash 0x6DB2EB résolu) |
 | 2026-10-27 | Projet J : décor HP de Dubaï chargé en jeu (122 modèles) ; restent la liaison des textures du décor et les performances (découpage par zone, distance d'affichage, LOD) - en pause |
 | 2026-10-27 | Projet J : NFS Studio, réglage par rangée de bonus (nombre 1-9 et type, champs `n` / `type` de Map Builder), affiché sur le cube ; à vérifier en jeu |
+| 2026-10-27 | Projet J : UV HP = s16 / 2048 (prouvé par le VAT des captures FIFO), corrige les textures répétées 2×2 |
