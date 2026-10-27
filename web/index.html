@@ -36,6 +36,8 @@
     <h2>2. Circuit</h2>
     <div class="row"><button data-mode="main">Tracé principal</button><button data-mode="branch">Chemin secondaire</button></div>
     <div class="row"><button id="newBranch">Nouveau chemin</button><button id="valid">Valider le circuit ➜</button></div>
+    <div class="row"><button id="autoW" title="recentre sur l'asphalte et donne à chaque point la largeur réelle de la route (couloir des IA)">Recaler + largeurs auto</button></div>
+    <div class="row"><button id="clrMain">Effacer le tracé</button><button id="clrBranch">Effacer le chemin choisi</button><button id="clrAll">Effacer tous les chemins</button></div>
     <label>Largeur du point choisi (m) <input id="pw" type="number" step="1" min="6" max="120"></label>
     <h2>3. Bonus et départ</h2>
     <div class="row"><button data-mode="bonus" class="needv">Bonus Blur</button><button data-mode="start" class="needv">Départ</button></div>
@@ -307,6 +309,21 @@ $('newBranch').onclick = () => { if (S.points.length < 3) { say('dessine d\'abor
 $('valid').onclick = () => { if (S.points.length < 3) { say('au moins 3 points'); return; } push(); S.validated = true; refresh(); setMode('bonus'); say('circuit validé : place les bonus et le départ'); };
 $('hpBonus').onclick = () => { push(); for (const [x, y, z] of info.hp_pickups) S.pickups.push({ x, y, z }); refresh(); };
 $('clrBonus').onclick = () => { push(); S.pickups = []; refresh(); };
+$('clrMain').onclick = () => { if (!confirm('Effacer le tracé principal ?')) return; push(); S.points = []; S.start = null; S.validated = false; sel = null; refresh(); };
+$('clrBranch').onclick = () => { if (curBranch < 0 || !S.branches[curBranch]) { say('clique d\'abord sur une boule du chemin à effacer'); return; }
+  push(); S.branches.splice(curBranch, 1); curBranch = -1; sel = null; refresh(); };
+$('clrAll').onclick = () => { if (!S.branches.length || !confirm('Effacer tous les chemins secondaires ?')) return; push(); S.branches = []; curBranch = -1; sel = null; refresh(); };
+// recalage + largeur réelle de la route (le couloir des IA de Blur = largeur de chaque point)
+$('autoW').onclick = async () => {
+  if (S.points.length < 3) { say('dessine d\'abord le tracé principal'); return; }
+  say('recalage et mesure des largeurs…'); push();
+  const fix = async (pts, closed) => (await (await fetch('/api/recenter', { method: 'POST',
+    body: JSON.stringify({ points: pts.map(p => ({ x: p.x, z: p.z })), closed }) })).json()).map(p => ({ ...p, y: groundAt(p.x, p.z) }));
+  S.points = await fix(S.points, true);
+  for (let k = 0; k < S.branches.length; k++) if (S.branches[k].length > 1) S.branches[k] = await fix(S.branches[k], false);
+  S.validated = false; sel = null; refresh();
+  const W = S.points.map(p => p.w); say(`largeurs : ${Math.min(...W).toFixed(0)} à ${Math.max(...W).toFixed(0)} m (à revérifier puis « Valider le circuit »)`);
+};
 
 // ---------- enregistrement / construction ----------
 function worldJson() {

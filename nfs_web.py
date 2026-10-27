@@ -110,6 +110,82 @@ def export(stm):
 
 class State:
     stm = M.STM
+    asphalt = None          # (stm, sommets x z de l'asphalte « road_* » du lieu)
+
+
+def asphalt():
+    if State.asphalt is None or State.asphalt[0] != State.stm:
+        d = open(State.stm, "rb").read()
+        pts = []
+        for t, n, b in stm2obj.entries(d):
+            if t != 6 or not n.lower().startswith("road"):
+                continue
+            try:
+                pos, _, _ = stm2obj.mesh(b)
+                for m in {s[0] for s in stm2obj.submeshes(b)}:
+                    if (stm2obj.material_name(d, m) or "").lower().startswith("road_"):
+                        pts += [pos[a] for f in stm2obj.mesh(b, m)[2] for a, _ in f]
+            except (struct.error, ValueError, IndexError):
+                continue
+        State.asphalt = (State.stm, np.unique(np.round(np.array(pts)[:, [0, 2]], 1), axis=0))
+    return State.asphalt[1]
+
+
+def recenter(points, closed=True, step=10.0, passes=8):
+    """tracé (liste de {x, z}) -> rééchantillonné tous les `step` m, recentré entre les bords de l'asphalte (3 m max
+    par passe : ne saute pas sur une route voisine) ; largeur w = distance entre les bords (couloir des IA)"""
+    from scipy.spatial import cKDTree
+    A_ = asphalt()
+    tree = cKDTree(A_)
+    P = np.array([(p["x"], p["z"]) for p in points] + ([(points[0]["x"], points[0]["z"])] if closed else []))
+    L = np.r_[0, np.cumsum(np.hypot(*np.diff(P, axis=0).T))]
+    s = np.arange(0, L[-1] + (0 if closed else 1e-6), step)
+    C = np.c_[np.interp(s, L, P[:, 0]), np.interp(s, L, P[:, 1])]
+    W = np.full(len(C), np.nan)
+    for _ in range(passes):
+        if closed:
+            T = np.roll(C, -1, 0) - np.roll(C, 1, 0)
+        else:
+            T = np.gradient(C, axis=0)
+        T /= np.linalg.norm(T, axis=1, keepdims=True) + 1e-9
+        N = np.c_[-T[:, 1], T[:, 0]]
+        new = C.copy()
+        for i, (c, t, n) in enumerate(zip(C, T, N)):
+            r = A_[tree.query_ball_point(c, 40)] - c
+            if len(r) < 4:
+                continue
+            lat = np.sort((r @ n)[np.abs(r @ t) < 4])
+            if len(lat) < 4:
+                continue
+            lo = hi = lat[np.abs(lat).argmin()]
+            for v in lat[lat < lo][::-1]:
+                if lo - v > 3:
+                    break
+                lo = v
+            for v in lat[lat > hi]:
+                if v - hi > 3:
+                    break
+                hi = v
+            new[i] = c + n * float(np.clip((lo + hi) / 2, -3, 3))
+            # largeur : sommets plus clairsemés en travers (bords, lignes) -> fenêtre 12 m, écarts tolérés 8 m
+            lw = np.sort((r @ n)[np.abs(r @ t) < 12])
+            a = b = lw[np.abs(lw).argmin()]
+            for v in lw[lw < a][::-1]:
+                if a - v > 8:
+                    break
+                a = v
+            for v in lw[lw > b]:
+                if v - b > 8:
+                    break
+                b = v
+            W[i] = b - a
+        if closed:
+            C = (np.roll(new, 1, 0) + 2 * new + np.roll(new, -1, 0)) / 4
+        else:
+            C = new
+    W = np.where(np.isnan(W), np.nanmedian(W) if np.isfinite(W).any() else 30, W)
+    W = np.clip(np.convolve(np.r_[W[:2], W, W[-2:]], np.ones(5) / 5, "valid"), 10, 120)   # largeurs lissées
+    return [dict(x=round(float(x), 2), z=round(float(z), 2), w=round(float(w), 1)) for (x, z), w in zip(C, W)]
 
 
 def load_location(stm):
@@ -206,6 +282,9 @@ class Handler(SimpleHTTPRequestHandler):
             json.dump(json.loads(body), open(M.WORLD, "w"), indent=1)
             log("circuit enregistré :", M.WORLD)
             return self.send_json({"ok": True})
+        if u.path == "/api/recenter":
+            q = json.loads(body)
+            return self.send_json(recenter(q["points"], q.get("closed", True)))
         if u.path == "/api/options":
             o = json.loads(body)
             M.TRACK_WIDTH = float(o.get("width", M.TRACK_WIDTH))
