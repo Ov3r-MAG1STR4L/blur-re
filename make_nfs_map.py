@@ -249,10 +249,44 @@ def road_collision(src, out, world_json, radius=80.0, road_only=False):
 WORLD = r"C:\Users\sanqu\Jeux_WII\nfs_extracted\stm_work\world.json"
 
 
+def set_heights(world_json, ground=1.0):
+    """hauteur de chaque point du tracé = route HP (médiane des sommets ROAD à moins de 6 m) : Map Builder y pose
+    sa grille de départ, ses bonus, son tracé IA et ses caméras (sinon départ sous la route HP, en hauteur)"""
+    import json
+    import numpy as np
+    from scipy.spatial import cKDTree
+    import stm2obj
+    d = open(STM, "rb").read()
+    V = []
+    for t, n, b in stm2obj.entries(d):
+        if t == 6 and n.startswith("ROAD"):
+            try:
+                V += stm2obj.mesh(b)[0]
+            except (struct.error, ValueError, IndexError):
+                pass
+    V = np.array(V)
+    tree = cKDTree(V[:, [0, 2]])
+    w = json.load(open(world_json))
+    pts = w["locations"][0]["maps"][0]["points"]
+    hs = []
+    for p in pts:
+        near = tree.query_ball_point((p["x"], p["z"]), 6.0)
+        y = np.median(V[near, 1]) + 1.0 - HP_GROUND if near else None
+        hs.append(None if y is None else max(0.0, y - ground))
+    for k, h in enumerate(hs):                       # trous : valeur du voisin connu le plus proche
+        if h is None:
+            h = next((hs[(k + i) % len(hs)] for i in range(1, len(hs)) if hs[(k + i) % len(hs)] is not None), 0.0)
+        pts[k]["h"] = round(h, 2)
+    json.dump(w, open(world_json, "w"), indent=1)
+    print("hauteurs du tracé : %.1f à %.1f m" % (min(p["h"] for p in pts), max(p["h"] for p in pts)))
+
+
 def rebuild_all():
     """tout refaire : décor choisi -> build Map Builder (NFS_COUNT) -> fichiers en clair -> collision HP ->
     route HP (12 modèles) + décor HP, tous les modèles à la même taille"""
     import subprocess
+    set_heights(WORLD)
+    shutil.copyfile(WORLD, os.path.join(BMB, "Blur Map Builder", "maps", "world.json"))
     jobs = decor_jobs(WORLD)
     mb = os.path.join(BMB, "map_builder", "flat_earth")
     env = dict(os.environ, BMB_GAME=BMB, BMB_INSTALLED="1", NFS_COUNT=str(len(jobs)),
