@@ -217,8 +217,10 @@ async function loadWorld() {
   S = { points: [], branches: [], pickups: [], start: null, validated: false }; undoS = []; redoS = []; curBranch = -1; sel = null;
   if (w) {
     const mp = w.locations[0].maps[0], def = mp.width || +$('o_width').value;
-    S.points = (mp.points || []).map(p => ({ x: p.x, z: p.z, y: (p.h || 0) + 1, w: p.w || def }));
-    S.branches = (mp.branches || []).map(b => b.points.map(p => ({ x: p.x, z: p.z, y: (p.h || 0) + 1, w: p.w || b.width || 30 })));
+    // sans "h" (l'éditeur ne l'enregistre pas, make_nfs_map le calcule à la construction) : posé sur la route
+    const hy = p => p.h != null ? p.h + 1 : groundAt(p.x, p.z);
+    S.points = (mp.points || []).map(p => ({ x: p.x, z: p.z, y: hy(p), w: p.w || def }));
+    S.branches = (mp.branches || []).map(b => b.points.map(p => ({ x: p.x, z: p.z, y: hy(p), w: p.w || b.width || 30 })));
     S.pickups = (mp.pickups || []).map(p => ({ x: p.x, z: p.z, y: groundAt(p.x, p.z), ...(p.n ? { n: p.n } : {}), ...(p.type ? { type: p.type } : {}) }));
     S.validated = S.points.length > 2;
     if (mp.start_m != null && S.points.length) S.start = pointAt(mp.start_m);
