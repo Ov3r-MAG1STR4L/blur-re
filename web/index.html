@@ -42,6 +42,10 @@
     <h2>3. Bonus et départ</h2>
     <div class="row"><button data-mode="bonus" class="needv">Bonus Blur</button><button data-mode="start" class="needv">Départ</button></div>
     <label>Bonus par rangée (1 à 9) <input id="o_ppr" type="number" min="1" max="9" value="4"></label>
+    <div class="row" title="Cube bleu choisi (mode Bonus Blur) : vide = valeur ci-dessus, type aléatoire = mélange habituel">
+      <label>Rangée choisie : nombre <input id="pn" type="number" min="1" max="9" style="width:3em"></label>
+      <select id="pt"><option value="">aléatoire</option><option>Nitro</option><option>Shield</option><option>Repair</option>
+        <option>Shunt</option><option>Barge</option><option>Bolt</option><option>Shock</option><option>Mine</option></select></div>
     <div class="row"><button id="hpBonus" class="needv">Bonus aux emplacements HP</button><button id="clrBonus" class="needv">Retirer les bonus</button></div>
     <h2>Vue</h2>
     <div class="row"><button data-mode="look">Regarder</button><button id="top">Vue de dessus</button><button id="persp">Vue 3D</button></div>
@@ -111,7 +115,8 @@ Mode <i>Chemin secondaire</i> : « Nouveau chemin », puis clics du départ (pr�
 Mêmes gestes pour déplacer / insérer / supprimer.<br>
 « Valider le circuit » débloque l'étape 3.<br><br>
 <b>3. Bonus et départ</b> : mode <i>Bonus Blur</i> : clic sur la route = une rangée de bonus (cube bleu) ; clic sur un cube
-puis Suppr = le retirer. Les anneaux orange sont les anciens bonus de Hot Pursuit. Mode <i>Départ</i> : clic = ligne de départ.<br><br>
+= le choisir (jaune) : « Rangée choisie » règle son nombre de bonus (vide = « Bonus par rangée ») et son type
+(aléatoire = mélange habituel), affichés au-dessus du cube ; Suppr = le retirer. Les anneaux orange sont les anciens bonus de Hot Pursuit. Mode <i>Départ</i> : clic = ligne de départ.<br><br>
 <b>4. Construction</b> : réglages, « Construire » (plusieurs minutes, suivi dans le journal), puis « Installer dans Blur_test »
 (Blur fermé). En jeu : course perso, lieu « NFS … ».<br><br>
 Calques : décor, route, textures, <b>hitbox</b> (surface roulable en vert), trajet IA + largeurs, bonus.<br>
@@ -214,7 +219,7 @@ async function loadWorld() {
     const mp = w.locations[0].maps[0], def = mp.width || +$('o_width').value;
     S.points = (mp.points || []).map(p => ({ x: p.x, z: p.z, y: (p.h || 0) + 1, w: p.w || def }));
     S.branches = (mp.branches || []).map(b => b.points.map(p => ({ x: p.x, z: p.z, y: (p.h || 0) + 1, w: p.w || b.width || 30 })));
-    S.pickups = (mp.pickups || []).map(p => ({ x: p.x, z: p.z, y: groundAt(p.x, p.z) }));
+    S.pickups = (mp.pickups || []).map(p => ({ x: p.x, z: p.z, y: groundAt(p.x, p.z), ...(p.n ? { n: p.n } : {}), ...(p.type ? { type: p.type } : {}) }));
     S.validated = S.points.length > 2;
     if (mp.start_m != null && S.points.length) S.start = pointAt(mp.start_m);
     $('o_laps').value = mp.laps || 3;
@@ -262,10 +267,12 @@ function refresh() {
   S.points.forEach((p, i) => { const m = ball(p, picked({ kind: 'main', i }) ? 0xffff00 : 0xff2020); m.userData.h = { kind: 'main', i }; layers.handles.add(m); });
   S.branches.forEach((b, k) => b.forEach((p, i) => { const m = ball(p, picked({ kind: 'branch', k, i }) ? 0xffff00 : (k === curBranch ? 0xd080ff : 0x9030e0)); m.userData.h = { kind: 'branch', k, i }; layers.handles.add(m); }));
   S.pickups.forEach((p, i) => { const m = new THREE.Mesh(new THREE.BoxGeometry(6, 6, 6), new THREE.MeshBasicMaterial({ color: sel && sel.kind === 'pickup' && sel.i === i ? 0xffff00 : 0x2b7bff }));
-    m.position.set(p.x, p.y + 3, p.z); m.userData.h = { kind: 'pickup', i }; layers.bonus.add(m); });
+    m.position.set(p.x, p.y + 3, p.z); m.userData.h = { kind: 'pickup', i }; layers.bonus.add(m);
+    if (p.n || p.type) layers.bonus.add(tag((p.n || '') + (p.type ? ' ' + p.type : ''), p)); });
   if (S.start) { const m = ball(S.start, 0x00cc44, 4); m.userData.h = { kind: 'start' }; layers.handles.add(m); }
   document.querySelectorAll('.needv').forEach(b => b.disabled = !S.validated);
   const p = selPoint(); $('pw').value = p ? p.w : '';
+  const r = selRow(); $('pn').value = r && r.n || ''; $('pt').value = r && r.type || ''; $('pn').disabled = $('pt').disabled = !r;
   hudStats();
   applyLayers();
 }
@@ -292,6 +299,17 @@ function deletePicked() {
   say(`${all.length} élément(s) effacé(s)`); sel = null; multi = []; refresh();
 }
 function selPoint() { if (!sel) return null; if (sel.kind === 'main') return S.points[sel.i]; if (sel.kind === 'branch') return S.branches[sel.k][sel.i]; return null; }
+function selRow() { return sel && sel.kind === 'pickup' ? S.pickups[sel.i] : null; }
+// réglage de la rangée choisie : "n" (1-9, vide = global) et "type" (vide = mélange), lus par road_layout.row_size / pickup_spots
+$('pn').onchange = () => { const r = selRow(); if (!r) return; push(); const n = Math.round(+$('pn').value);
+  if (n >= 1) r.n = Math.min(9, n); else delete r.n; refresh(); };
+$('pt').onchange = () => { const r = selRow(); if (!r) return; push(); if ($('pt').value) r.type = $('pt').value; else delete r.type; refresh(); };
+// étiquette au-dessus d'un cube bonus
+function tag(text, p) { const c = document.createElement('canvas'); c.width = 128; c.height = 32; const g = c.getContext('2d');
+  g.font = 'bold 26px sans-serif'; g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 4; g.textAlign = 'center';
+  g.strokeText(text, 64, 26); g.fillText(text, 64, 26);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false }));
+  s.scale.set(16, 4, 1); s.position.set(p.x, p.y + 9, p.z); return s; }
 $('pw').onchange = () => { const p = selPoint(); if (p) { push(); p.w = +$('pw').value; refresh(); } };
 
 function applyLayers() {
@@ -379,7 +397,7 @@ function worldJson() {
     points: S.points.map(p => ({ x: r2(p.x), z: r2(p.z), w: p.w })),
     branches: S.branches.filter(b => b.length > 1).map(b => { const a = arc(b[0]), e = arc(b.at(-1));
       return { from_m: Math.round(a), to_m: Math.round(e > a ? e : e + total), width: b[0].w, points: b.map(p => ({ x: r2(p.x), z: r2(p.z), w: p.w })) }; }),
-    pickups: S.pickups.map(p => ({ kind: 'row', x: r2(p.x), z: r2(p.z) })),
+    pickups: S.pickups.map(p => ({ kind: 'row', x: r2(p.x), z: r2(p.z), ...(p.n ? { n: p.n } : {}), ...(p.type ? { type: p.type } : {}) })),
     pickup_per_row: Math.max(1, Math.min(9, +$('o_ppr').value || 4)) };
   if (S.start) mp.start_m = mp.finish_m = Math.round(arc(S.start));
   const stem = $('loc').value.split(/[\\/]/).pop().replace(/\.stm$/i, '');
