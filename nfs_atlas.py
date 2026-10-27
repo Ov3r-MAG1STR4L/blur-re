@@ -24,9 +24,9 @@ import make_nfs_map as M  # noqa: E402
 import stm2obj  # noqa: E402
 
 ZONE = 200.0           # côté des zones (m)
-GRID = 4               # atlas 4 x 4 cases
-CELL = 256             # px par case
-VERTS = 20000          # sommets max par modèle
+GRID = 8               # atlas 8 x 8 cases (64 textures par modèle)
+CELL = 128             # px par case (atlas 1024 x 1024)
+VERTS = 52000          # sommets max par modèle (x 1,25 de marge <= 65 535 : index u16)
 RADIUS = 300.0         # décor gardé jusqu'à cette distance du tracé
 INSET = 0.01           # marge dans chaque case (débordement des mips)
 MAX_MODELS = 12 + 110  # emplacements fixes + décor
