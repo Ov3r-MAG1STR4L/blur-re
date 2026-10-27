@@ -281,16 +281,46 @@ def set_heights(world_json, ground=1.0):
     print("hauteurs du tracé : %.1f à %.1f m" % (min(p["h"] for p in pts), max(p["h"] for p in pts)))
 
 
+TRACK_WIDTH = 50.0            # largeur du « tube » de course (hors-piste -> replacement) : route HP + trottoirs
+
+
+def set_track(world_json):
+    """largeur du circuit + bonus aux emplacements de Hot Pursuit (fiches powerupNNN du .stm : 3 floats de position
+    puis 1.0 juste avant le nom ; une rangée par fiche, seulement celles à moins de 40 m du tracé)"""
+    import json
+    import re
+    import numpy as np
+    d = open(STM, "rb").read()
+    hp = []
+    for m in re.finditer(rb"powerup[0-9]+\x00", d):
+        x, y, z, one = struct.unpack_from(">4f", d, m.start() - 16)
+        if abs(one - 1) < 1e-6:
+            hp.append((x, z))
+    w = json.load(open(world_json))
+    mp = w["locations"][0]["maps"][0]
+    pts = np.array([(p["x"], p["z"]) for p in mp["points"]])
+    rows = [{"kind": "row", "x": round(x, 2), "z": round(z, 2)} for x, z in hp
+            if np.hypot(*(pts - (x, z)).T).min() < 40]
+    mp["width"] = TRACK_WIDTH
+    mp["pickups"] = rows
+    json.dump(w, open(world_json, "w"), indent=1)
+    print(len(rows), "rangées de bonus aux emplacements HP ; largeur", TRACK_WIDTH)
+
+
 def rebuild_all():
     """tout refaire : décor choisi -> build Map Builder (NFS_COUNT) -> fichiers en clair -> collision HP ->
     route HP (12 modèles) + décor HP, tous les modèles à la même taille"""
     import subprocess
     set_heights(WORLD)
+    set_track(WORLD)
     shutil.copyfile(WORLD, os.path.join(BMB, "Blur Map Builder", "maps", "world.json"))
     jobs = decor_jobs(WORLD)
     mb = os.path.join(BMB, "map_builder", "flat_earth")
-    env = dict(os.environ, BMB_GAME=BMB, BMB_INSTALLED="1", NFS_COUNT=str(len(jobs)),
-               NFS_NO_WALLS="1", NFS_FLOOR_Y="-5")    # murs / ponts Map Builder retirés, sol de secours à -5 m
+    import json
+    spots = os.path.join(OUT, "..", "nfs_spots.json")
+    json.dump([zone_centre(t) for _, t in jobs], open(spots, "w"))
+    env = dict(os.environ, BMB_GAME=BMB, BMB_INSTALLED="1", NFS_COUNT=str(len(jobs)), NFS_SPOTS=os.path.abspath(spots),
+               NFS_DRAW=str(DECOR_DRAW), NFS_NO_WALLS="1", NFS_FLOOR_Y="-5")   # murs Map Builder retirés
     subprocess.run([sys.executable, "build.py"], cwd=mb, env=env, check=True, stdout=subprocess.DEVNULL)
     main()
     road_collision(os.path.join(BMB, "levels", "flat_earth", "level.levelphysics"),
@@ -303,6 +333,10 @@ def rebuild_all():
 NFS_UID = 0xF1E40000          # modèles de décor ajoutés à Map Builder (build.py : NFS_COUNT, défs NFS_UID + 2k + 1)
 DECOR_VERTS = 10000           # à confirmer en jeu (3 000 OK)
 DECOR_MAX = 110               # place dans la liste de 144 acteurs (route, feux, arche… prennent le reste)
+
+
+ZONE = 120.0                  # côté des zones de décor (m) : boîte serrée -> le jeu écarte ce qui est loin / caché
+DECOR_DRAW = 700.0            # distance d'affichage du décor HP (m)
 
 
 def decor_jobs(world_json, radius=300.0, road_radius=40.0, max_verts=DECOR_VERTS, limit=DECOR_MAX):
@@ -330,7 +364,9 @@ def decor_jobs(world_json, radius=300.0, road_radius=40.0, max_verts=DECOR_VERTS
                     dm = float(dist[[a for a, _ in f]].min())
                     if dm > radius or (n.startswith("ROAD") and dm < road_radius):
                         continue
-                    by_tex[tex].append((dm, [pos[a] for a, _ in f], [uvs[c] for _, c in f]))
+                    cc = np.array([pos[a] for a, _ in f]).mean(0)
+                    zone = (tex, int(cc[0] // ZONE), int(cc[2] // ZONE))
+                    by_tex[zone].append((dm, [pos[a] for a, _ in f], [uvs[c] for _, c in f]))
         except (struct.error, ValueError, IndexError):
             continue
     jobs = []
@@ -348,7 +384,15 @@ def decor_jobs(world_json, radius=300.0, road_radius=40.0, max_verts=DECOR_VERTS
             jobs.append((cur[0][0], tex, [(p, u) for _, p, u in cur]))
     jobs.sort(key=lambda j: j[0])
     print(len(jobs), "morceaux de décor possibles,", min(limit, len(jobs)), "gardés")
-    return [(tex, tris) for _, tex, tris in jobs[:limit]]
+    return [(key[0], tris) for _, key, tris in jobs[:limit]]
+
+
+def zone_centre(tris):
+    """centre (x, y Blur, z) d'un morceau : position de son acteur"""
+    import numpy as np
+    P = np.array([p for ps, _ in tris for p in ps])
+    c = (P.min(0) + P.max(0)) / 2
+    return [round(float(c[0]), 2), round(float(c[1] + 1.0 - HP_GROUND), 2), round(float(c[2]), 2)]
 
 
 def decor_models(files, jobs, pad, glow=110):
