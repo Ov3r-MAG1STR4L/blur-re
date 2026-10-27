@@ -1068,3 +1068,14 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
     C'était la cause des panneaux sur les immeubles.
   - Échelle verticale : vérifiée (m par pixel de texture sur les murs, largeur / hauteur = 0,88).
   - Reste inconnu : matériaux < 0x9C (hors table). Piste suivante : capture FIFO Dolphin d'une image à Dubaï.
+  - **RÉSOLU par capture FIFO Dolphin (2026-10-27, `d5_fifo.py`)** : Hot Pursuit recopie ses listes GX dans le
+    flux (pas de CALL_DL) ; chaque dessin du flux est retrouvé octet pour octet dans un sous-maillage du `.stm`
+    (224 puis 442 dessins), et la texture active (BP 0x94 = adresse >> 5, 0x88 = taille / format) dans une
+    entrée `.tex` (223 / 441). Règle prouvée : **matériau m = fiche n° m − 1**, en comptant depuis la fiche sans
+    nom qui précède la 1re fiche à signature (table de 0x18A = 394 fiches, tous les matériaux 0x0E..0x187 y sont ;
+    l'idée « fiches à partir de 0x9D » était fausse, décalée de 155). Texture visible = dernier emplacement utilisé
+    qui n'est pas `envmap.tex` (reflet des vitres, 2e couche). Fiches à 0 texture : couleur unie (en-tête +0x0B :
+    R, G, B). Accord avec le jeu : 55/61 matériaux sur la capture 1 (ayant servi à trouver la règle), **63/71 sur
+    la capture 2** (contrôle). Écarts restants : variantes a/b (panneaux, entrepôts) et lignes de route en
+    plusieurs couches (seule la texture 0 du GX est lue). La table de 255 noms du `.pvs` n'est PAS un index de
+    matériau (ordre de 1re utilisation).

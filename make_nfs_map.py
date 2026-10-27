@@ -118,7 +118,11 @@ def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None
                 ids.append(seen[key])
         idx += ids if up else ids + ids[::-1]
     d = open(STM, "rb").read()
-    img = stm2obj.texture_image(d, texture).convert("RGB")
+    if texture.startswith("couleur:"):                       # matériau sans texture : couleur unie de sa fiche
+        from PIL import Image
+        img = Image.new("RGB", (64, 64), tuple(int(texture[8 + 2 * i:10 + 2 * i], 16) for i in range(3)))
+    else:
+        img = stm2obj.texture_image(d, texture).convert("RGB")
     if square:
         img = img.resize((square, square))
     data = blurmodel_write.build(open(TEMPLATE, "rb").read(), verts, idx, img.tobytes(), *img.size, glow=glow,
@@ -286,9 +290,7 @@ def decor_jobs(world_json, radius=300.0, road_radius=40.0, max_verts=DECOR_VERTS
             pos, uvs, _ = stm2obj.mesh(b)
             dist = tree.query(np.array(pos)[:, [0, 2]])[0] if pos else None
             for m in {s[0] for s in stm2obj.submeshes(b)}:
-                tex = stm2obj.material_name(d, m)
-                if not tex:
-                    continue
+                tex = stm2obj.material_name(d, m) or "couleur:%02x%02x%02x" % stm2obj.material_color(d, m)
                 for f in stm2obj.mesh(b, m)[2]:
                     dm = float(dist[[a for a, _ in f]].min())
                     if dm > radius or (n.startswith("ROAD") and dm < road_radius):

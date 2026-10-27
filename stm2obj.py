@@ -88,63 +88,72 @@ def _dl(b, p, end, sizes):
     return faces
 
 
-# matériau m (u16 des sous-maillages) = fiche de la table des matériaux rangée dans l'entrée .pvs : fiches de
-# 0x160 o = nom (0x40), en-tête (0x20, souvent 00 00 41 1C DC DD), 4 emplacements de texture (0x40 : nom du
-# .tex sans sa 1re lettre, puis paramètres). La 1re fiche à signature est le matériau MAT_FIRST ; en dessous :
-# autre table, pas trouvée (murs d'immeubles surtout). Vérifié par l'orientation des surfaces (2026-10-27).
-MAT_FIRST = 0x9D  # ponytail: mesuré sur location11 seulement
+# Matériau m (u16 des sous-maillages) = fiche n° m - 1 de la table des matériaux rangée dans l'entrée .pvs
+# (PROUVÉ par capture FIFO Dolphin, 2026-10-27, nfs_diag/d5_fifo.py : plus de 50 matériaux, 2 captures).
+# Table : u32 nombre de fiches (0x18A pour location11) puis fiches de 0x160 o, la 1re sans nom : nom (0x40),
+# en-tête (0x20, dernier u32 = nombre de textures), 4 emplacements de 0x40 (nom du .tex sur 0x20 puis paramètres).
+# Emplacement utilisé si son 1er octet n'est pas 0 (sinon : reste de la fiche précédente, à ignorer). Fiche à
+# 2 textures : la couleur visible est la dernière qui n'est pas envmap.tex (reflet des vitres). Fiche à 0 texture (« Material #… ») : couleur unie.
 _MATS = {}
 
 
 def materials(d):
-    """{m: (nom du matériau, entrée .tex de sa 1re texture ou None)}"""
+    """{m: (nom de la fiche, [noms des .tex utilisés])}"""
     if id(d) in _MATS:
         return _MATS[id(d)]
     pvs = next(b for t, n, b in entries(d) if t == 1)
-    i = pvs.find(bytes.fromhex("0000411cdcdd0000")) - 0x40
-    tex = {n[1:]: n for t, n, _ in entries(d) if t == 4}
-    out, m = {}, MAT_FIRST
-    while i + 0x160 <= len(pvs) and 32 <= pvs[i] < 127:      # (certaines fiches n'ont pas la signature)
-        name = pvs[i:i + 0x40].split(b"\0")[0].decode("latin1")
-        t = pvs[i + 0x61:i + 0x80].split(b"\0")[0].decode("latin1")
-        out[m] = (name, tex.get(t))
-        i += 0x160
-        m += 1
+    base = pvs.find(bytes.fromhex("0000411cdcdd0000")) - 0x40 - 0x160      # fiche sans nom = fiche 0
+    out = {}
+    k = 0
+    while base + (k + 1) * 0x160 <= len(pvs) and k < 0x400:
+        o = base + k * 0x160
+        if k and not 32 <= pvs[o] < 127:
+            break
+        name = pvs[o:o + 0x40].split(b"\0")[0].decode("latin1")
+        used = [pvs[o + 0x60 + s * 0x40:o + 0x80 + s * 0x40].split(b"\0")[0].decode("latin1")
+                for s in range(4) if pvs[o + 0x60 + s * 0x40]]
+        out[k + 1] = (name, used)
+        k += 1
     _MATS[id(d)] = out
     return out
 
 
+def material_name(d, m):
+    """entrée .tex de la texture visible du matériau m (None : pas de texture ou inconnu)"""
+    used = [u for u in materials(d).get(m, (None, []))[1] if u.lower() != "envmap.tex"]   # envmap = reflet
+    if not used:
+        return None
+    want = used[-1].lower()
+    for typ, n, _ in entries(d):                     # noms d'entrées en minuscules, coupés à 27 caractères
+        if typ == 4 and (n.lower() == want or (len(n) >= 26 and want.startswith(n.lower()))):
+            return n
+    return None
+
+
+def material_color(d, m):
+    """couleur unie (r, g, b) de la fiche du matériau m (en-tête +0x0B..+0x0D : ff RR GG BB), pour les fiches
+    sans texture"""
+    pvs = next(b for t, n, b in entries(d) if t == 1)
+    base = pvs.find(bytes.fromhex("0000411cdcdd0000")) - 0x40 - 0x160
+    o = base + (m - 1) * 0x160 + 0x40
+    return tuple(pvs[o + 0x0B:o + 0x0E])
+
+
 def texture_table(d):
-    """table des textures du .pvs : noms complets de 36 o (une par texture du lieu, 255 pour location11) ;
-    un matériau m < MAT_FIRST = directement la texture n° m (murs de tunnel A/B/C = 0x7D..0x7F, tous verticaux)"""
+    """table des noms de textures du .pvs (noms complets de 36 o, 255 pour location11 ; ordre de 1re utilisation,
+    PAS un index de matériau)"""
     import re
     pvs = next(b for t, n, b in entries(d) if t == 1)
-    pos = [m.start() for m in re.finditer(rb"\.tex\0", pvs)]
     names = {}
-    for p in pos:
-        q = pvs.rfind(b"\0", 0, p) + 1
-        names[q] = pvs[q:p + 4].decode("latin1")
-    starts = sorted(names)
-    run = max((sum(1 for k in range(400) if a + 36 * k in names), a) for a in starts)[1]
+    for m in re.finditer(rb"\.tex\x00", pvs):
+        q = pvs.rfind(bytes(1), 0, m.start()) + 1
+        names[q] = pvs[q:m.start() + 4].decode("latin1")
+    run = max((sum(1 for k in range(400) if a + 36 * k in names), a) for a in names)[1]
     out = []
     while run in names:
         out.append(names[run])
         run += 36
     return out
-
-
-def material_name(d, m):
-    """entrée .tex de la 1re texture du matériau m (None si inconnu)"""
-    if m >= MAT_FIRST:
-        return materials(d).get(m, (None, None))[1]
-    t = texture_table(d)
-    if m >= len(t):
-        return None
-    want = t[m].lower()
-    for typ, n, _ in entries(d):                     # noms d'entrées en minuscules, coupés à 27 caractères
-        if typ == 4 and (n.lower() == want or (len(n) >= 26 and want.startswith(n.lower()))):
-            return n
-    return None
 
 
 def texture_dxt1(d, name):
