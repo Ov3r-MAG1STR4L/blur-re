@@ -50,8 +50,53 @@ def _sections(d):
     return out
 
 
+def _dxt1_alpha(px, w, h):
+    """RGBA w x h (multiples de 4) -> DXT1 ; bloc avec un pixel transparent (alpha < 128) : mode 3 couleurs
+    (c0 <= c1), index 3 = transparent ; sinon 4 couleurs. Extrémités = boîte des couleurs opaques du bloc."""
+    import numpy as np
+    a = np.frombuffer(px, np.uint8).reshape(h // 4, 4, w // 4, 4, 4).transpose(0, 2, 1, 3, 4).reshape(-1, 16, 4)
+    rgb, op = a[:, :, :3].astype(np.int32), a[:, :, 3] >= 128
+    big = np.where(op[:, :, None], rgb, -1).max(1)
+    small = np.where(op[:, :, None], rgb, 999).min(1)
+    big, small = np.maximum(big, 0), np.minimum(small, 255)
+    c565 = lambda c: (c[:, 0] >> 3 << 11) | (c[:, 1] >> 2 << 5) | (c[:, 2] >> 3)
+    hi, lo = c565(big), c565(small)
+    alpha = ~op.all(1)
+    c0, c1 = np.where(alpha, np.minimum(hi, lo), np.maximum(hi, lo)), np.where(alpha, np.maximum(hi, lo), np.minimum(hi, lo))
+    four = ~alpha & (c0 == c1)                                   # couleur unie : c0 > c1 impossible, index 0 partout
+    exp = lambda c: np.stack([(c >> 11 & 31) * 255 // 31, (c >> 5 & 63) * 255 // 63, (c & 31) * 255 // 31], 1)
+    e0, e1 = exp(c0), exp(c1)
+    pal = np.where(alpha[:, None, None], np.stack([e0, e1, (e0 + e1) // 2, e0], 1),
+                   np.stack([e0, e1, (2 * e0 + e1) // 3, (e0 + 2 * e1) // 3], 1))
+    idx = ((rgb[:, :, None, :] - pal[:, None, :, :]) ** 2).sum(3)
+    idx[:, :, 3] = np.where(alpha[:, None], 1 << 30, idx[:, :, 3])
+    k = idx.argmin(2)
+    k = np.where(alpha[:, None] & ~op, 3, k)
+    k = np.where(four[:, None], 0, k)
+    bits = (k.astype(np.uint32) << (2 * np.arange(16, dtype=np.uint32))).sum(1).astype(np.uint32)
+    out = np.zeros(len(a), dtype=[("c0", "<u2"), ("c1", "<u2"), ("i", "<u4")])
+    out["c0"], out["c1"], out["i"] = c0, c1, bits
+    return out.tobytes()
+
+
+def _mips_alpha(px, w, h, mips):
+    """comme cpmodel.encode_mips, mais RGBA (transparence 1 bit gardée à chaque niveau)"""
+    import numpy as np
+    img = np.frombuffer(px, np.uint8).reshape(h, w, 4).astype(np.float32)
+    out = bytearray()
+    for i in range(mips):
+        if i:
+            hh, ww = max(1, img.shape[0] // 2), max(1, img.shape[1] // 2)
+            img = img[:hh * 2, :ww * 2].reshape(hh, 2, ww, 2, 4).mean((1, 3)) if img.shape[0] > 1 and img.shape[1] > 1                 else img[::2 if img.shape[0] > 1 else 1, ::2 if img.shape[1] > 1 else 1]
+        bh, bw = max(4, -(-img.shape[0] // 4) * 4), max(4, -(-img.shape[1] // 4) * 4)
+        pad = np.pad(img, ((0, bh - img.shape[0]), (0, bw - img.shape[1]), (0, 0)), mode="edge")
+        out += _dxt1_alpha(np.round(pad).astype(np.uint8).tobytes(), bw, bh)
+    return bytes(out)
+
+
 def build(template, verts, indices, rgb, w, h, glow=160, salt=None, pad_verts=None, pad_indices=None):
-    """verts = [(x, y, z, nx, ny, nz, u, v)], indices = triangles (u16), rgb = octets RGB w x h -> .model
+    """verts = [(x, y, z, nx, ny, nz, u, v)], indices = triangles (u16), rgb = octets RGB (ou RGBA : transparence
+    1 bit du DXT1) w x h -> .model
     salt : nouveaux identifiants de texture (le jeu garde une texture par identifiant ; Map Builder fait pareil) ;
     pad_verts / pad_indices : taille fixe (sommets répétés, triangles vides) - tous les modèles Map Builder issus
     d'un même gabarit ont la même taille ; les nôtres de tailles différentes plantent au chargement (0x6DB2EB)"""
@@ -73,7 +118,11 @@ def build(template, verts, indices, rgb, w, h, glow=160, salt=None, pad_verts=No
     assert d[j:j + 4] == b"DXT1"
     old_len = struct.unpack_from("<I", d, j - 20)[0]
     mips = int(math.log2(max(w, h))) + 1         # jusqu'au grand côté (gabarit 32x128 : 8 niveaux)
-    tex = cpmodel.encode_mips(rgb, w, h, mips)
+    if len(rgb) == w * h * 4 and min(rgb[3::4]) < 128:         # transparence : notre encodeur 1 bit
+        tex = _mips_alpha(rgb, w, h, mips)
+    else:                                                      # opaque : encodeur de Map Builder, comme avant
+        tex = cpmodel.encode_mips(bytes(rgb[i] for i in range(len(rgb)) if i % 4 != 3) if len(rgb) == w * h * 4
+                                  else rgb, w, h, mips)
     rep.append((j - 20, j - 8, struct.pack("<3I", 0x1C + len(tex), w, h)))
     rep.append((j - 4, j, struct.pack("<I", mips)))
     rep.append((toff, j - 16 + old_len, tex))

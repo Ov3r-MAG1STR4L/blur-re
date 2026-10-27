@@ -1102,6 +1102,14 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   dans les `level.levelrender`, `Road_LN_*`, `RoadTwoSpec*`, `SpeedTree*`, `Foliage*`, `Puddle_LN_NV`, `Racification*`)
   n'apparaissent que dans `levels/*/level.levelrender`. Suffixes probables (non vérifié) : N = « sans » (NB bump,
   NL, NM, NV couleurs de sommets ?), LN = variante de niveau.
+- **Transparence et collision des plantes (2026-10-27, hors jeu ; à vérifier en jeu)** : le noir en jeu venait de
+  l'atlas converti en RGB (alpha jeté) puis encodé en DXT1 opaque. Désormais l'atlas reste RGBA et
+  `blurmodel_write._dxt1_alpha` encode le DXT1 en mode 1 bit (bloc avec transparent : c0 <= c1, index 3 = transparent),
+  comme les plantes et grillages de Blur (`dynamictreebranch.model` : DXT1 seul). Textures opaques : encodeur Map
+  Builder inchangé. Inconnue : notre shader (`default_NB_NL_NV`) fait-il le test d'alpha ? Les plantes de Blur utilisent
+  surtout `default_NB_NL_NM_NV`. Collision (`make_nfs_map.see_through`) : matériaux à texture transparente à 50 % ou
+  plus exclus (touffes, palmiers, haies, barbelés), sauf grillages / barrières / bornes / pylônes / glissières ;
+  Location45 : 453 862 -> 411 561 triangles.
 - **Las Vegas (2026-10-27, 3 captures FIFO)** : la variante jouée est `Location42.stm` (856 dessins reconnus
   contre 21 à 548 pour les autres variantes). Règle « matériau m = fiche m − 1 » : 43/53, 56/73 et 31/38 matériaux
   identiques au jeu (environ 80 %), donc **elle vaut aussi hors de Dubaï**. Écarts : variantes de panneaux (gauche /

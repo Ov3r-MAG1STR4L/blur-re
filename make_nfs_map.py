@@ -124,7 +124,7 @@ def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None
         from PIL import Image
         img = Image.new("RGB", (64, 64), tuple(int(texture[8 + 2 * i:10 + 2 * i], 16) for i in range(3)))
     else:
-        img = stm2obj.texture_image(d, texture).convert("RGB")
+        img = stm2obj.texture_image(d, texture).convert("RGBA")
     if square:
         img = img.resize((square, square))
     data = blurmodel_write.build(open(TEMPLATE, "rb").read(), verts, idx, img.tobytes(), *img.size, glow=glow,
@@ -198,6 +198,26 @@ def road_models(files, world_json, radius=40.0, glow=110, pad=None):
     print("pas de place pour :", [(stm2obj.material_name(d, m), len(t)) for m, t in jobs[len(slots):]])
 
 
+_SEE = {}
+
+
+def see_through(d, m, share=0.5):
+    """matériau dont la texture est transparente à `share` ou plus : buissons, palmiers, haies, barbelés -> sans
+    collision (Location45 : touffes vegasdesert_2 51 %, palmiers 65-75 % ; glissières street_guard 23-45 % gardées).
+    Grillages, barrières, bornes et pylônes (même très transparents) gardent leur collision."""
+    import numpy as np
+    import stm2obj
+    tex = stm2obj.material_name(d, m)
+    if tex not in _SEE:
+        try:
+            a = np.array(stm2obj.texture_image(d, tex).convert("RGBA"))[:, :, 3]
+            _SEE[tex] = float((a < 128).mean())
+        except Exception:  # noqa: BLE001 - couleur unie ou texture illisible : opaque
+            _SEE[tex] = 0.0
+    solid = any(k in (tex or "").lower() for k in ("fence", "barrier", "bollard", "pylon", "guard"))
+    return _SEE[tex] >= share and not solid
+
+
 def road_collision(src, out, world_json, radius=80.0, road_only=False):
     """sol de collision = triangles des maillages ROAD de HP à moins de `radius` m de la ligne centrale, hauteur
     HP + (1 - HP_GROUND), en objets de type route (<= 255 triangles / 256 sommets) insérés en tête du flux Main
@@ -214,7 +234,9 @@ def road_collision(src, out, world_json, radius=80.0, road_only=False):
         if t != 6 or (road_only and not n.lower().startswith("road")):
             continue                      # tout le LOD0 : route, trottoirs, terrains, glissières, murs, immeubles
         try:
-            pos, _, faces = stm2obj.mesh(b)
+            pos = stm2obj.mesh(b)[0]
+            faces = [f for m in {s[0] for s in stm2obj.submeshes(b)} if not see_through(d, m)
+                     for f in stm2obj.mesh(b, m)[2]]
         except (struct.error, ValueError, IndexError):
             continue
         P = np.array(pos) + (0, 1.0 - HP_GROUND, 0)
