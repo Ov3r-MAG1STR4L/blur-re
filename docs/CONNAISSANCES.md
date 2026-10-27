@@ -1037,3 +1037,8 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   matériau → texture reste à trouver (paramètres des emplacements, en-tête de fiche : champ 2 à +0x54 ?).
   Vu au passage dans le `.pvs` : sections `main_1`, `shortcut_1a`, `shortcut_1b` (vers 0x3889C) = sans doute
   les tracés de course HP, et `sfx_reverb_*`.
+- **Ça rame (2026-10-27, retour de l'utilisateur)** : nos modèles sont tous posés à l'origine avec une boîte
+  englobante de toute la ville et une distance d'affichage de 5 000 m : le moteur ne peut rien écarter. À faire :
+  découper le décor **par zone** (et non seulement par texture), poser chaque acteur au centre de sa zone (boîte
+  serrée), baisser `DrawDistance`, et utiliser les niveaux de détail HP (`.1f2` / `.1f3`) pour le lointain.
+  Blur fait déjà l'élimination de ce qui n'est pas vu, à condition que les boîtes soient petites.

@@ -301,3 +301,4 @@ type 5 (3 valeurs) ou 9 (2 valeurs), ou aucune (drapeaux 0x40). LA River 3 : `Ju
 | 2026-10-26 | Projet J : route 1 de Dubaï (Hot Pursuit) → Map Builder (dossier séparé) → fusion par-dessus nos mods (`make_nfs_map.py`), installée dans Blur_test, à tester en jeu |
 | 2026-10-27 | Projet J : textures HP décodées (CMPR, C8), matériaux des maillages, générateur de `.model` de taille libre (`blurmodel_write.py`) ; 1er immeuble HP installé dans Dubai Loop, à tester |
 | 2026-10-27 | Projet J : **route de Dubaï (Hot Pursuit Wii) visible et roulable dans Blur** (collision HP, 11 modèles générés de même taille, identifiants uniques ; crash 0x6DB2EB résolu) |
+| 2026-10-27 | Projet J : décor HP de Dubaï chargé en jeu (122 modèles) ; restent la liaison des textures du décor et les performances (découpage par zone, distance d'affichage, LOD) - en pause |
