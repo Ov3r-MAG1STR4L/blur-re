@@ -29,7 +29,7 @@ CELL = 128             # px par case (atlas 1024 x 1024)
 VERTS = 52000          # sommets max par modèle (x 1,25 de marge <= 65 535 : index u16)
 RADIUS = 300.0         # décor gardé jusqu'à cette distance du tracé
 INSET = 0.01           # marge dans chaque case (débordement des mips)
-MAX_MODELS = 12 + 110  # emplacements fixes + décor
+MAX_MODELS = 130       # au plus (la liste de 144 acteurs décide, voir road_layout)
 GLOW = 110            # lumière propre des modèles (le niveau Map Builder ne les éclaire pas)
 GRID_GAP = 25.0        # 1re rangée de la grille de départ à 25 m derrière la ligne (8 avant)
 
@@ -146,28 +146,41 @@ def rebuild(auto_pickups=True, log=print):
         M.set_track(M.WORLD)
     shutil.copyfile(M.WORLD, os.path.join(M.BMB, "Blur Map Builder", "maps", "world.json"))
     J = jobs(M.WORLD)
-    decor = J[12:]
     spots = os.path.join(M.OUT, "..", "nfs_spots.json")
-    json.dump([centre(t) for _, _, t in decor], open(spots, "w"))
-    env = dict(os.environ, BMB_GAME=M.BMB, BMB_INSTALLED="1", NFS_COUNT=str(len(decor)),
+    json.dump([centre(t) for _, _, t in J], open(spots, "w"))
+    env = dict(os.environ, BMB_GAME=M.BMB, BMB_INSTALLED="1", NFS_COUNT=str(len(J)),
                NFS_SPOTS=os.path.abspath(spots), NFS_DRAW=str(M.DECOR_DRAW), NFS_NO_WALLS="1", NFS_FLOOR_Y="-5",
                NFS_GRID_GAP=str(GRID_GAP))
-    subprocess.run([sys.executable, "build.py"], cwd=os.path.join(M.BMB, "map_builder", "flat_earth"), env=env,
-                   check=True, stdout=subprocess.DEVNULL)
+    r = subprocess.run([sys.executable, "build.py"], cwd=os.path.join(M.BMB, "map_builder", "flat_earth"), env=env,
+                       capture_output=True, text=True)
+    for line in r.stdout.splitlines():
+        if line.startswith("NFS"):
+            print(line)
+    if r.returncode:
+        raise RuntimeError("Map Builder a échoué : " + (r.stderr or r.stdout)[-2000:])
     M.main()
     M.road_collision(os.path.join(M.BMB, "levels", "flat_earth", "level.levelphysics"),
                      os.path.join(M.OUT, "levels", "flat_earth", "level.levelphysics"), M.WORLD)
     ap = os.path.join(M.OUT, "gamedata", "levels", "flat_earth", "actorpack.xt")
     flat = os.path.join(M.OUT, "models", "objects", "flat_earth")
-    slots = [(u, "road_21_%02d.model" % k) for k, u in enumerate(M.road_slots(ap))] + [(0xF1E20005, "arch_lap.model")]
-    assert len(slots) == 12, len(slots)
-    slots += [(M.NFS_UID + 2 * k + 1, "nfs_%03d.model" % k) for k in range(len(decor))]
     pad = (int(VERTS * 1.25), 6 * max(len(t) for _, _, t in J))   # marge : arrondis différents du comptage ; 6 index / triangle (faces doublées)
-    for k, ((slot, fname), (_, texs, tris)) in enumerate(zip(slots, J)):
+    # la route et l'arche de Map Builder (leur nombre dépend du découpage de sa route) : cachées, même taille
+    hidden = [(u, "road_21_%02d.model" % k) for k, u in enumerate(M.road_slots(ap))] + [(0xF1E20005, "arch_lap.model")]
+    tiny = [([(0, -60, 0), (0.01, -60, 0), (0, -60, 0.01)], [(0, 0), (0, 0), (0, 0)])]
+    for k, (slot, fname) in enumerate(hidden):
+        M.write_model(tiny, "couleur:000000", M.slot_matrix(ap, slot), os.path.join(flat, fname), 0,
+                      salt=0x4E465400 + k, pad=pad, image=atlas([]))
+    written = 0
+    for k, (_, texs, tris) in enumerate(J):
+        try:
+            mx = M.slot_matrix(ap, M.NFS_UID + 2 * k + 1)
+        except AssertionError:                         # pas d'acteur : liste pleine (zone la plus lointaine)
+            continue
         # write_model attend des uv « stm » (u, 1 - v) et écrit (u, v) : on lui donne (u, 1 - v atlas)
-        M.write_model([(ps, [(u, 1 - v) for u, v in us]) for ps, us in tris], "atlas", M.slot_matrix(ap, slot),
-                      os.path.join(flat, fname), GLOW, salt=0x4E465500 + k, pad=pad, image=atlas(texs))
-    print(len(J), "modèles atlas écrits")
+        M.write_model([(ps, [(u, 1 - v) for u, v in us]) for ps, us in tris], "atlas", mx,
+                      os.path.join(flat, "nfs_%03d.model" % k), GLOW, salt=0x4E465500 + k, pad=pad, image=atlas(texs))
+        written += 1
+    print(written, "modèles de décor sur", len(J), "; route Map Builder cachée :", len(hidden), "emplacements")
 
 
 if __name__ == "__main__":
