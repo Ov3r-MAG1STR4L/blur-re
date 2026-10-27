@@ -108,7 +108,7 @@ def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None
             n, P, us = -n, [P[0], P[2], P[1]], [us[0], us[2], us[1]]
         ids = []
         for p, (u, v) in zip(P, us):
-            key = (tuple(np.round(p, 3)), u, v) if up else None    # route : sommets partagés
+            key = (tuple(np.round(p, 3)), u, v)                    # sommets partagés
             if key is None or key not in seen:
                 if key is not None:
                     seen[key] = len(verts)
@@ -141,7 +141,7 @@ MAX_VERTS = 3000   # 1 500 avant le correctif « même taille » ; 3 000 à conf
 ROAD_FIRST = ("road_plaintarmac", "road_whitedotrwhitelinel", "road_junction_arrows")   # priorité si place manque
 
 
-def road_models(files, world_json, radius=40.0, glow=110):
+def road_models(files, world_json, radius=40.0, glow=110, pad=None):
     """route visible : les 11 matériaux HP les plus présents le long du tracé, un par emplacement de route Map
     Builder (son modèle road_21_KK.model est remplacé : sa route lumineuse disparaît)"""
     import collections
@@ -188,7 +188,7 @@ def road_models(files, world_json, radius=40.0, glow=110):
     for k, ((slot, fname), (m, tris)) in enumerate(zip(slots, jobs)):
         write_model(tris, stm2obj.material_name(d, m), slot_matrix(ap, slot),
                     os.path.join(files, "models", "objects", "flat_earth", fname), glow,
-                    up=True, square=256, salt=0x4E465300 + k, pad=(MAX_VERTS, pad_idx))
+                    up=True, square=256, salt=0x4E465300 + k, pad=pad or (MAX_VERTS, pad_idx))
     print("pas de place pour :", [(stm2obj.material_name(d, m), len(t)) for m, t in jobs[len(slots):]])
 
 
@@ -246,11 +246,81 @@ WORLD = r"C:\Users\sanqu\Jeux_WII\nfs_extracted\stm_work\world.json"
 
 
 def rebuild_all():
-    """après un build Map Builder : fichiers en clair + collision HP + route HP (12 modèles de même taille)"""
+    """tout refaire : décor choisi -> build Map Builder (NFS_COUNT) -> fichiers en clair -> collision HP ->
+    route HP (12 modèles) + décor HP, tous les modèles à la même taille"""
+    import subprocess
+    jobs = decor_jobs(WORLD)
+    mb = os.path.join(BMB, "map_builder", "flat_earth")
+    env = dict(os.environ, BMB_GAME=BMB, BMB_INSTALLED="1", NFS_COUNT=str(len(jobs)))
+    subprocess.run([sys.executable, "build.py"], cwd=mb, env=env, check=True, stdout=subprocess.DEVNULL)
     main()
     road_collision(os.path.join(BMB, "levels", "flat_earth", "level.levelphysics"),
                    os.path.join(OUT, "levels", "flat_earth", "level.levelphysics"), WORLD)
-    road_models(OUT, WORLD)       # 11 morceaux de route + l'emplacement de l'arche
+    pad = (DECOR_VERTS, 6 * max(len(t) for _, t in jobs))        # faces doublées : 6 index par triangle
+    road_models(OUT, WORLD, pad=pad)    # 11 morceaux de route + l'emplacement de l'arche
+    decor_models(OUT, jobs, pad)
+
+
+NFS_UID = 0xF1E40000          # modèles de décor ajoutés à Map Builder (build.py : NFS_COUNT, défs NFS_UID + 2k + 1)
+DECOR_VERTS = 10000           # à confirmer en jeu (3 000 OK)
+DECOR_MAX = 110               # place dans la liste de 144 acteurs (route, feux, arche… prennent le reste)
+
+
+def decor_jobs(world_json, radius=300.0, road_radius=40.0, max_verts=DECOR_VERTS, limit=DECOR_MAX):
+    """décor HP (tous les maillages LOD0 sauf la route du tracé) : [(texture, triangles)] par matériau, en morceaux
+    <= max_verts sommets partagés, les plus proches du tracé d'abord, au plus `limit` morceaux"""
+    import collections
+    import json
+    import numpy as np
+    from scipy.spatial import cKDTree
+    import stm2obj
+    pts = np.array([(p["x"], p["z"]) for p in json.load(open(world_json))["locations"][0]["maps"][0]["points"]])
+    dense = np.concatenate([np.linspace(a, b, 20, endpoint=False) for a, b in zip(pts, np.roll(pts, -1, 0))])
+    tree = cKDTree(dense)
+    d = open(STM, "rb").read()
+    by_tex = collections.defaultdict(list)
+    for t, n, b in stm2obj.entries(d):
+        if t != 6:
+            continue
+        try:
+            pos, uvs, _ = stm2obj.mesh(b)
+            dist = tree.query(np.array(pos)[:, [0, 2]])[0] if pos else None
+            for m in {s[0] for s in stm2obj.submeshes(b)}:
+                tex = stm2obj.material_name(d, m)
+                if not tex:
+                    continue
+                for f in stm2obj.mesh(b, m)[2]:
+                    dm = float(dist[[a for a, _ in f]].min())
+                    if dm > radius or (n.startswith("ROAD") and dm < road_radius):
+                        continue
+                    by_tex[tex].append((dm, [pos[a] for a, _ in f], [uvs[c] for _, c in f]))
+        except (struct.error, ValueError, IndexError):
+            continue
+    jobs = []
+    for tex, tris in by_tex.items():
+        tris.sort(key=lambda x: x[0])
+        cur, keys = [], set()
+        for dm, ps, us in tris:
+            k = {(tuple(np.round(p, 3)), tuple(u)) for p, u in zip(ps, us)}
+            if len(keys | k) > max_verts:
+                jobs.append((cur[0][0], tex, [(p, u) for _, p, u in cur]))
+                cur, keys = [], set()
+            cur.append((dm, ps, us))
+            keys |= k
+        if cur:
+            jobs.append((cur[0][0], tex, [(p, u) for _, p, u in cur]))
+    jobs.sort(key=lambda j: j[0])
+    print(len(jobs), "morceaux de décor possibles,", min(limit, len(jobs)), "gardés")
+    return [(tex, tris) for _, tex, tris in jobs[:limit]]
+
+
+def decor_models(files, jobs, pad, glow=110):
+    ap = os.path.join(files, "gamedata", "levels", "flat_earth", "actorpack.xt")
+    flat = os.path.join(files, "models", "objects", "flat_earth")
+    for k, (tex, tris) in enumerate(jobs):
+        write_model(tris, tex, slot_matrix(ap, NFS_UID + 2 * k + 1), os.path.join(flat, "nfs_%03d.model" % k), glow,
+                    square=256, salt=0x4E465400 + k, pad=pad)
+
 
 
 if __name__ == "__main__":
