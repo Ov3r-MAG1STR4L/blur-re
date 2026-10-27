@@ -114,9 +114,37 @@ def materials(d):
     return out
 
 
+def texture_table(d):
+    """table des textures du .pvs : noms complets de 36 o (une par texture du lieu, 255 pour location11) ;
+    un matériau m < MAT_FIRST = directement la texture n° m (murs de tunnel A/B/C = 0x7D..0x7F, tous verticaux)"""
+    import re
+    pvs = next(b for t, n, b in entries(d) if t == 1)
+    pos = [m.start() for m in re.finditer(rb"\.tex\0", pvs)]
+    names = {}
+    for p in pos:
+        q = pvs.rfind(b"\0", 0, p) + 1
+        names[q] = pvs[q:p + 4].decode("latin1")
+    starts = sorted(names)
+    run = max((sum(1 for k in range(400) if a + 36 * k in names), a) for a in starts)[1]
+    out = []
+    while run in names:
+        out.append(names[run])
+        run += 36
+    return out
+
+
 def material_name(d, m):
     """entrée .tex de la 1re texture du matériau m (None si inconnu)"""
-    return materials(d).get(m, (None, None))[1]
+    if m >= MAT_FIRST:
+        return materials(d).get(m, (None, None))[1]
+    t = texture_table(d)
+    if m >= len(t):
+        return None
+    want = t[m].lower()
+    for typ, n, _ in entries(d):                     # noms d'entrées en minuscules, coupés à 27 caractères
+        if typ == 4 and (n.lower() == want or (len(n) >= 26 and want.startswith(n.lower()))):
+            return n
+    return None
 
 
 def texture_dxt1(d, name):
