@@ -1088,3 +1088,10 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   table des matériaux non vérifiée (FIFO à faire par ville) ; (4) dévers : la collision HP le donne déjà à la
   voiture, mais le `.aid` de Map Builder reste à plat (inclinaison du couloir IA à écrire depuis la pente HP) ;
   (5) ciel HP non branché. Une seule carte installée à la fois (dossier flat_earth).
+- **Las Vegas (2026-10-27, 3 captures FIFO)** : la variante jouée est `Location42.stm` (856 dessins reconnus
+  contre 21 à 548 pour les autres variantes). Règle « matériau m = fiche m − 1 » : 43/53, 56/73 et 31/38 matériaux
+  identiques au jeu (environ 80 %), donc **elle vaut aussi hors de Dubaï**. Écarts : variantes de panneaux (gauche /
+  droite, noms de lieux), lignes de route en plusieurs couches, `traffic_taxi_vegas` (voitures du trafic dessinées
+  avec des listes qui commencent pareil), `terr_dirt_cliff2` / `terr_dirt1`, palmier `tree_veg1_twall01` /
+  `prop_palmsm`. Prochaine étape : choisir la texture visible d'une fiche à 2 textures selon le jeu (tables d'écarts
+  `stm_work/diag/lv*_42.csv`).
