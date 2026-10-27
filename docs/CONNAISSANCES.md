@@ -1025,3 +1025,15 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   passe pour ne pas sauter sur une route voisine), guidé par le dessin de l'utilisateur sur le plan des routes
   (trait vert extrait de l'image, 89 % sur une route sans recalage) ; 432 points, 4,35 km. Départ au portique HP
   (`Objt_Gen1_StartLineFlag`, −571 ; −282) via `start_m`. Sens de course HP pas encore confirmé.
+- **Décor HP en jeu (2026-10-27, Confirmé en jeu)** : 110 modèles de décor + 12 de route, **10 000 sommets
+  chacun : chargement OK** (le plafond de taille n'existait pas : seule comptait l'unicité des identifiants +
+  même taille). Map Builder (copie `bmb_game`) patché : `build.py` lit `NFS_COUNT` et ajoute des entrées
+  `tower_nfsKKK` (GameModel `F1E40000 + 2k`, DynamicObjDef `+ 1`), `road_layout.py` pose un acteur par entrée à
+  l'origine. `make_nfs_map.rebuild_all` refait tout.
+- **Textures du décor : encore fausses (2026-10-27)**. Table des textures du `.pvs` : 255 noms complets de 36 o.
+  Matériaux < 0x9D : hypothèse « index direct dans cette table » non prouvée (test d'orientation sans signal net).
+  Matériaux ≥ 0x9D : beaucoup de fiches « Material #… » portent dans leurs emplacements le nom de texture de la
+  fiche précédente (reste d'export : des immeubles se retrouvent avec des panneaux de virage). Le vrai lien
+  matériau → texture reste à trouver (paramètres des emplacements, en-tête de fiche : champ 2 à +0x54 ?).
+  Vu au passage dans le `.pvs` : sections `main_1`, `shortcut_1a`, `shortcut_1b` (vers 0x3889C) = sans doute
+  les tracés de course HP, et `sfx_reverb_*`.
