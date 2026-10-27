@@ -2,7 +2,7 @@
 
 python d2_materiaux.py LIEU.stm DOSSIER_SORTIE
 - materiaux.csv : un matériau par ligne : id, nb de sous-maillages / triangles / maillages, part de faces plates et
-  verticales, étendue des UV, texture attribuée aujourd'hui (stm2obj.material_name), et, pour les id >= MAT_FIRST,
+  verticales, étendue des UV, texture attribuée aujourd'hui (stm2obj.material_name), et (fiche n° m - 1),
   l'offset de la fiche dans le .pvs, son nom, les 8 u32 de l'en-tête (+0x40) et, par emplacement, le nom lu et
   les 8 u32 de paramètres.
 - sousmaillages.csv : chaque sous-maillage (maillage, offset de l'entrée de nœud, id, offset de la liste GX, n).
@@ -39,7 +39,7 @@ def main(stm, out):
     d = open(stm, "rb").read()
     pvs = next(b for t, n, b in stm2obj.entries(d) if t == 1)
     pvs_at = d.find(pvs[:256])
-    first = pvs.find(bytes.fromhex("0000411cdcdd0000")) - 0x40
+    first = pvs.find(bytes.fromhex("0000411cdcdd0000")) - 0x40 - 0x160     # fiche 0 (sans nom)
     stats = collections.defaultdict(lambda: dict(sous=0, tris=0, maillages=set(), plat=0, vert=0, umin=9e9, umax=-9e9,
                                                  vmin=9e9, vmax=-9e9))
     subrows = []
@@ -80,8 +80,8 @@ def main(stm, out):
                  vertical="%.2f" % (s["vert"] / max(1, s["tris"])),
                  u="%.2f..%.2f" % (s["umin"], s["umax"]), v="%.2f..%.2f" % (s["vmin"], s["vmax"]),
                  texture_attribuee=stm2obj.material_name(d, m) or "")
-        if m >= stm2obj.MAT_FIRST:
-            o = first + (m - stm2obj.MAT_FIRST) * 0x160
+        if m >= 1:
+            o = first + (m - 1) * 0x160                                       # matériau m = fiche m - 1
             r["fiche_offset_pvs"] = hex(o)
             r["fiche_offset_fichier"] = hex(pvs_at + o)
             r["fiche_nom"] = pvs[o:o + 0x40].split(b"\0")[0].decode("latin1", "replace")
