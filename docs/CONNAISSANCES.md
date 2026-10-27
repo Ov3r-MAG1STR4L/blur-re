@@ -1042,3 +1042,14 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   découper le décor **par zone** (et non seulement par texture), poser chaque acteur au centre de sa zone (boîte
   serrée), baisser `DrawDistance`, et utiliser les niveaux de détail HP (`.1f2` / `.1f3`) pour le lointain.
   Blur fait déjà l'élimination de ce qui n'est pas vu, à condition que les boîtes soient petites.
+- **Reprise : textures du décor (méthode demandée par l'utilisateur, 2026-10-27)**. Ne pas toucher à l'attribution
+  actuelle tant que la correspondance n'est pas démontrée ; scripts de diagnostic séparés :
+  1. planche de contact de toutes les textures extraites (identifiant réel, nom, dimensions, format), décodage vérifié ;
+  2. audit CSV des 122 modèles : sous-maillages, matériaux, champs numériques des fiches (avec offsets binaires),
+     textures utilisées aujourd'hui ;
+  3. test visuel automatisé : un immeuble reconnaissable, une route connue, un panneau ; mêmes géométrie et UV,
+     textures candidates, planche de comparaison ;
+  4. analyse binaire : fiches à texture connue contre fiches fausses ; aucun champ n'est un index sans preuve ;
+  5. diagnostic séparé des 4 causes : référence de texture, UV, décodage, paramètres du matériau / shader ;
+  6. validation sur plusieurs matériaux et modèles, preuves et incertitudes notées ; corriger seulement ensuite.
+  Puis les performances (découpage par zone, boîtes serrées, distance d'affichage, niveaux de détail HP).
