@@ -88,7 +88,7 @@ def hp_model(mesh_name, mat, matrix, out_path, glow=160):
     write_model(tris, stm2obj.material_name(d, mat), matrix, out_path, glow)
 
 
-def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None, salt=None, pad=None):
+def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None, salt=None, pad=None, image=None):
     """triangles HP [(3 positions, 3 uv)] + texture HP -> .model Blur, en coordonnées locales de l'emplacement
     (monde = x*ax + y*ay + z*az + aw). Face avant = cross(b - a, c - a) du côté de la normale (vérifié sur le
     gabarit, 36/36). up=True : faces simples tournées vers le haut (route) ; sinon faces doublées (murs).
@@ -118,7 +118,9 @@ def write_model(tris, texture, matrix, out_path, glow=160, up=False, square=None
                 ids.append(seen[key])
         idx += ids if up else ids + ids[::-1]
     d = open(STM, "rb").read()
-    if texture.startswith("couleur:"):                       # matériau sans texture : couleur unie de sa fiche
+    if image is not None:                                    # atlas déjà prêt (nfs_atlas.py)
+        img = image
+    elif texture.startswith("couleur:"):                     # matériau sans texture : couleur unie de sa fiche
         from PIL import Image
         img = Image.new("RGB", (64, 64), tuple(int(texture[8 + 2 * i:10 + 2 * i], 16) for i in range(3)))
     else:
