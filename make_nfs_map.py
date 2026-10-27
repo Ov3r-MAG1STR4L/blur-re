@@ -196,7 +196,7 @@ def road_models(files, world_json, radius=40.0, glow=110, pad=None):
     print("pas de place pour :", [(stm2obj.material_name(d, m), len(t)) for m, t in jobs[len(slots):]])
 
 
-def road_collision(src, out, world_json, radius=40.0):
+def road_collision(src, out, world_json, radius=80.0, road_only=False):
     """sol de collision = triangles des maillages ROAD de HP à moins de `radius` m de la ligne centrale, hauteur
     HP + (1 - HP_GROUND), en objets de type route (<= 255 triangles / 256 sommets) insérés en tête du flux Main
     (addramp) ; le sol plat de Map Builder reste dessous (secours)"""
@@ -209,8 +209,8 @@ def road_collision(src, out, world_json, radius=40.0):
     d = open(STM, "rb").read()
     tris = []
     for t, n, b in stm2obj.entries(d):
-        if t != 6 or not n.startswith("ROAD"):
-            continue
+        if t != 6 or (road_only and not n.startswith("ROAD")):
+            continue                      # tout le LOD0 : route, trottoirs, terrains, glissières, murs, immeubles
         try:
             pos, _, faces = stm2obj.mesh(b)
         except (struct.error, ValueError, IndexError):
@@ -255,7 +255,8 @@ def rebuild_all():
     import subprocess
     jobs = decor_jobs(WORLD)
     mb = os.path.join(BMB, "map_builder", "flat_earth")
-    env = dict(os.environ, BMB_GAME=BMB, BMB_INSTALLED="1", NFS_COUNT=str(len(jobs)))
+    env = dict(os.environ, BMB_GAME=BMB, BMB_INSTALLED="1", NFS_COUNT=str(len(jobs)),
+               NFS_NO_WALLS="1", NFS_FLOOR_Y="-5")    # murs / ponts Map Builder retirés, sol de secours à -5 m
     subprocess.run([sys.executable, "build.py"], cwd=mb, env=env, check=True, stdout=subprocess.DEVNULL)
     main()
     road_collision(os.path.join(BMB, "levels", "flat_earth", "level.levelphysics"),
