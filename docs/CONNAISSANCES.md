@@ -124,6 +124,15 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   (13 975 m dans les deux sens). Sur l'original : grille solo 4 m avant la porte Start, grille multi **124 m**
   avant, texte « Start » 16 m après la porte, texte « Finish » au début de la porte Finish. En sens inverse,
   l'arrivée se déclenche ~77 m dans la porte (retour joueur), et le texte y est placé (`FINISH_TEXT_AFTER`).
+- **Grille utilisée en course perso (2026-10-26, Confirmé)** : la liste `MultiplayerActorLists` de la route (les
+  voitures tombées sur City Breach R, Highland Charge R et Stormdrain Surge R partaient toutes des places de cette
+  liste, à moins de 0,7 m près). Les hauteurs et largeurs des `.aid` ne suffisent pas à poser une grille : Highland
+  Charge R était ~80 m sous la route, Stormdrain Surge R 10 à 26 m à côté. **Méthode** : rouler la route d'origine
+  avec `trackrec.py --all` (20 voitures sur toute la largeur), garder les voitures en mouvement (`kmh > 5` : des
+  voitures garées avant l'apparition faussent la mesure ; les courses inversées contiennent aussi les chutes),
+  `blur_extracted/ground/<route>.csv`, puis `gridreverse` (clé `ground`) garde chaque place dans la largeur roulée
+  (marge 1,5 m) à la hauteur roulée + 0,3 m (grilles qui marchent : +0,1 à +0,3). Attention : plusieurs niveaux ont
+  des coordonnées qui se recouvrent ; une course s'attribue à un niveau par la distance médiane à son `.aid`.
 - **Lignes peintes d'Haruna** (arrêt dessus en Descent, `trackrec.py`, 2026-10-19) : départ (−2474,1 ; 1051,0 ;
   −1305,1) = 547,6 m de l'axe central, **exactement** le texte « Start » d'origine ; arrivée (1112,4 ; 524,5 ;
   −3071,2) = 13 439 m, au début de la porte Finish (13 443). **Confirmé.** Ascent : textes posés sur ces lignes
@@ -386,6 +395,17 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
 - **Règle d'écriture d'un `.bpr`** : ne jamais changer la taille de la table ni des noms (le début des données
   en dépend) ; remplacer en place. Doublon réellement identique (bonne lecture) : `JPN_Tokyo_Shutoko_4` (n° 17 et
   101), le 2e est repris pour `JPN_MHaruna_7`.
+- **Reconstruction avec ajout d'entrées (2026-10-24, confirmé hors jeu)** : `blurbpr.Bpr.rebuild()` recalcule la table,
+  les noms et les offsets. Sans ajout, le résultat est identique à l'octet. Avec une image ajoutée, les 226 payloads
+  d'origine sont inchangés. Les offsets relatifs d'origine et toutes les tailles sont multiples de 16 (`data0` absolu
+  est décalé de 15) ; le rebuild garde cet alignement. L'original est sauvegardé dans
+  `blur_extracted/mods/reverse_remaining_complete/ui_frontend.original.bpr` (SHA-256 vérifié). Les nouvelles images
+  et la reconstruction agrandie restent à valider en jeu.
+- **Les entrées forment une liste chaînée (2026-10-26, Confirmé par le code)** : le lecteur version 3 (`0xD53660`,
+  appelé par `0xD531E0` qui teste `2RZB` puis l'octet de version) saute d'entrée en entrée avec le u16 à +0 (0x1C)
+  et **s'arrête sur l'entrée dont ce u16 vaut 0** (la dernière, `Volkswagen_Scirocco_24`). Le 1er BPR agrandi
+  gardait ce 0 sur l'ancienne dernière entrée : les 11 vignettes ajoutées étaient ignorées (fond blanc en jeu,
+  test Sausalito). `rebuild()` remet 0x1C partout et 0 sur la dernière ; BPR réinstallé, à vérifier en jeu.
 
 ### 3.7 Inventaire du dossier du jeu (2026-10-19) : ce qui reste non lu
 
@@ -849,6 +869,25 @@ Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes
   B et le pile ou face sont aussi tirés au départ (cibles de saut `0x1101` décalées de 6). Longueurs des
   instructions : `0x1000` 3, `0x1002` 2, `0x1004` 2, `0x1101` 2 (saut si vrai), `0x1200` 2, `0x1202` 1, `0x1317` 3
   (comparer) (`make_music.script_ops`).
+- **Passer / couper la musique en course (2026-10-26, Fort, lu dans les données et le Lua ; pas encore testé)** :
+  aucun message du moteur ne passe un morceau (`UIEnums.GameFlowMessage` n'a que `Start/StopIngameAudio` = tout
+  le son). Mais `music_controller` : l'entrée `MusicType` → porte `MusicTypeGate` (seuil 0,5) →
+  `MusicTypeResetScript` arrête le morceau puis, 0,5 s après, `RaceStartScript` tire un **nouveau** morceau si
+  `MusicType` = 0, sinon reste muet. `MusicType` suit l'option audio « Musique » (`UIGlobals.OptionsTable.music_type`,
+  appliquée par `Amax.UpdateAudioOptions(OptionsTable)`, comme `Screens\Shared\Options_Audio.lua`). Plugin
+  `musicctl` : pause = option coupée, reprise = nouveau morceau (pas de reprise au même endroit), suivant =
+  coupée puis remise. Entrées : toutes passent par la fonction Lua globale `MessageUpdate_Wrapper(msg, pad, …)`
+  (`GuiBank.lua`) ; clavier peut-être par `UIButtons.GetKeyInput()`. Son d'indication : le Lua ne joue que des
+  événements `UISystem.PlaySound(UIEnums.SoundEffect.X)` (`Forward`, `Backward`, `Toggle`…), pas un son par son nom.
+  **Confirmé en jeu (2026-10-26)** : `Amax.Options()` donne la table (`UIGlobals.OptionsTable` est nil en course) ;
+  morceau suivant sur **double appui L3** (message `LeftThumb` ; R3 = `RightThumb` ; la croix sert au jeu) et sur
+  **ç / à** (`UIButtons.GetKeyInput()` renvoie `"CMN_9"` / `"CMN_0"`, `""` sans touche). Un appui maintenu n'envoie
+  qu'un message, sans répétition ni relâchement : pas d'appui long possible. Des messages sans nom arrivent à chaque
+  image (ne pas les journaliser). La pause a été retirée (la reprise tire forcément un nouveau morceau). Son : celui
+  de `BossRaceLose` remplacé dans `ingameui.baf`. **Banques en mémoire** (`ingameui`, `frontendui`…) : un bloc
+  `DATA` par son, dans l'ordre des entrées, collés, le dernier finit le fichier ; y ajouter des blocs alignés sur
+  0x800 (méthode des banques de musique) a cassé d'autres sons en jeu : `blurbaf.replace_wave` reconstruit la banque.
+  Traces Lua : `read_luamarks.py` (lecture seule de la mémoire).
 
 ## Blur Map Builder (MDPRO, v1.0.0, 2026-10-20) : ce que son code nous apprend
 
@@ -887,9 +926,17 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   variable `InGameMusicShuffleIndex` (type 20) ; script de lecture = cas sur la variable, chaque bloc joue son morceau
   puis range l'index suivant (`0x1004 val`, `0x1002 var`) ; `NextTrackScript` = appel du script de lecture ;
   `RaceStartScript` ne tire plus le sélecteur. `Tester le mod.bat` remélange à chaque lancement
-  (`music_menu.py --remelanger`, choix mémorisé dans `Blur_musiques\derniere_selection.json`). Option « effets non » :
-  plus d'étouffement en épave et `MusicMixerVolume` sans le terme `MusicMixerPerkDuckVolume` (plus de baisse sur les
-  bonus) ; le passe-bas du nitro agit sur tout le mixage final.
+  (`music_menu.py --remelanger`, choix mémorisé dans `Blur_musiques\derniere_selection.json`).
+- **Modes d'effets audio (2026-10-23)** : `music_menu.py` propose oui / partiellement / non ;
+  `make_music.build()` accepte `oui` / `partiel` / `non` et les anciens booléens. `oui` conserve les effets du jeu et
+  l'étouffement en épave. `partiel` réduit de moitié la baisse des bonus, adoucit les courbes nitro (0,003 → 0,25),
+  bouclier (valeurs initiale et écrites par scripts → 0,4) et épave (0,02 → 0,06), puis neutralise les effets de choc
+  et le bit crusher. `non` retire le ducking des bonus, remplace `PerkFilterCutOff` par une référence vers une
+  variable type 20 à 1, neutralise le ducking et le passe-haut des chocs, et fixe la profondeur du bit crusher via
+  une variable type 20 à 32. Les filtres finaux affectent aussi les sons du jeu. Les graphes des trois modes ont été
+  reconstruits et relus sans erreur. **Essai en jeu (2026-10-23, mode non)** : il reste un changement sonore à
+  l'activation de tous les bonus sauf nitro et bouclier, et un autre quand la voiture a presque perdu toute sa vie.
+  Les entrées JBOA responsables restent à identifier.
 - **Russian Hill Route 1 Reverse (2026-10-21)** : `USA_SanFran_RussianHill_R` (nom ≤ 25 car. : plus long emplacement
   d'image libre `USA_LA_Downtown_FigureOf8`, n° 121 ; plus aucun emplacement libre ensuite pour ce format), texte
   `CRN_ROUTE_1_REVERSE` (partagé avec Brighton). La route a un raccourci (bloc `Carpark` + `JunctionCarpark`) : retirés du
@@ -898,9 +945,27 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
 - **New York à l'envers (2026-10-22)** : `USA_NY_Dumbo2R` (« Route 2 Reverse », `CRN_ROUTE_2_REVERSE`) et
   `USA_NY_Dumbo_3R` (« East River Run », `CRN_NY_DUMBO_4`, nom de route prévu et jamais utilisé ; `CRN_NY_DUMBO_1`
   « Fulton Loop » est aussi libre). Tous les chemins alternatifs retirés du tracé IA (4 sur Dumbo 2, 6 sur Dumbo 3).
-  Images dans les deux derniers emplacements libres (`USA_Amboy_Bowl`, 14 car. ; `USA_LA_LongBeachDocks_2`, 23 car.) :
-  **plus aucun emplacement d'image 512 × 256 libre** dans `ui_frontend.bpr` (route suivante : sans image, ou trouver une
-  autre méthode). À tester en jeu.
+  Images dans les deux derniers emplacements de réutilisation (`USA_Amboy_Bowl`, 14 car. ; `USA_LA_LongBeachDocks_2`,
+  23 car.). Un rebuild BPR avec ajout d'entrées a depuis été implémenté et validé hors jeu (voir 3.6 bis).
+- **Test en jeu du premier lot inversé (2026-10-24)** : toutes les vignettes des routes inversées affichent un écran
+  blanc ; Tokyo Bayshore Reverse laisse la voiture tomber à travers le sol ; le texte de la grille est à l'envers ;
+  les bonus ne sont pas orientés dans le sens inverse. Le comportement des IA n'est pas encore évalué ; ne pas
+  modifier leurs trajectoires avant cette vérification et la discussion prévue avec Claude.
+- **Tokyo Bayshore Reverse, diagnostic de grille (2026-10-24)** : `RouteNumber=2` est conservé et correspond au 3e
+  bloc Route de `levelphysics` ; la liste solo et la liste multi clonées ont chacune 20 UID uniques, sans UID partagé
+  avec le pack source. Les grilles originales sont ~0,7 m (solo) et ~0,5 m (multi) sous les hauteurs des lignes du
+  `MainLoop`; les anciens clones étaient ~4,5 m et ~6,1 m sous ces lignes. Correction candidate installée : interpoler
+  la hauteur sur les 11 lignes du `MainLoop` en conservant l'écart original ; les 40 places ressortent à +0,34..+0,97 m.
+  **L'utilisateur confirme en jeu que Tokyo est corrigé.** Le bloc de collision Route 2 commence par un objet type 2,
+  non géré par `bmb_levelphysics.py`; hauteur réelle pas mesurée avec `trackrec.py`.
+- **Sausalito inversé (2026-10-24)** : `USA_SanFran_Sausalito_1R` fonctionne en jeu ; `USA_SanFran_Sausalito_2R`
+  fait tomber la voiture dans le vide avant le départ. Le reverse conserve `RouteNumber=2` et le bloc Route 2 est présent dans
+  `Level.levelphysics` ; les UID des listes solo/multi clonées sont uniques et sans collision avec le pack source.
+  Les places de la grille multi reverse sont proches du `MainLoop`; en solo, StartNumber 13/15 sont à environ 28 m/21 m
+  des lignes, contre 12 m/6 m dans la grille solo source. La grille multi est à 1,5–1,8 m horizontalement du
+  `MainLoop`, avec y relatif -1,5 à +1,2 m. Le mesh Route 2 type 0 lu par `bmb_levelphysics` n'a que 8 sommets / 12
+  triangles et ne fournit aucun sol sous les grilles ; il ne mesure donc pas la vraie surface. Vérifier quelle liste
+  le Custom Game sélectionne ; mesurer le sol au spawn avec `trackrec.py` si nécessaire. Cause non confirmée.
 - **Trajectoire IA du Map Builder** : il ne touche pas aux 11 lignes ; il rétrécit le couloir de la ligne IA (position
   et largeur des nœuds de `Main`) à ~12 m autour d'une trajectoire qui coupe l'intérieur des virages (rayon ≤ 70 m =
   corde complète, lissage ±40 m). Piste pour améliorer nos routes inversées (à mesurer).
@@ -912,6 +977,14 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   45 m de large, 40 m avant la marche à 5 m sur le quai, départ enfoui sous la route (y 3,2), profil en S sur
   12 bandes (plat aux deux bouts : les IA ne décollent plus). Mesures prises en longeant la marche
   (`trackrec.py`).
+- **Sons jamais utilisés (2026-10-26)** : 78 sons sur 2 732 ne sont référencés par aucun graphe `audio/dat/*.dat`
+  (liste complète : [SONS_INUTILISES.md](SONS_INUTILISES.md), `unused_sounds.py`).
+  Notables : `HUD_PlayerSecond` / `HUD_PlayerThird` / `HUD_RaceEndCountDown*` / `HUD_RGBMedium` / `HUD_PerksCountdown`
+  (`ingameui`), `FE_Left` / `FE_Right` / `FE_Move` / `FE_EnrouteToNextEvent` (`frontendui`), `NitroDoubleWhine`,
+  `NitroBackwardFireLFE`, `BargePickup` (`pickups` : restes du DoubleTap), `ROUT_002-OLD` / `ROUT_023-OLD` (anciennes
+  voix), ambiances `amb_Shutoko_*_intro` (20 s), `amb_Amboy_*_air`, flaques `puddle_01..06`, alarmes de voiture,
+  portes en bois, 19 impacts (`car_collisions`), quelques sons moteur ; `BLUR_menu` (402 s) dans `ingamemusic`.
+
 
 ## Projet J : circuit de NFS Hot Pursuit Wii vers Blur (2026-10-26, premier test hors jeu)
 
@@ -1136,3 +1209,18 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   montre une variante voisine (werehousea / werehouseb2, whitea / whiteb, lignes de route, panneaux gauche /
   droite) : objets de même géométrie, dont les listes GX commencent par les mêmes octets ; `d5_fifo` ne peut pas
   les départager (limite de la mesure, pas de la règle). À vérifier autrement : palmes avec écorce (alpha / UV ?).
+- **Voitures : roues, phares, transparence (2026-10-28, lecture des chaînes des 81 `root/models/vehicles/*.model`,
+  pas vérifié en jeu)** :
+  - **Jantes = fichier séparé par voiture** : `models/vehicles/wheels/<voiture>.model` (60 fichiers, ~80 Ko,
+    élément `M_Alloy`, shader `veh_Alloy_*`, DXT1/DXT5). Le modèle de la voiture porte les points d'attache
+    `e_wheel_frontleft…`, `E_AlloyRim_*`, et contient lui-même pneus (`E_Tyre_*`, textures `tyretred` / `tyrewall`),
+    disques et étriers (`e_BrakeDisc_*`, `e_BrakeCaliper_*`). Jantes perso = probablement fournir son propre
+    `wheels/<voiture>.model`.
+  - **Phares = éléments nommés** dans le modèle : `e_HeadLight_*`, `e_HeadLightCover_*`, `e_BrakeLight_*`,
+    `e_RearLight_*`, `e_ReverseLight_*`, `e_RearAndBrakeLight_*` (casse et suffixes variables d'une voiture à
+    l'autre). Shaders `veh_Light*` (71 voitures), `veh_Neon*` ; paramètres `g_sOnTexture` / `g_sOffTexture`
+    (+ `…Damage`) : texture allumée / éteinte. `LightFlare` n'apparaît pas dans les voitures (shader d'objets).
+  - **Transparence** : shaders dédiés `veh_Alpha*` (31 voitures, ex. texture `audir8_alpha`) et `veh_Glass*`
+    (vitres). Le shader opaque `veh_Default*` ne doit pas gérer l'alpha.
+  - Autres éléments : `m_CollisionMesh`, `m_ShadowCaster` (`veh_Shadow`), os de déformation `m_Bonnet_Front_Bone0..2`,
+    `g_DentTexture` / `g_ScratchTexture` (dégâts). Suffixes `_a_b_c_f_h` des shaders : options non décodées.

@@ -232,6 +232,85 @@ type 5 (3 valeurs) ou 9 (2 valeurs), ou aucune (drapeaux 0x40). LA River 3 : `Ju
 3. Régler les règles pour que les IA prennent le chemin le plus rapide (données du circuit seulement), un essai mesuré.
 4. Plus tard : inverser aussi les jonctions pour les routes à raccourcis (Russian Hill : parking retiré pour l'instant).
 
+## Projet H : corrections des routes inversées — avant les prochains circuits
+
+**Test en jeu du premier lot (2026-10-24)** : Bayshore Route, Urban Belt, Central Sprint et Highrise Ring ont été
+testées dans `Blur_test`. Défauts observés : vignettes blanches pour toutes les routes inversées ; sur Tokyo
+Bayshore Reverse, la voiture traverse le sol et tombe dans le vide ; texte de grille à l'envers ; bonus orientés
+dans le mauvais sens. Le comportement des IA n'a pas encore été évalué.
+
+**Tokyo corrigé (2026-10-24, confirmé par l'utilisateur en jeu)** : le placement vertical des 40 véhicules a été
+recalé sur les hauteurs interpolées des lignes du `MainLoop` en conservant l'écart de la grille originale. Le
+contrôle hors jeu donne +0,34 à +0,97 m au-dessus des lignes ; `RouteNumber=2` est conservé et les UID clonés sont
+distincts du pack source.
+
+**Lot suivant installé, test en attente** : Sausalito 1 Reverse et Sausalito 2 Reverse. Le build contient aussi les
+neuf routes déjà installées afin de préserver les références de menu, les actorpacks partagés et les vignettes.
+
+**Retour de test Sausalito (2026-10-24)** : Sausalito 1 Reverse fonctionne ; en Sausalito 2 Reverse, tous les véhicules tombent
+dans le vide avant le lancement de la course. `RouteNumber=2` est conservé et le bloc Route 2 de la collision existe ; les UID des deux listes clonées sont uniques et absents du pack source. Comparaison au `MainLoop` : la grille multi reverse reste proche (1,5 à 1,8 m horizontalement, hauteur relative -1,5 à +1,2 m) ; les places solo 13 et 15 sont à environ 28 m et 21 m des lignes (la grille solo source est à environ 12 m et 6 m). Le bloc Route 2 est lisible comme un petit mesh type 0, mais aucune surface de ce mesh ne se trouve sous les grilles ; il ne donne donc pas la vraie hauteur du sol. Cause non confirmée : vérifier quelle liste de départ le Custom Game sélectionne et mesurer le sol réel au spawn avec `trackrec.py` si nécessaire.
+
+Ordre de travail :
+1. Corriger et tester les vignettes de toutes les routes inversées (rebuild BPR à entrées ajoutées déjà validé hors jeu).
+2. Tokyo est confirmé corrigé par l'utilisateur; si la chute réapparaît, mesurer la vraie hauteur en roulant avec
+   `trackrec.py` (le bloc collision Route 2 reste de type 2 et non décodé).
+3. Remettre les textes de grille dans le bon sens.
+4. Orienter les bonus selon le sens inverse.
+5. Vérifier le comportement des IA sur les quatre routes ; si elles roulent correctement, mesurer puis améliorer
+   leurs trajectoires. Ne pas faire cette amélioration avant discussion avec Claude.
+
+**Validation attendue** : Sausalito 1/2 se sélectionnent et roulent sans défaut; toutes les vignettes sont visibles,
+textes et bonus sont orientés dans le sens de course, puis les IA suivent les circuits. Pas de nouveau lot et pas de
+commit avant ces corrections et la validation en jeu.
+
+## Projet I : passer à la musique suivante avec un bouton — à étudier
+
+**Demande** : pendant une course, permettre au joueur de passer au morceau suivant sans attendre la fin du morceau.
+
+**Point de départ confirmé dans `music_controller.dat`** : le graphe possède `InGameLicensedMusicNextTrackScript`,
+qui sélectionne l'index suivant et appelle `InGameLicensedMusicPlayScript`. `RaceStartScript` démarre la lecture au
+départ. Aucun lien entre une entrée clavier/manette et le script suivant n'est encore établi dans les plugins Lua du
+projet.
+
+Étapes :
+1. Trouver, sans modifier `Blur.exe`, une API ou un événement AMAX/Lua pour détecter un bouton pendant une course.
+2. Relier cet événement au mécanisme suivant de la playlist, en arrêtant proprement le morceau en cours et sans
+   déclencher plusieurs morceaux simultanément.
+3. Tester clavier et manette dans la copie hors ligne, avec les playlists originale et personnalisée.
+
+**Contraintes** : ne rien modifier dans le jeu installé ni dans `Blur.exe`; conserver le comportement normal en
+ligne et ne tester que dans `Blur_test`. Solution et faisabilité à discuter avec Claude avant implémentation.
+
+**Précisions de l'utilisateur (2026-10-26)** : une touche clavier ou manette pour **passer** le morceau et une pour
+**pause / reprise** ; **délai de 2 s** entre deux appuis (anti-spam) ; **un son court comme indicateur**. Candidats
+parmi les sons jamais utilisés par le jeu (78 sur 2 732, voir CONNAISSANCES) : `FE_Left` / `FE_Right` / `FE_Move`
+(bips de menu, `frontendui.baf`), `HUD_PerksCountdown` (`ingameui.baf`).
+
+## Projet J : circuits d'autres jeux dans Blur — à étudier (session à part)
+
+**Idée de l'utilisateur (2026-10-26)** : importer des circuits d'autres jeux de course à structure proche (NFS Hot
+Pursuit Wii, Split/Second) comme nouvelles cartes de Blur, en usage personnel uniquement (rien de ces jeux dans le
+dépôt ni partagé).
+
+Chaîne envisagée :
+1. Extraire la géométrie du circuit (modèle + textures) de l'autre jeu : le plus difficile, propre à chaque jeu
+   (Hot Pursuit Wii : `Jeux_WII\NFS_HP_WII_TOOLS`, `nfs_extracted`).
+2. Convertir et nettoyer (Blender : échelle, route séparée du décor).
+3. Construire la carte avec Blur Map Builder (MDPRO) : rendu, collision, `.aid` ; ne garder que ses fichiers produits
+   (pas son exe modifié).
+4. Poser la carte dans `Blur_test` comme les routes inversées (ville, route, menu, vignette, nom, tracé lumineux).
+
+Limites attendues : géométrie Wii basse définition, tracé IA à retoucher, pas d'objets dynamiques ni d'effets.
+**Première étape** : un circuit simple de Hot Pursuit Wii, voir ce qui s'extrait et ce que Map Builder accepte.
+
+**Rendre les cartes NFS plus belles (shaders de Blur, plan du 2026-10-27)** : nos objets partent tous du gabarit
+`sign_wetfloor.model` (`default_NB_NL_NV.fx`, le shader de 643 objets de Blur). Les beaux shaders des circuits
+(`Road_*`, `RoadTwoSpec*`, `SpeedTree*`, `Puddle_*`, `default_LN_*`…) ne sont que dans `levels/*/level.levelrender`
+(non décodé). Étapes : (1) essayer, dans Blur_test, des gabarits d'objets à autre shader : `AnimatedNeon_NL_NV`
+(néons, ex. `trafficlighttypef`), `Water_NL_NV` (rivières, `dynamicwaterlevel`), `default_NL_NV` (avec relief,
+`sunlounger`) ; (2) plusieurs matériaux par modèle ; (3) éclairage d'ombre précalculé dans les couleurs de sommets ;
+(4) à plus long terme : décoder `.levelrender` pour la route et les bâtiments éclairés.
+
 ## Journal
 
 | Date | Avancée |
@@ -297,6 +376,15 @@ type 5 (3 valeurs) ou 9 (2 valeurs), ou aucune (drapeaux 0x40). LA River 3 : `Ju
 | 2026-10-22 | Russian Hill Route 1 Reverse OK en jeu ; projet G (choix des chemins par les IA) ajouté |
 | 2026-10-23 | New York à l'envers OK en jeu : Route 2 Reverse et East River Run (rampe invisible ajoutée à la collision) |
 | 2026-10-23 | Passation : docs/PASSATION.md (règles, méthode, tâches en cours dont l'option musique « non » à 3 niveaux) |
+| 2026-10-23 | Musique : modes oui / partiel / non implémentés ; variables type 20 référencées depuis les objets type 42, reconstruction et relecture JBOA réussies |
+| 2026-10-23 | Essai en course, mode « non » : effets sonores persistants lors de l'activation des bonus sauf nitro et bouclier ; son également modifié à très faible niveau de vie. Identifier puis neutraliser ces deux sources dans `finalsubmix.dat` |
+| 2026-10-24 | BPR agrandi : ajout de vignettes avec offsets relatifs alignés sur 16, aller-retour sans ajout byte-identique et 226 images originales préservées avec un ajout. Premier lot de quatre routes inversées installé hors ligne |
+| 2026-10-24 | Tokyo Bayshore Reverse corrigé par recalage des grilles sur les hauteurs des lignes MainLoop ; correction confirmée en jeu par l'utilisateur |
+| 2026-10-24 | Sausalito 1 Reverse et Sausalito 2 Reverse générées et installées avec le lot précédent ; test en jeu en attente |
+| 2026-10-26 | Vignettes blanches expliquées (liste chaînée du `.bpr` terminée par 0 sur l'ancienne dernière entrée) et corrigées : **vignettes OK en jeu** |
+| 2026-10-26 | Toutes les routes inversées générées (30, dont Seafront Strip, The Money Run, Harbor Freeway) : 60 routes au menu, **toutes se lancent** |
+| 2026-10-26 | Chutes au départ : la course perso utilise la grille **multi**. Sol mesuré en roulant les routes d'origine (`trackrec.py --all`) ; grilles recalées dessus (`gridreverse`, clé `ground`) pour City Breach, Speedway, Highland Charge, Stormdrain Surge, Bay Area Tour (à vérifier en jeu) |
+| 2026-10-26 | Projet I : plugin `musicctl` (suivant / pause par l'option « Musique », via `MusicTypeResetScript`) ; L3/R3 à remplacer par des touches libres. Liste des 78 sons inutilisés (`docs/SONS_INUTILISES.md`) |
 | 2026-10-26 | Projet J : `.stm` de Hot Pursuit Wii décodés (route séparée du décor, `stm2obj.py`, Dubaï exporté) ; Map Builder n'importe pas de maillage (ligne centrale `map.json`) ; prochaine étape : tracé HP → `.blurmap` |
 | 2026-10-26 | Projet J : route 1 de Dubaï (Hot Pursuit) → Map Builder (dossier séparé) → fusion par-dessus nos mods (`make_nfs_map.py`), installée dans Blur_test, à tester en jeu |
 | 2026-10-27 | Projet J : textures HP décodées (CMPR, C8), matériaux des maillages, générateur de `.model` de taille libre (`blurmodel_write.py`) ; 1er immeuble HP installé dans Dubai Loop, à tester |
@@ -308,3 +396,4 @@ type 5 (3 valeurs) ou 9 (2 valeurs), ou aucune (drapeaux 0x40). LA River 3 : `Ju
 | 2026-10-27 | Projet J : transparence des textures HP gardée en jeu (DXT1 1 bit) ; plantes sans collision ; à vérifier en jeu |
 | 2026-10-28 | Projet J : arbres sur le shader des plantes de Blur (transparent noir en jeu) ; tracé sous le sol de référence accepté (voiture en vol corrigée) ; à vérifier en jeu |
 | 2026-10-28 | Projet J : carte noire et lenteurs : shader des plantes annulé, nature retirée du décor, modèles à la taille réelle, collision à 40 m, réglages avancés repliés dans NFS Studio. **EN PAUSE, à reprendre** : reconstruire Location45 (NFS Studio relancé), tester en jeu (noir, fluidité, décor) ; si encore lent : atlas 512x512 (CELL 64), VERTS plus bas ; ensuite gabarit néon, lumières / animations (lampadaires) |
+| 2026-10-28 | Voitures : jantes dans `wheels/<voiture>.model`, phares = éléments `e_*Light*` (shaders `veh_Light`, textures on/off), transparence via `veh_Alpha` / `veh_Glass` ; demandé par Splat (LBPU, Vehicle Maker) |
