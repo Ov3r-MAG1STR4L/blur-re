@@ -41,34 +41,41 @@ dans `blur_extracted\mods\<mod>\files` puis copiés dans `Blur_test` (boucle `cm
 
 ## Travail en cours / à faire (par priorité)
 
-### 1. Musique : l'option « effets : non » n'est pas propre (signalé par l'utilisateur)
+### 1. Musique : effets en 3 niveaux (corrections du mode « non » à faire)
 
-Aujourd'hui `make_music.build(effects=False)` retire seulement la baisse sur les bonus (`no_perk_duck`) et le
-passe-bas du nitro (`no_nitro_lowpass`). Ce qui touche encore la musique, tout dans `audio/dat/finalsubmix.dat`
-(analyse du 2026-10-23, indices d'objets du fichier d'origine) :
+`music_menu.py` propose `oui` / `partiellement` / `non` et mémorise `effets` comme `oui` / `partiel` / `non` dans
+`derniere_selection.json`. `make_music.build()` accepte aussi les anciens booléens. Les transformations ont été
+reconstruites et relues hors jeu depuis le `finalsubmix.dat` d'origine. Premier retour en course : le mode « non »
+fonctionne globalement, mais il reste une modification sonore lors de l'activation de tous les bonus sauf nitro et
+bouclier, ainsi qu'un effet lorsque la voiture a très peu de vie. Identifier et neutraliser ces deux sources.
 
-| Effet restant | Objet | Correction proposée pour « non » |
+| Effet | Objet | Réglage appliqué pour « non » |
 |---|---|---|
-| Passe-bas « bonus » sur tout le mixage : bouclier (`ShieldFilterCutOff` 98, `ShieldMODFilterCutOff` 99) et épave | `PerkFilterCutOff` (100, type 42 = minimum des termes) → `PerkSurroundLowPass` (124) | remplacer tous les termes par une seule variable constante 1.0 (type 20) ; ne pas laisser 0 terme |
-| Baisse de volume sur les chocs | `FinalSubMixCarAddedMixer` (125) : volume = objet 108 `CollisionVolumeRMSDucking` | remplacer la paire `(108, 0)` par une constante `(0xFFFF, 1.0)` |
+| Passe-bas « bonus » sur tout le mixage : bouclier (`ShieldFilterCutOff` 98, `ShieldMODFilterCutOff` 99) et épave | `PerkFilterCutOff` (100, type 42 = minimum des termes) → `PerkSurroundLowPass` (124) | référence vers une variable type 20 à 1.0 ; ne pas laisser 0 terme |
+| Baisse de volume sur les chocs | `FinalSubMixCarAddedMixer` (125) : volume = objet 108 `CollisionVolumeRMSDucking` | remplacer la paire `(108, 0)` par `(0xFFFF, 1.0)` |
 | Passe-haut sur les chocs | `CollisionSurroundHighPass` (126) : 3e paramètre `(105, 1.0)` | mettre `(0xFFFF, 0.0)` (coupure 0 = pas de filtre) |
-| « Bit crusher » sur les gros dégâts | `RGBBitCrusher` (127), profondeur = 118 | ne jamais l'activer (déclencheur `0x1000 obj 0` = activer, `… 1` = contourner) ou profondeur constante 32 |
+| « Bit crusher » sur les gros dégâts | `RGBBitCrusher` (127), profondeur = 118 | référence vers une variable type 20 à 32.0 (neutre) |
 
 Ces filtres sont appliqués APRÈS le mixage final : ils touchent la musique ET les sons du jeu. L'utilisateur
 accepte que « non » les coupe pour tout.
 
-Demande de l'utilisateur : **3 niveaux** au lieu de oui/non :
-- **oui** : comportement du jeu + étouffement en épave (actuel) ;
-- **partiellement** (« plus agréable ») : effets adoucis : baisse sur les bonus réduite de moitié
-  (`MusicMixerPerkDuckVolume`, courbe y à x=1 : 0 → 0,5), passe-bas nitro doux (`NitrousLowPass` y 0,003 → ~0,25),
-  bouclier doux (`ShieldCutOffVariable` 0,1 → ~0,4), épave plus légère (`WRECK_CUTOFF` 0,02 → ~0,06), pas de bit
-  crusher, ni de passe-haut, ni de baisse sur les chocs ;
-- **non** : aucun effet sur la musique (table ci-dessus + ce qui est déjà fait).
-Le menu (`music_menu.py`) doit poser la question à 3 choix et la mémoriser dans `derniere_selection.json`
-(`effets` : "oui" / "partiel" / "non" ; accepter l'ancien booléen).
+Comportement demandé et implémenté :
+- **oui** : comportement du jeu + étouffement en épave ;
+- **partiellement** (« plus agréable ») : baisse sur les bonus réduite de moitié (`MusicMixerPerkDuckVolume`, y à x=1 :
+  0 → 0,5), passe-bas nitro adouci (`NitrousLowPass`, 0,003 → 0,25), bouclier adouci (`ShieldCutOffVariable` et
+  valeurs écrites par les scripts : 0,004/0,1 → 0,4), épave plus légère (`WRECK_CUTOFF` 0,02 → 0,06), sans bit
+  crusher, passe-haut ni baisse sur les chocs ;
+- **non** : aucun de ces effets sur le mixage final.
+
 Formats JBOA : voir `CONNAISSANCES.md` (« Audio et musique ») : courbe type 21, type 42, scripts (`0x1000`
 déclencher, 3 mots ; `0x1002` affecter ; `0x1004` empiler ; `0x1101` saut ; `0x1200` appel ; `0x1202` fin ;
 `0x1317` comparer). Ajouter des objets UNIQUEMENT en fin de liste (aucun index existant ne bouge).
+
+Corrections après essai en jeu du mode « non » :
+- les changements sonores subsistent à l'activation de certains bonus (tous sauf nitro et bouclier) ; identifier
+  les entrées du `finalsubmix.dat` responsables et les neutraliser ;
+- un changement sonore se produit aussi quand la voiture est en danger (presque plus de vie) ; identifier l'entrée
+  liée à la santé et la neutraliser.
 
 ### 2. Ordre du menu de course perso
 
@@ -78,11 +85,29 @@ extraire, `luadis.py` pour lire), qui lit `MultiplayerConfig.routes`.
 
 ### 3. Inverser d'autres routes
 
-`make_reverse.py`, liste `ROUTES`. Route avec raccourcis : `drop=(blocs alternatifs + jonctions)`. Les plus simples
-(1 raccourci) : Tokyo Bayshore Route, Hackney Urban Belt, Hackney Central Sprint, LA Downtown Highrise Ring. Noms de
-développeurs libres par ville : voir `CONNAISSANCES.md`.
-- **Plus aucun emplacement d'image libre** dans `ui_frontend.bpr` (format 512×256) : trouver une autre méthode
-  (agrandir le `.bpr` proprement) ou accepter une route sans image.
+Premier lot testé en jeu le 2026-10-24 : Tokyo tombait à travers le sol; tu confirmes maintenant que Tokyo est
+corrigé avec le placement vertical des grilles. Les vignettes des routes inversées restent blanches, le texte de
+grille est à l'envers et les bonus ne sont pas orientés dans le sens inverse. Le comportement des IA reste à évaluer.
+
+Le lot Sausalito est installé dans `Blur_test` et testé : **Sausalito 1 Reverse fonctionne ; Sausalito 2 Reverse
+fait tomber la voiture avant le lancement de la course**. `RouteNumber=2` et les UID sont corrects. La grille multi
+reverse est proche du `MainLoop` (1,5–1,8 m horizontalement, y relatif -1,5 à +1,2 m) ; les places solo 13/15 sont
+~28 m/~21 m des lignes, mais elles étaient déjà ~12 m/~6 m dans la grille source. Le mesh Route 2 décodé ne contient
+pas la vraie surface sous ces places. Priorité : vérifier quelle liste utilise le Custom Game et mesurer le sol réel
+au spawn avec `trackrec.py` si nécessaire; ne pas déplacer les voitures à l'aveugle ni lancer le lot suivant.
+
+Ordre des corrections avant de poursuivre les inversions :
+1. Réparer les vignettes de toutes les routes inversées et les vérifier en jeu. `blurbpr.Bpr.rebuild()` ajoute des
+  entrées avec offsets relatifs alignés sur 16 octets ; l'aller-retour sans ajout est identique à l'octet et un
+  ajout de test préserve les 226 payloads d'origine. Le BPR agrandi reste à valider en jeu.
+2. Corriger l'orientation des textes de la grille de départ.
+3. Orienter les bonus dans le sens inverse.
+4. Vérifier que les IA suivent correctement les routes inversées ; améliorer leur trajectoire seulement si leur
+  comportement est d'abord jugé correct. Ne pas modifier leur trajectoire avant la discussion avec Claude.
+
+Ne pas lancer le lot suivant ni faire de commit avant ces corrections et la validation en course. Sur les routes à
+raccourcis, le build `routes_only` garde l'IA sur la boucle principale. Noms de développeurs libres par ville : voir
+`CONNAISSANCES.md`.
 - Obstacles à sens unique (marche, quai, saut) : rampe invisible avec `addramp.py` / `RAMPS` dans `make_reverse.py`,
   mesurée en roulant avec `trackrec.py`. Plus tard : vrais objets (voir Map Builder).
 
