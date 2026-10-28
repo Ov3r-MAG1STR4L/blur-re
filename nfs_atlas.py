@@ -85,6 +85,8 @@ def jobs(world_json):
                 continue
             dist = tree.query(np.array(pos)[:, [0, 2]])[0]
             for m in {s[0] for s in stm2obj.submeshes(b)}:
+                if M.see_through(d, m):                # nature (buissons, palmiers, haies) : ni affichée ni solide
+                    continue
                 tex = stm2obj.material_name(d, m) or "couleur:%02x%02x%02x" % stm2obj.material_color(d, m)
                 for f in stm2obj.mesh(b, m)[2]:
                     ids = [a for a, _ in f]
@@ -163,7 +165,10 @@ def rebuild(auto_pickups=True, log=print):
                      os.path.join(M.OUT, "levels", "flat_earth", "level.levelphysics"), M.WORLD)
     ap = os.path.join(M.OUT, "gamedata", "levels", "flat_earth", "actorpack.xt")
     flat = os.path.join(M.OUT, "models", "objects", "flat_earth")
-    pad = (int(VERTS * 1.25), 6 * max(len(t) for _, _, t in J))   # marge : arrondis différents du comptage ; 6 index / triangle (faces doublées)
+    # même taille pour tous (obligatoire, crash 0x6DB2EB sinon) = celle du plus gros modèle réel, pas VERTS : avec 65 000
+    # sommets partout, 150 modèles faisaient 391 Mo et le jeu ramait. Marge 1,25 : arrondis différents du comptage.
+    most = max(len({(tuple(np.round(p, 3)), tuple(np.round(u, 4))) for ps, us in t for p, u in zip(ps, us)}) for _, _, t in J)
+    pad = (min(int(VERTS * 1.25), int(most * 1.25) + 3), 6 * max(len(t) for _, _, t in J))   # 6 index / triangle (faces doublées)
     # la route et l'arche de Map Builder (leur nombre dépend du découpage de sa route) : cachées, même taille
     hidden = [(u, "road_21_%02d.model" % k) for k, u in enumerate(M.road_slots(ap))] + [(0xF1E20005, "arch_lap.model")]
     tiny = [([(0, -60, 0), (0.01, -60, 0), (0, -60, 0.01)], [(0, 0), (0, 0), (0, 0)])]

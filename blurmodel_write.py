@@ -119,13 +119,7 @@ def build(template, verts, indices, rgb, w, h, glow=160, salt=None, pad_verts=No
     old_len = struct.unpack_from("<I", d, j - 20)[0]
     mips = int(math.log2(max(w, h))) + 1         # jusqu'au grand côté (gabarit 32x128 : 8 niveaux)
     if len(rgb) == w * h * 4 and min(rgb[3::4]) < 128:         # transparence : notre encodeur 1 bit
-        tex = _mips_alpha(rgb, w, h, mips)
-        # + shader des plantes / grillages de Blur (default_NB_NL_NV du gabarit : transparent rendu en noir, vu en jeu
-        # 2026-10-28) ; nom précédé de sa longueur u32, 2 fois (liste des shaders + matériau), sections corrigées plus bas
-        old = struct.pack("<I", 19) + b"default_NB_NL_NV.fx"
-        at = [i for i in range(len(d)) if d.startswith(old, i)]
-        assert len(at) == 2, at
-        rep += [(i, i + len(old), struct.pack("<I", 22) + b"default_NB_NL_NM_NV.fx") for i in at]
+        tex = _mips_alpha(rgb, w, h, mips)              # (le shader du gabarit rend le transparent en noir, vu en jeu)
     else:                                                      # opaque : encodeur de Map Builder, comme avant
         tex = cpmodel.encode_mips(bytes(rgb[i] for i in range(len(rgb)) if i % 4 != 3) if len(rgb) == w * h * 4
                                   else rgb, w, h, mips)

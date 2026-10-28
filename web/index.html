@@ -77,11 +77,13 @@
     <h2>4. Construction</h2>
     <label>Largeur par défaut (m) <input id="o_width" type="number" value="50"></label>
     <label>Tours <input id="o_laps" type="number" value="3"></label>
+    <details id="adv"><summary>Réglages avancés (à laisser tels quels)</summary>
     <label>Recul de la grille (m) <input id="o_grid" type="number" value="25"></label>
     <label>Rayon du décor (m) <input id="o_radius" type="number" value="300"></label>
     <label>Distance d'affichage (m) <input id="o_draw" type="number" value="700"></label>
     <label>Zones (m) <input id="o_zone" type="number" value="200"></label>
     <label>Lumière propre (0-255) <input id="o_glow" type="number" value="110"></label>
+    <div class="row"><button id="advReset">Valeurs d'origine</button></div></details>
     <div class="row"><button id="build" class="needv">Construire</button><button id="install">Installer dans Blur_test</button></div>
     <h2>Journal</h2>
     <div id="log"></div>
@@ -117,7 +119,8 @@ Mêmes gestes pour déplacer / insérer / supprimer.<br>
 <b>3. Bonus et départ</b> : mode <i>Bonus Blur</i> : clic sur la route = une rangée de bonus (cube bleu) ; clic sur un cube
 = le choisir (jaune) : « Rangée choisie » règle son nombre de bonus (vide = « Bonus par rangée ») et son type
 (aléatoire = mélange habituel), affichés au-dessus du cube ; Suppr = le retirer. Les anneaux orange sont les anciens bonus de Hot Pursuit. Mode <i>Départ</i> : clic = ligne de départ.<br><br>
-<b>4. Construction</b> : réglages, « Construire » (plusieurs minutes, suivi dans le journal), puis « Installer dans Blur_test »
+<b>4. Construction</b> : largeur et tours (les réglages avancés sont à laisser tels quels ; « Valeurs d'origine » les
+remet), « Construire » (plusieurs minutes, suivi dans le journal), puis « Installer dans Blur_test »
 (Blur fermé). En jeu : course perso, lieu « NFS … ».<br><br>
 Calques : décor, route, textures, <b>hitbox</b> (surface roulable en vert), trajet IA + largeurs, bonus.<br>
 Raccourcis : Ctrl+Z annuler, Ctrl+Y rétablir, Ctrl+S enregistrer, Suppr supprimer, Échap désélectionner.<br><br>
@@ -375,6 +378,7 @@ $('valid').onclick = () => { if (S.points.length < 3) { say('au moins 3 points')
 $('hpBonus').onclick = () => { push(); for (const [x, y, z] of info.hp_pickups) S.pickups.push({ x, y, z }); refresh(); };
 $('clrBonus').onclick = () => { push(); S.pickups = []; refresh(); };
 $('delPicked').onclick = deletePicked;
+$('advReset').onclick = () => { document.querySelectorAll('#adv input').forEach(i => i.value = i.defaultValue); say("réglages avancés remis aux valeurs d'origine"); };
 $('clrMain').onclick = () => { if (!confirm('Effacer le tracé principal ?')) return; push(); S.points = []; S.start = null; S.validated = false; sel = null; refresh(); };
 $('clrBranch').onclick = () => { if (curBranch < 0 || !S.branches[curBranch]) { say('clique d\'abord sur une boule du chemin à effacer'); return; }
   push(); S.branches.splice(curBranch, 1); curBranch = -1; sel = null; refresh(); };
