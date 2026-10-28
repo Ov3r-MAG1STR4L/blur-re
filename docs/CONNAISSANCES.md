@@ -1117,6 +1117,12 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
   `set_heights` coupait à 0 les hauteurs sous le sol de référence (5e percentile de la route HP), Map Builder posait
   donc sa route invisible et sa collision jusqu'à 28,8 m au-dessus de la route HP. Désormais `HP_GROUND` est abaissé
   jusqu'au point le plus bas du tracé (toute la carte remonte d'autant).
+- **Essai en jeu du 2026-10-28 (2)** : jeu très lent, décors / textures manquants, carte entièrement noire (seuls les
+  bonus éclairés). Constats hors jeu : 83 modèles sur 178 étaient passés sur `default_NB_NL_NM_NV` (cause probable du
+  noir : ce shader n'utilise sans doute pas la lumière propre du gabarit) ; 391 Mo de modèles (chacun gonflé à
+  65 000 sommets + atlas 1024x1024 = 2,6 Mo) et 24 Mo de collision. Corrections (non testées en jeu) : retour au shader
+  du gabarit ; nature (matériaux transparents à 50 % et plus, hors grillages / barrières) retirée du décor ; taille
+  commune des modèles = celle du plus gros réel (x 1,25) au lieu de 65 000 sommets ; collision limitée à 40 m du tracé.
 - **Las Vegas (2026-10-27, 3 captures FIFO)** : la variante jouée est `Location42.stm` (856 dessins reconnus
   contre 21 à 548 pour les autres variantes). Règle « matériau m = fiche m − 1 » : 43/53, 56/73 et 31/38 matériaux
   identiques au jeu (environ 80 %), donc **elle vaut aussi hors de Dubaï**. Écarts : variantes de panneaux (gauche /

@@ -218,7 +218,7 @@ def see_through(d, m, share=0.5):
     return _SEE[tex] >= share and not solid
 
 
-def road_collision(src, out, world_json, radius=80.0, road_only=False):
+def road_collision(src, out, world_json, radius=40.0, road_only=False):   # 40 m : au-delà, le tube (50 m) replace la voiture
     """sol de collision = triangles des maillages ROAD de HP à moins de `radius` m de la ligne centrale, hauteur
     HP + (1 - HP_GROUND), en objets de type route (<= 255 triangles / 256 sommets) insérés en tête du flux Main
     (addramp) ; le sol plat de Map Builder reste dessous (secours)"""
