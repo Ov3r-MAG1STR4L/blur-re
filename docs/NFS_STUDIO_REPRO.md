@@ -69,7 +69,9 @@ Blur fermé. Rien n'est écrit dans le jeu installé ni dans Blur_test pendant l
    `BMB_GAME\levels\flat_earth`, `Blur Map Builder\maps` et `work`. Sauvegarder avant si l'état compte.
 3. Durée ≈ 30 min, ~139 fichiers. Installation éventuelle : bouton « Installer dans Blur_test » uniquement.
 
-## 5. Problèmes restants (non corrigés : chacun changerait la sortie ou demande une décision)
+## 5. Points ouverts (non corrigés : chacun changerait la sortie ou demande une décision)
+
+Points ouverts gardés à la validation de l'étape 0 (2026-11-02) : 1 (amax.bin / multiplayer.bin partagés avec Reverse), 2 (bpr de Blur_test), 3 (sortie non nettoyée), 6 (three.js par Internet), 9 (initialisation manuelle de Map Builder). Non traités tant qu'une étape ne les vise pas.
 
 1. **Base xt de Map Builder désynchronisée** : `BMB_GAME\Blur Map Builder\base\unpacked\gamedata\xt\amax.bin`
    et `multiplayer.bin` diffèrent de ceux de Blur_test. La « fusion par-dessus nos mods » est manuelle et

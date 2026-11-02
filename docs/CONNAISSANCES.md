@@ -1280,3 +1280,33 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
 - [H] Le `MemoryError` vu une fois dans `pak.add_aliases` vient de la RAM libre (3,8 Go sur 15,5) :
   Map Builder recopie le pak par concaténations de `bytes`.
 - Procédure, dépendances et problèmes restants : `docs/NFS_STUDIO_REPRO.md`.
+
+### Diagnostic P1 : lieux abîmés dans NFS Studio (2026-11-02, Dubaï `location11`)
+
+Outils : `nfs_diag/p1_diag.py` (comptes sur le décodage `stm2obj`) et `nfs_diag/p1_studio.py` (copie du studio en
+lecture seule sur le port 8799, `web/index.html` modifié à la volée seulement : `?alpha=0`, `?side=front`,
+`?color=mat`, `?logdepth=1`, `?near=N`). Le studio affiche le `.stm` décodé (`web_cache`), PAS les fichiers
+exportés ; studio et export lisent la même géométrie (`stm2obj.mesh`).
+
+- [F] Décodage propre : 279 maillages, aucun abandonné, aucune liste GX coupée, aucun index hors limites,
+  884 719 triangles ; 26 triangles longs et fins seulement (car park, PVS_arab, PVS7006).
+- [F] **Grillage / bâtiments transparents = `alphaTest: 0.3` du studio sur les textures de vitres.** 420 882
+  triangles (48 %) ont une texture trouée par ce seuil, dont 171 570 sur des fiches à `envmap.tex` (vitres :
+  alpha à 45-95 %). Preuve visuelle : même vue avec `?alpha=0`, les tours redeviennent pleines. Mais les grues,
+  grillages et plantes deviennent des panneaux noirs : leur alpha est une vraie découpe.
+- [H] Sur les fiches à `envmap.tex`, l'alpha de la texture est le masque du reflet (vitre opaque en jeu HP), pas
+  une transparence.
+- [F] **Même défaut à l'export** : `make_nfs_map.see_through` retire du décor 179 819 triangles, dont 163 295 sur
+  des fiches à envmap (façades vitrées : marina, college_window*, bldg_dub1_*glass…). En jeu, ces façades
+  devraient manquer (à confirmer).
+- [F] **Pâtés absents (studio et export)** : 8 morceaux n'existent qu'en LOD (`.1f2` type 7 / `.1f3` type 8) :
+  `PVS4002-4006`, `PVS4009`, `PVS4010` (immeubles, x -1700 à -730, z -630 à -125) et `PVS8011` (palmiers),
+  environ 22 000 triangles en `.1f2`. Studio et export ne lisent que le type 6.
+- [F] Ni l'orientation des faces (`?side=front` : bâtiments pleins) ni la profondeur (`?logdepth=1` : image
+  identique) ne sont en cause dans les vues testées.
+- [F] Les noms des fiches matériau sont décalés d'un rang par rapport à leurs textures (fiche « water » →
+  `road_curb.tex`, « Terr_grass1 » → `water.tex`). Sans effet sur l'affichage (les textures suivent le n° de
+  matériau, prouvé FIFO) ; seuls les noms affichés ou journalisés sont faux.
+- [?] Vide bleu sous les îlots : la mer du `.stm` est faite de plaques (`water.tex`, `terr_surf.tex`) ; on ne sait
+  pas si HP dessine en plus un plan d'eau ou un horizon hors du `.stm`.
+- [?] Rendu en jeu : non vérifié (aucune construction de Dubaï installée ; `mods\nfs_dubai` vient d'un autre lieu).

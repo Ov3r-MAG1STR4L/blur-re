@@ -9,7 +9,7 @@ installé jamais modifié, copie de test hors ligne, mémoire du jeu en lecture 
 
 | # | Problème | Vu où | Cause connue ? |
 |---|---|---|---|
-| P1 | Lieux modifiés affichés abîmés dans NFS Studio : bâtiments en grillage ou transparents, triangles en « éclats » (tours de droite), morceaux qui flottent, vide bleu à la place du sol ou de l'eau | studio (captures du 2026-11-02, Dubaï) | non. **À vérifier en jeu** : défaut d'affichage seulement, ou fichiers construits abîmés ? |
+| P1 | Lieux modifiés affichés abîmés dans NFS Studio : bâtiments en grillage ou transparents, triangles en « éclats » (tours de droite), morceaux qui flottent, vide bleu à la place du sol ou de l'eau | studio (captures du 2026-11-02, Dubaï) | **diagnostic 2026-11-02** (voir CONNAISSANCES « Diagnostic P1 ») : grillage = alphaTest sur les vitres (affichage + export) ; 8 pâtés absents (LOD seuls) ; à confirmer en jeu |
 | P2 | Plantages fréquents de NFS Studio | studio | non. Pistes : tout le lieu chargé d'un coup (géométrie + PNG), mémoire GPU jamais libérée au changement de lieu |
 | P3 | Collision partielle : seule la route HP (40 m) et le sol plat de Map Builder | jeu | oui (choix du 2026-10-28) |
 | P4 | Bonus et départ placés « à l'aveugle » : rien ne compare la position dans le studio à la position réelle en jeu | studio ↔ jeu | oui (pas de retour du jeu) |
