@@ -112,8 +112,12 @@ def route_data(name):
             kind = ("grid" if gridreverse.is_start_position(a) else "pickup" if "PickupType" in a else
                     "text" if a.get("Name", "").startswith(("Start_Text", "Finish_Text")) else "other")
             gy = ground_y(p) if kind == "grid" else None
+            # place par rapport à la route : nœud le plus proche, écart latéral signé au centre, demi-largeur
+            k = int(np.hypot(P[:, 0] - p[0], P[:, 2] - p[2]).argmin())
+            off = float((p[0] - P[k, 0]) * lat[k][0] + (p[2] - P[k, 2]) * lat[k][1])
+            road = dict(offset=off, half=float(W[k] / 2), dy=float(p[1] - P[k, 1]))
             acts.append(dict(i=str(i), name=a.get("Name", ""), kind=kind, pos=p, fwd=[m["az"][k] for k in ("vx", "vy", "vz")],
-                             start=a.get("StartNumber"), pickup=a.get("PickupType"), ground=gy))
+                             start=a.get("StartNumber"), pickup=a.get("PickupType"), ground=gy, road=road))
         sig = "|".join((a or {}).get("Name", "") for a in v.get("LevelActors", []))
         use = usage.get(h)
         # solo / multi : sûr seulement si la liste source de ce hash a les mêmes acteurs (sinon build plus ancien)
@@ -122,6 +126,9 @@ def route_data(name):
     d = dict(name=name, orig=r["orig"], city=city, loop=bool(loop), locked=maplock.locked(name),
              centre=P.tolist(), width=W.tolist(), lateral=lat.tolist(), lists=lists, ground=ground[::5].tolist(), collision=g is not None,
              paths=paths(r, city, lvl),
+             # y d'un nœud .aid = bas de son volume (ylow), pas le bitume : places 3 à 14 m plus haut selon la route.
+             # Le studio remonte route et chemins de l'écart médian des places (hauteur ESTIMÉE, pour la lecture)
+             road_dy=float(np.median([a["road"]["dy"] for l in lists for a in l["actors"] if a["kind"] == "grid"] or [0])),
              tris=base64.b64encode(tri[keep].astype(np.float32).tobytes()).decode(), n_tris=int(keep.sum()))
     _cache[name] = d
     return d

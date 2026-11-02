@@ -22,6 +22,7 @@
   #warn { color:#ff6b6b; white-space:pre-wrap; }
   .lock { color:#ffd43b; }
   .row { display:flex; gap:4px; flex-wrap:wrap; }
+  button.on { background:var(--acc); border-color:var(--acc); }
   #selInfo { white-space:pre-wrap; margin-top:4px; }
   .key span { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:middle; }
 </style>
@@ -39,7 +40,8 @@
       <button id="save" title="Ctrl+S">Enregistrer</button></div>
     <div class="row"><button id="mMove">Déplacer (G)</button><button id="mRot">Tourner (R)</button>
       <button id="reset">Remettre l'objet</button></div>
-    <div class="row"><button id="selAll" title="Ctrl+A">Tout sélectionner (visible)</button></div>
+    <div class="row"><button id="selAll" title="Ctrl+A">Tout sélectionner (visible)</button>
+      <button id="top" title="T">Vue de dessus (T)</button></div>
     <div id="selInfo" style="color:var(--muted)"></div>
     <div id="dirty"></div>
     <h2>Grille affichée</h2>
@@ -147,9 +149,18 @@ function paint(m) {
 function info() {
   if (!sels.length) { $('selInfo').textContent = 'Clic : sélectionner une place, un bonus ou un texte. Maj+clic : en ajouter / retirer.'; return; }
   if (sels.length > 1) { $('selInfo').textContent = `${sels.length} objets sélectionnés (Maj+clic pour en ajouter / retirer)`; return; }
-  const m = sels[0], a = m.userData.a, p = m.position;
-  $('selInfo').textContent = `${a.name}${a.start != null ? ' (place ' + a.start + ')' : ''}${a.pickup ? ' ' + a.pickup : ''}\n` +
+  const m = sels[0], a = m.userData.a, p = m.position, r = roadPos(p);
+  const side = r.offset >= 0 ? 'droite' : 'gauche';    // côté de l'axe latéral du .aid
+  $('selInfo').textContent = `${a.name}${a.start != null ? ' (place ' + (a.start + 1) + ')' : ''}${a.pickup ? ' ' + a.pickup : ''}\n` +
+    `${Math.abs(r.offset).toFixed(1)} m à ${side} du centre, ${(r.half - Math.abs(r.offset)).toFixed(1)} m du bord` +
+    ` (route de ${(2 * r.half).toFixed(0)} m)${Math.abs(r.offset) > r.half ? '  ⚠ HORS DE LA ROUTE' : ''}\n` +
     `x ${p.x.toFixed(1)}  y ${p.y.toFixed(1)}  z ${p.z.toFixed(1)}` + (a.ground != null ? `  sol d'origine ${a.ground.toFixed(1)}` : '');
+}
+function roadPos(p) {           // nœud le plus proche de la ligne centrale : écart latéral signé, demi-largeur
+  let k = 0, best = Infinity;
+  data.centre.forEach((c, i) => { const d = (c[0] - p.x) ** 2 + (c[2] - p.z) ** 2; if (d < best) { best = d; k = i; } });
+  const c = data.centre[k], l = data.lateral[k];
+  return { offset: (p.x - c[0]) * l[0] + (p.z - c[2]) * l[1], half: data.width[k] / 2 };
 }
 function select(list) {
   sels.forEach(m => m.scale.setScalar(1));
@@ -173,6 +184,15 @@ $('reset').onclick = () => { if (!sels.length) return; push();
   select(sels); setDirty(); };
 const shown = m => m.visible && m.parent.visible;
 $('selAll').onclick = () => select(pickable.filter(shown));
+// vue de dessus : caméra à la verticale du point visé (sélection, sinon centre de la vue) ; un 2e appui revient en 3D
+let topView = false;
+$('top').onclick = () => {
+  topView = !topView;
+  if (sels.length) controls.target.copy(sels.length > 1 ? pivot.position : sels[0].position);
+  const t = controls.target, dist = Math.max(60, camera.position.distanceTo(t));
+  camera.position.set(t.x + (topView ? 0 : dist * .55), t.y + (topView ? dist : dist * .45), t.z + (topView ? .01 : dist * .55));
+  $('top').classList.toggle('on', topView);
+};
 $('mMove').onclick = () => { tc.setMode('translate'); tc.showX = tc.showZ = true; };
 $('mRot').onclick = () => { tc.setMode('rotate'); tc.showX = tc.showZ = false; };
 $('save').onclick = async () => { await api('/api/edits', { name: data.name, edits }); saved = snap(); setDirty();
@@ -184,6 +204,7 @@ addEventListener('keydown', e => {
   else if (e.ctrlKey && e.key === 's') { $('save').onclick(); e.preventDefault(); }
   else if (e.key === 'g') $('mMove').onclick();
   else if (e.key === 'r') $('mRot').onclick();
+  else if (e.key === 't') $('top').onclick();
   else if (e.ctrlKey && e.key === 'a') { $('selAll').onclick(); e.preventDefault(); }
   else if (e.key === 'Escape') select([]);
 });
@@ -193,7 +214,8 @@ renderer.domElement.addEventListener('pointerup', e => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || tc.dragging) return;   // glissé, pas un clic
   const r = renderer.domElement.getBoundingClientRect();
   ray.setFromCamera({ x: (e.clientX - r.left) / r.width * 2 - 1, y: -(e.clientY - r.top) / r.height * 2 + 1 }, camera);
-  const m = ray.intersectObjects(pickable.filter(shown))[0]?.object;
+  let m = ray.intersectObjects(pickable.filter(shown))[0]?.object;
+  while (m && !pickable.includes(m)) m = m.parent;        // nez de la voiture -> la voiture
   if (e.shiftKey || e.ctrlKey) { if (m) select(sels.includes(m) ? sels.filter(x => x !== m) : [...sels, m]); }
   else select(m ? [m] : []);
 });
@@ -211,6 +233,14 @@ function layer(name) {
 }
 document.querySelectorAll('[data-layer]').forEach(c => c.onchange = () => layers[c.dataset.layer] && (layers[c.dataset.layer].visible = c.checked));
 
+function label(t) {             // numéro toujours lisible, quelle que soit la vue
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d'); x.fillStyle = '#000a'; x.beginPath(); x.arc(32, 32, 30, 0, 7); x.fill();
+  x.fillStyle = '#fff'; x.font = 'bold 36px system-ui'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(t, 32, 34);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false }));
+  s.scale.set(2.2, 2.2, 1); s.position.y = 2.2; s.raycast = () => {};   // le clic passe à la voiture
+  return s;
+}
 function status(a) {
   if (a.ground == null) return 'unknown';
   return Math.abs(a.pos[1] - a.ground) <= 1 ? 'ok' : 'bad';
@@ -219,23 +249,27 @@ const COL = { ok: 0x51cf66, bad: 0xff6b6b, unknown: 0x868e96 };
 
 function build(d) {
   clear();
-  // route : ruban centre ± largeur / 2 le long de l'axe latéral du .aid
-  const n = d.centre.length, pos = [], idx = [];
+  // route : ruban centre ± largeur / 2 le long de l'axe latéral du .aid, remonté de road_dy (le y du .aid est le
+  // bas d'un volume, pas le bitume) jusqu'à juste sous les voitures ; bords en blanc
+  const n = d.centre.length, pos = [], idx = [], L = [], R = [], C = [], dy = d.road_dy - 0.8;
   for (let i = 0; i < n; i++) {
-    const [x, y, z] = d.centre[i], [lx, lz] = d.lateral[i], h = d.width[i] / 2;
+    const [x, y0, z] = d.centre[i], y = y0 + dy, [lx, lz] = d.lateral[i], h = d.width[i] / 2;
     pos.push(x - lx * h, y, z - lz * h, x + lx * h, y, z + lz * h);
+    L.push(new THREE.Vector3(x - lx * h, y + .05, z - lz * h)); R.push(new THREE.Vector3(x + lx * h, y + .05, z + lz * h));
+    C.push(new THREE.Vector3(x, y + .05, z));
     if (i < n - 1) idx.push(2*i, 2*i+1, 2*i+2, 2*i+1, 2*i+3, 2*i+2);
   }
   const rg = new THREE.BufferGeometry();
   rg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); rg.setIndex(idx); rg.computeVertexNormals();
   const road = layer('road');
-  road.add(new THREE.Mesh(rg, new THREE.MeshLambertMaterial({ color: 0x3a4250, side: THREE.DoubleSide })));
-  road.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(d.centre.map(p => new THREE.Vector3(...p))),
-                          new THREE.LineBasicMaterial({ color: 0x3d8bfd })));
+  road.add(new THREE.Mesh(rg, new THREE.MeshBasicMaterial({ color: 0x2b313b, side: THREE.DoubleSide })));
+  for (const E of [L, R]) road.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(E), new THREE.LineBasicMaterial({ color: 0xffffff })));
+  const cl = new THREE.Line(new THREE.BufferGeometry().setFromPoints(C), new THREE.LineDashedMaterial({ color: 0x3d8bfd, dashSize: 3, gapSize: 3 }));
+  cl.computeLineDistances(); road.add(cl);
   // chemins secondaires : orange = dans l'inversé, gris pointillé = de l'original, retirés à l'inversion
   const paths = layer('paths');
   d.paths.forEach(p => {
-    const g = new THREE.BufferGeometry().setFromPoints(p.pts.map(q => new THREE.Vector3(q[0], q[1] + .3, q[2])));
+    const g = new THREE.BufferGeometry().setFromPoints(p.pts.map(q => new THREE.Vector3(q[0], q[1] + dy + .3, q[2])));
     const line = new THREE.Line(g, p.origin === 'reverse' ? new THREE.LineBasicMaterial({ color: 0xff922b })
       : new THREE.LineDashedMaterial({ color: 0x868e96, dashSize: 4, gapSize: 3 }));
     line.computeLineDistances(); paths.add(line);
@@ -255,14 +289,20 @@ function build(d) {
   }
   // acteurs
   const grid = layer('grid'), pick = layer('pickup'), text = layer('text');
-  const box = new THREE.BoxGeometry(2, 1.2, 4.4), ball = new THREE.SphereGeometry(1.5, 12, 8), slab = new THREE.BoxGeometry(6, .3, .6);
+  // voiture : 1,9 x 1,3 x 4,5 m (taille d'une voiture de Blur), nez blanc vers l'avant (+z), numéro de place au-dessus
+  const box = new THREE.BoxGeometry(1.9, 1.3, 4.5), nose = new THREE.ConeGeometry(.8, 1.4, 4).rotateX(Math.PI / 2).translate(0, .2, 2.9);
+  const ball = new THREE.SphereGeometry(1.5, 12, 8), slab = new THREE.BoxGeometry(6, .3, .6);
   const warn = [];
   d.lists.forEach(l => l.actors.forEach(a => {
     let m;
     if (a.kind === 'grid') {
       const s = status(a);
       m = new THREE.Mesh(box, new THREE.MeshLambertMaterial({ color: COL[s] }));
+      m.add(new THREE.Mesh(nose, new THREE.MeshBasicMaterial({ color: 0xffffff })));
+      m.add(label(a.start != null ? a.start + 1 : '?'));
       if (s === 'bad') warn.push(`${kindOf(l)} ${a.name} : ${(a.pos[1] - a.ground).toFixed(1)} m du sol`);
+      if (Math.abs(a.road.offset) > a.road.half - 1)
+        warn.push(`${kindOf(l)} place ${a.start + 1} : ${(a.road.half - Math.abs(a.road.offset)).toFixed(1)} m du bord (route de ${(2 * a.road.half).toFixed(0)} m)`);
       grid.add(m);
     } else if (a.kind === 'pickup') { m = new THREE.Mesh(ball, new THREE.MeshLambertMaterial({ color: 0xcc5de8 })); pick.add(m); }
     else if (a.kind === 'text') { m = new THREE.Mesh(slab, new THREE.MeshLambertMaterial({ color: 0xffd43b })); text.add(m); }
