@@ -522,6 +522,28 @@ celui de `AIPerkPrefs`. **Confirmé** (correspondance des valeurs et lecture en 
     différence visible) ; Nitro : aucun effet (réglages d'un autre type, la faille passe par `BossNitroRift`) ;
     **Shunt : plantage** (réglages DoubleTap incomplets : pas de Radius/FallRate/ECM*).
 - « Reversed » = tir dans l'autre sens (vu en jeu : « Forward fire Mine »). **Fort.**
+- **Shunt (2026-11-02, lu dans l'exe et `pickups.bin`, rien testé en jeu)** :
+  - Réglages (`PickupLevel` #275, normal) : Delay 0,5, Radius 0,75, FallRate 1,25, dégâts 100, **ShuntTurnRateScalar
+    0,3**, ECM (esquive) activée à 13 m, coupée à 20 m, alerte à 25 m. **Pas de `Speed`** (le Shunt « Reversed »
+    #704, tiré vers l'arrière, a Speed 50 et HeightFromGround 0,2) : la vitesse du Shunt normal vient d'ailleurs.
+  - Quand une IA tire (variables `AI.Perks.Shunt.*`, objets 0x1135354…) : cible entre **40 m** (MinRange) et
+    **100 m** (MaxReverseRange), IA alignée avec le tracé (**SplineFacingDot 0,8**) et avec la cible
+    (VehicleFacingDot 0,98). Tir manqué : MissDotVehicle 0,006 / MissDotProjectile 0,004.
+  - **Choix de la cible (`0x44DB20`, appelé depuis `0x456065` et `0x4D7205`)** : écart entre tireur et cible
+    = différence de leur **avancement sur le tour** (`véhicule + 0xF00`, fraction du tour, ramenée entre -0,5 et
+    0,5 par `0x45EE90` puis multipliée par la longueur du tour) ; seules les cibles **devant** comptent. Puis,
+    pour les deux voitures, le **tronçon du tracé `.aid` où elles sont** (`0x45ED80`, objet de course `0x1134D88`) :
+    si les deux tronçons sont reliés, un drapeau « même chemin » est posé et change le score. Note = mélange de
+    distance (plafond 2) et d'angle (en degrés), × 0,1. **Le ciblage dépend donc du `.aid`.** Confiance : **Moyenne**
+    (lecture du code, noms des champs supposés).
+  - **Traînée de chaque voiture (`0x441200`…)** : 31 positions passées (`véhicule + 0x190`, une nouvelle dès que la
+    voiture a bougé de plus de 1 m), dessinée par `Perks.Shunt.DrawTrail`. **Hypothèse** : le Shunt suit la traînée
+    de sa cible une fois proche, d'où un Shunt qui « suit » une voiture même hors du tracé.
+  - Réglages de débogage : `Perks.Shunt.OverrideShuntTargetting` + `TargetVehicleIndex` (forcer la cible, lus dans
+    `0x44DB20`), `Perks.Shunt.ForcePointOffset2` (10, jamais lu : reste de développement).
+  - **Conséquence pour les routes inversées (Hypothèse, à tester)** : leurs `.aid` n'ont plus les raccourcis. Une
+    cible sur un raccourci n'a pas de tronçon à elle (rattachée à la boucle principale) : avancement et « même chemin »
+    faux, donc choix de cible et décision de tir des IA faussés. Le vol lui-même suit sans doute la traînée.
 
 **Restes de développement (passe du 2026-10-19)** :
 - **Menu de débogage des développeurs** (scripts BZUI `Screens\Debug\*`) : `DebugScreen` (menu), `DebugEventScreen`
