@@ -55,11 +55,34 @@ def world_path(stm):
     return os.path.join(WORK, "world.json" if stem == "location11" else "world_%s.json" % stem)
 
 
+def envmap_textures(d):
+    """textures d'au moins un matériau à reflet (envmap.tex) : leur alpha est le masque du reflet (vitre
+    opaque), pas une découpe -> pas d'alphaTest dans la page (diagnostic P1, 2026-11-02)"""
+    mats = stm2obj.materials(d)
+    out = set()
+    for t, n, b in stm2obj.entries(d):
+        if t != 6:
+            continue
+        try:
+            for m in {s[0] for s in stm2obj.submeshes(b)}:
+                if any(u.lower() == "envmap.tex" for u in mats.get(m, ("", []))[1]):
+                    out.add(stm2obj.material_name(d, m))
+        except (struct.error, ValueError, IndexError):
+            continue
+    return out
+
+
 def export(stm):
     """géométrie + textures du lieu pour la page (une seule fois par lieu, mise en cache)"""
     stem = os.path.splitext(os.path.basename(stm))[0].lower()
     out = os.path.join(CACHE, stem)
-    if os.path.exists(os.path.join(out, "index.json")):
+    idx = os.path.join(out, "index.json")
+    if os.path.exists(idx):
+        info = json.load(open(idx))
+        if "envmap" not in info:                  # cache d'avant 2026-11-02 : on ajoute seulement le repère
+            env = envmap_textures(open(stm, "rb").read())
+            info["envmap"] = [t in env for t in info["textures"]]
+            json.dump(info, open(idx, "w"))
         return stem
     os.makedirs(out, exist_ok=True)
     d = open(stm, "rb").read()
@@ -104,8 +127,9 @@ def export(stm):
         x, y, z, one = struct.unpack_from(">4f", d, mm.start() - 16)
         if abs(one - 1) < 1e-6 and abs(y) < 1000:
             pickups.append([x, y + 1.0 - ground, z])
+    env = envmap_textures(d)
     json.dump(dict(stm=stm, ground=ground, scale=[1 / s for s in stm2obj.SCALE], textures=textures, chunks=chunks,
-                   hp_pickups=pickups), open(os.path.join(out, "index.json"), "w"))
+                   hp_pickups=pickups, envmap=[t in env for t in textures]), open(os.path.join(out, "index.json"), "w"))
     log("export %s : %d groupes, %d textures, sol HP %.1f" % (stem, len(chunks), len(textures), ground))
     return stem
 

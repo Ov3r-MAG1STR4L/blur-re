@@ -198,7 +198,8 @@ async function loadLocation() {
     if (t.startsWith('couleur:')) return new THREE.MeshBasicMaterial({ color: '#' + t.slice(8), side: THREE.DoubleSide });
     const tx = texLoader.load(`/cache/${r.stem}/t${String(i).padStart(3, '0')}.png`);
     tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.colorSpace = THREE.SRGBColorSpace;
-    return new THREE.MeshBasicMaterial({ map: tx, side: THREE.DoubleSide, alphaTest: 0.3 });
+    // vitre à reflet (envmap) : alpha = masque du reflet, la vitre est opaque ; sinon découpe (grillage, plante)
+    return new THREE.MeshBasicMaterial({ map: tx, side: THREE.DoubleSide, alphaTest: (info.envmap || [])[i] ? 0 : 0.3 });
   });
   const hitMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false });
   let n = 0;
