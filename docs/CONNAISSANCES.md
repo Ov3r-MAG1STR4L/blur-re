@@ -106,6 +106,10 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   une colonne était hors route (−12 m pour ±9,8 m) ; (b) la **collision s'arrête ~250 m après l'ancienne
   arrivée** (vers 13 780 m du tracé d'origine) : la place la plus en arrière tombait. Correctif dans
   `gridreverse.py` : grille centrée et resserrée (`MAX_BEHIND` = 219 m derrière la ligne, 1re rangée gardée).
+- **Hauteur d'un nœud `.aid` (2026-11-02, Confirmé hors jeu)** : le `y` d'un nœud vaut son `ylow` (bas d'un volume
+  `ylow`..`yhigh`), pas la hauteur du bitume. Écart médian des places de grille au-dessus du nœud le plus proche :
+  Barcelona Oval 1R 3,2 m, Brighton 1R 7,1 m, Dumbo 2R 8,1 m, Haruna 7 14,4 m. Reverse Studio remonte la route de
+  cet écart pour l'affichage (hauteur estimée).
 - **Relevé en roulant (Descent complète, `trackrec.py`, 2026-10-19)** : **le nœud d'un `.aid` est un BORD de la
   route**, pas son centre. Position du joueur rapportée à la largeur : 0,04 à 0,95 (médiane 0,50) sur 13,5 km.
   Point d'une ligne en XZ = `(x, z) + latéral2D × frac × largeur`. **Confirmé** (1 765 points). L'ancienne formule
