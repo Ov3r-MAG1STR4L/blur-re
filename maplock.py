@@ -29,13 +29,21 @@ def _route(new):
     return next(r for r in make_reverse.ROUTES if r["new"] == new)
 
 
+def hash_top(base):
+    """Fin de la plage de hash d'une route = hash de la route suivante (Dumbo 2R 0x..30, Dumbo 3R 0x..40 : une plage
+    fixe de 0xFF mélangeait leurs listes)."""
+    import make_reverse
+    return min([r["hash"] for r in make_reverse.ROUTES if r["hash"] > base] + [base + 0x100])
+
+
 def _lists(ap, base):
-    """Listes clonées de la route (hash base+1 .. base+0xFF), dans l'ordre des hash : [(clé, nom, {index: WorldMatrix})].
+    """Listes clonées de la route (hash base+1 .. route suivante), dans l'ordre des hash : [(clé, nom, {index: WorldMatrix})].
     clé = noms des acteurs + n° d'occurrence : l'ordre des hash change quand make_reverse clone d'autres listes
     (bonus ajoutés le 2026-10-26), les noms des acteurs non ; deux listes aux mêmes noms (solo / multi) : 0 et 1."""
     out, seen = [], {}
+    top = hash_top(base)
     for n, t, v, h in sorted(XT(ap).records(), key=lambda e: e[3]):
-        if t == "LevelActorList" and base < h <= base + 0xFF:
+        if t == "LevelActorList" and base < h < top:
             acts = v.get("LevelActors", [])
             sig = "|".join((a or {}).get("Name", "") for a in acts)
             seen[sig] = seen.get(sig, -1) + 1

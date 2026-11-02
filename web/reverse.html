@@ -39,10 +39,19 @@
       <button id="save" title="Ctrl+S">Enregistrer</button></div>
     <div class="row"><button id="mMove">Déplacer (G)</button><button id="mRot">Tourner (R)</button>
       <button id="reset">Remettre l'objet</button></div>
-    <div id="selInfo" style="color:var(--muted)">Clic sur une place, un bonus ou un texte pour le sélectionner.</div>
+    <div class="row"><button id="selAll" title="Ctrl+A">Tout sélectionner (visible)</button></div>
+    <div id="selInfo" style="color:var(--muted)"></div>
     <div id="dirty"></div>
+    <h2>Grille affichée</h2>
+    <select id="gridMode">
+      <option value="MultiplayerActorLists">Multijoueur (celle de la course perso)</option>
+      <option value="ActorLists">Solo</option>
+      <option value="both">Les deux</option>
+    </select>
     <h2>Calques</h2>
     <label><input type="checkbox" data-layer="road" checked> Route (.aid, largeur)</label>
+    <label><input type="checkbox" data-layer="paths" checked> Chemins secondaires
+      <span style="color:#ff922b">━</span> inversés <span style="color:#868e96">┅</span> d'origine retirés</label>
     <label><input type="checkbox" data-layer="coll" checked> Collision</label>
     <label><input type="checkbox" data-layer="ground" checked> Sol mesuré en roulant</label>
     <label><input type="checkbox" data-layer="grid" checked> Grilles</label>
@@ -96,10 +105,23 @@ addEventListener('resize', resize); resize();
 (function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
 
 // ---------- retouches : {clé de liste: {index: {pos, yaw}}} ; annuler / rétablir = copies de cet objet ----------
-let edits = {}, undoS = [], redoS = [], saved = '{}', sel = null;
+let edits = {}, undoS = [], redoS = [], saved = '{}', sels = [];
 const pickable = [];
 const tc = new TransformControls(camera, renderer.domElement);
-tc.addEventListener('dragging-changed', e => { controls.enabled = !e.value; if (e.value) push(); else commit(sel); });
+// plusieurs objets : la poignée tient un pivot au centre ; chaque objet suit le pivot (matrice de départ conservée)
+const pivot = new THREE.Object3D(); scene.add(pivot);
+let p0inv = null, m0 = [];
+tc.addEventListener('dragging-changed', e => {
+  controls.enabled = !e.value;
+  if (e.value) { push(); pivot.updateMatrixWorld(); p0inv = pivot.matrixWorld.clone().invert(); m0 = sels.map(m => m.matrixWorld.clone()); }
+  else { sels.forEach(commit); info(); }
+});
+tc.addEventListener('objectChange', () => {
+  if (tc.object !== pivot) return;
+  pivot.updateMatrixWorld();
+  const s = new THREE.Vector3();
+  sels.forEach((m, k) => new THREE.Matrix4().multiplyMatrices(pivot.matrixWorld, p0inv).multiply(m0[k]).decompose(m.position, m.quaternion, s));
+});
 scene.add(tc);
 function snap() { return JSON.stringify(edits); }
 function push() { undoS.push(snap()); if (undoS.length > 300) undoS.shift(); redoS = []; }
@@ -109,7 +131,7 @@ function commit(m) {            // position / rotation de l'objet -> retouche
   if (!m) return;
   const u = m.userData, f = new THREE.Vector3(0, 0, 1).applyQuaternion(m.quaternion);
   (edits[u.key] ??= {})[u.i] = { pos: m.position.toArray(), yaw: yawOf([f.x, f.y, f.z]) - yawOf(u.a.fwd) };
-  paint(m); setDirty(); info(m);
+  paint(m); setDirty();
 }
 function place(m) {             // objet à sa position d'origine ou retouchée
   const u = m.userData, a = u.a, e = edits[u.key]?.[u.i];
@@ -122,19 +144,35 @@ function paint(m) {
   const u = m.userData;
   if (u.a.kind === 'grid') m.material.color.setHex(edits[u.key]?.[u.i] ? 0x3d8bfd : COL[status(u.a)]);
 }
-function info(m) {
-  if (!m) { $('selInfo').textContent = 'Clic sur une place, un bonus ou un texte pour le sélectionner.'; return; }
-  const a = m.userData.a, p = m.position;
+function info() {
+  if (!sels.length) { $('selInfo').textContent = 'Clic : sélectionner une place, un bonus ou un texte. Maj+clic : en ajouter / retirer.'; return; }
+  if (sels.length > 1) { $('selInfo').textContent = `${sels.length} objets sélectionnés (Maj+clic pour en ajouter / retirer)`; return; }
+  const m = sels[0], a = m.userData.a, p = m.position;
   $('selInfo').textContent = `${a.name}${a.start != null ? ' (place ' + a.start + ')' : ''}${a.pickup ? ' ' + a.pickup : ''}\n` +
     `x ${p.x.toFixed(1)}  y ${p.y.toFixed(1)}  z ${p.z.toFixed(1)}` + (a.ground != null ? `  sol d'origine ${a.ground.toFixed(1)}` : '');
 }
-function select(m) { sel = m; m ? tc.attach(m) : tc.detach(); info(m); }
-function restoreEdits(s) { edits = JSON.parse(s); pickable.forEach(place); if (sel) info(sel); setDirty(); }
+function select(list) {
+  sels.forEach(m => m.scale.setScalar(1));
+  sels = list; sels.forEach(m => m.scale.setScalar(1.25));       // sélection visible : objets grossis
+  if (!sels.length) tc.detach();
+  else if (sels.length === 1) tc.attach(sels[0]);
+  else {
+    pivot.position.set(0, 0, 0); pivot.quaternion.identity();
+    sels.forEach(m => pivot.position.add(m.position)); pivot.position.divideScalar(sels.length);
+    tc.attach(pivot);
+  }
+  info();
+}
+function restoreEdits(s) { edits = JSON.parse(s); pickable.forEach(place); select(sels); setDirty(); }
 function popup(t) { $('doneMsg').textContent = t; $('done').style.display = 'flex'; }
 $('undo').onclick = () => { if (undoS.length) { redoS.push(snap()); restoreEdits(undoS.pop()); } };
 $('redo').onclick = () => { if (redoS.length) { undoS.push(snap()); restoreEdits(redoS.pop()); } };
-$('reset').onclick = () => { if (!sel) return; push(); const u = sel.userData; delete edits[u.key]?.[u.i];
-  if (edits[u.key] && !Object.keys(edits[u.key]).length) delete edits[u.key]; place(sel); setDirty(); info(sel); };
+$('reset').onclick = () => { if (!sels.length) return; push();
+  sels.forEach(m => { const u = m.userData; delete edits[u.key]?.[u.i];
+    if (edits[u.key] && !Object.keys(edits[u.key]).length) delete edits[u.key]; place(m); });
+  select(sels); setDirty(); };
+const shown = m => m.visible && m.parent.visible;
+$('selAll').onclick = () => select(pickable.filter(shown));
 $('mMove').onclick = () => { tc.setMode('translate'); tc.showX = tc.showZ = true; };
 $('mRot').onclick = () => { tc.setMode('rotate'); tc.showX = tc.showZ = false; };
 $('save').onclick = async () => { await api('/api/edits', { name: data.name, edits }); saved = snap(); setDirty();
@@ -146,7 +184,8 @@ addEventListener('keydown', e => {
   else if (e.ctrlKey && e.key === 's') { $('save').onclick(); e.preventDefault(); }
   else if (e.key === 'g') $('mMove').onclick();
   else if (e.key === 'r') $('mRot').onclick();
-  else if (e.key === 'Escape') select(null);
+  else if (e.ctrlKey && e.key === 'a') { $('selAll').onclick(); e.preventDefault(); }
+  else if (e.key === 'Escape') select([]);
 });
 const ray = new THREE.Raycaster(); let down = null;
 renderer.domElement.addEventListener('pointerdown', e => down = [e.clientX, e.clientY]);
@@ -154,11 +193,13 @@ renderer.domElement.addEventListener('pointerup', e => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || tc.dragging) return;   // glissé, pas un clic
   const r = renderer.domElement.getBoundingClientRect();
   ray.setFromCamera({ x: (e.clientX - r.left) / r.width * 2 - 1, y: -(e.clientY - r.top) / r.height * 2 + 1 }, camera);
-  const hit = ray.intersectObjects(pickable.filter(m => m.parent.visible))[0];  select(hit ? hit.object : null);
+  const m = ray.intersectObjects(pickable.filter(shown))[0]?.object;
+  if (e.shiftKey || e.ctrlKey) { if (m) select(sels.includes(m) ? sels.filter(x => x !== m) : [...sels, m]); }
+  else select(m ? [m] : []);
 });
 
 function clear() {           // libère la mémoire GPU de la route précédente (sinon elle s'accumule)
-  select(null); pickable.length = 0;
+  select([]); pickable.length = 0;
   for (const g of Object.values(layers)) {
     g.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); });
     scene.remove(g);
@@ -191,6 +232,14 @@ function build(d) {
   road.add(new THREE.Mesh(rg, new THREE.MeshLambertMaterial({ color: 0x3a4250, side: THREE.DoubleSide })));
   road.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(d.centre.map(p => new THREE.Vector3(...p))),
                           new THREE.LineBasicMaterial({ color: 0x3d8bfd })));
+  // chemins secondaires : orange = dans l'inversé, gris pointillé = de l'original, retirés à l'inversion
+  const paths = layer('paths');
+  d.paths.forEach(p => {
+    const g = new THREE.BufferGeometry().setFromPoints(p.pts.map(q => new THREE.Vector3(q[0], q[1] + .3, q[2])));
+    const line = new THREE.Line(g, p.origin === 'reverse' ? new THREE.LineBasicMaterial({ color: 0xff922b })
+      : new THREE.LineDashedMaterial({ color: 0x868e96, dashSize: 4, gapSize: 3 }));
+    line.computeLineDistances(); paths.add(line);
+  });
   // collision proche de la route
   const coll = layer('coll');
   if (d.n_tris) {
@@ -213,14 +262,15 @@ function build(d) {
     if (a.kind === 'grid') {
       const s = status(a);
       m = new THREE.Mesh(box, new THREE.MeshLambertMaterial({ color: COL[s] }));
-      if (s === 'bad') warn.push(`${l.record} ${a.name} : ${(a.pos[1] - a.ground).toFixed(1)} m du sol`);
+      if (s === 'bad') warn.push(`${kindOf(l)} ${a.name} : ${(a.pos[1] - a.ground).toFixed(1)} m du sol`);
       grid.add(m);
     } else if (a.kind === 'pickup') { m = new THREE.Mesh(ball, new THREE.MeshLambertMaterial({ color: 0xcc5de8 })); pick.add(m); }
     else if (a.kind === 'text') { m = new THREE.Mesh(slab, new THREE.MeshLambertMaterial({ color: 0xffd43b })); text.add(m); }
     else return;
-    m.userData = { key: l.key, i: a.i, a };
+    m.userData = { key: l.key, i: a.i, a, fields: l.fields };
     pickable.push(m); place(m);
   }));
+  applyMode();
   const unknown = d.lists.flatMap(l => l.actors).filter(a => a.kind === 'grid' && a.ground == null).length;
   $('warn').textContent = (warn.length ? warn.join('\n') : 'Aucune place en l\'air ni sous le sol.') +
     (unknown ? `\n${unknown} places sans sol connu (ni collision lisible ni ground/${d.orig}.csv : trackrec.py --all).` : '') +
@@ -232,6 +282,15 @@ function build(d) {
   minimap(d);
 }
 
+// solo / multi : une liste sans étiquette (build plus ancien que make_reverse) reste toujours affichée
+function inMode(fields) { const v = $('gridMode').value; return v === 'both' || !fields.length || fields.includes(v); }
+function kindOf(l) { return !l.fields.length ? '?' : l.fields.length > 1 ? 'solo+multi' : l.fields[0] === 'ActorLists' ? 'solo' : 'multi'; }
+function applyMode() {
+  pickable.forEach(m => m.visible = inMode(m.userData.fields));
+  select(sels.filter(shown)); if (data) minimap(data);
+}
+$('gridMode').onchange = applyMode;
+
 function minimap(d) {           // aperçu du HUD : tracé vu de dessus et grille (la vraie image .ipf n'est pas décodée)
   const c = $('mini'), x = c.getContext('2d'), P = d.centre;
   const xs = P.map(p => p[0]), zs = P.map(p => p[2]);
@@ -240,7 +299,7 @@ function minimap(d) {           // aperçu du HUD : tracé vu de dessus et grill
   x.clearRect(0, 0, 440, 440);
   x.strokeStyle = '#3d8bfd'; x.lineWidth = 6; x.shadowColor = '#3d8bfd'; x.shadowBlur = 12; x.beginPath();
   P.forEach((p, i) => x[i ? 'lineTo' : 'moveTo'](...f(p))); x.stroke(); x.shadowBlur = 0;
-  d.lists.forEach(l => l.actors.forEach(a => {
+  d.lists.filter(l => inMode(l.fields)).forEach(l => l.actors.forEach(a => {
     if (a.kind !== 'grid') return;
     x.fillStyle = '#' + COL[status(a)].toString(16).padStart(6, '0'); x.fillRect(...f(a.pos).map(v => v - 3), 6, 6);
   }));
