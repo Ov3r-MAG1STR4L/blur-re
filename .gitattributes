@@ -1,1 +1,2 @@
 *.bat text eol=crlf
+vendor/map_builder/nfs_studio.patch -text
