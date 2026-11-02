@@ -18,6 +18,8 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
+
+import config
 from tkinter import filedialog, messagebox, ttk
 
 import numpy as np
@@ -27,7 +29,7 @@ import make_nfs_map as M  # noqa: E402
 import nfs_atlas as A  # noqa: E402
 import stm2obj  # noqa: E402
 
-BLUR_TEST = r"C:\Users\sanqu\Jeux_WII\Blur_test"
+BLUR_TEST = config.BLUR_TEST
 WORK = os.path.dirname(M.WORLD)
 
 TUTO = """NFS STUDIO - DIDACTICIEL

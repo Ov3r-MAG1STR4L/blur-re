@@ -1266,3 +1266,17 @@ dans `Blur_test` (à coordonner avec la session des routes inversées). Aucun ci
     (vitres). Le shader opaque `veh_Default*` ne doit pas gérer l'alpha.
   - Autres éléments : `m_CollisionMesh`, `m_ShadowCaster` (`veh_Shadow`), os de déformation `m_Bonnet_Front_Bone0..2`,
     `g_DentTexture` / `g_ScratchTexture` (dégâts). Suffixes `_a_b_c_f_h` des shaders : options non décodées.
+
+### Reproductibilité de la construction NFS (2026-11-02, étape 0)
+
+- [F] La construction de Dubaï (`location11`, `rebuild(auto_pickups=False)`) est **déterministe** : deux
+  constructions successives donnent les mêmes 139 fichiers octet par octet ; une troisième avec `config.py` aussi.
+- [F] Map Builder utilisé = zip 1.0.0 (sha256 `cc7425bd…d171`) + `vendor/map_builder/nfs_studio.patch`
+  (3 fichiers de `flat_earth/`, tout conditionné à des variables `NFS_*`). Vérifié sur un dossier vierge.
+- [F] `bmb_game\Blur Map Builder\base\unpacked\gamedata\xt\amax.bin` et `multiplayer.bin` ne sont plus ceux
+  de Blur_test : la fusion manuelle est périmée.
+- [F] Une construction écrit exactement 9 fichiers dans `bmb_game` (`maps\world.json`, 6 dans `work`,
+  `levels\flat_earth\level.levelphysics` / `.levelrender`).
+- [H] Le `MemoryError` vu une fois dans `pak.add_aliases` vient de la RAM libre (3,8 Go sur 15,5) :
+  Map Builder recopie le pak par concaténations de `bytes`.
+- Procédure, dépendances et problèmes restants : `docs/NFS_STUDIO_REPRO.md`.

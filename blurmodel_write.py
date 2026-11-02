@@ -20,7 +20,9 @@ import os
 import struct
 import sys
 
-MB = os.environ.get("BMB_DIR", r"C:\Users\sanqu\Jeux_WII\bmb_game\map_builder")
+import config
+
+MB = os.environ.get("BMB_DIR", config.MAP_BUILDER_DIR)
 os.environ.setdefault("BMB_GAME", os.path.dirname(MB))
 os.environ.setdefault("BMB_INSTALLED", "1")
 sys.path[:0] = [os.path.join(MB, "model"), MB]

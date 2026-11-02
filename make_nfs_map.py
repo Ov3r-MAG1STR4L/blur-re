@@ -11,10 +11,11 @@ import shutil
 import struct
 import sys
 
+import config
 from blurpak import Pak
 
-BMB = sys.argv[1] if len(sys.argv) > 1 else r"C:\Users\sanqu\Jeux_WII\bmb_game"
-OUT = sys.argv[2] if len(sys.argv) > 2 else r"C:\Users\sanqu\Jeux_WII\blur_extracted\mods\nfs_dubai\files"
+BMB = sys.argv[1] if len(sys.argv) > 1 else config.BMB_GAME
+OUT = sys.argv[2] if len(sys.argv) > 2 else config.NFS_OUT
 WORK = os.path.join(BMB, "Blur Map Builder", "work")
 
 
@@ -40,7 +41,7 @@ def main():
         shutil.copyfile(os.path.join(BMB, "levels", "flat_earth", f), os.path.join(lv, f))
         n += 1
     print(n, "fichiers ->", OUT)
-    add_thumbnail(r"C:\Users\sanqu\Jeux_WII\Blur_test\UI\data\ui_frontend.bpr",
+    add_thumbnail(os.path.join(config.BLUR_TEST, "UI", "data", "ui_frontend.bpr"),
                   os.path.join(OUT, "ui", "data", "ui_frontend.bpr"))
 
 
@@ -62,9 +63,9 @@ def add_thumbnail(test_bpr, out_bpr, route="Flat_Earth_1"):
 
 
 # --- bâtiment de Hot Pursuit posé dans un emplacement d'objet de Map Builder (2026-10-27) ---
-STM = r"C:\Users\sanqu\Jeux_WII\nfs_extracted\files\Data\Environments\Location1\location11.stm"
+STM = os.path.join(config.ENV_DIR, "Location1", "location11.stm")
 HP_GROUND = -323.8           # hauteur de la route HP près de la ligne de départ ; Blur (Map Builder) : sol à y = 1
-TEMPLATE = r"C:\Users\sanqu\Jeux_WII\blur_extracted\nfs_models\sign_wetfloor.model"
+TEMPLATE = os.path.join(config.BLUR_EXTRACTED, "nfs_models", "sign_wetfloor.model")
 
 
 def slot_matrix(actorpack, def_uid):
@@ -270,7 +271,7 @@ def road_collision(src, out, world_json, radius=40.0, road_only=False):   # 40 m
     return len(objs)
 
 
-WORLD = r"C:\Users\sanqu\Jeux_WII\nfs_extracted\stm_work\world.json"
+WORLD = os.path.join(config.STM_WORK, "world.json")
 
 
 def set_heights(world_json, ground=1.0):

@@ -24,6 +24,8 @@ import sys
 import threading
 import urllib.parse
 import webbrowser
+
+import config
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 import numpy as np
@@ -35,10 +37,10 @@ import nfs_atlas as A  # noqa: E402
 import stm2obj  # noqa: E402
 
 PORT = 8765
-ENV_DIR = r"C:\Users\sanqu\Jeux_WII\nfs_extracted\files\Data\Environments"
+ENV_DIR = config.ENV_DIR
 WORK = os.path.dirname(M.WORLD)
 CACHE = os.path.join(WORK, "web_cache")
-BLUR_TEST = r"C:\Users\sanqu\Jeux_WII\Blur_test"
+BLUR_TEST = config.BLUR_TEST
 LOG = []
 BUSY = threading.Lock()
 

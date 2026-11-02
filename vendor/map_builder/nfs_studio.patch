@@ -1,0 +1,73 @@
+--- a/flat_earth/build.py	2026-10-20 22:43:34.000000000 +0200
++++ b/flat_earth/build.py	2026-11-02 21:04:18.383920800 +0100
+@@ -239,6 +239,11 @@
+ road_layout.OBJECT_BOX.update({name: (-ARCH_W / 2 - ARCH_PILLAR / 2, ARCH_W / 2 + ARCH_PILLAR / 2, 0, ARCH_Y1,
+                                       -ARCH_DEPTH / 2, ARCH_DEPTH / 2) for name, _, _ in ARCHES})
+ road_layout.FIXED_KINDS.update(name for name, _, _ in ARCHES)        # it belongs to the line: moves with it
++# Projet J (blur-re) : NFS_COUNT modèles de décor Hot Pursuit, un acteur chacun posé à l'origine (road_layout)
++NFS_COUNT = int(os.environ.get("NFS_COUNT", "0"))
++NFS_UID = 0xF1E40000
++BIG += [("tower_nfs%03d" % k, "models\\objects\\flat_earth\\nfs_%03d.model" % k, None, NFS_UID + 2 * k,
++         NFS_UID + 2 * k + 1, 0.0) for k in range(NFS_COUNT)]
+ TOWER_Z = 300.0                                 # from the road middle (behind the ships / cranes)
+ TOWER_STEP = 240.0                              # one every ... m along each side
+ SHIP_Z, CRANE_Z = 110.0, 175.0                  # distance of the ship wall / crane row from the road middle
+@@ -753,10 +758,13 @@
+         o4, n4 = k4.sections[4]
+         gm_ref = next(i for i in range(n4) if struct.unpack_from("<I", amax, o4 + 8 * i)[0] == our_gm)
+ 
+-        def def_patch(data, pool, blocks, gm_ref=gm_ref):
++        draw = float(os.environ.get("NFS_DRAW", TILE_DRAW_DISTANCE)) if name.startswith("tower_nfs") \
++            else TILE_DRAW_DISTANCE                                       # Projet J : décor HP moins loin
++
++        def def_patch(data, pool, blocks, gm_ref=gm_ref, draw=draw):
+             b0 = blocks[0]
+             struct.pack_into("<I", data, b0 + 0, gm_ref)                  # Model
+-            struct.pack_into("<f", data, b0 + 12, TILE_DRAW_DISTANCE)     # DrawDistance
++            struct.pack_into("<f", data, b0 + 12, draw)                   # DrawDistance
+             struct.pack_into("<I", data, b0 + 24, 1)                      # DisplayInMirror
+             struct.pack_into("<I", data, b0 + 32, 0)                      # PhysType None
+             struct.pack_into("<I", data, b0 + 68, 0)                      # Alignment None
+@@ -1509,7 +1517,10 @@
+     sys.path.insert(0, os.path.join(MB, "physics"))
+     import write_flat
+     x0, x1, z0, z1 = bounds or (OX - 2000, OX + 2000, OZ - 2000, OZ + 2000)
+-    data = write_flat.build_flat(PHYSICS_FRAME, GROUND_Y, x0, x1, z0, z1, boxes, pieces, decks, patches)
++    if os.environ.get("NFS_NO_WALLS"):           # Projet J : la collision vient de Hot Pursuit (murs, ponts)
++        boxes, pieces, decks = (), (), ()
++    floor_y = float(os.environ.get("NFS_FLOOR_Y", GROUND_Y))   # Projet J : sol de secours sous la route HP
++    data = write_flat.build_flat(PHYSICS_FRAME, floor_y, x0, x1, z0, z1, boxes, pieces, decks, patches)
+     out = out or os.path.join(WORK, "level.levelphysics")
+     game = game or PHYSICS_GAME
+     open(out, "wb").write(data)
+--- a/flat_earth/gen_actorpack.py	2026-10-20 22:43:34.000000000 +0200
++++ b/flat_earth/gen_actorpack.py	2026-11-02 21:04:18.398983200 +0100
+@@ -48,7 +48,7 @@
+             yield ctx.types[t]["name"], ctx.blocks[bi] + e * size + 12
+ 
+ 
+-GRID_GAP = 8.0          # front row this far behind the start line
++GRID_GAP = float(__import__("os").environ.get("NFS_GRID_GAP", 8.0))   # front row this far behind the start line (Projet J : réglable)
+ CAR_ABOVE_GROUND = 1.0
+ 
+ 
+--- a/flat_earth/road_layout.py	2026-10-20 22:43:34.000000000 +0200
++++ b/flat_earth/road_layout.py	2026-11-02 21:04:18.412455900 +0100
+@@ -142,6 +142,17 @@
+     big = big_spots(fe, road, info, room=144 - len(spots), m=m)
+     spots += big
+     kinds += [tile_kind(fe, t[3]) for t in big]
++    # Projet J : un acteur par modèle de décor HP, au centre de sa zone (fichier NFS_SPOTS, sinon l'origine)
++    import json as _json
++    import os as _os
++    _sp = _json.load(open(_os.environ["NFS_SPOTS"])) if _os.environ.get("NFS_SPOTS") else []
++    nfs = [(*(_sp[k] if k < len(_sp) else (0.0, fe.GROUND_Y, 0.0)), b[4], 0.0)
++           for k, b in enumerate(b for b in fe.BIG if b[0].startswith("tower_nfs"))]
++    if len(spots) + len(nfs) > 144:                    # Projet J : pas de place pour tout le décor -> le plus loin saute
++        print("NFS : %d modèles de décor sur %d (liste de 144 acteurs pleine)" % (max(0, 144 - len(spots)), len(nfs)))
++        nfs = nfs[:max(0, 144 - len(spots))]
++    spots += nfs
++    kinds += [tile_kind(fe, t[3]) for t in nfs]
+     assert len(spots) <= 144, len(spots)
+     spots, ks = apply_edits(spots, kinds, m.get("edits") or {}, scalable=True)
+     return (spots, ks) if keys else spots
