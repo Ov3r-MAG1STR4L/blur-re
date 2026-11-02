@@ -327,6 +327,15 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
   Si drapeaux & 0x80 : u32 genre, puis genre 5 → u32 + 3 réels, 9 → u32 + 2 réels, 6 → u32 + 1 réel,
   2 → nom de section + u32. Ensuite u32 nombre + nœuds.
   Signification des valeurs (poids de choix de route pour l'IA ?) : **Hypothèse**.
+  **Géométrie d'une jonction (Tokyo Bayshore `JunctionOne`, mesuré 2026-11-02)** : 8 nœuds, 22 m de large (la route
+  en fait 30), posés **à mi-chemin entre la boucle et le raccourci là où ils se chevauchent encore** (3 à 4 m de chaque),
+  6 nœuds avant que le raccourci ne s'écarte de plus de 6 m. Le raccourci (`AltrouteOne`, 291 nœuds) part de la boucle
+  au nœud 155, s'en écarte jusqu'à 25 m et la rejoint au nœud 451 **sans jonction de retour** (rejoint par la géométrie
+  et la table logique). `CatchOne` (155 nœuds, type 0, sans jonction, 12 m à côté de la boucle) : rôle inconnu.
+  `aidreverse` reconstruit chaque jonction au même endroit relatif dans l'autre sens (près de l'ancien point de retour),
+  règle gardée ; la table logique renvoie vers chaque nœud de jonction depuis les lignes qui voient le nœud de boucle
+  dessous. Tokyo Bayshore Reverse garde ainsi son raccourci (`KEEP_BRANCHES`). **À tester en jeu** : les IA prennent-elles
+  le raccourci, le Shunt suit-il une voiture dessus.
 - **Table logique** (fin du fichier) : u32 N (= nombre de nœuds de la ligne logique), puis pour chaque
   nœud logique : u32 n, n × (u32 index de nœud, nom de section). 137 032 renvois au total, **tous valides**.
 - **Nœud (323 octets) = en-tête de 48 octets + 11 « lignes » de 25 octets.** Statistiques mesurées sur
