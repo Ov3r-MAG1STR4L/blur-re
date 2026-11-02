@@ -1311,3 +1311,47 @@ exportés ; studio et export lisent la même géométrie (`stm2obj.mesh`).
   pas si HP dessine en plus un plan d'eau ou un horizon hors du `.stm`.
 - [?] Rendu en jeu : non vérifié (aucune construction de Dubaï installée ; `mods\nfs_dubai` vient d'un autre lieu).
 - [F] Phase A (2026-11-02) : `web_cache/<lieu>/index.json` reçoit `envmap` (booléen par texture, vrai si au moins un matériau à `envmap.tex` l'utilise ; 1 texture mixte à Dubaï, 2 à Rio) ; la page met `alphaTest` à 0 pour ces textures, 0,3 pour les autres. Vérifié dans le studio (Dubaï : tours de la marina, Burj, vue d'ensemble ; Rio) : tours pleines, grues / palmiers toujours découpés. Export inchangé. Avant / après : `nfs_diag/p1_studio.py`, `?old=1`.
+
+### P1 phase B : `see_through` à l'export (2026-11-03, diagnostic, rien de modifié)
+
+Outil : `nfs_diag/pb_see_through.py STM WORLD [simuler]` (lecture seule).
+- [F] `make_nfs_map.see_through(d, m)` : décision **par matériau** m, calculée sur **la texture** seule
+  (`material_name`), mise en cache par texture (`_SEE`) : part des pixels d'alpha < 128 ≥ 50 %, sauf si le nom de la
+  texture contient fence / barrier / bollard / pylon / guard. Aucune prise en compte de `envmap.tex`. Utilisée à
+  2 endroits : `nfs_atlas.jobs` (décor : tous les triangles du matériau retirés) et `road_collision` (collision).
+- [F] Retiré du décor : Dubaï 179 819 triangles (vitres à reflet 163 295, autres 14 738, grues 1 754, végétation 32) ;
+  Rio 25 750 (vitres 20 169, végétation 1 992, autres 2 623, grues 530, grillage 436). Vrais éléments ajourés :
+  lampadaires `objt_dub1_gatealamp_00` (9 152), écume `terr_surf` (2 570), barques, grues, palmiers, chaises de plage.
+- [F] Textures mixtes : `bldg_dub1_palace_00` (Dubaï), `bldg_rio1_apartmenta_00`, `bldg_rio1_hotela_00` (Rio : 150
+  triangles sans reflet). La décision doit se prendre par matériau (reflet ou non), pas par texture.
+- [F] Une vitre gardée telle quelle serait **noire en jeu** : l'atlas garde l'alpha, `blurmodel_write` encode alors
+  en DXT1 1 bit et le shader du gabarit rend le transparent en noir (essai du 2026-10-28). Il faut une case d'atlas
+  opaque pour les matériaux à reflet.
+- [F] Simulation de `jobs` (vitres à reflet gardées) : Dubaï 85 -> 91 modèles (97 -> 103 acteurs sur 144),
+  sommets max 52 427 -> 52 785 (limite 65 535), taille commune déjà au plafond (65 000 sommets) ; Rio 61 modèles
+  inchangés, sommets max 51 479 -> 51 642.
+
+### Visibilité dans Blur (2026-11-03, lecture de `Blur_test`, rien de modifié)
+
+- [F] Chaînes de `Blur.exe` : PVS (`Graphics.SceneGraph.Static.UsePvs`, `Graphics.WorldRender.PVS.ForceCell /
+  LoadSamplePoints / ShowCellIndex`, `RenderingData.Streaming.Debug.ShowPvsCellsAbove_Mb`, `PvsBits`), portails
+  (`Graphics.SceneGraph.Static.UsePortals`, `Graphics.Portal.*` : rooms, portals, blockers, `PortalBits`,
+  `E_IF_PortalBlocker`), `RenderingData::CullNode`, `BoundsCulling`, requêtes d'occlusion (lumières, publicités) ;
+  distances : `ActorDebug.Actors.DynamicObjectActor.DrawDistanceFactor`, `PhysicalObjects.DefaultDrawDistance`,
+  `Amax.Views.Main.(Model)InstanceDrawDistanceScaleMin/Max`, `Graphics.SceneGraph.DrawDistanceScale`.
+- [F] Fichiers : `Level.levelrender` contient un chunk `PVSData` (format des chunks : nom[8], u32 taille, u16 0,
+  u16 0x41 ; contenu = archive ARCH) : LA River 5,9 Mo, Tokyo 4,4 Mo, showroom 129 Ko. `Level.levelstream` contient
+  les `CullNode` (81 LA River, 96 Tokyo, 4 showroom). `Level.level` : drapeau d'export `DoNotPvs` (PVS calculé hors
+  ligne par l'outil d'export de Bizarre, avec des « sample points »).
+- [H] `PVSData` : u32 nombre de cellules (1 005 LA River, 928 Tokyo, 36 showroom) puis des matrices 4x4 (échelle
+  1/16, 1/4, 1/16 + translation : cellules de 16 x 4 x 16 m ?), puis sans doute les ensembles visibles (bits de
+  `CullNode`). À décoder.
+- [F] `flat_earth` (nos cartes) = `levelrender` / `levelstream` du showroom (mêmes tailles), décor statique caché
+  (`hide_scenery`, plage de distance 0..0). Son PVS est celui du showroom (36 cellules autour de (-11, -23)).
+- [H] fort : nos modèles NFS sont des **acteurs** (`actorpack`, DynamicObjActor, `DrawDistance` = `NFS_DRAW`,
+  700 m) et ne passent pas par le PVS ni les portails (réservés au décor statique : `SceneGraph.Static.*`).
+  Indice : les routes de Map Builder (acteurs aussi) s'affichent sur toute la carte, hors des 36 cellules.
+  Conséquence : garder des triangles ne demande aucune mise à jour du PVS ; la visibilité de nos modèles dépend de
+  la distance à l'acteur (centre de zone) et sans doute du cadrage (`BoundsCulling`). À vérifier en jeu.
+- [?] Le `.pvs` de Hot Pursuit (table des matériaux, sections `main_1`, `shortcut_1a`…) est propre à HP Wii : rien
+  n'en est repris.
