@@ -7,3 +7,4 @@ rec_*.bin
 ext_tex.txt
 stage_arrays.txt
 __pycache__/
+config.local.json

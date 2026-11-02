@@ -11,11 +11,12 @@ untouched. Object template (type-0 mesh header, surface table, root node box, gr
 usage: addramp.py LEVELPHYSICS_IN OUT  x0 y0 z0  x1 y1 z1  width
   (bottom centre, top centre in game coordinates as recorded by trackrec.py, width in m)
 """
-import struct, sys
+import os, struct, sys
+import config
 import numpy as np
 import bmb_levelphysics as lp
 
-TEMPLATE = r"C:\Users\sanqu\Jeux_WII\Blur_test\levels\usa_la_river\Level.levelphysics"
+TEMPLATE = os.path.join(config.BLUR_TEST, "levels", "usa_la_river", "Level.levelphysics")
 TRAILER = 84
 
 
