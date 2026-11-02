@@ -75,6 +75,12 @@
     <div class="row"><button id="camPlay">▶ Aperçu de l'intro</button><button id="camStop">■ Arrêter</button></div>
     <label><input type="checkbox" data-layer="cams" checked> Trajet des caméras</label>
     <div id="camInfo" class="info"></div>
+    <div style="margin-top:6px">Modifier :
+      <select id="camShot" style="width:auto"><option value="vista">Survol (4,5 s)</option>
+        <option value="pack">Plan de grille (3,5 s)</option></select></div>
+    <div class="row"><button id="camAdd" title="P">+ Ajouter ce point de vue (P)</button>
+      <button id="camGame">Caméra du jeu</button><button id="camSave">Enregistrer la caméra</button></div>
+    <div id="camViews" class="info"></div>
     <h2>Contrôles</h2>
     <div id="warn"></div>
     <h2>Écran de chargement</h2>
@@ -99,7 +105,10 @@
         donne son écart au centre et au bord. Couleurs : vert = posée, rouge = en l'air ou sous le sol,
         gris = sol inconnu, bleu = retouchée. « Grille affichée » : multi (celle de la course perso) ou solo.</p>
       <p><b>6. Caméra d'intro</b> : « Aperçu » rejoue le survol et le plan de grille du jeu. Les routes inversées
-        reprennent les caméras de l'original : si le plan de grille montre une route vide, la grille a bougé.</p>
+        reprennent les caméras de l'original : si le plan de grille montre une route vide, la grille a bougé.
+        Pour la refaire : choisir le plan, placer la vue comme la caméra doit voir, <kbd>P</kbd> (ajouter ce point de vue),
+        recommencer pour 2 à 5 points ; « Aperçu » montre le résultat ; « Enregistrer la caméra ». La caméra passe en
+        douceur par les points, dans l'ordre. « Caméra du jeu » revient à l'originale.</p>
       <p><b>7. Vers le jeu</b> : les retouches enregistrées sont appliquées au prochain <code>make_reverse</code>, puis
         à tester dans la copie du jeu. Route bonne en jeu → « Verrouiller » : les builds suivants la remettent à
         l'identique.</p>
@@ -148,16 +157,52 @@ function camFrame(t) {           // t secondes depuis le début -> [plan, image]
   }
   return null;
 }
+// caméra perso : points de vue {eye, look} par plan ; l'aperçu passe dedans en douceur (même calcul que make_reverse :
+// camcycle.keyed_frames, repris de Map Builder) ; un plan sans point de vue garde la caméra du jeu
+let own = { vista: [], pack: [] }, gameShots = [];
+const N = { vista: 180, pack: 105 };
+const sm = t => t * t * (3 - 2 * t);
+const cat = (p0, p1, p2, p3, t) => p1.map((_, k) => 0.5 * (2 * p1[k] + (p2[k] - p0[k]) * t +
+  (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t * t + (3 * p1[k] - p0[k] - 3 * p2[k] + p3[k]) * t * t * t));
+function ownFrames(views, n) {
+  return Array.from({ length: n }, (_, f) => {
+    if (views.length === 1) return { eye: views[0].eye, look: views[0].look };
+    const u = sm(f / (n - 1)) * (views.length - 1), i = Math.min(Math.floor(u), views.length - 2), t = u - i;
+    const at = key => cat(views[Math.max(i - 1, 0)][key], views[i][key], views[i + 1][key], views[Math.min(i + 2, views.length - 1)][key], t);
+    return { eye: at('eye'), look: at('look') };
+  });
+}
+function mixShots() {            // plans du jeu, remplacés par les plans perso quand il y en a
+  shots = gameShots.map(s => {
+    const k = s.field.startsWith('Vista') ? 'vista' : 'pack';
+    return own[k].length ? { ...s, file: 'perso', frames: ownFrames(own[k], N[k]) } : s;
+  });
+  const sh = $('camShot').value;
+  $('camViews').innerHTML = own[sh].length
+    ? own[sh].map((v, i) => `<div>point ${i + 1} <button data-go="${i}">voir</button> <button data-del="${i}">✕</button></div>`).join('')
+    : 'Caméra du jeu (aucun point de vue perso). Place la vue, puis « Ajouter ce point de vue ».';
+  $('camViews').querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
+    const v = own[sh][+b.dataset.go]; camera.position.set(...v.eye); controls.target.set(...v.look); });
+  $('camViews').querySelectorAll('[data-del]').forEach(b => b.onclick = () => { own[sh].splice(+b.dataset.del, 1); refreshCams(); });
+}
+function refreshCams() { mixShots(); const g = layers.cams; if (g) { g.clear(); drawCams(g); } }
+$('camShot').onchange = mixShots;
+$('camAdd').onclick = () => { own[$('camShot').value].push({ eye: camera.position.toArray(), look: controls.target.toArray() }); refreshCams(); };
+$('camGame').onclick = () => { own[$('camShot').value] = []; refreshCams(); };
+$('camSave').onclick = async () => { await api('/api/cams', { name: data.name, cams: own });
+  popup('✅ Caméra d\'intro enregistrée pour ' + data.name + '.\nElle sera écrite dans le jeu au prochain make_reverse.'); };
 $('camPlay').onclick = () => { if (shots.length) { play = performance.now(); $('camHud').style.display = 'block'; } };
 $('camStop').onclick = () => { play = null; $('camHud').style.display = 'none'; };
 function drawCams(group) {
   shots.forEach((s, k) => {
-    const pts = s.frames.map(f => new THREE.Vector3(...f.pos));
+    const pts = s.frames.map(f => new THREE.Vector3(...(f.pos || f.eye)));
     group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
       new THREE.LineBasicMaterial({ color: k ? 0x20c997 : 0xf06595 })));
     const g = new THREE.ConeGeometry(1.2, 3, 4).rotateX(-Math.PI / 2);            // sens de visée au départ
     const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: k ? 0x20c997 : 0xf06595 }));
-    m.position.copy(pts[0]); m.quaternion.set(...s.frames[0].quat).multiply(flip); group.add(m);
+    m.position.copy(pts[0]);
+    if (s.frames[0].look) { m.lookAt(...s.frames[0].look); m.rotateY(Math.PI); } else m.quaternion.set(...s.frames[0].quat).multiply(flip);
+    group.add(m);
   });
 }
 (function loop() {
@@ -166,8 +211,8 @@ function drawCams(group) {
   if (play != null && !f) $('camStop').onclick();
   if (f) {
     const [s, fr] = f;
-    camCam.position.set(...fr.pos); camCam.quaternion.set(...fr.quat).multiply(flip);
-    camCam.fov = fr.fov * 180 / Math.PI; camCam.aspect = view.clientWidth / view.clientHeight; camCam.updateProjectionMatrix();
+    if (fr.eye) { camCam.position.set(...fr.eye); camCam.lookAt(...fr.look); camCam.fov = 0.9 * 180 / Math.PI; }
+    else { camCam.position.set(...fr.pos); camCam.quaternion.set(...fr.quat).multiply(flip); camCam.fov = fr.fov * 180 / Math.PI; } camCam.aspect = view.clientWidth / view.clientHeight; camCam.updateProjectionMatrix();
     $('camHud').textContent = `${s.field.startsWith('Vista') ? 'Survol' : 'Plan de grille'}  ${s.file.split('/').pop()}  ` +
       `${((performance.now() - play) / 1000).toFixed(1)} s`;
   }
@@ -273,6 +318,7 @@ addEventListener('keydown', e => {
   else if (e.key === 'g') $('mMove').onclick();
   else if (e.key === 'r') $('mRot').onclick();
   else if (e.key === 't') $('top').onclick();
+  else if (e.key === 'p') $('camAdd').onclick();
   else if (e.ctrlKey && e.key === 'a') { $('selAll').onclick(); e.preventDefault(); }
   else if (e.key === 'Escape') select([]);
 });
@@ -463,7 +509,7 @@ async function load(name) {
   $('thumb').src = '/thumb?name=' + name;
   $('camStop').onclick();
   const c = await api('/api/cams?name=' + name);
-  shots = c.shots;
+  gameShots = c.shots; own = { vista: [], pack: [], ...c.own }; mixShots();
   $('camInfo').textContent = shots.length ? shots.map(s => `${s.field.startsWith('Vista') ? 'Survol' : 'Grille'} : ` +
     `${s.file.split('/').pop()} (${s.stage} s)`).join(' · ') + (c.unread.length ? ` · non lus : ${c.unread.join(', ')}` : '')
     : 'Aucune caméra lisible pour cette route' + (c.unread.length ? ` (format pas encore géré : ${c.unread.join(', ')})` : '');

@@ -170,6 +170,10 @@ class Handler(SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store")     # sinon le navigateur garde une ancienne version de la page
+        super().end_headers()
+
     def send_bytes(self, b, ctype, code=200):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
@@ -196,7 +200,9 @@ class Handler(SimpleHTTPRequestHandler):
                 r = next(r for r in MR.ROUTES if r["new"] == q["name"])
                 shots, unread = camcycle.route_shots(r["orig"])
                 shots = [s for s in shots if s["field"] != "PackCameraSequence"]   # course perso : le plan multi
-                return self.send_json(dict(shots=shots, unread=unread))
+                cf = os.path.join(maplock.EDITS, q["name"] + ".cams.json")
+                own = json.load(open(cf)) if os.path.isfile(cf) else {}
+                return self.send_json(dict(shots=shots, unread=unread, own=own))
             elif u.path == "/thumb":
                 return self.send_bytes(thumb_png(q["name"]), "image/png")
         except Exception as ex:  # noqa: BLE001  (l'erreur complète part dans la page)
@@ -208,6 +214,14 @@ class Handler(SimpleHTTPRequestHandler):
         q = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)))
         name = q["name"]
         try:
+            if u.path == "/api/cams":          # caméra d'intro perso {vista|pack: [{eye, look}]} : écrite par make_reverse
+                os.makedirs(maplock.EDITS, exist_ok=True)
+                cf = os.path.join(maplock.EDITS, name + ".cams.json")
+                if any(q["cams"].values()):
+                    json.dump(q["cams"], open(cf, "w"), indent=1)
+                elif os.path.isfile(cf):
+                    os.remove(cf)
+                return self.send_json({"ok": True})
             if u.path == "/api/edits":         # retouches : appliquées par make_reverse au prochain build
                 if maplock.locked(name):
                     raise ValueError(f"{name} est verrouillée : la déverrouiller avant de la retoucher")

@@ -79,6 +79,29 @@ class KSLF:
         self.records.append([len(self.index) - 1, list(chunks), bytes(data), strings])
         return len(self.records) - 1
 
+    def _top_field(self, src, field):
+        """offset of a top-level field in the data of records of the same type as `src` (clones included)"""
+        self._record_pos(src)                          # leaves the XT reader on src's chunks
+        return self.x._field(self.x._ch[0][0], field)[1]
+
+    def set_string(self, src, k, field, value):
+        """String field of record k (a clone of `src`) set to `value`: appended to the record's own strings."""
+        idx, chunks, data, strings = self.records[k]
+        plain = decode_names(strings) if strings else b""
+        new_ofs = len(plain)
+        plain += value.encode("latin-1") + b"\0"
+        plain += b"\0" * ((-len(plain)) % 4)
+        data = bytearray(data)
+        struct.pack_into("<I", data, self._top_field(src, field), new_ofs)
+        self.records[k] = [idx, chunks, bytes(data), encode_names(plain)]
+
+    def set_ref(self, src, k, field, slot):
+        """Single reference field of record k (src or a clone of it) set to index slot `slot`."""
+        idx, chunks, data, strings = self.records[k]
+        data = bytearray(data)
+        struct.pack_into("<I", data, self._top_field(src, field), slot)
+        self.records[k] = [idx, chunks, bytes(data), strings]
+
     def get_array_refs(self, owner, field):
         """Index slots (u32) of a top-level reference array of `owner`, in order."""
         k = self._record_pos(owner)
