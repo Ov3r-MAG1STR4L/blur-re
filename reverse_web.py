@@ -18,7 +18,7 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import blurbpr, bmb_levelphysics, gridreverse, maplock, make_reverse as MR  # noqa: E402
+import aidreverse, blurbpr, blurroute, bmb_levelphysics, gridreverse, maplock, make_reverse as MR  # noqa: E402
 from blurxt import XT  # noqa: E402
 
 PORT = 8766
@@ -29,6 +29,37 @@ _cache = {}
 
 def _city(r):
     return json.load(open(os.path.join(MR.E, "xt_json", "amax.json")))["Route"][r["orig"]]["City"].split("/")[-1].lower()
+
+
+def clone_usage(r, city):
+    """Listes clonées par make_reverse (même choix, même ordre : hash = route + 1 + n) et où la route d'origine
+    les utilise : ActorLists = solo, MultiplayerActorLists = multi (la course perso prend la multi)."""
+    src = json.load(open(os.path.join(MR.E, "xt_json", "amax.json")))["Route"][r["orig"]]
+    A = json.load(open(os.path.join(MR.E, "xt_json", f"{city}.actorpack.json"), encoding="utf-8"))["LevelActorList"]
+    used = {}
+    for field in ("ActorLists", "MultiplayerActorLists"):
+        for ref in src[field]:
+            pk, _, lst = ref.split("/")
+            acts = [a for a in A.get(lst, {}).get("LevelActors", []) if a]
+            if pk == f"{city}.actorpack" and any(gridreverse.is_start_position(a) or "PickupType" in a or
+                                                 a.get("Name", "").startswith("Start_Text") for a in acts):
+                used.setdefault(lst, set()).add(field)
+    return {r["hash"] + 1 + n: (lst, f, "|".join((a or {}).get("Name", "") for a in A[lst]["LevelActors"]))
+            for n, (lst, f) in enumerate(used.items())}
+
+
+def paths(r, city, lvl):
+    """Chemins du .aid inversé (sauf la boucle principale, déjà en ruban) + ceux de l'original retirés à
+    l'inversion (raccourcis abandonnés pour les IA : toujours roulables par les joueurs)."""
+    def read(path):
+        d = blurroute.parse(open(path, "rb").read())
+        return {s["name"]: [gridreverse._centre(n).tolist() for n in s["nodes"]] for s in d["sections"] if s["nodes"]}
+    main = aidreverse.roles(blurroute.parse(open(os.path.join(lvl, r["new"].lower() + ".aid"), "rb").read(),
+                                            raw=True))["main"]["name"]
+    rev = read(os.path.join(lvl, r["new"].lower() + ".aid"))
+    orig = read(os.path.join(MR.G, "levels", city, r["orig"].lower() + ".aid"))
+    return ([dict(name=k, pts=v, origin="reverse") for k, v in rev.items() if k not in (main, "Logic")] +
+            [dict(name=k, pts=v, origin="original") for k, v in orig.items() if k not in rev and k != "Logic"])
 
 
 def route_data(name):
@@ -64,12 +95,13 @@ def route_data(name):
             dist = np.hypot(ground[:, 0] - p[0], ground[:, 2] - p[2])
             return float(ground[dist.argmin(), 1]) if dist.min() < 4 else None
         return None
-    # acteurs des listes clonées
+    # acteurs des listes clonées ; usage = {hash: (liste source, {ActorLists, MultiplayerActorLists}, noms des acteurs)}
+    usage = clone_usage(r, city)
     lists = []
     keys = {n: k for k, n, _ in maplock._lists(os.path.join(lvl, "actorpack.xt"), r["hash"])}
     x = XT(os.path.join(lvl, "actorpack.xt"))
     for n, t, v, h in sorted(x.records(), key=lambda e: e[3]):
-        if t != "LevelActorList" or not r["hash"] < h <= r["hash"] + 0xFF:
+        if t != "LevelActorList" or not r["hash"] < h < maplock.hash_top(r["hash"]):
             continue
         acts = []
         for i, a in enumerate(v.get("LevelActors", [])):
@@ -82,9 +114,14 @@ def route_data(name):
             gy = ground_y(p) if kind == "grid" else None
             acts.append(dict(i=str(i), name=a.get("Name", ""), kind=kind, pos=p, fwd=[m["az"][k] for k in ("vx", "vy", "vz")],
                              start=a.get("StartNumber"), pickup=a.get("PickupType"), ground=gy))
-        lists.append(dict(record=n, key=keys[n], hash=f"{h:#x}", actors=acts))
+        sig = "|".join((a or {}).get("Name", "") for a in v.get("LevelActors", []))
+        use = usage.get(h)
+        # solo / multi : sûr seulement si la liste source de ce hash a les mêmes acteurs (sinon build plus ancien)
+        lists.append(dict(record=n, key=keys[n], hash=f"{h:#x}", actors=acts,
+                          fields=sorted(use[1]) if use and use[2] == sig else []))
     d = dict(name=name, orig=r["orig"], city=city, loop=bool(loop), locked=maplock.locked(name),
              centre=P.tolist(), width=W.tolist(), lateral=lat.tolist(), lists=lists, ground=ground[::5].tolist(), collision=g is not None,
+             paths=paths(r, city, lvl),
              tris=base64.b64encode(tri[keep].astype(np.float32).tobytes()).decode(), n_tris=int(keep.sum()))
     _cache[name] = d
     return d
