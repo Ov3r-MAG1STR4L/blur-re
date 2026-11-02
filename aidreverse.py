@@ -10,7 +10,8 @@ Per node (323 B, layout in blurroute.py):
             +4 length-to-next and +0 turn hint are taken from the previous original node
             (turn sign flipped: HYPOTHESIS, the field is not fully understood); last node gets 0.
 Blocks: node order reversed; gates swapped (Start <-> Finish, Inter1 <-> Inter2: nodes exchanged,
-block names/types kept); logic table re-indexed. Junctions (not on Haruna) are not supported.
+block names/types kept); logic table re-indexed. Junctions (main -> branch): rebuilt at the mirror place
+(_reverse_junction), rule kept.
 """
 import struct, sys
 import blurroute
@@ -45,20 +46,85 @@ def _reverse_nodes(nodes, loop=False):
     return out
 
 
+SPLIT = 6.0        # m between branch and main centres: beyond this the branch has left the main road
+
+
+def _split_after(bc, mc, start):
+    """first branch index >= start whose centre is more than SPLIT m from every main centre (the branch leaves)"""
+    for i in range(start, len(bc)):
+        if min((bc[i][0] - x) ** 2 + (bc[i][1] - z) ** 2 for x, z in mc) > SPLIT ** 2:
+            return i
+    return len(bc)
+
+
+def _nearest(cs, p):
+    return min(range(len(cs)), key=lambda i: (cs[i][0] - p[0]) ** 2 + (cs[i][1] - p[1]) ** 2)
+
+
+def _reverse_junction(j, old, new):
+    """Junction j (from main to branch) rebuilt for the reversed route. Original: an overlap strip where the branch
+    still runs on the main road, `gap` branch nodes before the branch leaves it (Tokyo Bayshore: 8 nodes, 22 m
+    wide, between main and branch centres). Reversed: the same strip before the split the other way (near the
+    original rejoin). Each node = the reversed branch node, centred halfway to the main road, original width; line
+    fractions rescaled so every line point stays where it was. Returns [(junction node, main node index)] for the
+    logic table. old / new: block name -> raw nodes."""
+    mo, bo = _centres(old[j["from"]]), _centres(old[j["to"]])
+    first = _nearest(bo, _centres(j["nodes"][:1])[0])
+    last = _nearest(bo, _centres(j["nodes"][-1:])[0])
+    gap = _split_after(bo, mo, last) - last
+    mn, bn = _centres(new[j["from"]]), _centres(new[j["to"]])
+    end = max(len(j["nodes"]) - 1, _split_after(bn, mn, 0) - gap)
+    widths = [struct.unpack_from("<f", nd, 12)[0] for nd in j["nodes"]]
+    out = []
+    for k in range(len(j["nodes"])):
+        src = new[j["to"]][end - (len(j["nodes"]) - 1) + k]
+        x, y, z, wb, lx, lz = struct.unpack_from("<6f", src, 0)
+        bc = (x + lx * wb / 2, z + lz * wb / 2)
+        mi = _nearest(mn, bc)
+        c = ((bc[0] + mn[mi][0]) / 2, (bc[1] + mn[mi][1]) / 2)
+        wj = widths[k]
+        shift = (bc[0] - c[0]) * lx + (bc[1] - c[1]) * lz        # old centre - new centre, along the lateral axis
+        b = bytearray(src[:48])
+        struct.pack_into("<f", b, 0, c[0] - lx * wj / 2)
+        struct.pack_into("<f", b, 8, c[1] - lz * wj / 2)
+        struct.pack_into("<f", b, 12, wj)
+        for m in range(11):
+            line = bytearray(src[48 + 25 * m:48 + 25 * (m + 1)])
+            f = struct.unpack_from("<f", line, 16)[0]
+            struct.pack_into("<f", line, 16, 0.5 + ((f - 0.5) * wb + shift) / wj)
+            b += line
+        out.append((bytes(b), mi))
+    print(f"  junction {j['name']}: original on branch nodes {first}-{last} ({gap} before the split), "
+          f"reversed on branch nodes {end - len(out) + 1}-{end}")
+    return out
+
+
 def reverse(d):
-    if any("from" in blk for blk in d["blocks"]):
-        raise NotImplementedError("junctions are not supported (route with shortcuts)")
-    gate = {blk["type"] & 0x1E: blk for blk in d["blocks"] if blk["type"] & 0x1E}
+    """Reverse every section; junctions (from main to a branch) rebuilt at the mirror place (_reverse_junction)."""
+    sections = [blk for blk in d["blocks"] if "from" not in blk]
+    junctions = [blk for blk in d["blocks"] if "from" in blk]
+    gate = {blk["type"] & 0x1E: blk for blk in sections if blk["type"] & 0x1E}
     old_nodes = {blk["name"]: blk["nodes"] for blk in d["blocks"]}
     rename = {}                                       # old block name -> block that now holds its nodes
-    for blk in d["blocks"]:
+    for blk in sections:
         bit = blk["type"] & 0x1E
         src = gate[SWAP_FLAG[bit]] if bit in SWAP_FLAG and SWAP_FLAG[bit] in gate else blk
         rename[src["name"]] = blk["name"]
         blk["nodes"] = _reverse_nodes(old_nodes[src["name"]], loop=bool(src["type"] & 1))
+    new_nodes = {blk["name"]: blk["nodes"] for blk in sections}
     count = {name: len(nodes) for name, nodes in old_nodes.items()}
-    d["logic_table"] = [[[count[sec] - 1 - idx, rename[sec]] for idx, sec in reversed(refs)]
+    jnames = {j["name"] for j in junctions}
+    d["logic_table"] = [[[count[sec] - 1 - idx, rename[sec]] for idx, sec in reversed(refs) if sec not in jnames]
                         for refs in reversed(d["logic_table"])]
+    for j in junctions:
+        built = _reverse_junction(j, old_nodes, new_nodes)
+        j["nodes"] = [nd for nd, _ in built]
+        # logic rows that see the main node under a junction node see that junction node too (as in the original)
+        under = {}
+        for k, (_, mi) in enumerate(built):
+            under.setdefault(mi, []).append(k)
+        d["logic_table"] = [refs + [[k, j["name"]] for idx, sec in refs if sec == j["from"] for k in under.get(idx, [])]
+                            for refs in d["logic_table"]]
     return d
 
 
