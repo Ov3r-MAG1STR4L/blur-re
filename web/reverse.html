@@ -19,7 +19,12 @@
   #thumb { width:100%; border-radius:4px; background:#000; }
   #mini { position:absolute; right:10px; top:10px; width:220px; height:220px; background:#000a; border-radius:8px; }
   #hud { position:absolute; left:10px; bottom:10px; background:#000a; padding:6px 9px; border-radius:6px; pointer-events:none; white-space:pre; }
-  #warn { color:#ff6b6b; white-space:pre-wrap; }
+  #warn div { margin:3px 0; } .bad { color:#ff6b6b; } .ok { color:#51cf66; } .info { color:var(--muted); }
+  #help { position:absolute; inset:24px; background:#111e; border:1px solid #444; border-radius:10px; padding:18px 26px;
+          overflow:auto; display:none; line-height:1.55; z-index:6; }
+  #help kbd { background:#2b3039; border:1px solid #3a404b; border-radius:4px; padding:0 5px; }
+  #camHud { position:absolute; left:50%; top:10px; transform:translateX(-50%); background:#000c; padding:6px 12px;
+            border-radius:6px; display:none; }
   .lock { color:#ffd43b; }
   .row { display:flex; gap:4px; flex-wrap:wrap; }
   button.on { background:var(--acc); border-color:var(--acc); }
@@ -30,6 +35,7 @@
 <body>
 <div id="app">
   <div id="side">
+    <button id="helpBtn" style="float:right">? Aide</button>
     <h2>Route</h2>
     <select id="route"></select>
     <div id="state"></div>
@@ -65,6 +71,10 @@
       <div><span style="background:#868e96"></span>sol inconnu</div>
       <div><span style="background:#3d8bfd"></span>retouchée (sol revérifié au prochain build)</div>
     </div>
+    <h2>Caméra d'intro</h2>
+    <div class="row"><button id="camPlay">▶ Aperçu de l'intro</button><button id="camStop">■ Arrêter</button></div>
+    <label><input type="checkbox" data-layer="cams" checked> Trajet des caméras</label>
+    <div id="camInfo" class="info"></div>
     <h2>Contrôles</h2>
     <div id="warn"></div>
     <h2>Écran de chargement</h2>
@@ -72,7 +82,30 @@
     <p style="color:var(--muted)">Le menu en montre la partie gauche (~330 px).</p>
     <p style="color:var(--muted)" id="build"></p>
   </div>
-  <div id="view"><canvas id="mini" width="440" height="440"></canvas><div id="hud"></div>
+  <div id="view"><canvas id="mini" width="440" height="440"></canvas><div id="hud"></div><div id="camHud"></div>
+    <div id="help">
+      <h3 style="margin-top:0">Reverse Studio : mode d'emploi</h3>
+      <p><b>À quoi ça sert.</b> Voir une route inversée telle que le jeu la recevra (tracé, grille de départ, bonus,
+        caméra d'intro), la retoucher, puis la verrouiller une fois validée en jeu pour qu'aucun build ne la casse.</p>
+      <p><b>1. Choisir la route</b> dans le menu (rangé par lieu, avec le nom du jeu).</p>
+      <p><b>2. Se déplacer</b> : bouton <kbd>droit</kbd> = tourner, <kbd>molette</kbd> = zoom,
+        bouton du <kbd>milieu</kbd> = glisser la vue, <kbd>T</kbd> = vue de dessus (la plus fiable pour juger une place).</p>
+      <p><b>3. Sélectionner</b> : <kbd>clic</kbd> sur une voiture, un bonus ou un texte ; <kbd>glisser</kbd> dans le vide
+        = cadre de sélection ; <kbd>Maj</kbd> + clic ou cadre = ajouter ; <kbd>Ctrl+A</kbd> = tout ce qui est visible ;
+        <kbd>Échap</kbd> = rien.</p>
+      <p><b>4. Retoucher</b> : <kbd>G</kbd> déplacer, <kbd>R</kbd> tourner (poignée 3D), « Remettre l'objet » pour revenir
+        à l'origine ; <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd> annuler / rétablir ; <kbd>Ctrl+S</kbd> enregistrer.</p>
+      <p><b>5. Lire la grille</b> : chaque voiture porte son numéro et une flèche blanche vers l'avant ; le panneau
+        donne son écart au centre et au bord. Couleurs : vert = posée, rouge = en l'air ou sous le sol,
+        gris = sol inconnu, bleu = retouchée. « Grille affichée » : multi (celle de la course perso) ou solo.</p>
+      <p><b>6. Caméra d'intro</b> : « Aperçu » rejoue le survol et le plan de grille du jeu. Les routes inversées
+        reprennent les caméras de l'original : si le plan de grille montre une route vide, la grille a bougé.</p>
+      <p><b>7. Vers le jeu</b> : les retouches enregistrées sont appliquées au prochain <code>make_reverse</code>, puis
+        à tester dans la copie du jeu. Route bonne en jeu → « Verrouiller » : les builds suivants la remettent à
+        l'identique.</p>
+      <p><b>Contrôles</b> (panneau) : rouge = à corriger, vert = bon, gris = information.</p>
+      <button id="helpClose">Compris</button>
+    </div>
     <div id="done" style="position:absolute;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:5">
       <div style="background:var(--panel);border:1px solid #3a404b;border-radius:10px;padding:20px 26px;max-width:520px">
         <div id="doneMsg" style="font-size:15px;margin-bottom:14px;white-space:pre-wrap"></div>
@@ -104,7 +137,42 @@ function resize() {
   camera.aspect = view.clientWidth / view.clientHeight; camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();
-(function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+// ---------- caméra d'intro : survol (Vista) puis plan de grille (Pack, celui du multi), chacun pendant son StageTime
+const camCam = new THREE.PerspectiveCamera(50, 1, .5, 20000);
+let shots = [], play = null;
+const flip = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);   // Blur : +z devant
+function camFrame(t) {           // t secondes depuis le début -> [plan, image] ou null à la fin
+  for (const s of shots) {
+    if (t < s.stage) return [s, s.frames[Math.min(s.frames.length - 1, Math.floor(t * s.fps))]];
+    t -= s.stage;
+  }
+  return null;
+}
+$('camPlay').onclick = () => { if (shots.length) { play = performance.now(); $('camHud').style.display = 'block'; } };
+$('camStop').onclick = () => { play = null; $('camHud').style.display = 'none'; };
+function drawCams(group) {
+  shots.forEach((s, k) => {
+    const pts = s.frames.map(f => new THREE.Vector3(...f.pos));
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color: k ? 0x20c997 : 0xf06595 })));
+    const g = new THREE.ConeGeometry(1.2, 3, 4).rotateX(-Math.PI / 2);            // sens de visée au départ
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: k ? 0x20c997 : 0xf06595 }));
+    m.position.copy(pts[0]); m.quaternion.set(...s.frames[0].quat).multiply(flip); group.add(m);
+  });
+}
+(function loop() {
+  requestAnimationFrame(loop); controls.update();
+  const f = play != null && camFrame((performance.now() - play) / 1000);
+  if (play != null && !f) $('camStop').onclick();
+  if (f) {
+    const [s, fr] = f;
+    camCam.position.set(...fr.pos); camCam.quaternion.set(...fr.quat).multiply(flip);
+    camCam.fov = fr.fov * 180 / Math.PI; camCam.aspect = view.clientWidth / view.clientHeight; camCam.updateProjectionMatrix();
+    $('camHud').textContent = `${s.field.startsWith('Vista') ? 'Survol' : 'Plan de grille'}  ${s.file.split('/').pop()}  ` +
+      `${((performance.now() - play) / 1000).toFixed(1)} s`;
+  }
+  renderer.render(scene, f ? camCam : camera);
+})();
 
 // ---------- retouches : {clé de liste: {index: {pos, yaw}}} ; annuler / rétablir = copies de cet objet ----------
 let edits = {}, undoS = [], redoS = [], saved = '{}', sels = [];
@@ -147,7 +215,7 @@ function paint(m) {
   if (u.a.kind === 'grid') m.material.color.setHex(edits[u.key]?.[u.i] ? 0x3d8bfd : COL[status(u.a)]);
 }
 function info() {
-  if (!sels.length) { $('selInfo').textContent = 'Clic : sélectionner une place, un bonus ou un texte. Maj+clic : en ajouter / retirer.'; return; }
+  if (!sels.length) { $('selInfo').textContent = 'Clic : sélectionner. Glisser dans le vide : cadre de sélection. Maj : ajouter. Bouton droit : tourner la vue.'; return; }
   if (sels.length > 1) { $('selInfo').textContent = `${sels.length} objets sélectionnés (Maj+clic pour en ajouter / retirer)`; return; }
   const m = sels[0], a = m.userData.a, p = m.position, r = roadPos(p);
   const side = r.offset >= 0 ? 'droite' : 'gauche';    // côté de l'axe latéral du .aid
@@ -208,8 +276,37 @@ addEventListener('keydown', e => {
   else if (e.ctrlKey && e.key === 'a') { $('selAll').onclick(); e.preventDefault(); }
   else if (e.key === 'Escape') select([]);
 });
+// souris comme dans l'Explorateur Windows : clic gauche = sélection, glisser à gauche dans le vide = cadre de
+// sélection ; bouton droit = tourner la vue, molette = zoom, bouton du milieu (ou Maj + droit) = déplacer la vue
+controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
 const ray = new THREE.Raycaster(); let down = null;
-renderer.domElement.addEventListener('pointerdown', e => down = [e.clientX, e.clientY]);
+const band = document.createElement('div');
+band.style.cssText = 'position:absolute;border:1px solid #3d8bfd;background:#3d8bfd22;pointer-events:none;display:none';
+view.append(band);
+const vr = () => renderer.domElement.getBoundingClientRect();
+renderer.domElement.addEventListener('pointerdown', e => {
+  down = e.button === 0 && !tc.axis ? [e.clientX, e.clientY] : null;   // sur une poignée : c'est un déplacement
+});
+addEventListener('pointermove', e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 5) return;
+  const r = vr(), x = Math.min(e.clientX, down[0]) - r.left, y = Math.min(e.clientY, down[1]) - r.top;
+  Object.assign(band.style, { display: 'block', left: x + 'px', top: y + 'px',
+    width: Math.abs(e.clientX - down[0]) + 'px', height: Math.abs(e.clientY - down[1]) + 'px' });
+});
+addEventListener('pointerup', e => {
+  if (!down || band.style.display !== 'block') return;
+  band.style.display = 'none';
+  const r = vr(), x0 = Math.min(e.clientX, down[0]), x1 = Math.max(e.clientX, down[0]);
+  const y0 = Math.min(e.clientY, down[1]), y1 = Math.max(e.clientY, down[1]);
+  const inside = pickable.filter(shown).filter(m => {
+    const p = m.getWorldPosition(new THREE.Vector3()).project(camera);
+    const sx = r.left + (p.x + 1) / 2 * r.width, sy = r.top + (1 - p.y) / 2 * r.height;
+    return p.z < 1 && sx >= x0 && sx <= x1 && sy >= y0 && sy <= y1;
+  });
+  down = null;
+  select(e.shiftKey || e.ctrlKey ? [...new Set([...sels, ...inside])] : inside);
+});
 renderer.domElement.addEventListener('pointerup', e => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || tc.dragging) return;   // glissé, pas un clic
   const r = renderer.domElement.getBoundingClientRect();
@@ -311,10 +408,18 @@ function build(d) {
     pickable.push(m); place(m);
   }));
   applyMode();
+  drawCams(layer('cams'));
   const unknown = d.lists.flatMap(l => l.actors).filter(a => a.kind === 'grid' && a.ground == null).length;
-  $('warn').textContent = (warn.length ? warn.join('\n') : 'Aucune place en l\'air ni sous le sol.') +
-    (unknown ? `\n${unknown} places sans sol connu (ni collision lisible ni ground/${d.orig}.csv : trackrec.py --all).` : '') +
-    (d.collision ? '' : '\nCollision non lue pour ce niveau (lecteur Map Builder : 1er objet pas un maillage).');
+  // rouge = problème à corriger ; vert = bon ; gris = information (rien à faire dans le studio)
+  const grids = d.lists.flatMap(l => l.actors).filter(a => a.kind === 'grid').length;
+  const lines = warn.map(w => ['bad', '⚠ ' + w]);
+  if (!warn.length) lines.push(['ok', unknown === grids ? '✔ Toutes les places sont dans la largeur de la route.'
+                                                        : '✔ Places sur le sol et dans la largeur de la route.']);
+  if (unknown) lines.push(['info', `ℹ Hauteur du sol inconnue pour ${unknown} places : on ne peut pas vérifier si elles ` +
+    `touchent le sol. Pour la connaître, rouler la route d'origine avec « trackrec.py --all ».`]);
+  if (!d.collision) lines.push(['info', 'ℹ Collision de ce niveau pas encore lisible par nos outils : ' +
+    'elle n\'est pas affichée (le jeu, lui, l\'a bien).']);
+  $('warn').innerHTML = lines.map(([c, t]) => `<div class="${c}">${t}</div>`).join('');
   // caméra sur la grille
   const g0 = d.lists.flatMap(l => l.actors).find(a => a.kind === 'grid') || { pos: d.centre[0] };
   controls.target.set(...g0.pos); camera.position.set(g0.pos[0] + 80, g0.pos[1] + 60, g0.pos[2] + 80);
@@ -356,6 +461,12 @@ async function load(name) {
   data = await api('/api/route?name=' + name);
   $('state').innerHTML = data.locked ? '<span class="lock">🔒 verrouillée : make_reverse la remet à l\'identique</span>' : 'non verrouillée';
   $('thumb').src = '/thumb?name=' + name;
+  $('camStop').onclick();
+  const c = await api('/api/cams?name=' + name);
+  shots = c.shots;
+  $('camInfo').textContent = shots.length ? shots.map(s => `${s.field.startsWith('Vista') ? 'Survol' : 'Grille'} : ` +
+    `${s.file.split('/').pop()} (${s.stage} s)`).join(' · ') + (c.unread.length ? ` · non lus : ${c.unread.join(', ')}` : '')
+    : 'Aucune caméra lisible pour cette route' + (c.unread.length ? ` (format pas encore géré : ${c.unread.join(', ')})` : '');
   edits = data.edits; saved = snap(); undoS = []; redoS = [];
   build(data); setDirty();
 }
@@ -372,6 +483,9 @@ async function routes() {
   if (cur) $('route').value = cur;
 }
 $('route').onchange = () => load($('route').value);
+$('helpBtn').onclick = () => $('help').style.display = 'block';
+$('helpClose').onclick = () => { $('help').style.display = 'none'; try { localStorage.setItem('rs_help_seen', '1'); } catch (e) {} };
+try { if (!localStorage.getItem('rs_help_seen')) $('help').style.display = 'block'; } catch (e) { $('help').style.display = 'block'; }
 $('lock').onclick = async () => { if (confirm(`Verrouiller ${data.name} telle qu'elle est dans ce build ?`)) { await api('/api/lock', { name: data.name }); await routes(); load(data.name); } };
 $('unlock').onclick = async () => { if (confirm(`Déverrouiller ${data.name} ?`)) { await api('/api/unlock', { name: data.name }); await routes(); load(data.name); } };
 await routes(); load($('route').value);

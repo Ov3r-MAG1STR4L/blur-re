@@ -18,7 +18,7 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import aidreverse, blurbpr, blurloc, blurroute, bmb_levelphysics, gridreverse, maplock, make_reverse as MR  # noqa: E402
+import aidreverse, blurbpr, blurloc, camcycle, blurroute, bmb_levelphysics, gridreverse, maplock, make_reverse as MR  # noqa: E402
 from blurxt import XT  # noqa: E402
 
 PORT = 8766
@@ -192,6 +192,11 @@ class Handler(SimpleHTTPRequestHandler):
                          place=NAMES[r["new"]][0], title=NAMES[r["new"]][1]) for r in MR.ROUTES]))
             elif u.path == "/api/route":
                 return self.send_json(with_edits(route_data(q["name"])))
+            elif u.path == "/api/cams":          # caméras d'intro : celles de la route d'origine (reprises par l'inversée)
+                r = next(r for r in MR.ROUTES if r["new"] == q["name"])
+                shots, unread = camcycle.route_shots(r["orig"])
+                shots = [s for s in shots if s["field"] != "PackCameraSequence"]   # course perso : le plan multi
+                return self.send_json(dict(shots=shots, unread=unread))
             elif u.path == "/thumb":
                 return self.send_bytes(thumb_png(q["name"]), "image/png")
         except Exception as ex:  # noqa: BLE001  (l'erreur complète part dans la page)

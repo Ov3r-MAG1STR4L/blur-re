@@ -106,6 +106,13 @@ analyzeHeadless.bat C:\Appli\ghidra\projects\Blur Blur -process Blur.exe -noanal
   une colonne était hors route (−12 m pour ±9,8 m) ; (b) la **collision s'arrête ~250 m après l'ancienne
   arrivée** (vers 13 780 m du tracé d'origine) : la place la plus en arrière tombait. Correctif dans
   `gridreverse.py` : grille centrée et resserrée (`MAX_BEHIND` = 219 m derrière la ligne, 1re rangée gardée).
+- **Caméras d'intro (2026-11-02)** : `Route.VistaCameraSequence` (survol, 4,5 s) puis `PackCameraSequenceMP`
+  (plan de grille en multi / course perso, 3,5 s ; `PackCameraSequence` en solo) → `AnimatedCameraSequence`
+  {Animation, StageTime} → `CycleResourceDef` → `root.pak animations/cameras/<nom>.cycle`, en coordonnées monde.
+  `camcycle.py` les lit (format décrit par Map Builder) : **99 fichiers sur 171** ; les 72 autres (`pack_am1`,
+  `pack_bri1`…) ont une autre disposition, non lue. **Les routes inversées gardent les caméras de l'original** : sur
+  Manhattan View Reverse (Dumbo 2R), le plan de grille filme une route vide, car la grille a bougé (vu dans Reverse
+  Studio, à confirmer en jeu). Correctif possible : écrire nos propres `.cycle` (`write_cycle` de Map Builder).
 - **Hauteur d'un nœud `.aid` (2026-11-02, Confirmé hors jeu)** : le `y` d'un nœud vaut son `ylow` (bas d'un volume
   `ylow`..`yhigh`), pas la hauteur du bitume. Écart médian des places de grille au-dessus du nœud le plus proche :
   Barcelona Oval 1R 3,2 m, Brighton 1R 7,1 m, Dumbo 2R 8,1 m, Haruna 7 14,4 m. Reverse Studio remonte la route de
