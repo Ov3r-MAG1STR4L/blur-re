@@ -91,6 +91,10 @@
   <div id="view">
     <div id="hud">—</div>
     <div id="busy">Chargement…</div>
+    <div id="done" style="position:absolute;inset:0;background:#0008;display:none;align-items:center;justify-content:center">
+      <div style="background:var(--panel);border:1px solid #3a404b;border-radius:10px;padding:20px 26px;max-width:520px">
+        <div id="doneMsg" style="font-size:15px;margin-bottom:14px;white-space:pre-wrap"></div>
+        <button onclick="this.closest('#done').style.display='none'">OK</button></div></div>
     <div id="help"></div>
   </div>
 </div>
@@ -164,9 +168,17 @@ $('persp').onclick = () => { topView = false; const t = controls.target; camera.
 
 // ---------- journal ----------
 function say(m) { const l = $('log'); l.textContent += m + '\n'; l.scrollTop = 1e9; }
-let lastLog = 0;
-setInterval(async () => { try { const L = await (await fetch('/api/log')).json();
-  if (L.length !== lastLog) { $('log').textContent = L.join('\n') + '\n'; $('log').scrollTop = 1e9; lastLog = L.length; } } catch (e) {} }, 1500);
+let lastLog = '';
+// fin de construction / installation : pop-up (le journal est coupé à 400 lignes : on compare la dernière ligne)
+const END = /^(construction : (terminée|ERREUR)|installation (: \d+ fichiers|refusée|: copie différente))/;
+setInterval(async () => { try { const L = await (await fetch('/api/log')).json(), last = L[L.length - 1] || '';
+  if (last !== lastLog) {
+    const old = L.lastIndexOf(lastLog);
+    $('log').textContent = L.join('\n') + '\n'; $('log').scrollTop = 1e9; lastLog = last;
+    const end = L.slice(old + 1).reverse().find(l => END.test(l));
+    if (end) { $('doneMsg').textContent = (/ERREUR|refusée|différente/.test(end) ? '⚠ ' : '✅ ') + end.split('\n')[0];
+               $('done').style.display = 'flex'; }
+  } } catch (e) {} }, 1500);
 
 // ---------- chargement du lieu ----------
 async function locations() {
