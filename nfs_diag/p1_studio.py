@@ -1,6 +1,6 @@
 """NFS Studio en mode diagnostic P1, isolé : port 8799, page = copie de web/index.html modifiée à la volée
 (rien n'est écrit dans le dépôt). Les POST sont refusés (aucune construction, aucun enregistrement du circuit).
-Paramètres d'URL : alpha=0 (sans alphaTest), near=N (plan proche), side=front (faces arrière cachées),
+Paramètres d'URL : old=1 (alphaTest 0.3 partout, avant la phase A), alpha=0 (sans alphaTest), near=N (plan proche), side=front (faces arrière cachées),
 color=mat (une couleur par groupe), logdepth=1.
 usage : python p1_studio.py BLUR_TOOLS"""
 import os
@@ -14,7 +14,7 @@ import nfs_web as W  # noqa: E402
 
 DIAG = r"""
 const Q = new URLSearchParams(location.search);
-const D_ALPHA = Q.get('alpha') === '0' ? 0 : 0.3, D_SIDE = Q.get('side') === 'front' ? THREE.FrontSide : THREE.DoubleSide;
+const D_SIDE = Q.get('side') === 'front' ? THREE.FrontSide : THREE.DoubleSide;
 const D_NEAR = +(Q.get('near') || 1), D_COLOR = Q.get('color') === 'mat';
 """
 
@@ -27,9 +27,10 @@ def page():
         ("new THREE.WebGLRenderer({ antialias: true })",
          "new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: Q.get('logdepth') === '1' })"),
         ("new THREE.PerspectiveCamera(55, 1, 1, 20000)", "new THREE.PerspectiveCamera(55, 1, D_NEAR, 20000)"),
-        ("return new THREE.MeshBasicMaterial({ map: tx, side: THREE.DoubleSide, alphaTest: 0.3 });",
+        ("return new THREE.MeshBasicMaterial({ map: tx, side: THREE.DoubleSide, alphaTest: (info.envmap || [])[i] ? 0 : 0.3 });",
          "return D_COLOR ? new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL((i * 0.618) % 1, 0.7, 0.5), side: D_SIDE })"
-         " : new THREE.MeshBasicMaterial({ map: tx, side: D_SIDE, alphaTest: D_ALPHA });"),
+         " : new THREE.MeshBasicMaterial({ map: tx, side: D_SIDE, alphaTest: Q.get('old') === '1' ? 0.3"
+         " : Q.get('alpha') === '0' ? 0 : (info.envmap || [])[i] ? 0 : 0.3 });"),
         ("<title>", "<title>[DIAG P1] "),
         ("controls.screenSpacePanning = true;",
          "controls.screenSpacePanning = true; window.__v = { camera, controls, scene, renderer, THREE };"),

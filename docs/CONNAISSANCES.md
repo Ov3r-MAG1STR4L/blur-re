@@ -1310,3 +1310,4 @@ exportés ; studio et export lisent la même géométrie (`stm2obj.mesh`).
 - [?] Vide bleu sous les îlots : la mer du `.stm` est faite de plaques (`water.tex`, `terr_surf.tex`) ; on ne sait
   pas si HP dessine en plus un plan d'eau ou un horizon hors du `.stm`.
 - [?] Rendu en jeu : non vérifié (aucune construction de Dubaï installée ; `mods\nfs_dubai` vient d'un autre lieu).
+- [F] Phase A (2026-11-02) : `web_cache/<lieu>/index.json` reçoit `envmap` (booléen par texture, vrai si au moins un matériau à `envmap.tex` l'utilise ; 1 texture mixte à Dubaï, 2 à Rio) ; la page met `alphaTest` à 0 pour ces textures, 0,3 pour les autres. Vérifié dans le studio (Dubaï : tours de la marina, Burj, vue d'ensemble ; Rio) : tours pleines, grues / palmiers toujours découpés. Export inchangé. Avant / après : `nfs_diag/p1_studio.py`, `?old=1`.
