@@ -18,13 +18,28 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import aidreverse, blurbpr, blurroute, bmb_levelphysics, gridreverse, maplock, make_reverse as MR  # noqa: E402
+import aidreverse, blurbpr, blurloc, blurroute, bmb_levelphysics, gridreverse, maplock, make_reverse as MR  # noqa: E402
 from blurxt import XT  # noqa: E402
 
 PORT = 8766
 NEAR = 60.0           # m : triangles de collision gardés autour de la ligne centrale (tout le niveau = trop lourd)
 BUILD = None
 _cache = {}
+
+
+def names():
+    """{route inversée: (lieu, nom en jeu)} en français, comme make_reverse les écrit : « <nom d'origine> Reverse »,
+    sauf les routes à texte imposé (loc entier : Haruna « Montée »)."""
+    amax = json.load(open(os.path.join(MR.E, "xt_json", "amax.json")))
+    fr = dict(blurloc.parse_raw(open(os.path.join(MR.G, "xt", "loc", "cityandroutenames.loc"), "rb").read())["langs"])
+    fr = next(t for c, t in fr.items() if c.rstrip(b"\0") == b"fr")
+    out = {}
+    for r in MR.ROUTES:
+        src = amax["Route"][r["orig"]]
+        city = amax["City"][src["City"].split("/")[-1]]["LocString"]
+        name = fr.get(r["loc"]) if isinstance(r["loc"], int) else fr.get(src["LocString"], r["orig"]) + " Reverse"
+        out[r["new"]] = (fr.get(city, src["City"]), name or r["new"])
+    return out
 
 
 def _city(r):
@@ -173,7 +188,8 @@ class Handler(SimpleHTTPRequestHandler):
                 self.path = "/reverse.html"
             elif u.path == "/api/routes":
                 return self.send_json(dict(build=os.path.abspath(BUILD), routes=[
-                    dict(name=r["new"], orig=r["orig"], locked=maplock.locked(r["new"])) for r in MR.ROUTES]))
+                    dict(name=r["new"], orig=r["orig"], locked=maplock.locked(r["new"]),
+                         place=NAMES[r["new"]][0], title=NAMES[r["new"]][1]) for r in MR.ROUTES]))
             elif u.path == "/api/route":
                 return self.send_json(with_edits(route_data(q["name"])))
             elif u.path == "/thumb":
@@ -211,6 +227,7 @@ if __name__ == "__main__":
     BUILD = sys.argv[1] if len(sys.argv) > 1 else max(
         (d for d in glob.glob(os.path.join(MR.E, "mods", "reverse*")) if os.path.isdir(d)), key=os.path.getmtime)
     print("build :", os.path.abspath(BUILD))
+    NAMES = names()
     srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     print("Reverse Studio : http://127.0.0.1:%d  (Ctrl+C pour arrêter)" % PORT)
     threading.Timer(1.0, lambda: webbrowser.open("http://127.0.0.1:%d" % PORT)).start()

@@ -97,7 +97,7 @@ const camera = new THREE.PerspectiveCamera(55, 1, 1, 20000);
 const controls = new OrbitControls(camera, renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 1.2));
 const layers = {};
-let data = null;
+let data = null, titles = {};
 
 function resize() {
   renderer.setSize(view.clientWidth, view.clientHeight);
@@ -318,7 +318,7 @@ function build(d) {
   // caméra sur la grille
   const g0 = d.lists.flatMap(l => l.actors).find(a => a.kind === 'grid') || { pos: d.centre[0] };
   controls.target.set(...g0.pos); camera.position.set(g0.pos[0] + 80, g0.pos[1] + 60, g0.pos[2] + 80);
-  $('hud').textContent = `${d.name}  (inverse de ${d.orig})  ${d.loop ? 'boucle' : 'point à point'}  ${d.n_tris} triangles`;
+  $('hud').textContent = `${titles[d.name] || d.name}   ${d.name}  (inverse de ${d.orig})  ${d.loop ? 'boucle' : 'point à point'}  ${d.n_tris} triangles`;
   minimap(d);
 }
 
@@ -363,7 +363,12 @@ async function routes() {
   const r = await api('/api/routes');
   $('build').textContent = 'Build : ' + r.build;
   const cur = $('route').value;
-  $('route').innerHTML = r.routes.map(x => `<option value="${x.name}">${x.locked ? '🔒 ' : ''}${x.name}</option>`).join('');
+  // menu rangé par lieu, avec le nom affiché en jeu ; le nom technique reste dans l'info-bulle et le HUD
+  const byPlace = {};
+  r.routes.forEach(x => (byPlace[x.place] ??= []).push(x));
+  $('route').innerHTML = Object.keys(byPlace).sort().map(p => `<optgroup label="${p}">` + byPlace[p].map(x =>
+    `<option value="${x.name}" title="${x.name} (inverse de ${x.orig})">${x.locked ? '🔒 ' : ''}${x.title}</option>`).join('') + '</optgroup>').join('');
+  titles = Object.fromEntries(r.routes.map(x => [x.name, `${x.place} : ${x.title}`]));
   if (cur) $('route').value = cur;
 }
 $('route').onchange = () => load($('route').value);
