@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reverse Studio</title>
+<style>
+  :root { --bg:#14161a; --panel:#1f232a; --txt:#e8eaed; --muted:#9aa0a6; --acc:#3d8bfd; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--txt); font:13px system-ui, sans-serif; }
+  #app { display:grid; grid-template-columns:300px 1fr; height:100%; }
+  #side { background:var(--panel); padding:10px; overflow:auto; }
+  #view { position:relative; overflow:hidden; }
+  canvas { display:block; }
+  h2 { font-size:12px; margin:14px 0 6px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  button, select { font:inherit; color:var(--txt); background:#2b3039; border:1px solid #3a404b; border-radius:5px; padding:4px 7px; margin:2px 0; }
+  button:hover { border-color:var(--acc); }
+  select { width:100%; }
+  label { display:block; margin:2px 0; }
+  #thumb { width:100%; border-radius:4px; background:#000; }
+  #mini { position:absolute; right:10px; top:10px; width:220px; height:220px; background:#000a; border-radius:8px; }
+  #hud { position:absolute; left:10px; bottom:10px; background:#000a; padding:6px 9px; border-radius:6px; pointer-events:none; white-space:pre; }
+  #warn { color:#ff6b6b; white-space:pre-wrap; }
+  .lock { color:#ffd43b; }
+  .key span { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <h2>Route</h2>
+    <select id="route"></select>
+    <div id="state"></div>
+    <button id="lock">Verrouiller (validée en jeu)</button>
+    <button id="unlock">Déverrouiller</button>
+    <h2>Calques</h2>
+    <label><input type="checkbox" data-layer="road" checked> Route (.aid, largeur)</label>
+    <label><input type="checkbox" data-layer="coll" checked> Collision</label>
+    <label><input type="checkbox" data-layer="ground" checked> Sol mesuré en roulant</label>
+    <label><input type="checkbox" data-layer="grid" checked> Grilles</label>
+    <label><input type="checkbox" data-layer="pickup" checked> Bonus</label>
+    <label><input type="checkbox" data-layer="text" checked> Textes de ligne</label>
+    <div class="key">
+      <div><span style="background:#51cf66"></span>place posée (≤ 1 m du sol)</div>
+      <div><span style="background:#ff6b6b"></span>place en l'air / sous le sol</div>
+      <div><span style="background:#868e96"></span>sol inconnu</div>
+    </div>
+    <h2>Contrôles</h2>
+    <div id="warn"></div>
+    <h2>Écran de chargement</h2>
+    <img id="thumb" alt="vignette de la route">
+    <p style="color:var(--muted)">Le menu en montre la partie gauche (~330 px).</p>
+    <p style="color:var(--muted)" id="build"></p>
+  </div>
+  <div id="view"><canvas id="mini" width="440" height="440"></canvas><div id="hud"></div></div>
+</div>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $ = id => document.getElementById(id);
+const view = $('view');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+view.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x14161a);
+const camera = new THREE.PerspectiveCamera(55, 1, 1, 20000);
+const controls = new OrbitControls(camera, renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 1.2));
+const layers = {};
+let data = null;
+
+function resize() {
+  renderer.setSize(view.clientWidth, view.clientHeight);
+  camera.aspect = view.clientWidth / view.clientHeight; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+(function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+
+function clear() {           // libère la mémoire GPU de la route précédente (sinon elle s'accumule)
+  for (const g of Object.values(layers)) {
+    g.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); });
+    scene.remove(g);
+  }
+}
+function layer(name) {
+  const g = new THREE.Group(); layers[name] = g; scene.add(g);
+  g.visible = document.querySelector(`[data-layer=${name}]`).checked; return g;
+}
+document.querySelectorAll('[data-layer]').forEach(c => c.onchange = () => layers[c.dataset.layer] && (layers[c.dataset.layer].visible = c.checked));
+
+function status(a) {
+  if (a.ground == null) return 'unknown';
+  return Math.abs(a.pos[1] - a.ground) <= 1 ? 'ok' : 'bad';
+}
+const COL = { ok: 0x51cf66, bad: 0xff6b6b, unknown: 0x868e96 };
+
+function build(d) {
+  clear();
+  // route : ruban centre ± largeur / 2 le long de l'axe latéral du .aid
+  const n = d.centre.length, pos = [], idx = [];
+  for (let i = 0; i < n; i++) {
+    const [x, y, z] = d.centre[i], [lx, lz] = d.lateral[i], h = d.width[i] / 2;
+    pos.push(x - lx * h, y, z - lz * h, x + lx * h, y, z + lz * h);
+    if (i < n - 1) idx.push(2*i, 2*i+1, 2*i+2, 2*i+1, 2*i+3, 2*i+2);
+  }
+  const rg = new THREE.BufferGeometry();
+  rg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); rg.setIndex(idx); rg.computeVertexNormals();
+  const road = layer('road');
+  road.add(new THREE.Mesh(rg, new THREE.MeshLambertMaterial({ color: 0x3a4250, side: THREE.DoubleSide })));
+  road.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(d.centre.map(p => new THREE.Vector3(...p))),
+                          new THREE.LineBasicMaterial({ color: 0x3d8bfd })));
+  // collision proche de la route
+  const coll = layer('coll');
+  if (d.n_tris) {
+    const raw = Uint8Array.from(atob(d.tris), c => c.charCodeAt(0));
+    const cg = new THREE.BufferGeometry();
+    cg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(raw.buffer), 3)); cg.computeVertexNormals();
+    coll.add(new THREE.Mesh(cg, new THREE.MeshLambertMaterial({ color: 0x5c6370, side: THREE.DoubleSide, transparent: true, opacity: .6 })));
+  }
+  const gr = layer('ground');
+  if (d.ground.length) {
+    const gg = new THREE.BufferGeometry().setFromPoints(d.ground.map(p => new THREE.Vector3(...p)));
+    gr.add(new THREE.Points(gg, new THREE.PointsMaterial({ color: 0xfab005, size: 1.2 })));
+  }
+  // acteurs
+  const grid = layer('grid'), pick = layer('pickup'), text = layer('text');
+  const box = new THREE.BoxGeometry(2, 1.2, 4.4), ball = new THREE.SphereGeometry(1.5, 12, 8), slab = new THREE.BoxGeometry(6, .3, .6);
+  const warn = [];
+  d.lists.forEach(l => l.actors.forEach(a => {
+    let m;
+    if (a.kind === 'grid') {
+      const s = status(a);
+      m = new THREE.Mesh(box, new THREE.MeshLambertMaterial({ color: COL[s] }));
+      if (s === 'bad') warn.push(`${l.record} ${a.name} : ${(a.pos[1] - a.ground).toFixed(1)} m du sol`);
+      grid.add(m);
+    } else if (a.kind === 'pickup') { m = new THREE.Mesh(ball, new THREE.MeshLambertMaterial({ color: 0xcc5de8 })); pick.add(m); }
+    else if (a.kind === 'text') { m = new THREE.Mesh(slab, new THREE.MeshLambertMaterial({ color: 0xffd43b })); text.add(m); }
+    else return;
+    m.position.set(...a.pos);
+    m.lookAt(a.pos[0] + a.fwd[0], a.pos[1] + a.fwd[1], a.pos[2] + a.fwd[2]);
+  }));
+  const unknown = d.lists.flatMap(l => l.actors).filter(a => a.kind === 'grid' && a.ground == null).length;
+  $('warn').textContent = (warn.length ? warn.join('\n') : 'Aucune place en l\'air ni sous le sol.') +
+    (unknown ? `\n${unknown} places sans sol connu (ni collision lisible ni ground/${d.orig}.csv : trackrec.py --all).` : '') +
+    (d.collision ? '' : '\nCollision non lue pour ce niveau (lecteur Map Builder : 1er objet pas un maillage).');
+  // caméra sur la grille
+  const g0 = d.lists.flatMap(l => l.actors).find(a => a.kind === 'grid') || { pos: d.centre[0] };
+  controls.target.set(...g0.pos); camera.position.set(g0.pos[0] + 80, g0.pos[1] + 60, g0.pos[2] + 80);
+  $('hud').textContent = `${d.name}  (inverse de ${d.orig})  ${d.loop ? 'boucle' : 'point à point'}  ${d.n_tris} triangles`;
+  minimap(d);
+}
+
+function minimap(d) {           // aperçu du HUD : tracé vu de dessus et grille (la vraie image .ipf n'est pas décodée)
+  const c = $('mini'), x = c.getContext('2d'), P = d.centre;
+  const xs = P.map(p => p[0]), zs = P.map(p => p[2]);
+  const x0 = Math.min(...xs), z0 = Math.min(...zs), s = 400 / Math.max(Math.max(...xs) - x0, Math.max(...zs) - z0);
+  const f = p => [20 + (p[0] - x0) * s, 20 + (p[2] - z0) * s];
+  x.clearRect(0, 0, 440, 440);
+  x.strokeStyle = '#3d8bfd'; x.lineWidth = 6; x.shadowColor = '#3d8bfd'; x.shadowBlur = 12; x.beginPath();
+  P.forEach((p, i) => x[i ? 'lineTo' : 'moveTo'](...f(p))); x.stroke(); x.shadowBlur = 0;
+  d.lists.forEach(l => l.actors.forEach(a => {
+    if (a.kind !== 'grid') return;
+    x.fillStyle = '#' + COL[status(a)].toString(16).padStart(6, '0'); x.fillRect(...f(a.pos).map(v => v - 3), 6, 6);
+  }));
+  x.fillStyle = '#fff'; x.beginPath(); x.arc(...f(P[0]), 7, 0, 7); x.fill();
+}
+
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: 'POST', body: JSON.stringify(body) } : {});
+  const j = await r.json(); if (j.error) { alert(j.error); throw j.error; } return j;
+}
+async function load(name) {
+  $('hud').textContent = 'chargement…';
+  data = await api('/api/route?name=' + name);
+  $('state').innerHTML = data.locked ? '<span class="lock">🔒 verrouillée : make_reverse la remet à l\'identique</span>' : 'non verrouillée';
+  $('thumb').src = '/thumb?name=' + name;
+  build(data);
+}
+async function routes() {
+  const r = await api('/api/routes');
+  $('build').textContent = 'Build : ' + r.build;
+  const cur = $('route').value;
+  $('route').innerHTML = r.routes.map(x => `<option value="${x.name}">${x.locked ? '🔒 ' : ''}${x.name}</option>`).join('');
+  if (cur) $('route').value = cur;
+}
+$('route').onchange = () => load($('route').value);
+$('lock').onclick = async () => { if (confirm(`Verrouiller ${data.name} telle qu'elle est dans ce build ?`)) { await api('/api/lock', { name: data.name }); await routes(); load(data.name); } };
+$('unlock').onclick = async () => { if (confirm(`Déverrouiller ${data.name} ?`)) { await api('/api/unlock', { name: data.name }); await routes(); load(data.name); } };
+await routes(); load($('route').value);
+</script>
+</body>
+</html>
