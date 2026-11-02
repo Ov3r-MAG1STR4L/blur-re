@@ -8,6 +8,7 @@ Serveur local (127.0.0.1 seulement), lecture seule sur le jeu et le build :
                               ligne centrale + largeur (.aid), acteurs des listes clonées (grilles, textes, bonus),
                               sol mesuré en roulant (ground/<orig>.csv), hauteur de collision sous chaque place
   GET  /thumb?name=R          vignette de chargement (ui_frontend.bpr du build) en PNG
+  POST /api/edits {name, edits}      retouches (déplacement / rotation) -> blur_extracted/edits/<route>.json
   POST /api/lock, /api/unlock {name}   maplock (verrouille la route telle qu'elle est dans le build affiché)
 """
 import base64, glob, io, json, os, sys, threading, urllib.parse, webbrowser
@@ -65,12 +66,13 @@ def route_data(name):
         return None
     # acteurs des listes clonées
     lists = []
+    keys = {n: k for k, n, _ in maplock._lists(os.path.join(lvl, "actorpack.xt"), r["hash"])}
     x = XT(os.path.join(lvl, "actorpack.xt"))
     for n, t, v, h in sorted(x.records(), key=lambda e: e[3]):
         if t != "LevelActorList" or not r["hash"] < h <= r["hash"] + 0xFF:
             continue
         acts = []
-        for a in v.get("LevelActors", []):
+        for i, a in enumerate(v.get("LevelActors", [])):
             if not a or not a.get("WorldMatrix"):
                 continue
             m = a["WorldMatrix"]
@@ -78,14 +80,19 @@ def route_data(name):
             kind = ("grid" if gridreverse.is_start_position(a) else "pickup" if "PickupType" in a else
                     "text" if a.get("Name", "").startswith(("Start_Text", "Finish_Text")) else "other")
             gy = ground_y(p) if kind == "grid" else None
-            acts.append(dict(name=a.get("Name", ""), kind=kind, pos=p, fwd=[m["az"][k] for k in ("vx", "vy", "vz")],
+            acts.append(dict(i=str(i), name=a.get("Name", ""), kind=kind, pos=p, fwd=[m["az"][k] for k in ("vx", "vy", "vz")],
                              start=a.get("StartNumber"), pickup=a.get("PickupType"), ground=gy))
-        lists.append(dict(record=n, hash=f"{h:#x}", actors=acts))
+        lists.append(dict(record=n, key=keys[n], hash=f"{h:#x}", actors=acts))
     d = dict(name=name, orig=r["orig"], city=city, loop=bool(loop), locked=maplock.locked(name),
              centre=P.tolist(), width=W.tolist(), lateral=lat.tolist(), lists=lists, ground=ground[::5].tolist(), collision=g is not None,
              tris=base64.b64encode(tri[keep].astype(np.float32).tobytes()).decode(), n_tris=int(keep.sum()))
     _cache[name] = d
     return d
+
+
+def with_edits(d):
+    ef = os.path.join(maplock.EDITS, d["name"] + ".json")
+    return dict(d, edits=json.load(open(ef)) if os.path.isfile(ef) else {})
 
 
 def thumb_png(name):
@@ -124,7 +131,7 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.send_json(dict(build=os.path.abspath(BUILD), routes=[
                     dict(name=r["new"], orig=r["orig"], locked=maplock.locked(r["new"])) for r in MR.ROUTES]))
             elif u.path == "/api/route":
-                return self.send_json(route_data(q["name"]))
+                return self.send_json(with_edits(route_data(q["name"])))
             elif u.path == "/thumb":
                 return self.send_bytes(thumb_png(q["name"]), "image/png")
         except Exception as ex:  # noqa: BLE001  (l'erreur complète part dans la page)
@@ -133,8 +140,19 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
-        name = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)))["name"]
+        q = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)))
+        name = q["name"]
         try:
+            if u.path == "/api/edits":         # retouches : appliquées par make_reverse au prochain build
+                if maplock.locked(name):
+                    raise ValueError(f"{name} est verrouillée : la déverrouiller avant de la retoucher")
+                os.makedirs(maplock.EDITS, exist_ok=True)
+                ef = os.path.join(maplock.EDITS, name + ".json")
+                if q["edits"]:
+                    json.dump(q["edits"], open(ef, "w"), indent=1)
+                elif os.path.isfile(ef):
+                    os.remove(ef)
+                return self.send_json({"ok": True})
             if u.path == "/api/lock":
                 maplock.lock(name, BUILD)
             elif u.path == "/api/unlock":

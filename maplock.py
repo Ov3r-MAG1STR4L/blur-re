@@ -9,13 +9,14 @@ Ce qui est figé (ce qui appartient à UNE route ; amax.bin, le .bpr, les .ipf s
   - son .aid (levels/<ville>/<route>.aid), copié tel quel ;
   - les WorldMatrix de ses listes d'acteurs clonées (grilles solo / multi, textes de ligne, bonus), retrouvées par
     leur hash (route + 1 + n, fixe d'un build à l'autre) dans levels/<ville>/actorpack.xt.
-make_reverse appelle restore() après avoir calculé chaque route : une route verrouillée ressort à l'identique.
+make_reverse appelle apply_edits() (retouches de Reverse Studio) puis restore() après avoir calculé chaque route : une route verrouillée ressort à l'identique.
 """
 import base64, glob, hashlib, json, os, struct, sys
 
 from blurxt import XT
 
 LOCKS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "blur_extracted", "locks")   # hors dépôt : .aid de ~2 Mo
+EDITS = os.path.join(os.path.dirname(LOCKS), "edits")      # retouches de Reverse Studio, une fiche par route
 ROWS = ("ax", "ay", "az", "aw")
 
 
@@ -68,6 +69,50 @@ def lock(new, mod):
     print(f"{new} verrouillé : .aid {len(raw)} o, {len(lists)} listes, {sum(len(m) for *_, m in lists)} acteurs")
 
 
+def _write(ap_path, by_record):
+    """Écrit des WorldMatrix dans un actorpack : {nom d'enregistrement: {index d'acteur: matrice}}."""
+    x = XT(ap_path)
+    buf = bytearray(x.b)
+    for name, acts in by_record.items():
+        # XT.locate relit tout le fichier : un appel par acteur (les acteurs ne sont pas contigus), les 12 valeurs
+        # de sa matrice aux mêmes écarts que dans le 1er acteur
+        i0 = next(iter(acts))
+        first = {(row, c): x.locate(name, f"LevelActors[{i0}].WorldMatrix.{row}.{c}")[0]
+                 for row in ROWS for c in ("vx", "vy", "vz")}
+        for i, m in acts.items():
+            o = x.locate(name, f"LevelActors[{i}].WorldMatrix.ax.vx")[0] - first["ax", "vx"]
+            for (row, c), off in first.items():
+                struct.pack_into("<f", buf, off + o, m[row][c])
+    open(ap_path, "wb").write(buf)
+
+
+def edited(new):
+    return os.path.isfile(os.path.join(EDITS, new + ".json"))
+
+
+def apply_edits(new, ap_path, base_hash):
+    """Retouches faites dans Reverse Studio (edits/<route>.json : {clé de liste: {index: {pos, yaw}}}) :
+    position (aw) remplacée, axes ax / az tournés de `yaw` radians autour de la verticale."""
+    import math
+    d = json.load(open(os.path.join(EDITS, new + ".json")))
+    now = {k: (n, m) for k, n, m in _lists(ap_path, base_hash)}
+    out = {}
+    for k, acts in d.items():
+        if k not in now:
+            raise SystemExit(f"{new} : retouches sur une liste qui n'existe plus ({k[:40]}…) : refaire les retouches")
+        name, mats = now[k]
+        for i, e in acts.items():
+            m = json.loads(json.dumps(mats[i]))
+            c, s_ = math.cos(e["yaw"]), math.sin(e["yaw"])
+            for row in ("ax", "az"):
+                vx, vz = m[row]["vx"], m[row]["vz"]
+                m[row]["vx"], m[row]["vz"] = c * vx + s_ * vz, -s_ * vx + c * vz
+            m["aw"] = dict(zip(("vx", "vy", "vz"), e["pos"]))
+            out.setdefault(name, {})[i] = m
+    _write(ap_path, out)
+    print(new, "retouches appliquées :", sum(map(len, out.values())), "acteurs")
+
+
 def restore(new, aid_path, ap_path, base_hash):
     """Remet la route verrouillée (son .aid, ses grilles et bonus) dans un build en cours."""
     d = json.load(open(os.path.join(LOCKS, new + ".json")))
@@ -76,19 +121,7 @@ def restore(new, aid_path, ap_path, base_hash):
     if missing:
         raise SystemExit(f"{new} verrouillée mais ses listes ont changé ({len(missing)}) : maplock.py unlock {new}")
     open(aid_path, "wb").write(base64.b64decode(d["aid"]))
-    x = XT(ap_path)
-    buf = bytearray(x.b)
-    for k, acts in d["lists"].items():
-        # XT.locate relit tout le fichier : un appel par acteur (les acteurs ne sont pas contigus), les 12 valeurs
-        # de sa matrice aux mêmes écarts que dans le 1er acteur
-        i0 = next(iter(acts))
-        first = {(row, c): x.locate(now[k], f"LevelActors[{i0}].WorldMatrix.{row}.{c}")[0]
-                 for row in ROWS for c in ("vx", "vy", "vz")}
-        for i, m in acts.items():
-            o = x.locate(now[k], f"LevelActors[{i}].WorldMatrix.ax.vx")[0] - first["ax", "vx"]
-            for (row, c), off in first.items():
-                struct.pack_into("<f", buf, off + o, m[row][c])
-    open(ap_path, "wb").write(buf)
+    _write(ap_path, {now[k]: acts for k, acts in d["lists"].items()})
     print(new, "VERROUILLÉE : .aid, grilles et bonus remis à l'identique")
 
 

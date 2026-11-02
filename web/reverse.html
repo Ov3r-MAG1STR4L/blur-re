@@ -21,6 +21,8 @@
   #hud { position:absolute; left:10px; bottom:10px; background:#000a; padding:6px 9px; border-radius:6px; pointer-events:none; white-space:pre; }
   #warn { color:#ff6b6b; white-space:pre-wrap; }
   .lock { color:#ffd43b; }
+  .row { display:flex; gap:4px; flex-wrap:wrap; }
+  #selInfo { white-space:pre-wrap; margin-top:4px; }
   .key span { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:middle; }
 </style>
 </head>
@@ -32,6 +34,13 @@
     <div id="state"></div>
     <button id="lock">Verrouiller (validée en jeu)</button>
     <button id="unlock">Déverrouiller</button>
+    <h2>Retouches</h2>
+    <div class="row"><button id="undo" title="Ctrl+Z">↶ Annuler</button><button id="redo" title="Ctrl+Y">↷ Rétablir</button>
+      <button id="save" title="Ctrl+S">Enregistrer</button></div>
+    <div class="row"><button id="mMove">Déplacer (G)</button><button id="mRot">Tourner (R)</button>
+      <button id="reset">Remettre l'objet</button></div>
+    <div id="selInfo" style="color:var(--muted)">Clic sur une place, un bonus ou un texte pour le sélectionner.</div>
+    <div id="dirty"></div>
     <h2>Calques</h2>
     <label><input type="checkbox" data-layer="road" checked> Route (.aid, largeur)</label>
     <label><input type="checkbox" data-layer="coll" checked> Collision</label>
@@ -43,6 +52,7 @@
       <div><span style="background:#51cf66"></span>place posée (≤ 1 m du sol)</div>
       <div><span style="background:#ff6b6b"></span>place en l'air / sous le sol</div>
       <div><span style="background:#868e96"></span>sol inconnu</div>
+      <div><span style="background:#3d8bfd"></span>retouchée (sol revérifié au prochain build)</div>
     </div>
     <h2>Contrôles</h2>
     <div id="warn"></div>
@@ -51,7 +61,11 @@
     <p style="color:var(--muted)">Le menu en montre la partie gauche (~330 px).</p>
     <p style="color:var(--muted)" id="build"></p>
   </div>
-  <div id="view"><canvas id="mini" width="440" height="440"></canvas><div id="hud"></div></div>
+  <div id="view"><canvas id="mini" width="440" height="440"></canvas><div id="hud"></div>
+    <div id="done" style="position:absolute;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:5">
+      <div style="background:var(--panel);border:1px solid #3a404b;border-radius:10px;padding:20px 26px;max-width:520px">
+        <div id="doneMsg" style="font-size:15px;margin-bottom:14px;white-space:pre-wrap"></div>
+        <button onclick="this.closest('#done').style.display='none'">OK</button></div></div></div>
 </div>
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -60,6 +74,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 const $ = id => document.getElementById(id);
 const view = $('view');
@@ -80,7 +95,70 @@ function resize() {
 addEventListener('resize', resize); resize();
 (function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
 
+// ---------- retouches : {clé de liste: {index: {pos, yaw}}} ; annuler / rétablir = copies de cet objet ----------
+let edits = {}, undoS = [], redoS = [], saved = '{}', sel = null;
+const pickable = [];
+const tc = new TransformControls(camera, renderer.domElement);
+tc.addEventListener('dragging-changed', e => { controls.enabled = !e.value; if (e.value) push(); else commit(sel); });
+scene.add(tc);
+function snap() { return JSON.stringify(edits); }
+function push() { undoS.push(snap()); if (undoS.length > 300) undoS.shift(); redoS = []; }
+function setDirty() { $('dirty').innerHTML = snap() !== saved ? '<span class="lock">● retouches non enregistrées</span>' : ''; }
+function yawOf(f) { return Math.atan2(f[0], f[2]); }
+function commit(m) {            // position / rotation de l'objet -> retouche
+  if (!m) return;
+  const u = m.userData, f = new THREE.Vector3(0, 0, 1).applyQuaternion(m.quaternion);
+  (edits[u.key] ??= {})[u.i] = { pos: m.position.toArray(), yaw: yawOf([f.x, f.y, f.z]) - yawOf(u.a.fwd) };
+  paint(m); setDirty(); info(m);
+}
+function place(m) {             // objet à sa position d'origine ou retouchée
+  const u = m.userData, a = u.a, e = edits[u.key]?.[u.i];
+  m.position.set(...(e ? e.pos : a.pos));
+  const y = yawOf(a.fwd) + (e ? e.yaw : 0);
+  m.lookAt(m.position.x + Math.sin(y), m.position.y + a.fwd[1], m.position.z + Math.cos(y));
+  paint(m);
+}
+function paint(m) {
+  const u = m.userData;
+  if (u.a.kind === 'grid') m.material.color.setHex(edits[u.key]?.[u.i] ? 0x3d8bfd : COL[status(u.a)]);
+}
+function info(m) {
+  if (!m) { $('selInfo').textContent = 'Clic sur une place, un bonus ou un texte pour le sélectionner.'; return; }
+  const a = m.userData.a, p = m.position;
+  $('selInfo').textContent = `${a.name}${a.start != null ? ' (place ' + a.start + ')' : ''}${a.pickup ? ' ' + a.pickup : ''}\n` +
+    `x ${p.x.toFixed(1)}  y ${p.y.toFixed(1)}  z ${p.z.toFixed(1)}` + (a.ground != null ? `  sol d'origine ${a.ground.toFixed(1)}` : '');
+}
+function select(m) { sel = m; m ? tc.attach(m) : tc.detach(); info(m); }
+function restoreEdits(s) { edits = JSON.parse(s); pickable.forEach(place); if (sel) info(sel); setDirty(); }
+function popup(t) { $('doneMsg').textContent = t; $('done').style.display = 'flex'; }
+$('undo').onclick = () => { if (undoS.length) { redoS.push(snap()); restoreEdits(undoS.pop()); } };
+$('redo').onclick = () => { if (redoS.length) { undoS.push(snap()); restoreEdits(redoS.pop()); } };
+$('reset').onclick = () => { if (!sel) return; push(); const u = sel.userData; delete edits[u.key]?.[u.i];
+  if (edits[u.key] && !Object.keys(edits[u.key]).length) delete edits[u.key]; place(sel); setDirty(); info(sel); };
+$('mMove').onclick = () => { tc.setMode('translate'); tc.showX = tc.showZ = true; };
+$('mRot').onclick = () => { tc.setMode('rotate'); tc.showX = tc.showZ = false; };
+$('save').onclick = async () => { await api('/api/edits', { name: data.name, edits }); saved = snap(); setDirty();
+  popup(`✅ Retouches enregistrées pour ${data.name}.\nElles seront appliquées au prochain make_reverse (puis à vérifier en jeu).`); };
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'SELECT') return;
+  if (e.ctrlKey && e.key === 'z') { $('undo').onclick(); e.preventDefault(); }
+  else if (e.ctrlKey && e.key === 'y') { $('redo').onclick(); e.preventDefault(); }
+  else if (e.ctrlKey && e.key === 's') { $('save').onclick(); e.preventDefault(); }
+  else if (e.key === 'g') $('mMove').onclick();
+  else if (e.key === 'r') $('mRot').onclick();
+  else if (e.key === 'Escape') select(null);
+});
+const ray = new THREE.Raycaster(); let down = null;
+renderer.domElement.addEventListener('pointerdown', e => down = [e.clientX, e.clientY]);
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || tc.dragging) return;   // glissé, pas un clic
+  const r = renderer.domElement.getBoundingClientRect();
+  ray.setFromCamera({ x: (e.clientX - r.left) / r.width * 2 - 1, y: -(e.clientY - r.top) / r.height * 2 + 1 }, camera);
+  const hit = ray.intersectObjects(pickable.filter(m => m.parent.visible))[0];  select(hit ? hit.object : null);
+});
+
 function clear() {           // libère la mémoire GPU de la route précédente (sinon elle s'accumule)
+  select(null); pickable.length = 0;
   for (const g of Object.values(layers)) {
     g.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); });
     scene.remove(g);
@@ -140,8 +218,8 @@ function build(d) {
     } else if (a.kind === 'pickup') { m = new THREE.Mesh(ball, new THREE.MeshLambertMaterial({ color: 0xcc5de8 })); pick.add(m); }
     else if (a.kind === 'text') { m = new THREE.Mesh(slab, new THREE.MeshLambertMaterial({ color: 0xffd43b })); text.add(m); }
     else return;
-    m.position.set(...a.pos);
-    m.lookAt(a.pos[0] + a.fwd[0], a.pos[1] + a.fwd[1], a.pos[2] + a.fwd[2]);
+    m.userData = { key: l.key, i: a.i, a };
+    pickable.push(m); place(m);
   }));
   const unknown = d.lists.flatMap(l => l.actors).filter(a => a.kind === 'grid' && a.ground == null).length;
   $('warn').textContent = (warn.length ? warn.join('\n') : 'Aucune place en l\'air ni sous le sol.') +
@@ -174,11 +252,13 @@ async function api(path, body) {
   const j = await r.json(); if (j.error) { alert(j.error); throw j.error; } return j;
 }
 async function load(name) {
+  if (data && snap() !== saved && !confirm('Retouches non enregistrées : les abandonner ?')) { $('route').value = data.name; return; }
   $('hud').textContent = 'chargement…';
   data = await api('/api/route?name=' + name);
   $('state').innerHTML = data.locked ? '<span class="lock">🔒 verrouillée : make_reverse la remet à l\'identique</span>' : 'non verrouillée';
   $('thumb').src = '/thumb?name=' + name;
-  build(data);
+  edits = data.edits; saved = snap(); undoS = []; redoS = [];
+  build(data); setDirty();
 }
 async function routes() {
   const r = await api('/api/routes');
