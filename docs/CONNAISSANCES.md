@@ -1375,3 +1375,11 @@ Outil : `nfs_diag/pb_see_through.py STM WORLD [simuler]` (lecture seule).
 - [F] Écart de reproductibilité préexistant : Map Builder ne réécrit `LSData` / `LSTree` de `level.levelrender`
   que si `object_light` est actif (Dubaï) ; Rio et Location45 gardent ceux de la construction précédente.
   Le résultat dépend donc de l'ordre des constructions (seule différence de Location45 avant/après). Non corrigé.
+
+## Chat vocal (2026-11-03, chaînes de `Blur.exe` PC)
+
+- [F] Le binaire PC contient le gadget HUD `UIMultiplayerSpeaking` (source `...\Ui\Game\Gadgets\Hud\UIMultiplayerSpeaking.cpp`),
+  calque HUD `MP_SPEAKING` (à côté de `MP_DATA`), paramètres `icon_scale`, `colour_icon`, `mult_gap_x`, `max_to_show` :
+  icônes « joueur qui parle », héritées des versions console (chat vocal Xbox 360 / PS3).
+- [M] Aucune capture micro ni VoIP trouvée côté PC (pas de chaîne voip/headset/microphone) : le gadget existe sans source audio,
+  probablement jamais affiché. Non vérifié en jeu. Les autres « voice » sont la voix off (`VoiceMail`, `UIOptions_VoiceVolume`).
