@@ -1383,3 +1383,39 @@ Outil : `nfs_diag/pb_see_through.py STM WORLD [simuler]` (lecture seule).
   icônes « joueur qui parle », héritées des versions console (chat vocal Xbox 360 / PS3).
 - [M] Aucune capture micro ni VoIP trouvée côté PC (pas de chaîne voip/headset/microphone) : le gadget existe sans source audio,
   probablement jamais affiché. Non vérifié en jeu. Les autres « voice » sont la voix off (`VoiceMail`, `UIOptions_VoiceVolume`).
+
+### Essai en jeu de Dubaï phase B (2026-11-03) et diagnostic (rien de corrigé)
+
+Essai (utilisateur, Blur_test) : chargement sans crash, vitres à reflet texturées, grues / lampadaires / découpes
+et textures mixtes corrects. Problèmes : lignes blanches entre textures, collision défectueuse (murs sans
+collision, murs irréguliers, réactions anormales), fluidité inférieure aux circuits d'origine, zones non affichées.
+Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seule).
+- [F] Lignes blanches, 2 mécanismes : (a) `tile_split` coupe 12 % des triangles gardés (82 231) sur les lignes
+  entières des UV ; 25 227 arêtes partagées (2,8 %) sont coupées différemment des deux côtés (couture UV, même
+  texture le plus souvent : `terr_armcoplain`, `terr_concretegeneric2`, `bldg_cons_square`…) -> sommets en T,
+  fentes d'un pixel qui laissent voir le fond. (b) atlas sans marge réelle : INSET 1 % = 1,28 px au mip 0, 0,64 px
+  au mip 1, < 0,2 px dès le mip 3 ; mips calculés sur l'atlas entier (11 niveaux) -> une case déborde sur sa
+  voisine à chaque bord de répétition. [H] (a) donne des lignes claires qui scintillent, (b) des liserés de la
+  couleur voisine, stables. Le DXT1 ne fait que du noir (transparence 1 bit), pas du blanc.
+- [F] Collision (`road_collision` -> `addramp.mesh_object`) : source = maillages **visuels** LOD0 de HP (pas le
+  `kd1_0_0.dat`), triangles dont le **centre** est à < 40 m du tracé : 164 908 (sol 74 276, murs 73 783, pentes
+  16 849), 48 099 de moins de 0,05 m2, 85 % issus du décor `PVS*` (rebords, fenêtres, détails). Aucun mur à
+  < 15 m n'est perdu par la règle des 40 m. Vitres à reflet et autres `see_through` à < 15 m : 785 triangles
+  affichés (638 vitres depuis la phase B) **jamais solides**.
+- [F] `mesh_object` retourne chaque triangle pour que sa normale monte : pour un mur le sens devient arbitraire
+  (56 533 murs à |ny| < 0,02) ; 35 971 murs sur 73 783 ont leur normale **dos au tracé**. Un seul groupe
+  (383, 0, 1, 0) et un seul nœud de 255 triangles par objet.
+- [F] Collision d'origine (LA River, 1er objet) : 31 860 triangles dont 6 % de murs, 8 293 nœuds (≈ 7,7
+  triangles par feuille), 6 420 groupes ; murs surtout en groupe (383, 0, 2, 0), sols en 1 / 2 / 4 / 6
+  (3e champ = type de surface ?). [H] fort : normale dos au tracé = mur traversé ou voiture repoussée du mauvais
+  côté ; type de surface « sol » sur les murs + micro-triangles = réactions anormales. À vérifier en jeu.
+- [F] Performances : 1 147 869 triangles exportés, faces doublées (6 index / triangle), LOD0 seul jusqu'à 700 m,
+  91 acteurs de 65 000 sommets réservés chacun, 103 atlas 1024 x 1024 ; 31 à 40 acteurs à portée en tout point du
+  tracé. Circuits d'origine : décor statique dans `levelstream` (245 Mo pour LA River) avec PVS, portails, LOD ;
+  nombre de triangles d'origine non mesuré (format non décodé).
+- [F] Visibilité : 22 % du décor LOD0 (195 723 triangles, dont 30 311 à plus de 30 m de haut) est à plus de
+  300 m du tracé et **n'est pas exporté** ; les zones dont l'acteur (centre de zone de 200 m) est à plus de 700 m
+  disparaissent. Aucun acteur hors de portée de tout le tracé. Le PVS / les portails / CullNode ne sont pas en cause
+  [H] (acteurs). Zones vues absentes en jeu : non localisées (captures nécessaires).
+- [F] Rio (`Location2/Location21.stm`) : `world_location21.json` = lieu « NFS Location21 », circuit « NFS Loop ».
+  Toutes nos cartes utilisent le même niveau `flat_earth` et la même route : installer Rio remplace Dubaï.
