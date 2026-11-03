@@ -1419,3 +1419,11 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   [H] (acteurs). Zones vues absentes en jeu : non localisées (captures nécessaires).
 - [F] Rio (`Location2/Location21.stm`) : `world_location21.json` = lieu « NFS Location21 », circuit « NFS Loop ».
   Toutes nos cartes utilisent le même niveau `flat_earth` et la même route : installer Rio remplace Dubaï.
+- [F] Rio (« Rio » / « Rio Loop », `nfs_rioiles`, 134 fichiers) installé dans Blur_test le 2026-11-03 :
+  **crash au chargement**, `Blur.exe` + 0x2DB2EB (= 0x6DB2EB, lecteur de modèles, même adresse que les crashs du
+  2026-10-27), `0xC0000005`. Première fois qu'un Rio de cette chaîne est chargé en jeu. Vérifié hors jeu : les 93
+  modèles du gabarit (61 décor + 31 morceaux de route cachés + arche) ont la même taille (2 439 323 o) et des
+  identifiants de texture uniques ; `amax.bin` ne référence que road_21_00..30 et nfs_000..060. Restes d'anciennes
+  constructions dans Blur_test (nfs_061..109, road_21_31..40, autres tailles) non référencés, déjà présents quand
+  Dubaï chargeait. Différences propres à Rio : 3 embranchements (`branches`), 31 morceaux de route (Dubaï 11),
+  taille commune non plafonnée (64 555 sommets, les cartes qui chargent : 65 000). Cause non identifiée.
