@@ -334,8 +334,9 @@ RacingWidth, ExtremeWidth, Segment, Junctions, Logic, LogicStart, LogicInter1, L
   et la table logique). `CatchOne` (155 nœuds, type 0, sans jonction, 12 m à côté de la boucle) : rôle inconnu.
   `aidreverse` reconstruit chaque jonction au même endroit relatif dans l'autre sens (près de l'ancien point de retour),
   règle gardée ; la table logique renvoie vers chaque nœud de jonction depuis les lignes qui voient le nœud de boucle
-  dessous. Tokyo Bayshore Reverse garde ainsi son raccourci (`KEEP_BRANCHES`). **À tester en jeu** : les IA prennent-elles
-  le raccourci, le Shunt suit-il une voiture dessus.
+  dessous. **Confirmé en jeu (2026-11-03, les deux Tokyo)** : les IA prennent les raccourcis et le Shunt suit leur tracé.
+  Appliqué depuis à toutes les routes inversées (64 jonctions). Quelques `.aid` d'origine (Gracia 5, Amboy 3,
+  Downtown 3/4) ont des jonctions mortes, qui mènent à une section absente : elles sont retirées à l'inversion.
 - **Table logique** (fin du fichier) : u32 N (= nombre de nœuds de la ligne logique), puis pour chaque
   nœud logique : u32 n, n × (u32 index de nœud, nom de section). 137 032 renvois au total, **tous valides**.
 - **Nœud (323 octets) = en-tête de 48 octets + 11 « lignes » de 25 octets.** Statistiques mesurées sur
