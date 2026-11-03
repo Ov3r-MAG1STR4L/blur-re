@@ -1427,3 +1427,11 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   constructions dans Blur_test (nfs_061..109, road_21_31..40, autres tailles) non référencés, déjà présents quand
   Dubaï chargeait. Différences propres à Rio : 3 embranchements (`branches`), 31 morceaux de route (Dubaï 11),
   taille commune non plafonnée (64 555 sommets, les cartes qui chargent : 65 000). Cause non identifiée.
+- [F] Rio essai 1 (restes déplacés en quarantaine) : crash, mais joué après qu'une autre session a installé
+  Reverse dans Blur_test (2026-11-04 00:27 : amax.bin, multiplayer.bin, cityandroutenames.loc…) -> non concluant.
+  Essai 2 (taille commune forcée à 65 000 sommets, fichiers de Rio remis, restes toujours en quarantaine) :
+  **Rio charge et se joue**. Cause du crash : taille commune 64 555 ou restes (pas séparé) [H] taille.
+- [F] Rendu de Rio : image surexposée (blanc), grands aplats violets (vide / mer). `world_location21.json` a un
+  éclairage propre (`preset` Mount Haruna, `sky_intensity` -1, `exposure_max` -0,5) que Dubaï n'a pas (éclairage
+  par défaut, `object_light`) ; Rio garde aussi les points de lumière LSData/LSTree de la construction précédente.
+  [H] cause de la surexposition : ce préréglage (pas encore isolé).
