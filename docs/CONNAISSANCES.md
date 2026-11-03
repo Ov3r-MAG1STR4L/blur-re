@@ -1356,3 +1356,22 @@ Outil : `nfs_diag/pb_see_through.py STM WORLD [simuler]` (lecture seule).
   la distance à l'acteur (centre de zone) et sans doute du cadrage (`BoundsCulling`). À vérifier en jeu.
 - [?] Le `.pvs` de Hot Pursuit (table des matériaux, sections `main_1`, `shortcut_1a`…) est propre à HP Wii : rien
   n'en est repris.
+
+### P1 phase B : correction `see_through` (2026-11-03, export modifié, non essayé en jeu)
+
+- [F] `make_nfs_map.has_envmap(d, m)` : vrai si la fiche du matériau cite `envmap.tex`. `nfs_atlas.jobs` garde ces
+  matériaux même si `see_through` est vrai, sous la clé d'atlas `opaque:<texture>` (case distincte des usages
+  découpés de la même texture) ; `atlas()` force l'alpha de ces cases à 255. `see_through` et `road_collision`
+  inchangés : collision (`level.levelphysics`) identique octet pour octet sur Dubaï, Rio et Location45.
+- [F] Comptes exacts de `jobs` (avant -> après) : Dubaï 85 -> 91 modèles, 994 475 -> 1 147 869 triangles, 1 611 ->
+  1 767 cases dont 204 opaques, sommets max 52 427 -> 52 785, taille commune 65 000 (plafond, marge x1,231 sur le
+  plus gros, < 65 535), index 255 306 -> 255 960, 103 acteurs sur 144. Rio : 61 modèles, 471 575 -> 499 754
+  triangles, 1 039 -> 1 122 cases dont 85 opaques, sommets max 51 479 -> 51 642, taille 64 351 -> 64 555 sommets.
+  Location45 : aucun matériau à reflet, tout identique (119 modèles possibles, 103 écrits, liste d'acteurs pleine).
+- [F] Mémoire : Dubaï .model 234 -> 249 Mo (91 x 2 518 351 o) ; Rio 61 x 2 434 307 -> 2 439 323 o.
+- [F] Les usages sans reflet des textures mixtes (`bldg_dub1_palace_00`, `bldg_rio1_apartmenta_00`,
+  `bldg_rio1_hotela_00`) sont `see_through` et restent retirés : aucune texture n'occupe à la fois une case opaque
+  et une case découpée sur ces cartes (le mécanisme le permet).
+- [F] Écart de reproductibilité préexistant : Map Builder ne réécrit `LSData` / `LSTree` de `level.levelrender`
+  que si `object_light` est actif (Dubaï) ; Rio et Location45 gardent ceux de la construction précédente.
+  Le résultat dépend donc de l'ordre des constructions (seule différence de Location45 avant/après). Non corrigé.

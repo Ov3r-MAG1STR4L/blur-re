@@ -85,9 +85,12 @@ def jobs(world_json):
                 continue
             dist = tree.query(np.array(pos)[:, [0, 2]])[0]
             for m in {s[0] for s in stm2obj.submeshes(b)}:
-                if M.see_through(d, m):                # nature (buissons, palmiers, haies) : ni affichée ni solide
+                glass = M.has_envmap(d, m)             # vitre à reflet : gardée, case d'atlas opaque
+                if M.see_through(d, m) and not glass:  # nature (buissons, palmiers, haies) : ni affichée ni solide
                     continue
                 tex = stm2obj.material_name(d, m) or "couleur:%02x%02x%02x" % stm2obj.material_color(d, m)
+                if glass and not tex.startswith("couleur:"):
+                    tex = "opaque:" + tex              # à part des usages découpés de la même texture
                 for f in stm2obj.mesh(b, m)[2]:
                     ids = [a for a, _ in f]
                     dm = float(dist[ids].min())
@@ -129,6 +132,9 @@ def atlas(texs):
     for k, tex in enumerate(texs):
         if tex.startswith("couleur:"):
             cell = Image.new("RGBA", (CELL, CELL), tuple(int(tex[8 + 2 * i:10 + 2 * i], 16) for i in range(3)))
+        elif tex.startswith("opaque:"):                # vitre à reflet : alpha = masque du reflet, ignoré
+            cell = stm2obj.texture_image(d, tex[7:]).convert("RGBA").resize((CELL, CELL))
+            cell.putalpha(255)
         else:
             cell = stm2obj.texture_image(d, tex).convert("RGBA").resize((CELL, CELL))
         img.paste(cell, ((k % GRID) * CELL, (k // GRID) * CELL))
