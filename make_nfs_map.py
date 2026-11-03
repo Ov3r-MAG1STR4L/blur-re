@@ -202,6 +202,13 @@ def road_models(files, world_json, radius=40.0, glow=110, pad=None):
 _SEE = {}
 
 
+def has_envmap(d, m):
+    """matériau à reflet (fiche avec envmap.tex) : l'alpha de sa texture est le masque du reflet, la vitre est
+    opaque (diagnostic P1, 2026-11-03). Ne sert qu'au décor : la collision garde see_through tel quel."""
+    import stm2obj
+    return any(u.lower() == "envmap.tex" for u in stm2obj.materials(d).get(m, ("", []))[1])
+
+
 def see_through(d, m, share=0.5):
     """matériau dont la texture est transparente à `share` ou plus : buissons, palmiers, haies, barbelés -> sans
     collision (Location45 : touffes vegasdesert_2 51 %, palmiers 65-75 % ; glissières street_guard 23-45 % gardées).
