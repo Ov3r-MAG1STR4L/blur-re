@@ -102,6 +102,11 @@ def _reverse_junction(j, old, new):
 def reverse(d):
     """Reverse every section; junctions (from main to a branch) rebuilt at the mirror place (_reverse_junction)."""
     sections = [blk for blk in d["blocks"] if "from" not in blk]
+    names = {blk["name"] for blk in sections}
+    # dead junctions in the original files (Gracia 5, Amboy 3, Downtown 3/4: a branch that does not exist) are dropped
+    dead = {blk["name"] for blk in d["blocks"] if "from" in blk and not {blk["from"], blk["to"]} <= names}
+    d["blocks"] = [blk for blk in d["blocks"] if blk["name"] not in dead]
+    d["logic_table"] = [[r for r in refs if r[1] not in dead] for refs in d["logic_table"]]
     junctions = [blk for blk in d["blocks"] if "from" in blk]
     gate = {blk["type"] & 0x1E: blk for blk in sections if blk["type"] & 0x1E}
     old_nodes = {blk["name"]: blk["nodes"] for blk in d["blocks"]}
