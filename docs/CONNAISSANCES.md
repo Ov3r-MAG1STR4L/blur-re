@@ -1445,6 +1445,23 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
 - **Correction (2026-11-05, plus tard)** : les gros chevrons de Tokyo SONT des objets : les `Light*` / `Beam*` de la liste #63 utilisent des SpecialFX (#281, #58, #792, #886, #90) faits de `models\SpecialFX\Corner_Arrows.model` + lumière + projecteur (animés). #63 n'est référencée par aucune route (chargée pour tout le niveau). Essai studio10 (non vérifié en jeu) : `IsCommented` à 1 sur les acteurs de #63, une copie identique ajoutée aux routes d'origine (hash route+7), une copie tournée de 180° à chaque reverse (route+6). Hypothèse testée : une liste commentée/non référencée n'est plus affichée et une liste ajoutée aux `ActorLists` l'est.
 - **Résultat en jeu studio10 (2026-11-05)** : échec. Chevrons inchangés (`IsCommented` = 1 ne masque pas les acteurs de #63, ou la liste est chargée autrement) et chute dans le vide sur les cartes de Tokyo (cause probable : `append_to_array` sur les `ActorLists` des routes, non éclaircie). Essai désactivé (`CORNER_ARROWS = {}`), studio9 réinstallé.
 
+## Difficulté Hardcore en course perso (2026-11-05, construit, à tester en jeu)
+
+- Il y a 3 niveaux d'IA en course perso, et chacun a son fichier nommé dans `Blur.exe` : `Multiplayer_Easy/_Medium/_Hard.csv` (MpAI Off/Easy/Medium/Hard).
+  Pour monter d'un cran sans toucher à l'exe (`make_reverse.py`, étape 6b) :
+  - Easy reçoit le Medium d'origine, et Medium reçoit le Hard d'origine.
+  - Hard reçoit la version renforcée (`AI_ROWS`).
+  - `ai_average_mp_rank_easy/medium/hard` passent de 4/24/44 à 24/44/50.
+  - Libellés `MP_CUSTOM_RACE_*` : FR « Normal / Difficile / Hardcore ».
+- Le menu affiche donc Sans IA | Normal | Difficile | Hardcore, et le vrai Facile disparaît.
+- Piège : `open(f, "wb").write(XT(f)...)` vide le fichier avant de le lire. Toujours lire d'abord.
+
+## Chemins secondaires et shunt (2026-11-05, constaté)
+
+- Sur les routes reverse, hors Tokyo (`KEEP_BRANCHES`), les embranchements ne sont pas reconstruits.
+- Conséquence : les IA ne prennent pas les raccourcis, et le shunt se perd dedans (il suit le réseau `.aid`).
+- Correction prévue map par map avec `_reverse_junction` en `routes_only`, puis `maplock`.
+
 ## Pack LAN pour les autres joueurs (2026-11-05)
 - `lan_pack/` : `make_pack.sh <build>` copie un build Reverse Studio dans `lan_pack/files` sans les parties propres à
   l'utilisateur (`plugins.lua`, plugin `musicctl`, `audio/`). `Installer.bat` / `Desinstaller.bat` (relance en
