@@ -407,3 +407,4 @@ Limites attendues : géométrie Wii basse définition, tracé IA à retoucher, p
 | 2026-11-03 | Projet J : essai en jeu de Dubaï phase B (vitres OK) ; diagnostic lignes blanches (sommets en T de tile_split + atlas sans marge), collision (murs à normale dos au tracé, maillage visuel, vitres non solides), performances, visibilité (décor > 300 m non exporté). Rien de corrigé |
 | 2026-11-05 | Reverse : raccourcis IA ramenés à Tokyo (chutes ailleurs), 5 routes retirées, minimap de course des reverse (copie des formes `_game.ipf`, validée en jeu), flèches Tokyo : chevrons non identifiés (décor), respawn non réglable sans patch d'exe |
 | 2026-11-05 | Pack LAN réversible (`lan_pack/`) : installateur / désinstallateur testés hors jeu (retour à l'identique). Ensuite : Hardcore, onglet Reverse |
+| 2026-11-05 | Hardcore construit (studio12, installé dans Blur_test, pack LAN rafraîchi). Ensuite : test en jeu, embranchements reverse map par map |
