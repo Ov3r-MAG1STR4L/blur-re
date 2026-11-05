@@ -408,3 +408,4 @@ Limites attendues : géométrie Wii basse définition, tracé IA à retoucher, p
 | 2026-11-05 | Reverse : raccourcis IA ramenés à Tokyo (chutes ailleurs), 5 routes retirées, minimap de course des reverse (copie des formes `_game.ipf`, validée en jeu), flèches Tokyo : chevrons non identifiés (décor), respawn non réglable sans patch d'exe |
 | 2026-11-05 | Pack LAN réversible (`lan_pack/`) : installateur / désinstallateur testés hors jeu (retour à l'identique). Ensuite : Hardcore, onglet Reverse |
 | 2026-11-05 | Hardcore construit (studio12, installé dans Blur_test, pack LAN rafraîchi). Ensuite : test en jeu, embranchements reverse map par map |
+| 2026-11-05 | Route 66 reverse : murs invisibles (dont un tracé enregistré qui ferme un chemin), puis premiers objets ajoutés à une carte existante (néons bleus, `neon.py`) |
