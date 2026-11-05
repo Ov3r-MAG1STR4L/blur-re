@@ -1444,3 +1444,14 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
 - **Minimap de course** `<city>_game.ipf` : autre format de forme que `_ui.ipf` (non décodé), mais chaque route = formes `<route>` et `<route>_alt` (raccourcis), dernières filles du `<group>` qui finit le fichier. Copier ces octets sous le nom de la reverse et augmenter le compte du groupe suffit (`bluripf.add_reversed_game`). **Validé en jeu** (studio9).
 - **Correction (2026-11-05, plus tard)** : les gros chevrons de Tokyo SONT des objets : les `Light*` / `Beam*` de la liste #63 utilisent des SpecialFX (#281, #58, #792, #886, #90) faits de `models\SpecialFX\Corner_Arrows.model` + lumière + projecteur (animés). #63 n'est référencée par aucune route (chargée pour tout le niveau). Essai studio10 (non vérifié en jeu) : `IsCommented` à 1 sur les acteurs de #63, une copie identique ajoutée aux routes d'origine (hash route+7), une copie tournée de 180° à chaque reverse (route+6). Hypothèse testée : une liste commentée/non référencée n'est plus affichée et une liste ajoutée aux `ActorLists` l'est.
 - **Résultat en jeu studio10 (2026-11-05)** : échec. Chevrons inchangés (`IsCommented` = 1 ne masque pas les acteurs de #63, ou la liste est chargée autrement) et chute dans le vide sur les cartes de Tokyo (cause probable : `append_to_array` sur les `ActorLists` des routes, non éclaircie). Essai désactivé (`CORNER_ARROWS = {}`), studio9 réinstallé.
+
+## Pack LAN pour les autres joueurs (2026-11-05)
+- `lan_pack/` : `make_pack.sh <build>` copie un build Reverse Studio dans `lan_pack/files` sans les parties propres à
+  l'utilisateur (`plugins.lua`, plugin `musicctl`, `audio/`). `Installer.bat` / `Desinstaller.bat` (relance en
+  administrateur, Blur étant dans Program Files) → `install.ps1` : sauvegarde chaque fichier remplacé dans
+  `pack_backup\`, liste les ajouts au fil de l'eau (`added.txt`), ôte la lecture seule, AJOUTE ses `require` au
+  `plugins.lua` du joueur (jamais remplacé). Désinstallation : restaure, supprime les ajouts et les dossiers vides.
+- Testé hors jeu sur des copies factices (2026-11-05) : installation puis désinstallation = fichiers et dossiers
+  identiques à l'avant (sha1). Piège trouvé : `plugins.lua` d'origine en lecture seule. Pas encore essayé sur le PC
+  d'un autre joueur ni en partie LAN.
+- Suite prévue : difficulté Hardcore au-dessus de Difficile, onglet « Reverse » dans le menu multi.

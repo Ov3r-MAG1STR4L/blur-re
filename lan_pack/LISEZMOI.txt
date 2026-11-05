@@ -1,0 +1,16 @@
+Pack LAN Blur Reverse (pour AMAX)
+
+Contenu : 25 circuits inversés (nom, vignette, minimaps menu et course), 19 IA en course perso
+(plugin ai19), IA « Difficile » renforcée.
+
+Installer
+  1. Fermer Blur.
+  2. Mettre ce dossier dans le dossier de Blur (à côté de Blur.exe).
+  3. Double-cliquer sur Installer.bat (il demande les droits administrateur).
+
+Désinstaller
+  Double-cliquer sur Desinstaller.bat : chaque fichier remplacé est remis, chaque fichier ajouté
+  est retiré, le jeu redevient exactement comme avant.
+
+Tous les joueurs de la partie LAN doivent avoir le même pack installé.
+Ne pas supprimer le dossier pack_backup tant que le pack est installé.
