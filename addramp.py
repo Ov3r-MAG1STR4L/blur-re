@@ -28,7 +28,7 @@ def pack_normal(n):
         (int(round(n[2] * 511)) & 0x3FF) << 22
 
 
-def ramp_object(bottom, top, width, steps=12):
+def ramp_object(bottom, top, width, steps=12, kicker=False):
     """bytes of a type-0 road mesh object: a strip from bottom to top (centre points), `width` m wide, in `steps`
     bands following a smoothstep height profile (flat at both ends: no kicker that throws the AI in the air)."""
     t = open(TEMPLATE, "rb").read()
@@ -59,7 +59,8 @@ def ramp_object(bottom, top, width, steps=12):
     for k in range(steps + 1):
         u = k / steps
         p = b + f * u
-        p[1] = b[1] + f[1] * (u * u * (3 - 2 * u))           # smoothstep: slope 0 at the bottom and at the top
+        # smoothstep: slope 0 at the bottom and at the top; kicker: u^2, slope 0 at the bottom, steepest at the top (a jump)
+        p[1] = b[1] + f[1] * (u * u if kicker else u * u * (3 - 2 * u))
         rows += [p - h, p + h]
     verts = np.array(rows, np.float32)
     tris = []
@@ -114,8 +115,27 @@ def mesh_object(verts, tris, template=TEMPLATE):
     return bytes(out)
 
 
-def add_ramp(src, bottom, top, width):
-    return insert_objects(open(src, "rb").read(), ramp_object(bottom, top, width))
+def wall_object(points, thick=0.3):
+    """bytes of an invisible wall: a closed box strip (both faces, top and ends) along `points` [(x, bottom y, top y,
+    z)] in game coordinates, `thick` m thick (both faces exist, so the winding of vertical triangles does not matter)"""
+    v, t = [], []
+    for i, (x, yb, yt, z) in enumerate(points):
+        a, b = points[max(i - 1, 0)], points[min(i + 1, len(points) - 1)]
+        dx, dz = b[0] - a[0], b[3] - a[3]
+        n = (dx * dx + dz * dz) ** 0.5
+        ox, oz = -dz / n * thick / 2, dx / n * thick / 2
+        v += [(x - ox, yb, z - oz), (x - ox, yt, z - oz), (x + ox, yt, z + oz), (x + ox, yb, z + oz)]
+    for i in range(len(points) - 1):
+        for k in range(4):                                  # 4 long faces (side, top, side, bottom)
+            a, b = 4 * i + k, 4 * i + (k + 1) % 4
+            t += [(a, b, b + 4), (a, b + 4, a + 4)]
+    last = 4 * (len(points) - 1)
+    t += [(0, 1, 2), (0, 2, 3), (last, last + 2, last + 1), (last, last + 3, last + 2)]
+    return mesh_object(v, t)
+
+
+def add_ramp(src, bottom, top, width, kicker=False):
+    return insert_objects(open(src, "rb").read(), ramp_object(bottom, top, width, kicker=kicker))
 
 
 def insert_objects(d, obj):

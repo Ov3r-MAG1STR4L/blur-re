@@ -170,8 +170,11 @@ class KSLF:
             self._refs(ct, co + (u >> 16) * sz, out, seen)
 
     def append_to_array(self, owner, field, slot):
-        """Append u32 `slot` (an index slot = reference) at the end of a top-level array of `owner`.
-        Arrays / intra pointers of the record that point later into the same chunk are shifted."""
+        """Append u32 `slot` (an index slot = reference; or a list of them) at the end of a top-level array of
+        `owner`. Arrays / intra pointers of the record that point later into the same chunk are shifted.
+        One call per record and field (offsets come from the file as read)."""
+        slots = slot if isinstance(slot, (list, tuple)) else [slot]
+        nadd = len(slots)
         k = self._record_pos(owner)                   # also leaves self.x positioned on that record
         x = self.x
         t, rec0 = x._ch[0][0], x._ch[0][2]            # root type, blob offset of the record
@@ -190,20 +193,20 @@ class KSLF:
             if kind == "arr" and r != desc:
                 a, m = struct.unpack_from("<II", data, r)
                 if (a & 0xFFFF) == c and (a >> 16) >= pos:
-                    struct.pack_into("<I", data, r, a + 0x10000)
+                    struct.pack_into("<I", data, r, a + 0x10000 * nadd)
             elif kind == "ptr":
                 u = struct.unpack_from("<I", data, r)[0]
                 if u != 0xFFFFFFFF and (u & 0xFFFF) == c and (u >> 16) >= pos:
-                    struct.pack_into("<I", data, r, u + 0x10000)
-        struct.pack_into("<II", data, desc, ref, n + 1)
+                    struct.pack_into("<I", data, r, u + 0x10000 * nadd)
+        struct.pack_into("<II", data, desc, ref, n + nadd)
         ct, cn, cz = chunks[c]
         esz = 4 if cz else ts_size(x, ct)
         if esz != 4:
             raise NotImplementedError("only arrays of references (4-byte elements)")
         at = sum((4 if z else ts_size(x, t2)) * n2 for t2, n2, z in chunks[:c]) + pos * esz
-        data[at:at] = struct.pack("<I", slot)
+        data[at:at] = struct.pack("<%dI" % nadd, *slots)
         chunks = list(chunks)
-        chunks[c] = (ct, cn + 1, cz)
+        chunks[c] = (ct, cn + nadd, cz)
         self.records[k] = [idx, chunks, bytes(data), strings]
 
     def build(self):

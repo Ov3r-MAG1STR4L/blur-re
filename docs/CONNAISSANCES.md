@@ -1462,6 +1462,28 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
 - Conséquence : les IA ne prennent pas les raccourcis, et le shunt se perd dedans (il suit le réseau `.aid`).
 - Correction prévue map par map avec `_reverse_junction` en `routes_only`, puis `maplock`.
 
+## Murs invisibles et néons ajoutés à une carte existante (2026-11-05, Confirmé en jeu sur Route 66 reverse)
+
+- **Murs** : `addramp.wall_object` crée une boîte fermée de 1 m d'épaisseur, avec les deux faces, insérée dans la collision (`Level.levelphysics`).
+  - La position vient du jeu, en lecture seule (`blur_live`). Tracé enregistré : `edits/rec_path.py`.
+  - Si un respawn survient pendant l'enregistrement (saut de plus de 6 m), on coupe le tracé à cet endroit.
+  - Le tracé est lissé (moyenne sur 7 points, un point tous les 3 m), sinon la voiture réagit bizarrement.
+  - Limite : 255 triangles par objet, donc 31 points par morceau.
+  - Hauteur : 1 m se franchit d'un saut, 2,5 m est trop haut. Valeur retenue : 1,75 m au-dessus de la route.
+- **Repères** : les coordonnées du jeu sont celles de l'`actorpack`. Dans le `.aid`, z est inversé.
+- **Rampe** : un bout plat empêche de décoller (profil `kicker` = u², le plus raide en haut).
+  - Une rampe de biais par rapport au mur laisse un rebord : il faut l'arrivée droite, face au mur.
+- **Ajouter des objets visibles (`neon.py`, Confirmé : les objets s'affichent)** :
+  - Modèle `blurmodel_write`, avec la même taille pour tous les modèles issus d'un même gabarit.
+  - `GameModel` et `DynamicObjDef` sont clonés dans `amax.bin` avec `kslf_write.clone_object_any` (méthode de Map Builder). Uid 0xFFFFFE00 et plus : les blocs de route utilisent 0xffffXX00.
+  - Les `DynamicObjActor` sont ajoutés dans les seules listes clonées de la route reverse :
+    - nouveau morceau (structure copiée d'un acteur existant) ;
+    - pointeurs ajoutés à `LevelActors` (`append_to_array` accepte une liste) ;
+    - nom ajouté aux chaînes de l'enregistrement ;
+    - `DynamicObjType` = slot externe de notre définition, avec un hash supérieur à tous ceux de l'actorpack.
+  - La carte se charge et les 53 autres listes restent identiques.
+- **Piège** : `open(f, "wb").write(lire(f))` vide le fichier avant de le lire (vu deux fois).
+
 ## Pack LAN pour les autres joueurs (2026-11-05)
 - `lan_pack/` : `make_pack.sh <build>` copie un build Reverse Studio dans `lan_pack/files` sans les parties propres à
   l'utilisateur (`plugins.lua`, plugin `musicctl`, `audio/`). `Installer.bat` / `Desinstaller.bat` (relance en
