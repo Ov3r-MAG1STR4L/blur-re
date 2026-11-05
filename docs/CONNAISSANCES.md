@@ -1435,3 +1435,10 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   éclairage propre (`preset` Mount Haruna, `sky_intensity` -1, `exposure_max` -0,5) que Dubaï n'a pas (éclairage
   par défaut, `object_light`) ; Rio garde aussi les points de lumière LSData/LSTree de la construction précédente.
   [H] cause de la surexposition : ce préréglage (pas encore isolé).
+
+## Routes inversées : raccourcis, exclusions, flèches, minimap de course (2026-11-05)
+- **Raccourcis IA sur toutes les routes** : le joueur tombe dans le vide sur plusieurs cartes (dont les deux NY), cause inconnue (grilles identiques). Retour aux raccourcis sur Tokyo 2 / 4 seulement (`KEEP_BRANCHES`). Confiance : constaté en jeu.
+- **Routes retirées des reverse** (choix de l'utilisateur) : Cargo Run (`USA_LA_LongBeachDocks_3R`), Pacific Reach (`_2R`), Seafront Strip (`UK_Brighton_2R`), Shoreditch Sweep (`UK_London_Hackney_1R`), Badlands Traverse (`USA_Amboy_3R`). 25 reverse restent.
+- **Respawn** : demi-tour ou accident = rappel sur la route ; aucun réglage trouvé dans les tables (`EnableRespawn` des actorpacks = 537 objets de décor de Tokyo, tous à false). Probablement dans `Blur.exe`. Mode « visite » abandonné (patch d'exe jugé dangereux).
+- **Flèches** : les gros chevrons lumineux de Tokyo ne sont pas des objets nommés « Arrow/Chevron » ; seule la lumière qui clignote vient d'objets (`Light*`, `Beam*`, `Corner1Script*` de la liste #63, référencée par aucune route = chargée pour toute la ville). Les panneaux `Ext_TempArrowSignA` (41 sur Tokyo, dont 14 dans #188 = route 2 et 1 dans #109 = route 4, 26 dans #55 commune) sont mis en miroir sur les reverse (`is_sign`, sans effet visible constaté). Confiance : moyenne (le modèle des chevrons n'est pas identifié).
+- **Minimap de course** `<city>_game.ipf` : autre format de forme que `_ui.ipf` (non décodé), mais chaque route = formes `<route>` et `<route>_alt` (raccourcis), dernières filles du `<group>` qui finit le fichier. Copier ces octets sous le nom de la reverse et augmenter le compte du groupe suffit (`bluripf.add_reversed_game`). **Validé en jeu** (studio9).
