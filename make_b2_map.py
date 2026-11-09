@@ -8,9 +8,12 @@
 2. build.py of Map Builder (NFS_NO_WALLS, NFS_FLOOR_Y as project J), files collected with make_nfs_map.main.
 3. collision: b2collision (Unity MeshColliders within 60 m of the lap), shifted by 1 - lowest y, inserted in the
    built level.levelphysics.
+4. --decor: visible scenery (b2decor: Unity MeshRenderers within 300 m, zone models with a texture atlas) in
+   project J's slots: NFS_COUNT tower_nfsKKK models (actor at its zone centre) + the Map Builder road pieces
+   (road_21_KK.model replaced: its glowing road would cover the real one), all the same size, same shift as 3.
 Output: OUT/files (to copy over Blur_test). Install separately, with a backup.
 
-usage: make_b2_map.py LAP.csv PICKUPS.json OUT --name Marina --city Dubai --route 4 --grid X Z
+usage: make_b2_map.py LAP.csv PICKUPS.json OUT --name Marina --city Dubai --route 4 --grid X Z [--decor]
 """
 import argparse, csv, json, math, os, shutil, subprocess, sys
 import numpy as np
@@ -63,12 +66,29 @@ def world(lap, pickups, name, city, grid):
     return base, low, len(rows)
 
 
+ROAD_SLOTS = 12      # Map Builder road pieces (one per 420 m: 9 for Marina's 3.5 km); extra models unused
+
+
+def decor(files, models, nfs):
+    import make_nfs_map as J
+    ap = os.path.join(files, "gamedata", "levels", "flat_earth", "actorpack.xt")
+    flat = os.path.join(files, "models", "objects", "flat_earth")
+    slots = [(J.NFS_UID + 2 * k + 1, "nfs_%03d.model" % k) for k in range(nfs)]
+    slots += [(u, "road_21_%02d.model" % k) for k, u in enumerate(J.road_slots(ap))]
+    pad = (J.DECOR_VERTS, 6 * max(len(t) for _, t in models))      # faces doubled: 6 indices per triangle
+    for k, ((uid, fname), (img, tris)) in enumerate(zip(slots, models)):
+        J.write_model(tris, "b2_%03d" % k, J.slot_matrix(ap, uid), os.path.join(flat, fname), 110,
+                      salt=0x42324400 + k, pad=pad, image=img)
+    print(min(len(slots), len(models)), "scenery models in", len(slots), "slots")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("lap"), ap.add_argument("pickups"), ap.add_argument("out")
     ap.add_argument("--name", required=True), ap.add_argument("--city", required=True)
     ap.add_argument("--route", type=int, required=True)
     ap.add_argument("--grid", type=float, nargs=2, required=True, metavar=("X", "Z"))
+    ap.add_argument("--decor", action="store_true")
     a = ap.parse_args()
     lap = [(float(r["x"]), float(r["y"]), float(r["z"])) for r in csv.DictReader(open(a.lap))]
     pk = json.load(open(a.pickups))["pickups"]
@@ -79,15 +99,25 @@ def main():
     json.dump(w, open(wfile, "w"), indent=1)
     print("world.json: %d points, lowest road y %.1f, %d pickups, start_m %d"
           % (len(w["locations"][0]["maps"][0]["points"]), low, npk, w["locations"][0]["maps"][0]["start_m"]))
-    env = dict(os.environ, BMB_GAME=config.BMB_GAME, BMB_INSTALLED="1", NFS_COUNT="0", NFS_NO_WALLS="1",
-               NFS_FLOOR_Y="-5")
-    subprocess.run([sys.executable, "build.py"], cwd=os.path.join(config.BMB_GAME, "map_builder", "flat_earth"),
-                   env=env, check=True, stdout=subprocess.DEVNULL)
-    files = os.path.join(a.out, "files")
     import make_nfs_map                                # its paths come from sys.argv at import: set them
+    files = os.path.join(a.out, "files")
     make_nfs_map.BMB, make_nfs_map.OUT = config.BMB_GAME, files
     make_nfs_map.WORK = os.path.join(config.BMB_GAME, "Blur Map Builder", "work")
+    make_nfs_map.HP_GROUND = low                       # write_model / zone_centre shift y by 1 - HP_GROUND
+    models, spots = [], os.path.abspath(os.path.join(a.out, "nfs_spots.json"))
+    if a.decor:
+        import b2decor
+        models = b2decor.jobs(b2decor.extract(UNITY, [a.lap]), [a.lap], make_nfs_map.DECOR_MAX + ROAD_SLOTS)
+        b2decor.sheet(models, os.path.join(a.out, "atlas.png"))
+        json.dump([make_nfs_map.zone_centre(t) for _, t in models[:make_nfs_map.DECOR_MAX]], open(spots, "w"))
+    nfs = min(len(models), make_nfs_map.DECOR_MAX)
+    env = dict(os.environ, BMB_GAME=config.BMB_GAME, BMB_INSTALLED="1", NFS_COUNT=str(nfs), NFS_SPOTS=spots,
+               NFS_DRAW=str(make_nfs_map.DECOR_DRAW), NFS_NO_WALLS="1", NFS_FLOOR_Y="-5")
+    subprocess.run([sys.executable, "build.py"], cwd=os.path.join(config.BMB_GAME, "map_builder", "flat_earth"),
+                   env=env, check=True, stdout=subprocess.DEVNULL)
     make_nfs_map.main()
+    if models:
+        decor(files, models, nfs)
     phys = os.path.join(files, "levels", "flat_earth", "level.levelphysics")
     subprocess.run([sys.executable, os.path.join(HERE, "b2collision.py"), UNITY, phys, phys, "--route", str(a.route),
                     a.lap, "--dy", str(1.0 - low)], check=True)

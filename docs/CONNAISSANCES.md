@@ -1787,3 +1787,18 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   Sortie `blur_extracted\mods\b2_dubai_marina\files` (51 fichiers), installée dans Blur_test (52 fichiers remplacés,
   sauvegardés dans `backup_blur_test`, dont la map perso précédente du dossier `flat_earth` : Rio). Ancien
   `world.json` de Map Builder gardé en `world.json.bak`.
+- **Décor visible de Dubaï dans la map Marina** (2026-11-09, `b2decor.py` + `make_b2_map.py --decor`, à essayer en
+  jeu) : les 4 362 `MeshRenderer` de Blur2DubaiTest (shader `Blur2/InspectionSurface`, texture `_BaseMap` avec
+  tuilage `m_Scale`/`m_Offset`), matrice monde par `b2collision.world_matrix`, jeu = (-x, y, -z). À 300 m du tour :
+  **1,76 M triangles, 461 textures** (800 k à moins de 50 m : lampadaires, barrières, accessoires). Petits triangles
+  lointains retirés (aire < 0,005 × distance m²) → 0,62 M. Zones de 150 m → modèles ≤ 10 000 sommets partagés et
+  ≤ 16 textures, **atlas 512 x 512 de cases 128** (même taille pour tous). Tuilage perdu : UV ramenés dans [0, 1]
+  et écrasés si le triangle couvre plus d'une répétition (~10 % des triangles). 228 modèles nécessaires, **119
+  posés** (les plus proches du tracé) : 110 emplacements `tower_nfsKKK` (acteur au centre de zone, `NFS_DRAW` 700 m)
+  + les 9 morceaux de route Map Builder (`road_21_KK.model` remplacés : sa route lumineuse disparaît sous la vraie).
+  Hauteur : `make_nfs_map.HP_GROUND` = point le plus bas du tracé (2,4 m) → même décalage 1 - 2,4 m que la collision.
+  Tous les modèles 541 431 o, identifiants de texture uniques (sel 0x423244xx) ; atlas relu dans un `.model`
+  installé = planche (`blur_extracted\mods\b2_dubai_marina\atlas.png`). Textures bien décodées (textes lisibles) ;
+  quelques textures « croix rouge » (placeholder du build X360) et icônes de bonus font partie du décor. Installé
+  dans Blur_test (162 fichiers, 61 de plus sauvegardés dans `backup_blur_test`). À voir en jeu : chargement,
+  fluidité, textures (atlas basse définition), trous de décor au-delà des 119 modèles.
