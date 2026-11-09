@@ -1700,3 +1700,10 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   large que la route, l'écrase sur **170 points sur 738** (14,4 m au lieu de 31, tourné de 35°) près des épingles.
   Correctif dans `lap2aid.build` : là où le couloir est plus étroit que demandé, il est reconstruit depuis l'axe.
   Résultat : marge LOGIC - route ≥ 16 m partout. Installé, **4e essai à faire**.
+- **Tracé dessiné → `.aid`** (2026-11-09, méthode de Dubai Loop) : `physmap_x360.py` écrit maintenant, à côté de chaque
+  image, `<ville>_map.npz` (points de collision, `lo`, `k`, `size` : px = (x - lo0)·k + 10, py = size - 1 - ((z -
+  lo1)·k + 10)) ; `PHYSMAP_SIZE=3000` pour des cartes à dessiner (`Jeux_WII\blur2_dessin\`, 8 villes de novembre +
+  Liverpool, LA City, Detroit d'août, consignes dans `LISEZMOI.txt`). `draw2lap.py` : trait vert + point rouge
+  (départ) + point bleu (sens) → tour CSV (un point / 5 m, hauteur = quartile bas de la collision à 8 m) → `lap2aid`.
+  Auto-test (cercle synthétique) : erreur < 3 px, départ < 10 px (1 px = 1,5 m à Hong Kong), sens correct.
+  Limite : largeur unique (`--width`, 20 m par défaut), pas de recalage sur la chaussée.
