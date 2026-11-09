@@ -18,29 +18,30 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import addramp  # noqa: E402
 
 
+def quat(q):
+    x, y, z, w = q.x, q.y, q.z, q.w
+    return np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                     [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                     [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
+
+
+def world_matrix(tr):
+    m = np.eye(4)
+    while tr is not None:
+        s = tr.m_LocalScale
+        loc = np.eye(4)
+        loc[:3, :3] = quat(tr.m_LocalRotation) * [s.x, s.y, s.z]
+        loc[:3, 3] = [tr.m_LocalPosition.x, tr.m_LocalPosition.y, tr.m_LocalPosition.z]
+        m = loc @ m
+        tr = tr.m_Father.read() if tr.m_Father and tr.m_Father.path_id else None
+    return m
+
+
 def colliders(data_dir):
     """{name: (world vertices (n, 3) in GAME axes, triangles (m, 3))} of every MeshCollider of the build"""
     import UnityPy
     from UnityPy.helpers.MeshHelper import MeshHandler
     env = UnityPy.load(data_dir)
-
-    def quat(q):
-        x, y, z, w = q.x, q.y, q.z, q.w
-        return np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
-                         [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
-                         [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
-
-    def world(tr):
-        m = np.eye(4)
-        while tr is not None:
-            s = tr.m_LocalScale
-            loc = np.eye(4)
-            loc[:3, :3] = quat(tr.m_LocalRotation) * [s.x, s.y, s.z]
-            loc[:3, 3] = [tr.m_LocalPosition.x, tr.m_LocalPosition.y, tr.m_LocalPosition.z]
-            m = loc @ m
-            tr = tr.m_Father.read() if tr.m_Father and tr.m_Father.path_id else None
-        return m
-
     out = {}
     for o in env.objects:
         if o.type.name != "MeshCollider":
@@ -52,7 +53,7 @@ def colliders(data_dir):
         h = MeshHandler(c.m_Mesh.read())
         h.process()
         v = np.array(h.m_Vertices, float).reshape(-1, 3)
-        m = world(tr)
+        m = world_matrix(tr)
         w = v @ m[:3, :3].T + m[:3, 3]
         out[go.m_Name] = (w * [-1, 1, -1], np.array(h.get_triangles(), int).reshape(-1, 3))
     return out
