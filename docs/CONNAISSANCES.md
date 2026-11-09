@@ -1633,3 +1633,14 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     16 bits : 8 %, identiques : 13,9 %), `Routes` seulement à 60 %. Le reste = structures à champs de 8/16 bits non
     alignés (comme les triangles de 11 octets) : il faut connaître chaque type d'objet. Un convertisseur fiable demande
     de rétro-concevoir le chargeur physique de `Blur.exe` (FUN_009520a0) pour tous les types d'objets et pour `Route`.
+- **Les villes Blur 2 ont leurs tracés de course** (Confirmé, novembre, bloc `Routes` des `levelphysics`) : sous-blocs
+  `Route` pour Hong Kong 4, Dubaï 5, Miami 4, Detroit 4, Odessa 4, LA Freeway 4, LA City 4, Ski Resort 5,
+  Liverpool 3 (North Africa, arènes `mp_*` et cartes de test : aucun). Dans Blur 1, un `Route` = la collision propre à
+  une course (la route roulée), le `.aid` étant trouvé par le nom de la route. Hors Liverpool, **aucun `.aid`** pour ces
+  villes.
+- **uKER bloque précisément là** (Reddit r/BlurGame, novembre 2026) : son portage Blur 2 est à l'arrêt faute de
+  données d'IA pour les niveaux Blur 2 (« impossible to play with AI drivers »). C'est notre domaine : `blurroute.py`
+  (format `.aid` complet, Confirmé), `aidreverse.py` (routes inversées roulées par l'IA en jeu), `trackrec.py`
+  (relevé de trajectoires en roulant), et `gen_aid.py` de Map Builder (MD, MIT : `.aid` fabriqué depuis une ligne
+  centrale). Pistes : ligne centrale tirée des blocs `Route` (surface de la course), ou d'un tour roulé dans son build.
+  Échos communauté (kareteki, Non vérifié) : modèles « kanzen » avec la physique Blur 2, et 2 nouvelles voitures modélisées.
