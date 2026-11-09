@@ -33,8 +33,12 @@ def render(p, dst, size=1400):
         for dy in (0, 1):
             img[xy[m][order, 1] + dy, xy[m][order, 0] + dx] = c[order]
     Image.fromarray(np.flipud(img)).save(dst)
+    # pixel <-> game: px = (x - lo0) * k + 10, py = size - 1 - ((z - lo1) * k + 10)   (draw2lap.py reads this)
+    np.savez_compressed(os.path.splitext(dst)[0] + '_map.npz', points=p.astype(np.float32), lo=lo, k=k, size=size)
     return m.sum(), (hi - lo)
-for f in sys.argv[2:]:
-    n = os.path.basename(os.path.dirname(f)); p = points(f)
-    if len(p) < 100: print(n, 'trop peu de points', len(p)); continue
-    c, ext = render(p, os.path.join(sys.argv[1], n + '.png')); print(f'{n:16} {c:8d} points, {ext[0]:.0f} x {ext[1]:.0f} m')
+if __name__ == '__main__':
+    size = int(os.environ.get('PHYSMAP_SIZE', 1400))       # bigger (e.g. 3000) for drawing a route on it
+    for f in sys.argv[2:]:
+        n = os.path.basename(os.path.dirname(f)); p = points(f)
+        if len(p) < 100: print(n, 'trop peu de points', len(p)); continue
+        c, ext = render(p, os.path.join(sys.argv[1], n + '.png'), size); print(f'{n:16} {c:8d} points, {ext[0]:.0f} x {ext[1]:.0f} m')
