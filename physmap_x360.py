@@ -20,13 +20,19 @@ def points(path):
             if best is not None and best[0] < min(best[1][:, 0].std(), best[1][:, 2].std()): out.append(best[1])
     return np.concatenate(out) if out else np.zeros((0, 3))
 def render(p, dst, size=1400):
+    """Top-down, coloured by height (blue low -> yellow high) on a light background, 2 px dots."""
     lo = np.percentile(p[:, [0, 2]], 0.5, axis=0); hi = np.percentile(p[:, [0, 2]], 99.5, axis=0)
-    k = (size - 20) / max(hi - lo); img = np.zeros((size, size), np.float64)
-    xy = ((p[:, [0, 2]] - lo) * k + 10).astype(int); m = (xy >= 0).all(1) & (xy < size).all(1)
-    np.add.at(img, (xy[m, 1], xy[m, 0]), 1)
-    img = np.log1p(img); img = (255 * (img / img.max()) ** 0.45).astype(np.uint8)
-    rgb = np.stack([img // 3, img, np.minimum(255, img.astype(int) + 40).astype(np.uint8) * (img > 0)], -1)
-    Image.fromarray(np.flipud(rgb).astype(np.uint8)).save(dst)
+    k = (size - 20) / max(hi - lo)
+    xy = ((p[:, [0, 2]] - lo) * k + 10).astype(int); m = (xy >= 0).all(1) & (xy < size - 1).all(1)
+    y = p[m, 1]; ylo, yhi = np.percentile(y, [2, 98]); t = np.clip((y - ylo) / max(yhi - ylo, 1e-6), 0, 1)
+    stops = np.array([[30, 60, 160], [0, 160, 160], [60, 170, 60], [230, 200, 40], [200, 60, 30]], float)
+    c = np.array([np.interp(t, np.linspace(0, 1, len(stops)), stops[:, i]) for i in range(3)]).T
+    img = np.full((size, size, 3), 245, np.uint8)
+    order = np.argsort(y)                                    # higher points drawn last
+    for dx in (0, 1):
+        for dy in (0, 1):
+            img[xy[m][order, 1] + dy, xy[m][order, 0] + dx] = c[order]
+    Image.fromarray(np.flipud(img)).save(dst)
     return m.sum(), (hi - lo)
 for f in sys.argv[2:]:
     n = os.path.basename(os.path.dirname(f)); p = points(f)
