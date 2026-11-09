@@ -1829,3 +1829,26 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     Blur 2 ont des lightmaps (`_Lightmap0Tex`, UV2) qu'on pourrait cuire dans les atlas.
   - **Transparence** (palmiers, grillages) non réglée : le shader du gabarit rend le transparent en noir, et le shader
     des plantes (`default_NB_NL_NM_NV`) rendait tout noir le 2026-10-28 (sans lumière du niveau).
+- **Marina, 3e passe (2026-11-10, à essayer en jeu)** :
+  - **Rendu fade (retour utilisateur, captures)** : causes = pas d'éclairage (lumière propre unie du gabarit), textures
+    à 128 px et tuilage écrasé, exposition d'Amboy (blancs saturés), ni reflets ni relief, pas de « vie » (animations,
+    foule, effets, sons), décor incomplet (122 modèles sur ~200).
+  - **Bords du circuit (`make_b2_map --edges`)** : chaque point du tracé et des embranchements est recentré entre les
+    murs de collision (colliders `_5d` / `_15d` + barrières de la route jouée, faces verticales, échantillonnées tous
+    les mètres, hauteur -1..+5 m de la route, ± 2,5 m le long de la section, 30 m de portée), largeur = écart des murs
+    (12-60 m), médiane glissante sur 5 points (piliers, bordures). Marina : 229/295 points calés, 18-42 m (médiane
+    30) ; tube 66 m. Image de contrôle `blur2_aid\dubai\marina_bords.png`. Les deux embranchements intérieurs (est,
+    ouest) n'ont pas de murs : largeur 30 m gardée. **Spline de course de Blur2DubaiTest** (`RaceSpline_r4`, en-tête
+    `BRSP`, u32 version 4, u32 n à +8, données à **+12**, pas +8) : celle de Dubaï a 133 points tous les 20 m, largeurs
+    13-104 m (issue de l'IA) : non utilisée, moins fiable que les murs.
+  - **Lightmaps de Blur 2** (2 151 matériaux sur 4 362 rendus) : `_Lightmap0Tex` (`…lightmap_main_N-a`, 512², ombre :
+    blanc éclairé, noir à l'ombre, mauve = vide) et `_Lightmap1Tex` (`…-b`, fausses couleurs : encodage non décodé),
+    lues avec le 2e jeu d'UV du maillage (`m_UV1`, échelle 1 / décalage 0), `_HasDualLightmap` = 1. **Approximation
+    actuelle** (`b2decor.light`) : ombre de la lightmap A (coins + centre du triangle) × terme de face (soleil fixe
+    supposé), 5 niveaux de luminosité ; chaque (texture, niveau) = une case d'atlas, atlas **1 024²** (64 cases de 128) :
+    198 modèles nécessaires, 122 posés, 1 051 163 o chacun. Mieux : reprendre la formule du shader d'uKER
+    (`Blur2/InspectionSurface`, profil « Blur2Aug31LightingProfile ») dans `Assembly-CSharp.dll` ou le shader compilé.
+  - Préréglage d'éclairage : LA River (jour) au lieu d'Amboy (surexposé).
+  - Piège : des modèles restés d'une construction précédente (`road_21_31..34`, ancienne taille) ; retirés à la main
+    de la sortie et de Blur_test. Les emplacements sans acteur visible reçoivent maintenant un modèle vide à la
+    taille commune.

@@ -454,3 +454,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-09 | Décor de Dubaï (Blur2DubaiTest) dans la map Marina : 119 modèles à atlas (`b2decor.py`, `make_b2_map.py --decor`), installé dans Blur_test, à essayer en jeu |
 | 2026-11-09 | Marina avec décor essayée en jeu : charge et roule ; vitres noires corrigées (alpha opaque des matériaux à reflet), reste éclairage, ciel, chemins secondaires |
 | 2026-11-09 | Marina : objets inutiles retirés (autres routes, effets, icônes de bonus), 4 chemins secondaires officiels, ciel Amboy ; restent vrai ciel, éclairage, transparence |
+| 2026-11-10 | Marina : bords calés sur les murs de collision, éclairage approché (lightmap A + soleil, atlas 1 024), LA River ; à essayer en jeu |

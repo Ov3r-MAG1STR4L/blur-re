@@ -25,6 +25,24 @@ def keep(go, tr, route):
     return path[2].startswith("Shared Render") or path[2].startswith("Route %d " % route)
 
 
+SUN = np.array([0.45, 0.8, 0.4]) / np.linalg.norm([0.45, 0.8, 0.4])   # game axes; a guess (high sun)
+LEVELS = (0.4, 0.55, 0.7, 0.85, 1.0)                                  # brightness steps: one atlas cell each
+
+
+def light(P, lm, uv1):
+    """brightness of a triangle (0..1): Blur 2's baked shadow (lightmap A: white lit, black shade; its B map is an
+    encoded colour we do not decode) at the corners and centre, times a facet term from a fixed sun"""
+    shade = 1.0
+    if lm is not None:
+        h, w = lm.shape
+        q = np.vstack([uv1, uv1.mean(0)]) % 1.0
+        shade = float(lm[((1 - q[:, 1]) * (h - 1)).astype(int), (q[:, 0] * (w - 1)).astype(int)].mean())
+    n = np.cross(P[1] - P[0], P[2] - P[0])
+    n = n / (np.linalg.norm(n) or 1)
+    facet = 0.55 + 0.45 * abs(float(n @ SUN))                  # faces doubled in game: either side
+    return (0.35 + 0.65 * shade) * facet
+
+
 def extract(data_dir, laps, route, radius=300.0):
     import UnityPy
     from UnityPy.helpers.MeshHelper import MeshHandler
@@ -33,7 +51,7 @@ def extract(data_dir, laps, route, radius=300.0):
     tree = cKDTree(lap_points(laps))
     env = UnityPy.load(data_dir)
     world = b2collision.world_matrix
-    tex, tris = {}, []
+    tex, tris, lms = {}, [], {}
     for o in env.objects:
         if o.type.name != "MeshRenderer":
             continue
@@ -59,6 +77,7 @@ def extract(data_dir, laps, route, radius=300.0):
         if d.min() > radius:
             continue
         uv = np.array(h.m_UV0, float).reshape(-1, 2)
+        uv1 = np.array(h.m_UV1, float).reshape(-1, 2) if h.m_UV1 else None
         for sub, mp in zip(h.get_triangles(), r.m_Materials):
             if not mp.path_id:
                 continue
@@ -78,15 +97,20 @@ def extract(data_dir, laps, route, radius=300.0):
                 if ec is not None and ec.m_Texture.path_id:    # alpha = reflection mask, not cutout (as HP
                     tex[k].putalpha(255)                       # glass): Blur 1 drew the windows black
             sc, of = (te.m_Scale.x, te.m_Scale.y), (te.m_Offset.x, te.m_Offset.y)
+            lm = envs.get("_Lightmap0Tex")
+            lm = lm.m_Texture if lm is not None and lm.m_Texture.path_id and uv1 is not None else None
+            if lm is not None and lm.path_id not in lms:
+                lms[lm.path_id] = np.asarray(lm.read().image.convert("L"), float) / 255
             for t in np.array(sub, int).reshape(-1, 3):
                 if d[t].min() <= radius:
-                    tris.append((k, P[t], uv[t] * sc + of))
+                    tris.append((k, P[t], uv[t] * sc + of, light(P[t], lms[lm.path_id] if lm else None,
+                                                                   uv1[t] if lm else None)))
     return {"tex": {k: v for k, v in tex.items() if v is not None}, "tris": tris}
 
 
 ZONE = 150.0       # zone side (m): tight actor boxes (project J: whole-city boxes made the game crawl)
-CELL = 128         # atlas cell (px); ATLAS / CELL = 4 -> at most 16 textures per model
-ATLAS = 512        # every model the same size (project J crash fix): one atlas size for all
+CELL = 128         # atlas cell (px); ATLAS / CELL = 8 -> at most 64 (texture, brightness) cells per model
+ATLAS = 1024       # every model the same size (project J crash fix): one atlas size for all
 
 
 def jobs(data, laps, count, max_verts=10000, detail=0.005):
@@ -99,17 +123,18 @@ def jobs(data, laps, count, max_verts=10000, detail=0.005):
     from PIL import Image
     from scipy.spatial import cKDTree
     tri = data["tris"]
-    C = np.array([P.mean(0) for _, P, _ in tri])
+    C = np.array([t[1].mean(0) for t in tri])
     dist = cKDTree(lap_points(laps)).query(C[:, [0, 2]])[0]
     inset = 0.5 / CELL
     zones = collections.defaultdict(list)
-    for (k, P, uv), c, dd in zip(tri, C, dist):
+    for (k, P, uv, li), c, dd in zip(tri, C, dist):
         if np.linalg.norm(np.cross(P[1] - P[0], P[2] - P[0])) / 2 < detail * dd:
             continue
         u = uv - np.floor(uv.min(0))
         u = u / np.maximum(u.max(0), 1)                       # squeeze tiled triangles into one repeat
         u = np.round(inset + u * (1 - 2 * inset), 4)
-        zones[int(c[0] // ZONE), int(c[2] // ZONE)].append((float(dd), k, P, u))
+        lv = min(LEVELS, key=lambda x: abs(x - li))
+        zones[int(c[0] // ZONE), int(c[2] // ZONE)].append((float(dd), (k, lv), P, u))
     per = ATLAS // CELL
     out = []
     for tris in zones.values():
@@ -132,7 +157,11 @@ def jobs(data, laps, count, max_verts=10000, detail=0.005):
     for _, texs, tris in out[:count]:
         img = Image.new("RGBA", (ATLAS, ATLAS))
         for k, i in texs.items():
-            img.paste(data["tex"][k].resize((CELL, CELL)), ((i % per) * CELL, (i // per) * CELL))
+            cell = data["tex"][k[0]].resize((CELL, CELL))
+            if k[1] < 1:
+                r, g, b, a = cell.split()
+                cell = Image.merge("RGBA", [c.point(lambda x, f=k[1]: int(x * f)) for c in (r, g, b)] + [a])
+            img.paste(cell, ((i % per) * CELL, (i // per) * CELL))
         mt = []
         for _, k, P, u in tris:
             i = texs[k]
@@ -157,6 +186,6 @@ if __name__ == "__main__":
     import pickle
     r = extract(sys.argv[1], sys.argv[4:], int(sys.argv[3]))
     pickle.dump(r, open(sys.argv[2], "wb"))
-    span = np.array([np.ptp(u, 0).max() for _, _, u in r["tris"]])
+    span = np.array([np.ptp(u, 0).max() for _, _, u, _ in r["tris"]])
     print(len(r["tris"]), "triangles,", len(r["tex"]), "textures ; UV span >1 :", round(float((span > 1).mean()), 3),
           "> 4 :", round(float((span > 4).mean()), 3))
