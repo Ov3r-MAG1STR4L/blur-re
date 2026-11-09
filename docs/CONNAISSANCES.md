@@ -1579,3 +1579,13 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   Corvette ZR1 (0,6), Bowler Nemesis (0,5), Hummer H2 (0,4), RUF RGT8 (0,3). Les petits sont probablement des
   versions simplifiées ou incomplètes (à vérifier). Les 33 autres n'ont pas de modèle dans ce build. Un second `.lnk`
   (`shortcut to levels.lnk`) est rangé dans root.pak (raccourci réseau du studio, inoffensif).
+- **`root.pak` X360 v3** (Confirmé sur la BMW) : données d'un fichier = u32 BE `0x10000`, puis par morceau de 64 Ko
+  `[u32 BE csize][flux LZX en trames XMem, terminé par 0000 + bourrage]`. `csize = 0xFFFFFFFF` = morceau **stocké**
+  (64 Ko bruts, données déjà compressées comme les textures). Page de départ = champ 7 de l'entrée, comme gamedata.pak.
+- **BMW M3 Concept Race de Blur 2** (2026-11-09, `bmw_m3conceptrace.model`, 6 293 619 octets, `360 Model`) : mêmes
+  blocs qu'une voiture PC (`Header`, `MdlDat`, `Models`, `Element`, `Constr`, `Render`, `Scene`, `Coll`, `MtaDbg`), plus
+  `SmpVol`, sans `StrTab`. Exportée le 09/11/2010 à 19:40 sur `UKLPLBUILDER02`. **Construite à partir des fichiers de
+  la BMW M3 E92 Drift de Blur 1** (`z:\amax\cars\bmw_m3_drift\pictures\m3drift_*.tga`). Le journal d'export indique
+  que ces textures « apparaîtront manquantes en jeu » : carrosserie en cours de refonte, textures pas encore
+  branchées. M3 Drift PC : 4,2 Mo (exportée le 12/03/2010). Conversion X360 → PC du `.model` à faire (inversion
+  d'octets bloc par bloc, comme `level.level`, et textures Xenon).
