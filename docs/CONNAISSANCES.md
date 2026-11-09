@@ -1614,3 +1614,10 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   propre physique (`dynamics`) : Corvette ZR1, Shelby GT500 Eleanor, Ultima GTR, Bowler Nemesis, LCC Rocket (ce sont
   aussi celles qui ont un modèle). `Traffic_Van` (2e fiche) est une copie de `Shelby_MustangGT500_Stock` de Blur 1
   (classe C, vitesse 174). Les voitures n'avaient pas encore été réglées quand le projet s'est arrêté.
+- **Tracés des villes Blur 2 vus de dessus** (2026-11-09, `physmap_x360.py`, images dans `docs/blur2/`) : les
+  `levelphysics` X360 de novembre sont en **version 11** (10 sur PC), avec un en-tête différent et des objets
+  multiples, que le lecteur de Map Builder ne lit pas. Contournement : nuage de points tiré des suites de flottants
+  BE qui ressemblent à des coordonnées (phase choisie par la plus faible variance de hauteur). Résultats lisibles :
+  Hong Kong (ville en damier et route de montagne en lacets au nord, 3,7 x 4,5 km), Dubaï (réseau de boucles),
+  Miami, Detroit, Odessa, North Africa, LA City, LA Freeway, Ski Resort (route de montagne de 8 km). `quickexport`
+  ressemble à Ski Resort (export de test). Liverpool presque vide (collision de 0,7 Mo).
