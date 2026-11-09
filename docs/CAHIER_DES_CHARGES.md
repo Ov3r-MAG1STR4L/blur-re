@@ -446,3 +446,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-09 | Boost d'adhérence IA : effet réel dans les grands virages serrés (observation joueur), invisible dans la moyenne du tour |
 | 2026-11-09 | Projet K : joueur enregistré en physique d'origine seulement ; IA = style joueur simplifié, virages serrés gardés à l'IA |
 | 2026-11-09 | Prototype Blur 2 (X360) inspecté : sain, même moteur en gros-boutiste, 32 cartes inédites (conversion à écrire) |
+| 2026-11-09 | Blur 2 : level.level et physics = PC inversé, voitures = 2 véhicules de trafic seulement ; Map Builder récent intègre des véhicules (à récupérer) |
