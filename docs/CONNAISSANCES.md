@@ -1683,3 +1683,12 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   mainLoop (30 sauts). Écart au milieu de la route : médiane 6-7 m, p90 ~14 m. **Il manque une référence** : même
   mesure avec le `.aid` d'origine (`uk_brighton_1.aid.orig`) pour séparer les épaves normales des défauts du générateur.
   Méthode : toujours exclure les sauts simultanés.
+- **Cause principale des échecs 1 et 2 : hauteurs enterrées** (2026-11-09). Le « tour » de l'auto-test prenait `y` =
+  bas des volumes du vrai `.aid` (-6,2 m), alors que la chaussée de Brighton est à ~0,6 m : portes et LOGIC générées à
+  -6,2 m d'épaisseur nulle, donc 7 m sous la route → tours non comptés (6 boucles au lieu de 3), réapparitions même en
+  ligne droite. Vrai fichier : LOGIC à **42,6 m** (au-dessus de la route), portes autour de la route (-1,4 à 2,8),
+  mainLoop -6,2 à 7,9. Map Builder met portes et LOGIC à la hauteur de la route (testé sur ses cartes).
+  → L'auto-test ne doit pas servir pour un essai en jeu. **3e essai = vrai tour roulé** (le tien, 1er enregistrement,
+  2 941 m, hauteur 0,4 à 4,6 m) + largeurs prises au vrai `.aid` : portes et LOGIC à 0,6-0,7 m, mainLoop -2,2 à 8,5,
+  départ à 22 m du vrai, centre à 3 m du vrai en médiane (trajectoire de course, pas le milieu). Installé, à essayer.
+  Les tours 2 et 3 de cet enregistrement ne faisaient que 1 638 et 1 251 m (raccourcis à travers les murs ?).
