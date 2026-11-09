@@ -297,9 +297,23 @@ def play_targets(j):
 
 
 WRECK_CUTOFF = 0.02   # wrecked: final-mix low-pass at 0.02 x 48 kHz (~1 kHz) on music, AI, world (not the player car)
+EFFECTS_MODES = ("oui", "partiel", "non")
 
 
-def wreck_muffle(j):
+def normalize_effects(effects):
+    """Accept saved legacy booleans as well as the three current effect modes."""
+    if isinstance(effects, bool):
+        return "oui" if effects else "non"
+    if isinstance(effects, str):
+        value = effects.strip().lower()
+        if value == "partiellement":
+            value = "partiel"
+        if value in EFFECTS_MODES:
+            return value
+    raise ValueError(f"mode d'effets invalide : {effects!r}")
+
+
+def wreck_muffle(j, cutoff=WRECK_CUTOFF):
     """finalsubmix.dat: muffle the mix while the player is wrecked. Control objects only, appended at the end:
     WreckMusicVariable (1 normal, 0 wrecked) -> WreckMusicCutOff curve (0 -> WRECK_CUTOFF, 1 -> 1) -> one more term of
     PerkFilterCutOff (type 42, min of the perk cut-offs that drive PerkSurroundLowPass, enabled below 1 by
@@ -308,7 +322,7 @@ def wreck_muffle(j):
     var = j.count
     j.w += [20, j.name("WreckMusicVariable"), F1]
     curve = j.count + 1
-    j.w += [21, j.name("WreckMusicCutOff"), var, FF, F1, 2, 0, FF, f32(WRECK_CUTOFF), F1, FF, F1]
+    j.w += [21, j.name("WreckMusicCutOff"), var, FF, F1, 2, 0, FF, f32(cutoff), F1, FF, F1]
     j.count += 2
     s = j.find(42, "PerkFilterCutOff")
     n = j.w[s + 2] & 0xFFFF
@@ -355,18 +369,83 @@ def no_perk_duck(j):
     j.w[s + 3:s + 3 + 2 * n] = sum(pairs, [])
 
 
-def no_nitro_lowpass(j):
-    """finalsubmix.dat: no muffling during nitro. NitrousLowPass (curve on NitrousForwardTimer: 0.003 = ~150 Hz for
-    1.5 s) is one term of PerkFilterCutOff (type 42, the min that drives PerkSurroundLowPass on the whole final mix
-    except the player car): removed. The shield terms stay."""
-    nitro = obj_index(j, "NitrousLowPass")
+def no_perk_music_volume(j):
+    """finalsubmix.dat: MusicMixerVolumeUnscaled (type 37) is the product of one volume curve per power-up event
+    (BargeFireVolume, BoltFireVolume... dipping to 0.5 / 0.7 for about a second, NitrousVolume too); "non" still
+    changed the music on every power-up but nitro and shield (player, 2026-10-23). A single constant 1.0 term."""
+    s = j.find(37, "MusicMixerVolumeUnscaled")
+    n = j.w[s + 2] & 0xFFFF
+    j.w[s + 2] = (j.w[s + 2] & 0xFFFF0000) | 1
+    j.w[s + 3:s + 3 + 2 * n] = [FF, F1]
+
+
+def set_curve_outputs(j, name, values):
+    """Replace selected constant y-values in a type-21 curve, keyed by the point's x-value."""
+    s = j.find(21, name)
+    n = j.w[s + 5]
+    pending = {f32(x): f32(y) for x, y in values.items()}
+    for i in range(n):
+        point = s + 6 + 3 * i
+        x, output, _ = j.w[point:point + 3]
+        if x in pending:
+            assert output == FF, (name, i, output)
+            j.w[point + 2] = pending.pop(x)
+    assert not pending, (name, sorted(pending))
+
+
+def soften_shield(j):
+    """Raise the shield low-pass values, including the values written by its control scripts."""
+    s = j.find(20, "ShieldCutOffVariable")
+    j.w[s + 2] = f32(0.4)
+    for name in ("PerkShieldScript", "PerkShieldMODScript", "CameraChangeShieldResetScript"):
+        s, old = j.code(name)
+        code = old.copy()
+        changed = 0
+        for p in range(len(code) - 1):
+            if code[p:p + 2] == [0x1004, f32(0.004)]:
+                code[p + 1] = f32(0.4)
+                changed += 1
+        assert changed == 1, (name, changed)
+        j.set_code(s, old, code)
+
+
+def no_perk_lowpass(j):
+    """Keep a single unity term so nitro, shield, and wreck filters cannot muffle the final mix."""
+    variable = j.count
+    j.w += [20, j.name("NoPerkLowPassVariable"), F1]
+    j.count += 1
     s = j.find(42, "PerkFilterCutOff")
     n = j.w[s + 2] & 0xFFFF
-    pairs = [j.w[s + 3 + 2 * k:s + 5 + 2 * k] for k in range(n)]
-    assert [nitro, 0] in pairs, pairs
-    pairs.remove([nitro, 0])
-    j.w[s + 2] -= 1
-    j.w[s + 3:s + 3 + 2 * n] = sum(pairs, [])
+    j.w[s + 2] = (j.w[s + 2] & 0xFFFF0000) | 1
+    j.w[s + 3:s + 3 + 2 * n] = [variable << 16, 0]
+
+
+def soften_perk_effects(j):
+    """Reduce perk ducking and low-pass strength without changing the original control flow."""
+    set_curve_outputs(j, "MusicMixerPerkDuckVolume", {1.0: 0.5})
+    set_curve_outputs(j, "NitrousLowPass", {0.1: 0.25, 1.5: 0.25})
+    soften_shield(j)
+
+
+def no_collision_effects(j):
+    """Remove the collision volume duck and high-pass from the added final-submix mixer."""
+    s = j.find(79, "FinalSubMixCarAddedMixer")
+    assert j.w[s + 2:s + 4] == [obj_index(j, "CollisionVolumeRMSDucking"), 0]
+    j.w[s + 2:s + 4] = [FF, F1]
+    s = j.find(147, "CollisionSurroundHighPass")
+    assert j.w[s + 6:s + 8] == [105, F1]
+    j.w[s + 6:s + 8] = [FF, 0]
+
+
+def no_bitcrusher(j):
+    """Set the bit-crusher depth input to its documented neutral value."""
+    variable = j.count
+    j.w += [20, j.name("NoBitCrusherDepthVariable"), f32(32)]
+    j.count += 1
+    s = j.find(42, "RGBBitCrusherDepthFinal")
+    n = j.w[s + 2] & 0xFFFF
+    j.w[s + 2] = (j.w[s + 2] & 0xFFFF0000) | 1
+    j.w[s + 3:s + 3 + 2 * n] = [variable << 16, 0]
 
 
 def wave_name(path, used):
@@ -382,9 +461,10 @@ def wave_name(path, used):
 def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     """Bank + controller + final mix for the chosen playlist folders. Returns a summary.
     shuffle: Spotify-like looping shuffle (new order at each build), else independent random picks.
-    effects: game effects on the sound (music duck on power-ups, muffled when wrecked; off also removes the nitro
-    muffle, which acts on the whole final mix).
+    effects: oui = original effects plus wreck muffle; partiel = softened perk/wreck effects without collision
+    processing; non = no effects on the final mix. Legacy booleans remain accepted.
     pcm16: added tracks stored uncompressed (codec 3, like the game's own *_sync_loop sounds) instead of PS-ADPCM."""
+    effects = normalize_effects(effects)
     bank = open(os.path.join(E, "root_streaming", "ingamemusic.baf"), "rb").read()
     j = Jboa(open(os.path.join(E, "root", "audio", "dat", "music_controller.dat"), "rb").read())
     originals = original_tracks(j)
@@ -421,16 +501,24 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         assert reached == set(objs), ("simulation", sorted(set(objs) - reached), sorted(reached - set(objs)))
         mode = f"tirage au hasard, groupes {' + '.join(map(str, sizes))}"
     fs = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalsubmix.dat"), "rb").read())
-    if effects:
+    if effects == "oui":
         wreck_muffle(fs)
+    elif effects == "partiel":
+        soften_perk_effects(fs)
+        no_collision_effects(fs)
+        no_bitcrusher(fs)
+        wreck_muffle(fs, cutoff=0.06)
     else:
         no_perk_duck(fs)
-        no_nitro_lowpass(fs)
+        no_perk_music_volume(fs)
+        no_perk_lowpass(fs)
+        no_collision_effects(fs)
+        no_bitcrusher(fs)
     os.makedirs(os.path.join(out, "audio", "dat"), exist_ok=True)
     open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
     open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
-    return f"{len(objs)} morceaux en course ({mode}) ; effets du jeu sur le son : {'oui' if effects else 'non'} ; qualité : {'haute (non compressée)' if pcm16 else 'normale'}"
+    return f"{len(objs)} morceaux en course ({mode}) ; effets du jeu sur le son : {effects} ; qualité : {'haute (non compressée)' if pcm16 else 'normale'}"
 
 
 def install(out=OUT, test=TEST):
