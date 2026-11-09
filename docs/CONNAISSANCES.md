@@ -1692,3 +1692,11 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   2 941 m, hauteur 0,4 à 4,6 m) + largeurs prises au vrai `.aid` : portes et LOGIC à 0,6-0,7 m, mainLoop -2,2 à 8,5,
   départ à 22 m du vrai, centre à 3 m du vrai en médiane (trajectoire de course, pas le milieu). Installé, à essayer.
   Les tours 2 et 3 de cet enregistrement ne faisaient que 1 638 et 1 251 m (raccourcis à travers les murs ?).
+- **3e essai (tour roulé, hauteurs à la route, 262 s enregistrées)** : **11 IA sur 19 bouclent un tour toutes les
+  55-65 s** (4 à 6 passages sur la ligne), le circuit fonctionne. Joueur pris dans une **boucle de téléportation**
+  (renvoyé toutes les ~1 s entre deux points distants de 30 m, autour de (-415 ; 205), à côté de la porte InterTwo),
+  une IA bloquée au même endroit, deux IA arrêtées 40 m après la ligne (course finie ?). Cause : le couloir LOGIC
+  construit par `gen_aid.band_points` passe par `road._unloop` (dé-bouclage des bords), qui, avec un couloir 16 m plus
+  large que la route, l'écrase sur **170 points sur 738** (14,4 m au lieu de 31, tourné de 35°) près des épingles.
+  Correctif dans `lap2aid.build` : là où le couloir est plus étroit que demandé, il est reconstruit depuis l'axe.
+  Résultat : marge LOGIC - route ≥ 16 m partout. Installé, **4e essai à faire**.

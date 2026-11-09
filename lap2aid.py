@@ -54,6 +54,20 @@ def build(lap, width):
                    auto_bridges=False, closed=True)
     gen_aid.TEMPLATE = TEMPLATE
     band = [(-w / 2 - LOGIC_MARGIN, w / 2 + LOGIC_MARGIN) for w in rd.width_at]
+    orig = gen_aid.band_points
+
+    def band_points(r, ranges=None):
+        """Map Builder's band, but where its loop-free edges (road._unloop) squeezed a band narrower than asked
+        (wide LOGIC band near a hairpin: 170 of 738 points on Brighton 1 -> players reset in a loop), rebuild it
+        straight from the centre line: lo edge + full width, facing along the road"""
+        out = orig(r, ranges)
+        if ranges:
+            for i, (lo, hi) in enumerate(ranges):
+                if out[i][2] < (hi - lo) - 2.0:
+                    (cx, cz), (sx, sz) = r.centre[i], r.side(i)
+                    out[i] = (cx + sx * lo, cz + sz * lo, hi - lo, sz, -sx)
+        return out
+    gen_aid.band_points = band_points
     return gen_aid.build_loop(rd, y0, lines=(gen_aid.GATE_LEAD, gen_aid.GATE_LEAD), band=band)   # start = lap start
 
 
