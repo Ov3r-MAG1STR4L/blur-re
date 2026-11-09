@@ -452,3 +452,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-09 | Blur 2 : root.pak X360 lu (morceaux LZX/stockés), BMW M3 Concept Race extraite = M3 Drift de Blur 1 retravaillée, textures manquantes |
 | 2026-11-09 | Découverte de BlurRebuilt (uKER) : Blur recompilé depuis la source fuitée, branche blurx orientée Blur 2 (Kanzen, Dubaï) |
 | 2026-11-09 | Décor de Dubaï (Blur2DubaiTest) dans la map Marina : 119 modèles à atlas (`b2decor.py`, `make_b2_map.py --decor`), installé dans Blur_test, à essayer en jeu |
+| 2026-11-09 | Marina avec décor essayée en jeu : charge et roule ; vitres noires corrigées (alpha opaque des matériaux à reflet), reste éclairage, ciel, chemins secondaires |

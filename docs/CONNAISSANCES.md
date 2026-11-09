@@ -1802,3 +1802,9 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   quelques textures « croix rouge » (placeholder du build X360) et icônes de bonus font partie du décor. Installé
   dans Blur_test (162 fichiers, 61 de plus sauvegardés dans `backup_blur_test`). À voir en jeu : chargement,
   fluidité, textures (atlas basse définition), trous de décor au-delà des 119 modèles.
+- **Marina avec décor : Confirmé en jeu (2026-11-09, utilisateur, vidéo)** : chargement sans crash, course jouable,
+  décor de Dubaï à sa place (looping, portique Start/Finish, barrières, immeubles). Défauts : éclairage absent (rendu
+  plat), textures floues / étirées, grilles « croix rouge » (placeholder X360) visibles, **vitres noires** (cause
+  supposée : l'alpha de `_BaseMap` des matériaux à `_EnvironmentCube` est un masque de reflet, lu comme transparence
+  par Blur 1 ; corrigé dans `b2decor.extract` : alpha opaque pour ces matériaux, réinstallé, à revoir en jeu), ciel de
+  Map Builder, **replacement sur les chemins secondaires** (seul le tracé principal fait partie du tube de course).
