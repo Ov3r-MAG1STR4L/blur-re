@@ -41,6 +41,41 @@ def resample(pts, step):
     return out
 
 
+def branches(actorpack, lap, cum_pts, low, out_dir, far=30.0, min_len=120.0):
+    """official AI branches (b2official: the non-closed AIDataActor of every race) that leave the race tube (> far m
+    from the lap; the tube is TUBE m wide) -> Map Builder branches {from_m, to_m, points} (ends projected on the
+    resampled lap) + one CSV per branch (x, y, z: extra laps for the collision and the scenery)"""
+    import b2official
+    races, _ = b2official.official(actorpack)
+    pts, cum = cum_pts
+    xz = np.array([(p[0], p[2]) for p in pts])
+    total = cum[-1] + math.hypot(*(xz[0] - xz[-1]))
+    out, csvs = [], []
+    for race in races.values():
+        for b in race["branches"]:
+            d = [float(np.hypot(*(xz - p[[0, 2]]).T).min()) for p in b]
+            length = float(np.sum(np.linalg.norm(np.diff(b, axis=0), axis=1)))
+            if max(d) < far or length < min_len:
+                continue
+            i0, i1 = (int(np.argmin(np.hypot(*(xz - b[k][[0, 2]]).T))) for k in (0, -1))
+            fm, tm = float(cum[i0]), float(cum[i1])
+            if tm < fm:
+                tm += total                                   # runs past the loop's end (network.py allows it)
+            if tm - fm > total / 2 or any(fm < o["to_m"] and o["from_m"] < tm for o in out):
+                continue                                      # backwards, or overlaps one kept (the 2 races' copies)
+            out.append({"from_m": round(fm), "to_m": round(tm), "width": WIDTH,
+                        "points": [{"x": round(p[0], 2), "z": round(p[2], 2), "w": WIDTH,
+                                    "h": round(max(0.0, p[1] - low), 2)} for p in b]})
+            f = os.path.join(out_dir, "branch_%02d.csv" % len(csvs))
+            with open(f, "w", newline="") as fh:
+                w = csv.writer(fh)
+                w.writerow(["x", "y", "z"])
+                w.writerows(np.round(b, 2).tolist())
+            csvs.append(f)
+    print(len(out), "official branches kept (out of the tube)")
+    return out, csvs
+
+
 def world(lap, pickups, name, city, grid):
     pts = resample(lap, STEP)
     if math.hypot(pts[-1][0] - pts[0][0], pts[-1][2] - pts[0][2]) < STEP:
@@ -57,13 +92,15 @@ def world(lap, pickups, name, city, grid):
     base = json.load(open(os.path.join(config.BMB_GAME, "Blur Map Builder", "maps", "world.json")))
     loc = base["locations"][0]
     loc.update(id="b2_" + city.lower(), name=city)
+    loc["lighting"] = {"preset": "Amboy (desert day)",       # sunny desert sky (the base had Rio's Mount Haruna)
+                       "values": {"object_light": [1.0, 0.97, 0.92, 0.14], "object_light_up": [0.6]}}
     m = loc["maps"][0]
     m.update(id="b2_%s_1" % city.lower(), name=name, laps=3, width=TUBE, auto_bridges=False, branches=[],
              points=[{"x": round(x, 2), "z": round(z, 2), "w": WIDTH, "h": round(y - low, 2)} for x, y, z in pts],
              pickups=rows, pickup_per_row=1, start_m=int(cum[i0]), finish_m=int(cum[i0]))
     loc["maps"] = [m]
     base["locations"] = [loc]
-    return base, low, len(rows)
+    return base, low, len(rows), (pts, cum)
 
 
 ROAD_SLOTS = 12      # Map Builder road pieces (one per 420 m: 9 for Marina's 3.5 km); extra models unused
@@ -76,10 +113,22 @@ def decor(files, models, nfs):
     slots = [(J.NFS_UID + 2 * k + 1, "nfs_%03d.model" % k) for k in range(nfs)]
     slots += [(u, "road_21_%02d.model" % k) for k, u in enumerate(J.road_slots(ap))]
     pad = (J.DECOR_VERTS, 6 * max(len(t) for _, t in models))      # faces doubled: 6 indices per triangle
-    for k, ((uid, fname), (img, tris)) in enumerate(zip(slots, models)):
-        J.write_model(tris, "b2_%03d" % k, J.slot_matrix(ap, uid), os.path.join(flat, fname), 110,
+    mats = []
+    for uid, fname in slots:
+        try:
+            mats.append((J.slot_matrix(ap, uid), fname))
+        except AssertionError as e:                        # no single visible actor (with branches: road pieces)
+            print("slot", fname, "skipped:", e)
+    slots = mats
+    for k, ((mat, fname), (img, tris)) in enumerate(zip(slots, models)):
+        J.write_model(tris, "b2_%03d" % k, mat, os.path.join(flat, fname), 110,
                       salt=0x42324400 + k, pad=pad, image=img)
-    print(min(len(slots), len(models)), "scenery models in", len(slots), "slots")
+    from PIL import Image
+    blank = Image.new("RGBA", models[0][0].size, (0, 0, 0, 255))
+    hidden = [([(0, -50, 0), (0.01, -50, 0), (0, -50, 0.01)], [(0, 0)] * 3)]   # Map Builder's glowing road gone
+    for k, (mat, fname) in enumerate(slots[len(models):], len(models)):
+        J.write_model(hidden, "empty", mat, os.path.join(flat, fname), 110, salt=0x42324400 + k, pad=pad, image=blank)
+    print(min(len(slots), len(models)), "scenery models in", len(slots), "slots (the others emptied)")
 
 
 def main():
@@ -89,10 +138,15 @@ def main():
     ap.add_argument("--route", type=int, required=True)
     ap.add_argument("--grid", type=float, nargs=2, required=True, metavar=("X", "Z"))
     ap.add_argument("--decor", action="store_true")
+    ap.add_argument("--official", metavar="ACTORPACK", help="X360 actorpack.xt of the city: official AI branches")
     a = ap.parse_args()
     lap = [(float(r["x"]), float(r["y"]), float(r["z"])) for r in csv.DictReader(open(a.lap))]
     pk = json.load(open(a.pickups))["pickups"]
-    w, low, npk = world(lap, pk, a.name, a.city, a.grid)
+    w, low, npk, res = world(lap, pk, a.name, a.city, a.grid)
+    laps = [a.lap]
+    if a.official:
+        w["locations"][0]["maps"][0]["branches"], extra = branches(a.official, lap, res, low, a.out)
+        laps += extra
     wfile = os.path.join(config.BMB_GAME, "Blur Map Builder", "maps", "world.json")
     if not os.path.exists(wfile + ".bak"):
         shutil.copyfile(wfile, wfile + ".bak")
@@ -107,7 +161,7 @@ def main():
     models, spots = [], os.path.abspath(os.path.join(a.out, "nfs_spots.json"))
     if a.decor:
         import b2decor
-        models = b2decor.jobs(b2decor.extract(UNITY, [a.lap]), [a.lap], make_nfs_map.DECOR_MAX + ROAD_SLOTS)
+        models = b2decor.jobs(b2decor.extract(UNITY, laps, a.route), laps, make_nfs_map.DECOR_MAX + ROAD_SLOTS)
         b2decor.sheet(models, os.path.join(a.out, "atlas.png"))
         json.dump([make_nfs_map.zone_centre(t) for _, t in models[:make_nfs_map.DECOR_MAX]], open(spots, "w"))
     nfs = min(len(models), make_nfs_map.DECOR_MAX)
@@ -120,7 +174,7 @@ def main():
         decor(files, models, nfs)
     phys = os.path.join(files, "levels", "flat_earth", "level.levelphysics")
     subprocess.run([sys.executable, os.path.join(HERE, "b2collision.py"), UNITY, phys, phys, "--route", str(a.route),
-                    a.lap, "--dy", str(1.0 - low)], check=True)
+                    *laps, "--dy", str(1.0 - low)], check=True)
 
 
 if __name__ == "__main__":
