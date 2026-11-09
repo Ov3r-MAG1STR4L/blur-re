@@ -1621,3 +1621,15 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   Hong Kong (ville en damier et route de montagne en lacets au nord, 3,7 x 4,5 km), Dubaï (réseau de boucles),
   Miami, Detroit, Odessa, North Africa, LA City, LA Freeway, Ski Resort (route de montagne de 8 km). `quickexport`
   ressemble à Ski Resort (export de test). Liverpool presque vide (collision de 0,7 Mo).
+- **Projet Brighton Orage, premier bilan** (2026-11-09) : `uk_brighton_storm` (août) n'est **pas** une variante
+  d'éclairage de `uk_brighton`. `level.level` de 472 Ko (dont 470 Ko de journal `MtaDbg`), collisions de 2,1 Mo contre
+  5,6 Mo sur PC, stream de 156 Mo : la map a été reconstruite.
+  - En-têtes de blocs X360 : nom ASCII inchangé, taille u32 inversée, 4 octets suivants **identiques** (`00 00 41 00`
+    feuille, `00 04 43 00` conteneur, l'octet de type est à +14).
+  - `levelphysics` = blocs `Header`, `Main` (flux d'objets physiques), **`Routes`** (conteneur de blocs `Route` : 4
+    pour Brighton PC, 0,5 à 0,8 Mo chacun). Premier objet de `Main` sur Brighton = **type 6**, inconnu du lecteur Map
+    Builder (qui ne gère que le type 0, maillage).
+  - Brighton X360 d'août contre PC (même taille) : `Main` se convertit à 78 % par inversion simple (32 bits : 56,5 %,
+    16 bits : 8 %, identiques : 13,9 %), `Routes` seulement à 60 %. Le reste = structures à champs de 8/16 bits non
+    alignés (comme les triangles de 11 octets) : il faut connaître chaque type d'objet. Un convertisseur fiable demande
+    de rétro-concevoir le chargeur physique de `Blur.exe` (FUN_009520a0) pour tous les types d'objets et pour `Route`.
