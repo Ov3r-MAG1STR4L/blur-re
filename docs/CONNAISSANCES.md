@@ -1652,3 +1652,11 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   données : après le maillage vient un u32 (= nombre de triangles pour les routes 2 et 3) puis une structure inconnue.
   Conséquence : le tracé de course ne se déduit **pas** directement d'un `Route`. Il faut la ligne centrale d'un autre
   côté : tour roulé (position de la voiture), ou réseau de routes de `Main` moins les barrières du `Route`.
+- **`lap2aid.py` : tour roulé → `.aid`** (2026-11-09) : CSV de `trackrec.py` (un tour au milieu de la route) →
+  points tous les 20 m `{x, z, w, h}` → `road.Road(closed=True)` + `gen_aid.build_loop` de Map Builder (MainLoop,
+  LOGIC, portes Start/InterOne/InterTwo). Hauteur prise du tour, largeur unique (`--width`, 24 m par défaut ; médianes
+  réelles Brighton 1 : mainLoop 23,8 m, LOGIC 38,7 m). Gabarit `jpn_mharuna_1.aid` pris dans `blur_extracted` (le
+  chemin `paths.UNPACKED` de Map Builder n'existe pas ici). **Auto-test** (`--self-test`, « tour » = milieu de la
+  route d'un vrai `.aid`) sur `uk_brighton_1` : 741 points contre 742, écart des centres médian **0,94 m**, 95 % ≤
+  6,2 m, max 9,4 m (virages lissés par l'échantillonnage à 20 m). Fichier généré installé dans `Blur_test` à la place
+  de `uk_brighton_1.aid` (original gardé en `uk_brighton_1.aid.orig`) : **pas encore essayé en jeu**.
