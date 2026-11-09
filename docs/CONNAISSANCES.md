@@ -1499,3 +1499,18 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   identiques à l'avant (sha1). Piège trouvé : `plugins.lua` d'origine en lecture seule. Pas encore essayé sur le PC
   d'un autre joueur ni en partie LAN.
 - Suite prévue : difficulté Hardcore au-dessus de Difficile, onglet « Reverse » dans le menu multi.
+
+## Prototype « Blur 2 » Xbox 360 du 31/08/2010 (2026-11-09, liste de l'archive, rien d'extrait sauf un en-tête)
+- Archive `Downloads\Blur 2 (Aug 31, 2010 prototype).rar` : RAR5 de 6,2 Go (7,0 Go décompressé), 979 fichiers. Le
+  `tar` de Windows refuse (dictionnaire trop grand), il faut 7-Zip. Dossier `KanzenDev\` (nom de code « Kanzen »),
+  exécutable `Kanzen_Speed.xex`.
+- **Pas de malware** (Confirmé sur la liste) : aucun exécutable Windows (`.exe/.dll/.bat/.scr/.lnk/.js/.ps1`…) ni
+  d'archive imbriquée. Le seul binaire est le `.xex` Xbox 360, qui ne s'exécute pas sous Windows.
+- Moteur identique à Blur PC (Confirmé) : mêmes extensions (`.level/.levelrender/.levelphysics/.levelstream`, `.pak`,
+  `.loc`, `.xt`, `.bik`, `.model`) et un dossier par carte avec `level.level`.
+- **Mais en gros-boutiste** : l'en-tête est `"360 Level"` + `00 00 00 EC`, contre `"  CPLevel"` + `EC 00 00 00` sur
+  PC. Les cartes ne peuvent pas être copiées telles quelles : il faut un convertisseur d'octets (et de textures Xenon).
+- 51 cartes, dont 32 absentes de Blur PC : detroit, dubai, hong_kong, miami, liverpool, odessa, north_africa,
+  la_city, ski_resort, kanzen_la_downtown/river, uk_brighton_storm/sunny, mparena_* (carpark, skiresort,
+  skyscrapers, superbowleasy/hard, temple), circuit_dom, ai_circuit_* (loop, corkscrew, jump, wallride), et des
+  cartes de test (physics, traffic, vehicle, graphical). Également `debug_values.xml` / `debug_frontend.xml`.
