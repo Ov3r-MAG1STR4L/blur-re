@@ -335,6 +335,9 @@ Ordre décidé par l'utilisateur :
    **Fusion, pas copie (2026-11-09)** : pour éviter 19 clones, chaque IA garde son profil d'origine et on le
    mélange avec le style du joueur selon un poids propre à chaque IA (ex. 20 % à 80 %) ; lignes `.aid` variées
    (plusieurs tours du joueur, décalages latéraux) ; usage des bonus mélangé de la même façon.
+   **Décision (2026-11-09)** : le joueur roule toujours en physique d'origine (pas de modif de `racingphysics.bin`).
+   Les IA reprennent son style « simplifié » : géométrie, freinages, bonus, esquives ; dans les grands virages serrés
+   où leur adhérence les avantage, elles gardent leur propre passage.
    Collecte : uniquement en LAN / `Blur_test` ou sur ses propres courses, jamais via lecture mémoire pendant les
    parties en ligne AMAX (risque anti-triche, données d'autres joueurs).
 
@@ -441,3 +444,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-09 | Projet K : idée d'IA buff par observation des joueurs (trajectoires, esquives, bonus) traduite en `.aid` + paramètres de profils |
 | 2026-11-09 | Projet K : IA buff = fusion profil d'origine × style joueur, poids différent par IA (pas de clones) |
 | 2026-11-09 | Boost d'adhérence IA : effet réel dans les grands virages serrés (observation joueur), invisible dans la moyenne du tour |
+| 2026-11-09 | Projet K : joueur enregistré en physique d'origine seulement ; IA = style joueur simplifié, virages serrés gardés à l'IA |
