@@ -1750,3 +1750,16 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
 - `b2official.py` : `actorpack.xt` X360 → boucles IA officielles + grilles → tours CSV + `.aid` (via `lap2aid`,
   largeur fixe : profil des nœuds pas décodé) + image. Résultats dans `Jeux_WII\blur2_aid\<ville>\` (Dubaï 2,
   Miami 1). Lecteurs X360 rangés dans `x360/` (`blurxt_be`, `blurpak_be`, `b2race`).
+- **Les 4 routes de Dubaï** (menu de Blur2DubaiTest, **par uKER**, « uKER 2026 ») : 01 **Business Bay** = grille du
+  centre (départ 90 ; -174), 02 **Dubai Island** = grille nord tournée vers l'est (-540 ; 482), 03 **Construction**
+  = grille sud-est (429 ; -1014), 04 **Marina** = grille nord tournée vers l'ouest (-435 ; 473) = la route de l'IA
+  officielle. Le journal note chaque chargement (`SURVEY_TRACK_LOAD_BEGIN … Route 0N - Nom`) et active barrières et
+  collisions de la route choisie. Tours roulés par l'utilisateur (2 journaux) : Business Bay 4 (~3,9 km), Dubai
+  Island 7 (~3,2), Construction 7 (~3,7), Marina 12 (~3,6) → `Jeux_WII\blur2_aid\dubai\routeN_<nom>.aid` (tour le
+  plus court, largeur 24 m). **Piège** : Unity ne garde que 2 journaux → le lanceur copie maintenant `Player.log` dans
+  `blur2_aid\journaux\` à la fermeture.
+- **Looping de Business Bay** (~182 m de haut) : franchi 2 fois sur 8 essais (vitesse restée > 300 km/h), les autres
+  fois la voiture décroche en haut et retombe ; le simulateur applique une gravité vers le bas. Le « tour le plus
+  court » retenu contenait une chute → `route1_business_bay.aid` **faux au looping**. Pour Blur 1 : looping
+  impossible (gravité, et `.aid` décrit la route vue de dessus : la boucle s'y replie sur elle-même). Il relève du format
+  IA de Blur 2 (normale de piste par nœud) et d'un moteur à gravité « collée » (BlurRebuilt + Kanzen ?).
