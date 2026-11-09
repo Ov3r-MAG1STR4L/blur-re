@@ -1852,3 +1852,9 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   - Piège : des modèles restés d'une construction précédente (`road_21_31..34`, ancienne taille) ; retirés à la main
     de la sortie et de Blur_test. Les emplacements sans acteur visible reçoivent maintenant un modèle vide à la
     taille commune.
+- **Départ sous la map (2026-11-10, retour utilisateur)** : l'ancien départ (`start_m` 3 454, grille officielle
+  -435 ; 473, point du tracé -413 ; 444) est au-dessus d'un **trou de ~20 m dans la collision Unity elle-même**
+  (aucun des 29 `MeshCollider` n'a de triangle à cet endroit ; le simulateur n'a pas d'autre collider). Le **vrai
+  portique Start/Finish de Blur 2** est le rendu `draws_d0076` (texture `tex_1161_s0_startfin_diff`), x -650..-644,
+  z 495..524, y 17..22 : ~210 m après la grille officielle dans le sens de course (vers l'ouest). Départ déplacé là
+  (`--grid -647 509.5` → `start_m` 131) ; sol continu sur 108 m derrière, sur toute la largeur. À vérifier en jeu.
