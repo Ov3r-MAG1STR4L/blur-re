@@ -1669,3 +1669,10 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   3. couloir LOGIC (voitures hors couloir remises en piste) = largeur de la route, alors que le vrai est **15 m plus
      large en médiane** (9,9 à 31,6) → marge de 8 m de chaque côté (`LOGIC_MARGIN`, médiane obtenue 44,4 m, vraie 38,7).
   Version corrigée installée dans `Blur_test`, **pas encore réessayée**. Rappel : l'auto-test ne compare que la forme.
+- **Tracés du build d'août** (`docs/blur2/aug/`) : plusieurs villes y sont **plus complètes qu'en novembre** (points de
+  collision août / novembre) : **Liverpool 106 k / 21 k** (réseau de rues, rond-point, boucle des docks bien
+  visibles), LA City 437 k / 56 k, Detroit 574 k / 204 k. Miami presque vide en août (547 points). Les maps ont donc
+  été refaites ou vidées entre les deux builds : comparer les deux avant de choisir une version.
+- Pistes communauté (kareteki) : MP Temple serait le décor du menu multijoueur de Blur 2 (comme la voiture sur une piste
+  de LA dans le menu de Blur 1) ; « redlinesnative » (francophone) a publié du contenu coupé de la bêta de Blur 1
+  (livrées, piste de LA coupée, zone MotorMash de Brighton, anciens murs à flèches jaunes, ancienne interface jaune).
