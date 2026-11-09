@@ -12,7 +12,20 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from b2collision import lap_points  # noqa: E402
 
 
-def extract(data_dir, laps, radius=300.0):
+def keep(go, tr, route):
+    """city scenery only: active hierarchy under dubai/Authored Layout Content, in 'Shared Render' or this route's
+    'Route N ...' groups (other routes' actor lists, SpecialFx and the 239 inactive pickup / effect objects out)"""
+    path, act, t = [], go.m_IsActive, tr
+    while t.m_Father and t.m_Father.path_id:
+        t = t.m_Father.read()
+        g = t.m_GameObject.read()
+        act, path = act and g.m_IsActive, [g.m_Name] + path
+    if not act or len(path) < 3 or path[1] != "Authored Layout Content":
+        return False
+    return path[2].startswith("Shared Render") or path[2].startswith("Route %d " % route)
+
+
+def extract(data_dir, laps, route, radius=300.0):
     import UnityPy
     from UnityPy.helpers.MeshHelper import MeshHandler
     from scipy.spatial import cKDTree
@@ -31,6 +44,8 @@ def extract(data_dir, laps, radius=300.0):
         comps = [p.read() for p in (x.component if hasattr(x, "component") else x for x in go.m_Component)
                  if p.type.name in ("Transform", "MeshFilter")]
         tr = next(c for c in comps if c.object_reader.type.name == "Transform")
+        if not keep(go, tr, route):
+            continue
         mf = next((c for c in comps if c.object_reader.type.name == "MeshFilter"), None)
         if mf is None or not mf.m_Mesh.path_id:
             continue
@@ -53,6 +68,10 @@ def extract(data_dir, laps, radius=300.0):
             if te is None or not te.m_Texture.path_id:
                 continue
             k = te.m_Texture.path_id
+            if k not in tex and te.m_Texture.read().m_Name.startswith("mdl_"):
+                tex[k] = None                                 # pickup icons, lightning, mine pulses (effects)
+            if tex.get(k, 0) is None:
+                continue
             if k not in tex:
                 tex[k] = te.m_Texture.read().image.convert("RGBA")
                 ec = envs.get("_EnvironmentCube")
@@ -62,7 +81,7 @@ def extract(data_dir, laps, radius=300.0):
             for t in np.array(sub, int).reshape(-1, 3):
                 if d[t].min() <= radius:
                     tris.append((k, P[t], uv[t] * sc + of))
-    return {"tex": tex, "tris": tris}
+    return {"tex": {k: v for k, v in tex.items() if v is not None}, "tris": tris}
 
 
 ZONE = 150.0       # zone side (m): tight actor boxes (project J: whole-city boxes made the game crawl)
@@ -136,7 +155,7 @@ def sheet(models, path, n=24):
 
 if __name__ == "__main__":
     import pickle
-    r = extract(sys.argv[1], sys.argv[3:])
+    r = extract(sys.argv[1], sys.argv[4:], int(sys.argv[3]))
     pickle.dump(r, open(sys.argv[2], "wb"))
     span = np.array([np.ptp(u, 0).max() for _, _, u in r["tris"]])
     print(len(r["tris"]), "triangles,", len(r["tex"]), "textures ; UV span >1 :", round(float((span > 1).mean()), 3),

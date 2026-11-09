@@ -1808,3 +1808,24 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   supposée : l'alpha de `_BaseMap` des matériaux à `_EnvironmentCube` est un masque de reflet, lu comme transparence
   par Blur 1 ; corrigé dans `b2decor.extract` : alpha opaque pour ces matériaux, réinstallé, à revoir en jeu), ciel de
   Map Builder, **replacement sur les chemins secondaires** (seul le tracé principal fait partie du tube de course).
+- **Marina, 2e passe (2026-11-09, à essayer en jeu)** :
+  - **Objets inutiles retirés** (`b2decor.keep`) : la hiérarchie Unity range le décor sous `dubai/Authored Layout
+    Content/` : `Shared Render` (3 832 rendus, décor commun) et des groupes par route (`Route N KSLF Actor Lists`,
+    `Route N Render`). On garde le commun + la route jouée ; retirés : les objets des autres routes, `SpecialFx_*`,
+    les 239 objets inactifs (`m_IsActive`, dont `E_Shock_pickup`, éclairs, faisceaux) et toute texture `mdl_*`
+    (icônes de bonus `icon_nitro_01`…, `lightning_*`, `mine_pulse_*`). Les textures `grid_*` (couleurs unies à grille :
+    looping, blocs) sont gardées : c'est le rendu du prototype lui-même.
+  - **Chemins secondaires** (`make_b2_map --official ACTORPACK`) : embranchements de l'IA officielle (actorpack X360
+    de novembre, extrait dans `blur_extracted\b2_x360_nov\gamedata\levels\dubai\`) qui sortent du tube (> 30 m du
+    tour, ≥ 120 m de long, sans chevauchement) → `branches` Map Builder (`from_m` / `to_m` = extrémités projetées
+    sur le tour) : 4 gardés (576-696, 936-1284, 1572-2051, 2879-3155 m). Ils servent aussi de tracés pour la
+    collision (114 136 triangles) et le décor. Effets Map Builder : 32 morceaux de route au lieu de 9 (ceux sans
+    décor reçoivent un triangle caché), et les 3 derniers `tower_nfs` (107-109) n'ont plus d'acteur visible (liste
+    pleine) : 122 modèles posés.
+  - **Ciel / éclairage** : préréglage passé de Mount Haruna (hérité de Rio) à Amboy (désert de jour). Le vrai ciel de
+    Dubaï n'est pas un fichier séparé de Blur 1 (aucun `sky*` dans les paks, seuls des cubemaps `dontship`) : il
+    vient du préréglage (LightingSettings, « Sky picture ») ou des fichiers de niveau ; à chercher. L'éclairage des
+    modèles reste plat : le gabarit utilise une lumière propre unie (texture `_ipr0` = vert `glow`) ; les matériaux
+    Blur 2 ont des lightmaps (`_Lightmap0Tex`, UV2) qu'on pourrait cuire dans les atlas.
+  - **Transparence** (palmiers, grillages) non réglée : le shader du gabarit rend le transparent en noir, et le shader
+    des plantes (`default_NB_NL_NM_NV`) rendait tout noir le 2026-10-28 (sans lumière du niveau).
