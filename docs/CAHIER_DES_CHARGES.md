@@ -440,3 +440,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-09 | Projet K : feuille de route (murs/rampes de toutes les reverse → tracés IA roulés → IA entraînée → buff des IA par paramètres) |
 | 2026-11-09 | Projet K : idée d'IA buff par observation des joueurs (trajectoires, esquives, bonus) traduite en `.aid` + paramètres de profils |
 | 2026-11-09 | Projet K : IA buff = fusion profil d'origine × style joueur, poids différent par IA (pas de clones) |
+| 2026-11-09 | Boost d'adhérence IA : effet réel dans les grands virages serrés (observation joueur), invisible dans la moyenne du tour |
