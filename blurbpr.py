@@ -18,6 +18,7 @@ import numpy as np
 from PIL import Image
 
 REC = 28
+DATA_ALIGNMENT = 16
 FOURCC = {1: b"DXT1", 5: b"DXT5"}
 
 
@@ -100,6 +101,52 @@ class Bpr:
     def raw(self, name):
         r = self.recs[self.names.index(name)]
         return r, self.b[self.data0 + r[2]:self.data0 + r[2] + r[4]]
+
+    def rebuild(self, additions=()):
+        """Rebuild the bundle, preserving all existing image bytes and optionally appending new entries.
+
+        Each addition is (name, template_name, image_bytes); the template supplies the pixel format and dimensions.
+        The data start field is recomputed with the expanded table and names, then all image offsets are packed again.
+        """
+        entries = []
+        for name, rec in zip(self.names, self.recs):
+            raw = self.b[self.data0 + rec[2]:self.data0 + rec[2] + rec[4]]
+            entries.append((name, list(rec), raw))
+        used = set(self.names)
+        for name, template_name, raw in additions:
+            if name in used:
+                raise ValueError(f"duplicate BPR entry name: {name}")
+            template, _ = self.raw(template_name)
+            if len(raw) != template[4]:
+                raise ValueError(f"image size mismatch for {name}: {len(raw)} != {template[4]}")
+            rec = list(template)
+            rec[4] = len(raw)
+            entries.append((name, rec, raw))
+            used.add(name)
+
+        table_bytes = len(entries) * REC
+        names = bytearray()
+        data = bytearray()
+        records = []
+        for k, (name, rec, raw) in enumerate(entries):
+            rec[0] = REC if k < len(entries) - 1 else 0   # chained list: the game stops at the entry whose step is 0
+            encoded_name = name.encode("latin-1") + b"\0"
+            rec[1] = len(names)
+            data += b"\0" * (-len(data) % DATA_ALIGNMENT)
+            rec[2] = len(data)
+            rec[4] = len(raw)
+            names += encoded_name
+            data += raw
+            records.append(struct.pack("<2H4I4H", *rec))
+
+        table_names_size = table_bytes + len(names)
+        if table_names_size > 0xFFFF:
+            raise ValueError(f"BPR table and names exceed u16 size: {table_names_size}")
+        head = bytearray(self.head)
+        struct.pack_into("<HII", head, 6, table_names_size, table_bytes, len(data))
+        padding = self.b[self.data0 + struct.unpack_from("<I", self.b, 12)[0]:]
+        rebuilt = bytes(head) + b"".join(records) + bytes(names) + bytes(data) + padding
+        return Bpr(data=rebuilt)
 
     def spare_slot(self, fmt, mips, w, h, min_name=0, skip=()):
         """Index of the 2nd copy of a duplicated name whose 2 images are identical, in this format (free to reuse),

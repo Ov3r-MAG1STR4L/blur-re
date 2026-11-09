@@ -15,7 +15,7 @@ Loop: one line, driven the other way: grid on the other side, texts turned 180 d
 cfg keys: lines = {"orig_start", "start", "finish"} world (x, z) points; loop; front_gap (m, None = keep the
 original gap); max_behind (m, None = no limit); ground_lists + car_above (m) for the ground-object method.
 """
-import json
+import json, struct
 import numpy as np
 import blurroute
 import aidreverse
@@ -32,6 +32,7 @@ HARUNA = dict(
     loop=False, front_gap=20.0, max_behind=295.0,
     ground_lists=("#37", "#16"), car_above=2.0)   # 1.0 gave 0.7 m under a driven car
 CENTRE_GRID = True
+GROUND_ABOVE = 0.3   # m above a driving car's recorded height (working grids: +0.1 to +0.3, measured 2026-10-26)
 
 
 def _centre(n):
@@ -75,10 +76,36 @@ def start_line(actors):
     return None
 
 
+def _main_line_data(path):
+    d = blurroute.parse(open(path, "rb").read(), raw=True)
+    main = aidreverse.roles(d)["main"]
+    return [[struct.unpack_from("<2f4x2f", node, 48 + 25 * k)[2:]
+             for k in range(11)] for node in main["nodes"]]
+
+
+def _line_height(lines, frac):
+    grouped = {}
+    for x, y in lines:
+        grouped.setdefault(x, []).append(y)
+    lines = sorted((x, sum(ys) / len(ys)) for x, ys in grouped.items())
+    if len(lines) == 1:
+        return lines[0][1]
+    if frac <= lines[0][0]:
+        left, right = lines[:2]
+    elif frac >= lines[-1][0]:
+        left, right = lines[-2:]
+    else:
+        left, right = next((a, b) for a, b in zip(lines, lines[1:]) if a[0] <= frac <= b[0])
+    t = (frac - left[0]) / (right[0] - left[0])
+    return left[1] + t * (right[1] - left[1])
+
+
 def compute(orig_aid, rev_aid, actorpack_json, lists, cfg):
     A = json.load(open(actorpack_json, encoding="utf-8"))["LevelActorList"]
     P0, arc0, lat0, W0, loop = _route(orig_aid)
     P1, arc1, lat1, W1, _ = _route(rev_aid)
+    source_lines = _main_line_data(orig_aid) if cfg.get("surface_from_lines") else None
+    target_lines = _main_line_data(rev_aid) if source_lines else None
     L0, L1 = arc0[-1], arc1[-1]
 
     def near(P, xz):
@@ -97,7 +124,9 @@ def compute(orig_aid, rev_aid, actorpack_json, lists, cfg):
         a = arc0[i] - arc0[line0]
         if loop:
             a = (a + L0 / 2) % L0 - L0 / 2
-        return a, 0.5 + float(np.dot(p[[0, 2]] - P0[i, [0, 2]], lat0[i])) / W0[i], p[1] - P0[i, 1]
+        frac = 0.5 + float(np.dot(p[[0, 2]] - P0[i, [0, 2]], lat0[i])) / W0[i]
+        height = _line_height(source_lines[i], frac) if source_lines else P0[i, 1]
+        return a, frac, p[1] - height
 
     def place(along, frac, line):
         """Point `along` m after a reversed line, at `frac` across the road; returns (pos, j)."""
@@ -108,7 +137,13 @@ def compute(orig_aid, rev_aid, actorpack_json, lists, cfg):
         t = (s - arc1[j - 1]) / max(arc1[j] - arc1[j - 1], 1e-6)
         c = P1[j - 1] + t * (P1[j] - P1[j - 1])
         c[[0, 2]] += lat1[j] * (frac - 0.5) * W1[j]
-        return c, j
+        return c, j, t
+
+    def line_surface(j, t, frac):
+        n = len(target_lines)
+        y0 = _line_height(target_lines[(j - 1) % n], frac)
+        y1 = _line_height(target_lines[j % n], frac)
+        return y0 + t * (y1 - y0)
 
     def ground(p):
         k = near(P1, (p[0], p[2]))
@@ -117,6 +152,37 @@ def compute(orig_aid, rev_aid, actorpack_json, lists, cfg):
             ks = [near(P1, (r[0], r[2])) for r in refs[close]]
             return P1[k, 1] + float(np.median(refs[close, 1] - P1[ks, 1]))
         return P1[k, 1] + 12.0                        # typical Haruna offset
+
+    ground_pts = cfg.get("ground")       # (n, 3) car positions recorded while driving the ORIGINAL route (trackrec)
+
+    def on_driven_ground(pos, j, along, u):
+        """Measured ground beats the .aid (2026-10-26: Observatory 2R grid 80 m under the road, River 6R 10-26 m
+        beside it): the grid's columns spread over the driven width (1.5 m margin), at the driven height.
+        u = the slot's place across the grid (0 = one side column, 1 = the other): clamping each slot on its own put
+        the two cars of a row on the same edge (Speedway R); mapping u keeps the columns apart and in order."""
+        c, _, _ = place(along, 0.5, "start")
+        side = np.array([lat1[j][0], 0.0, lat1[j][1]])
+        fwd = along_road(j)
+        rel = ground_pts - c
+        local = ground_pts[(np.abs(rel @ fwd) < 4) & (np.hypot(rel[:, 0], rel[:, 2]) < 40)]
+        if len(local) < 5:
+            return pos
+        mode = cfg.get("ground_lateral")
+        if mode:
+            o = (local - c) @ side
+            lo, hi = np.percentile(o, 3) + 1.5, np.percentile(o, 97) - 1.5
+            x = float((pos - c) @ side)
+            if mode == "spread":
+                # sparse recording narrower than the grid (Speedway R): at least the grid's own width, centred on
+                # the driven middle, so the cars keep their original spacing
+                if hi - lo < grid_width:
+                    lo, hi = (lo + hi - grid_width) / 2, (lo + hi + grid_width) / 2
+                pos = pos + side * (lo + u * (hi - lo) - x)
+            elif np.hypot(local[:, 0] - pos[0], local[:, 2] - pos[2]).min() > 3.0 and lo < hi:
+                pos = pos + side * (np.clip(x, lo, hi) - x)      # off the driven area only, back to its edge
+        d = np.hypot(local[:, 0] - pos[0], local[:, 2] - pos[2])
+        pos[1] = float(np.median(local[d < max(3.0, np.sort(d)[min(4, len(d) - 1)]), 1])) + GROUND_ABOVE
+        return pos
 
     def along_road(j):
         n = len(P1)
@@ -141,8 +207,22 @@ def compute(orig_aid, rev_aid, actorpack_json, lists, cfg):
         for k, x in enumerate(actors):
             if k in meas:
                 along, frac, _ = meas[k]
-                pos, j = place(along, frac - mid, "start")
-                pos[1] = ground(pos) + cfg["car_above"] if refs is not None else P1[j, 1] + dy
+                pos, j, t = place(along, frac - mid, "start")
+                if refs is not None:
+                    pos[1] = ground(pos) + cfg["car_above"]
+                elif target_lines:
+                    pos[1] = line_surface(j, t, frac - mid) + dy
+                else:
+                    pos[1] = P1[j, 1] + dy
+                if ground_pts is not None:
+                    # the lateral axis may point either way: u follows the slot's actual side of the road centre
+                    fr = [f for _, f, _ in meas.values()]
+                    u = (frac - min(fr)) / max(max(fr) - min(fr), 1e-6)
+                    c0, _, _ = place(along, 0.5, "start")
+                    if np.dot(pos - c0, np.array([lat1[j][0], 0.0, lat1[j][1]])) * (u - 0.5) < 0:
+                        u = 1 - u
+                    grid_width = (max(fr) - min(fr)) * W1[j]
+                    pos = on_driven_ground(pos, j, along, u)
                 az = along_road(j)
                 ax = -np.array([lat1[j][0], 0.0, lat1[j][1]])
                 ax -= az * np.dot(ax, az)
@@ -153,15 +233,21 @@ def compute(orig_aid, rev_aid, actorpack_json, lists, cfg):
                 new.append((k, x["Name"], {"ax": ax, "ay": ay, "az": az, "aw": pos}))
         # texts on the reversed lines (the original ones sit on the painted lines), turned 180 deg; a
         # point-to-point route swaps them: the Finish text takes the old Start text's orientation and the reverse
-        texts = {x["Type"]: (k, x) for k, x in enumerate(actors) if x["Name"].startswith("Start_Text")}
-        if "Finish" in texts and "Start" in texts:
-            fin, st = texts["Finish"][1]["WorldMatrix"], texts["Start"][1]["WorldMatrix"]
-            for typ, (k, x) in texts.items():
+        # loops: EVERY text of the line (Start, Finish, Final = last lap, Checkpoint); only Start / Finish were turned
+        # before and "final lap" was seen from behind, mirrored (Brighton 1R, 2026-10-26)
+        # (some Start_Text_* have no Type field: KeyError in the first build of that fix)
+        texts = [(x.get("Type", ""), k, x) for k, x in enumerate(actors)
+                 if x and x.get("Name", "").startswith("Start_Text")
+                 and (loop or x.get("Type") in ("Start", "Finish"))]
+        by_type = {typ: x for typ, _, x in texts}
+        if "Finish" in by_type and "Start" in by_type:
+            fin, st = by_type["Finish"]["WorldMatrix"], by_type["Start"]["WorldMatrix"]
+            for typ, k, x in texts:
                 src = (st if typ == "Finish" else fin) if not loop else x["WorldMatrix"]
                 line = "finish" if typ == "Finish" else "start"
                 _, frac, h = measure(_vec(x["WorldMatrix"], "aw"))
-                pos, j = place(0.0, frac, line)
-                pos[1] = P1[j, 1] + h
+                pos, j, t = place(0.0, frac, line)
+                pos[1] = line_surface(j, t, frac) + h if target_lines else P1[j, 1] + h
                 new.append((k, x["Name"], {"ax": -_vec(src, "ax"), "ay": _vec(src, "ay"),
                                            "az": -_vec(src, "az"), "aw": pos}))
         out[key] = new
