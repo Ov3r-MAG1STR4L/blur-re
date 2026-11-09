@@ -1636,7 +1636,7 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
 - **Les villes Blur 2 ont leurs tracés de course** (Confirmé, novembre, bloc `Routes` des `levelphysics`) : sous-blocs
   `Route` pour Hong Kong 4, Dubaï 5, Miami 4, Detroit 4, Odessa 4, LA Freeway 4, LA City 4, Ski Resort 5,
   Liverpool 3 (North Africa, arènes `mp_*` et cartes de test : aucun). Dans Blur 1, un `Route` = la collision propre à
-  une course (la route roulée), le `.aid` étant trouvé par le nom de la route. Hors Liverpool, **aucun `.aid`** pour ces
+  une course (voir correction ci-dessous : barrières, pas la chaussée). Hors Liverpool, **aucun `.aid`** pour ces
   villes.
 - **uKER bloque précisément là** (Reddit r/BlurGame, novembre 2026) : son portage Blur 2 est à l'arrêt faute de
   données d'IA pour les niveaux Blur 2 (« impossible to play with AI drivers »). C'est notre domaine : `blurroute.py`
@@ -1644,3 +1644,11 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   (relevé de trajectoires en roulant), et `gen_aid.py` de Map Builder (MD, MIT : `.aid` fabriqué depuis une ligne
   centrale). Pistes : ligne centrale tirée des blocs `Route` (surface de la course), ou d'un tour roulé dans son build.
   Échos communauté (kareteki, Non vérifié) : modèles « kanzen » avec la physique Blur 2, et 2 nouvelles voitures modélisées.
+- **Correction : un bloc `Route` = les barrières propres à une course, pas la route** (2026-11-09, Brighton PC
+  superposé à ses 4 `.aid`). Chaque `Route` est un flux physique complet (`Head`, version 10, objets) dont le premier
+  objet est un maillage de type 0 lisible par `bmb_levelphysics` (en pointant `find_chunk` sur le bloc). Brighton :
+  route 0 vide (32 o), route 1 = 16 951 sommets placés **dans les épingles** aux deux bouts du circuit (murs qui
+  ferment les rues), routes 2 et 3 = premier objet minuscule (28 et 8 sommets) suivi de 0,6 et 0,8 Mo d'autres
+  données : après le maillage vient un u32 (= nombre de triangles pour les routes 2 et 3) puis une structure inconnue.
+  Conséquence : le tracé de course ne se déduit **pas** directement d'un `Route`. Il faut la ligne centrale d'un autre
+  côté : tour roulé (position de la voiture), ou réseau de routes de `Main` moins les barrières du `Route`.
