@@ -1523,3 +1523,19 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   blocs dans le même ordre (`Header`, `MdlDat`, `StrTab`, `Models`, `Element`, `Constr`, `NavDat`, `Advert`), noms en
   ASCII inchangés, champs 32 bits (entiers et flottants) et 16 bits inversés. Les 19 maps communes PC/X360 servent de
   référence pour valider le convertisseur. Premier test prévu : uk_brighton X360 → PC, puis uk_brighton_storm.
+- **Gros fichiers de Brighton X360 et PC** (2026-11-09) : `levelphysics` a la même taille (5 595 906 octets).
+  72 % des mots de 32 bits se retrouvent par inversion simple (32 bits : 50,7 %, deux fois 16 bits : 8,1 %, identiques :
+  13,3 %). Le reste demande la structure. `levelrender` : 12,7 Mo contre 11,7 (sans doute des shaders X360).
+  `levelstream` : 190 Mo contre 308 (textures Xenon). Mêmes blocs `ARCH`/`AR` (écrits `RA` sur PC).
+- **Tables `.bin` X360** : même format KSLF, magie `FLSK`, champs en gros-boutiste. Les mots de pointeur (table des
+  parents, pointeurs internes) sont deux u16 : il faut faire une rotation de 16 bits après lecture en gros-boutiste.
+  Schéma lisible. Décodage complet des enregistrements pas encore au point (12 tables sur 39) : les références des
+  tableaux sont à revoir. Copie de travail hors dépôt (`blurxt_be.py`).
+- **Voitures de Blur 2 au 31/08/2010** (Confirmé, noms des fiches `AmaxVehicle`, ici dans `Vehicles.bin` et non
+  `amax.bin`) : 86 fiches contre 81 sur PC. Seulement **2 nouveautés, des véhicules de trafic** (`Traffic_M939_Truck`,
+  `Traffic_Van`), et `Ford_FR100_Stock` retirée. Clés de texte nouvelles mais vides : `VEH_MOD_CAMARO_RAT_MOTORMASH`,
+  `VEH_MOD_S3_MOTORMASH/SLOW/SLOWER`, `VEH_MOD_VIPERGTSR_Aplus` (variantes prévues, sans fiche). Pas de nouvelles
+  voitures jouables dans ce prototype.
+- À suivre : d'après l'utilisateur, MD a mis à jour Blur Map Builder avec une intégration de modèles de véhicules
+  (reprenant les caractéristiques des voitures du jeu) et une caméra avec enregistrement des courses. Notre copie
+  locale de Map Builder (v1.0.0) n'en contient rien : récupérer la nouvelle version.
