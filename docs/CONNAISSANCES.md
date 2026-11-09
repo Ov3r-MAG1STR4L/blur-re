@@ -1558,3 +1558,24 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   - `vehicles.bin` refait (94 Ko) + `oldvehicles.bin` (146 Ko) + `oldracingphysics.bin` : la table des voitures a été
     remaniée entre août et novembre. Contenu à lire une fois le LZX décodé.
   - `gamedata\events\*.csv` (épreuves t1e6, bossbattle…).
+- **Décompression LZX X360 résolue** (2026-11-09, `lzx.py`, Confirmé : packs.bin, vehicles.loc, vehicles.bin et
+  oldvehicles.bin sortent aux tailles exactes) : trames XMemCompress `[FF, u16 BE usize, u16 BE csize]` ou
+  `[u16 BE csize]` (usize 0x8000), flux LZX **classique (CAB)** : mots de 16 bits petit-boutistes, un bit E8 au début
+  du flux, puis chaque bloc = type sur 3 bits (1 verbatim, 2 aligned, 3 uncompressed) + **taille sur 24 bits** (pas
+  de bit « taille par défaut »). Fenêtre de 128 Ko (17 bits, 34 slots). Piège : le premier en-tête occupe 28 bits
+  dans les deux variantes, l'erreur n'apparaît qu'au deuxième bloc. Lent en Python pur (environ 100 Ko/s).
+  `PAK2` v3 (`root.pak`) : noms sans dossier.
+- **Voitures de Blur 2 au 10/11/2010** (Confirmé, fiches `AmaxVehicle` de `vehicles.bin`) : liste **entièrement
+  refaite**, 45 fiches. L'ancienne liste de Blur 1 (83 fiches) est passée dans `oldvehicles.bin`. Nouvelles :
+  Arash AF10, Ariel Atom, BMW EfficientDynamics, BMW M1 Concept, BMW M3 Concept Race, Bentley Continental
+  Supersports, Bugatti Veyron, Cadillac Ecojet, Caparo T1, Camaro Concept, Challenger Concept, Dodge Charger,
+  Ferrari 599XX, Ferrari FXX, Ford Shelby GR1, Bronco Concept, Ford GT90, Ford Indigo, Gumpert Apollo, Hummer HX,
+  Infiniti Essence, Jaguar C-X75, Jeep Wrangler Rubicon, KTM X-Bow, Lamborghini Reventón, Range Rover Evoque, Light
+  Car Company Rocket, Mazda Furai, Mercedes LAPV6X, Mitsubishi Concept-RA, Nissan GT-R, Pagani Cinque, RUF CTR3,
+  RUF Dakara, RUF RGT8, Renault DeZir, Shelby GT500 et GT500 « Eleanor », Ultima GTR, plus Bowler Nemesis,
+  Corvette ZR1, Hummer H2 et Mégane Trophy (sans suffixe `_Stock`).
+- **Modèles 3D présents dans `root.pak`** pour ces nouvelles fiches : BMW M3 Concept Race (6,3 Mo, taille d'une
+  voiture PC complète, 4,6 à 6 Mo), Ultima GTR (1,1), Shelby GT500 (0,8), GT500 Eleanor, Evoque, LCC Rocket,
+  Corvette ZR1 (0,6), Bowler Nemesis (0,5), Hummer H2 (0,4), RUF RGT8 (0,3). Les petits sont probablement des
+  versions simplifiées ou incomplètes (à vérifier). Les 33 autres n'ont pas de modèle dans ce build. Un second `.lnk`
+  (`shortcut to levels.lnk`) est rangé dans root.pak (raccourci réseau du studio, inoffensif).

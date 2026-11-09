@@ -448,3 +448,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-09 | Prototype Blur 2 (X360) inspecté : sain, même moteur en gros-boutiste, 32 cartes inédites (conversion à écrire) |
 | 2026-11-09 | Blur 2 : level.level et physics = PC inversé, voitures = 2 véhicules de trafic seulement ; Map Builder récent intègre des véhicules (à récupérer) |
 | 2026-11-09 | Blur 2 du 10/11/2010 : sain, maps plus avancées (Dubaï, Hong Kong, Miami, Ski Resort, LA Freeway), IA de Liverpool, table voitures refaite ; pak X360 en LZX |
+| 2026-11-09 | Décodeur LZX X360 (`lzx.py`) ; Blur 2 novembre : 45 voitures refaites (Veyron, FXX, GT-R…), 10 modèles dont la BMW M3 Concept Race complète |
