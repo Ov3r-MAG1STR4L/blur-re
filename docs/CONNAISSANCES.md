@@ -1763,3 +1763,7 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   court » retenu contenait une chute → `route1_business_bay.aid` **faux au looping**. Pour Blur 1 : looping
   impossible (gravité, et `.aid` décrit la route vue de dessus : la boucle s'y replie sur elle-même). Il relève du format
   IA de Blur 2 (normale de piste par nœud) et d'un moteur à gravité « collée » (BlurRebuilt + Kanzen ?).
+- **Marina : tour roulé contre IA officielle** (`blur2_aid\dubai\marina_toi_vs_officiel.png`) : même circuit, même
+  longueur (3 546 m contre 3 536 et 3 679 m pour les deux boucles officielles), écart médian **9 m**, 90 % sous
+  19-30 m, max ~40 m (trajectoire de course qui coupe les virages, contre une ligne officielle en zigzag : nœuds
+  posés tous les ~30 m). Conclusion : un tour roulé proprement suffit pour les routes sans IA officielle.
