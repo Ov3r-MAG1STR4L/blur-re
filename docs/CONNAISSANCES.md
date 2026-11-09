@@ -1539,3 +1539,22 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
 - À suivre : d'après l'utilisateur, MD a mis à jour Blur Map Builder avec une intégration de modèles de véhicules
   (reprenant les caractéristiques des voitures du jeu) et une caméra avec enregistrement des courses. Notre copie
   locale de Map Builder (v1.0.0) n'en contient rien : récupérer la nouvelle version.
+
+### Prototype Blur 2 du 10/11/2010 (2026-11-09, liste de l'archive et du gamedata.pak)
+- `Downloads\Blur 2 (Nov 10, 2010 prototype).rar` : 3,6 Go, 287 fichiers, `Kanzen_Release.xex` + `Kanzen_Speed.xex`.
+  **Sain** : seul fichier Windows, `levels\liverpool\Shortcut to liverpool.lnk`, un raccourci vers le partage réseau
+  du studio `\BIZGAME01\KanzenDev\...` (aucune commande).
+- **Maps bien plus avancées qu'en août** (stream / render en Mo) : dubai 132/10,7 (août 79/7,2), ski_resort 79/13,
+  la_freeway 77/4 (nouvelle), la_longbeachdocks 80/9 (nouvelle version), miami 60/8, hong_kong 33/63, odessa 17/44,
+  la_city 16/31, liverpool 0,5/66, quickexport 11/78 ; arènes `mp_*` (barcelona, bowlarena, detriot, skiresort,
+  skyscrapers, temple) et cartes `_test_*`. Les maps PC Brighton, Hackney, LA, Tokyo, Haruna et SF n'y sont plus en
+  fichiers de niveau. Un render énorme pour un stream minuscule (liverpool) laisse penser que la répartition
+  géométrie/textures a changé (à vérifier).
+- `cache\gamedata.pak` X360 : magie `PAK2` (= `2KAP` à l'envers), même table de noms XOR. Dans les entrées de 40
+  octets, **page de départ = champ 7** (champ 6 sur PC). Les données ne sont ni zlib ni deflate : sans doute du LZX
+  Xbox 360 (XMemCompress), décompresseur à trouver. Contenu listé (303 fichiers) :
+  - **`.aid` d'IA pour Liverpool** : `route_01_docklands.aid`, `route_02_the_strand.aid`. Plus les `.aid` des maps PC
+    (même taille que sur PC pour usa_la_river_6).
+  - `vehicles.bin` refait (94 Ko) + `oldvehicles.bin` (146 Ko) + `oldracingphysics.bin` : la table des voitures a été
+    remaniée entre août et novembre. Contenu à lire une fois le LZX décodé.
+  - `gamedata\events\*.csv` (épreuves t1e6, bossbattle…).
