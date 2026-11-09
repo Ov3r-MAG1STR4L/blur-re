@@ -450,3 +450,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-09 | Blur 2 du 10/11/2010 : sain, maps plus avancées (Dubaï, Hong Kong, Miami, Ski Resort, LA Freeway), IA de Liverpool, table voitures refaite ; pak X360 en LZX |
 | 2026-11-09 | Décodeur LZX X360 (`lzx.py`) ; Blur 2 novembre : 45 voitures refaites (Veyron, FXX, GT-R…), 10 modèles dont la BMW M3 Concept Race complète |
 | 2026-11-09 | Blur 2 : root.pak X360 lu (morceaux LZX/stockés), BMW M3 Concept Race extraite = M3 Drift de Blur 1 retravaillée, textures manquantes |
+| 2026-11-09 | Découverte de BlurRebuilt (uKER) : Blur recompilé depuis la source fuitée, branche blurx orientée Blur 2 (Kanzen, Dubaï) |
