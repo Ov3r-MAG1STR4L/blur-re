@@ -1707,3 +1707,17 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   (départ) + point bleu (sens) → tour CSV (un point / 5 m, hauteur = quartile bas de la collision à 8 m) → `lap2aid`.
   Auto-test (cercle synthétique) : erreur < 3 px, départ < 10 px (1 px = 1,5 m à Hong Kong), sens correct.
   Limite : largeur unique (`--width`, 20 m par défaut), pas de recalage sur la chaussée.
+
+## Blur2DubaiTest (Unity, trouvé par l'utilisateur, 2026-11-09)
+- `Downloads\Blur2DubaiTest.zip` (220 Mo) : jeu Unity compilé le 11/09/2026, éditeur « Personal Prototype
+  Inspection », produit « Blur 2 Dubai Test ». **Defender : aucune menace.** Code maison : `Assembly-CSharp.dll` +
+  plugin `BrulGameInput.dll` (« Brul » = le moteur maison). Extrait dans `Jeux_WII\Blur2DubaiTest\`.
+- Construit sur le prototype X360 (sa liste `Blur2Survey\sky_rotation_offsets.csv` reprend les cartes de novembre) :
+  décode KSLF, `actorpack.xt`, shaders, éclairage et effets du build d'août (« Blur2Aug31LightingProfile »).
+  **Conduite** (`SpawnCarAtCamera`, `Blur2ChaseCamera`, `enterDriveMode`, physique `RP_CarDynamics` via
+  `Resources/Brul/VehicleSettings/car_dynamics.json`), caméras libres Blur 1 / Blur 2, traces d'IA (`aiControlled`,
+  `RouteNumber`, `trackedLogicNode`, `trackedPathNode`).
+- **Télémétrie de conduite** : variable d'environnement `BRUL_DRIVE_TELEMETRY=<secondes>` → lignes
+  `[Brul][drive-telemetry] t=… pos=(…)` dans `%USERPROFILE%\AppData\LocalLow\Personal Prototype Inspection\Blur 2
+  Dubai Test\Player.log`. Lanceur : `Jeux_WII\Blur2DubaiTest\Lancer avec enregistrement.bat` (0,25 s). But : rouler un
+  tour de Dubaï → `lap2aid`. Repère des coordonnées Unity / jeu à étalonner (z inversé ? échelle ?).
