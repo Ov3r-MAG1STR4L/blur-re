@@ -41,6 +41,96 @@ def resample(pts, step):
     return out
 
 
+def wall_points(route, step=1.0):
+    """2D+height points (x, y, z, game axes) every `step` m along the edges of the wall triangles (near vertical) of
+    the city colliders ('_5d' / '_15d': main walls + this route's barriers; other routes' barriers out)"""
+    import b2collision
+    out = []
+    for name, (v, t) in b2collision.colliders(UNITY).items():
+        if not ("_5d_" in name or "_15d_" in name) or (
+                name.startswith("physics_route_") and not name.startswith("physics_route_%d_" % route)):
+            continue
+        T = v[t]
+        n = np.cross(T[:, 1] - T[:, 0], T[:, 2] - T[:, 0])
+        T = T[np.abs(n[:, 1]) < 0.5 * np.linalg.norm(n, axis=1)]          # vertical faces only
+        for a, b in ((0, 1), (1, 2), (2, 0)):
+            L = np.linalg.norm(T[:, b] - T[:, a], axis=1)
+            for k in range(T.shape[0]):
+                m = max(2, int(L[k] / step) + 1)
+                out.append(np.linspace(T[k, a], T[k, b], m))
+    return np.concatenate(out)
+
+
+def fit_edges(pts, walls, tree, closed, reach=30.0, along=2.5, wmin=12.0, wmax=60.0):
+    """each centre point (dict x, z, w + y) moved to the middle of its two walls (searched along the lateral
+    axis within `reach` m, `along` m either side of the section, wall height within -1..+5 m of the road), w = the
+    distance between them (wmin..wmax); a side without a wall keeps the old half width. -> number of points fitted"""
+    P = np.array([(p["x"], p["z"]) for p in pts])
+    off, wid, lats, fitted = [], [], [], 0
+    for i, p in enumerate(pts):
+        t = P[(i + 1) % len(P)] - P[i - 1]
+        t = t / (np.linalg.norm(t) or 1)
+        lat = np.array([-t[1], t[0]])
+        lats.append(lat)
+        near = tree.query_ball_point(P[i], reach)
+        W = walls[near] if near else np.zeros((0, 3))
+        dv = W[:, [0, 2]] - P[i]
+        ok = (np.abs(dv @ t) < along) & (W[:, 1] > p["_y"] - 1) & (W[:, 1] < p["_y"] + 5)
+        s = dv[ok] @ lat
+        left, right = s[s > 1.5], -s[s < -1.5]
+        half = p["w"] / 2
+        l = left.min() if len(left) else half
+        r = right.min() if len(right) else half
+        fitted += bool(len(left) or len(right))
+        off.append((l - r) / 2)
+        wid.append(min(max(l + r, wmin), wmax))
+    k = 2                                             # running median over 5 points: posts, kerbs, pillar notches
+    idx = lambda i: [(i + j) % len(pts) for j in range(-k, k + 1)] if closed else range(max(0, i - k), min(len(pts), i + k + 1))
+    for i, p in enumerate(pts):
+        o, w = float(np.median([off[j] for j in idx(i)])), float(np.median([wid[j] for j in idx(i)]))
+        c = P[i] + lats[i] * o
+        p.update(x=round(float(c[0]), 2), z=round(float(c[1]), 2), w=round(w, 1))
+    return fitted
+
+
+def edges(mp, low, route, png):
+    """--edges: main road and branches fitted between the city walls (fit_edges) + a top view check image"""
+    from scipy.spatial import cKDTree
+    walls = wall_points(route)
+    tree = cKDTree(walls[:, [0, 2]])
+    lines = [mp["points"]] + [b["points"] for b in mp.get("branches") or []]
+    for k, pts in enumerate(lines):
+        for q in pts:
+            q["_y"] = q["h"] + low
+        n = fit_edges(pts, walls, tree, closed=k == 0)
+        for q in pts:
+            del q["_y"]
+        print("edges: %d/%d points fitted, width %.0f-%.0f m (median %.0f)" % (
+            n, len(pts), min(q["w"] for q in pts), max(q["w"] for q in pts), np.median([q["w"] for q in pts])))
+    mp["width"] = max(TUBE, max(q["w"] for pts in lines for q in pts) + 10)
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    allp = np.array([(q["x"], q["z"]) for pts in lines for q in pts])
+    lo, hi = allp.min(0) - 60, allp.max(0) + 60
+    W = walls[(walls[:, 0] > lo[0]) & (walls[:, 0] < hi[0]) & (walls[:, 2] > lo[1]) & (walls[:, 2] < hi[1])][::3]
+    fig = plt.figure(figsize=(14, 14))
+    plt.scatter(W[:, 0], W[:, 2], s=0.05, c="grey")
+    for k, pts in enumerate(lines):
+        P = np.array([(q["x"], q["z"]) for q in pts])
+        t = np.gradient(P, axis=0)
+        t /= np.linalg.norm(t, axis=1, keepdims=True)
+        lat = np.c_[-t[:, 1], t[:, 0]] * np.array([q["w"] for q in pts])[:, None] / 2
+        col = "blue" if k == 0 else "red"
+        plt.plot(*P.T, col, lw=0.6)
+        plt.plot(*(P + lat).T, col, lw=1.2)
+        plt.plot(*(P - lat).T, col, lw=1.2)
+    plt.gca().set_aspect("equal")
+    plt.title("murs (gris), route (bleu), chemins secondaires (rouge)")
+    fig.savefig(png, dpi=110, bbox_inches="tight")
+    plt.close(fig)
+
+
 def branches(actorpack, lap, cum_pts, low, out_dir, far=30.0, min_len=120.0):
     """official AI branches (b2official: the non-closed AIDataActor of every race) that leave the race tube (> far m
     from the lap; the tube is TUBE m wide) -> Map Builder branches {from_m, to_m, points} (ends projected on the
@@ -92,7 +182,7 @@ def world(lap, pickups, name, city, grid):
     base = json.load(open(os.path.join(config.BMB_GAME, "Blur Map Builder", "maps", "world.json")))
     loc = base["locations"][0]
     loc.update(id="b2_" + city.lower(), name=city)
-    loc["lighting"] = {"preset": "Amboy (desert day)",       # sunny desert sky (the base had Rio's Mount Haruna)
+    loc["lighting"] = {"preset": "LA River (day)",           # Amboy (desert) came out overexposed (user, 2026-11-09)
                        "values": {"object_light": [1.0, 0.97, 0.92, 0.14], "object_light_up": [0.6]}}
     m = loc["maps"][0]
     m.update(id="b2_%s_1" % city.lower(), name=name, laps=3, width=TUBE, auto_bridges=False, branches=[],
@@ -113,12 +203,13 @@ def decor(files, models, nfs):
     slots = [(J.NFS_UID + 2 * k + 1, "nfs_%03d.model" % k) for k in range(nfs)]
     slots += [(u, "road_21_%02d.model" % k) for k, u in enumerate(J.road_slots(ap))]
     pad = (J.DECOR_VERTS, 6 * max(len(t) for _, t in models))      # faces doubled: 6 indices per triangle
-    mats = []
+    mats, skipped = [], []
     for uid, fname in slots:
         try:
             mats.append((J.slot_matrix(ap, uid), fname))
         except AssertionError as e:                        # no single visible actor (with branches: road pieces)
             print("slot", fname, "skipped:", e)
+            skipped.append(fname)
     slots = mats
     for k, ((mat, fname), (img, tris)) in enumerate(zip(slots, models)):
         J.write_model(tris, "b2_%03d" % k, mat, os.path.join(flat, fname), 110,
@@ -126,7 +217,8 @@ def decor(files, models, nfs):
     from PIL import Image
     blank = Image.new("RGBA", models[0][0].size, (0, 0, 0, 255))
     hidden = [([(0, -50, 0), (0.01, -50, 0), (0, -50, 0.01)], [(0, 0)] * 3)]   # Map Builder's glowing road gone
-    for k, (mat, fname) in enumerate(slots[len(models):], len(models)):
+    eye = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 0]]
+    for k, (mat, fname) in enumerate(slots[len(models):] + [(eye, f) for f in skipped], len(models)):
         J.write_model(hidden, "empty", mat, os.path.join(flat, fname), 110, salt=0x42324400 + k, pad=pad, image=blank)
     print(min(len(slots), len(models)), "scenery models in", len(slots), "slots (the others emptied)")
 
@@ -138,15 +230,19 @@ def main():
     ap.add_argument("--route", type=int, required=True)
     ap.add_argument("--grid", type=float, nargs=2, required=True, metavar=("X", "Z"))
     ap.add_argument("--decor", action="store_true")
+    ap.add_argument("--edges", action="store_true", help="road centre and width fitted between the walls")
     ap.add_argument("--official", metavar="ACTORPACK", help="X360 actorpack.xt of the city: official AI branches")
     a = ap.parse_args()
     lap = [(float(r["x"]), float(r["y"]), float(r["z"])) for r in csv.DictReader(open(a.lap))]
     pk = json.load(open(a.pickups))["pickups"]
     w, low, npk, res = world(lap, pk, a.name, a.city, a.grid)
     laps = [a.lap]
+    mp = w["locations"][0]["maps"][0]
     if a.official:
-        w["locations"][0]["maps"][0]["branches"], extra = branches(a.official, lap, res, low, a.out)
+        mp["branches"], extra = branches(a.official, lap, res, low, a.out)
         laps += extra
+    if a.edges:
+        edges(mp, low, a.route, os.path.join(a.out, "bords.png"))
     wfile = os.path.join(config.BMB_GAME, "Blur Map Builder", "maps", "world.json")
     if not os.path.exists(wfile + ".bak"):
         shutil.copyfile(wfile, wfile + ".bak")
