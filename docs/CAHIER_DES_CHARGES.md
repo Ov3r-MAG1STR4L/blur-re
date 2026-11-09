@@ -332,6 +332,9 @@ Ordre décidé par l'utilisateur :
    - bonus → fréquence et contexte d'usage (quel bonus, à quelle distance, cible devant/derrière) → paramètres d'armes des profils.
    À faire : (a) identifier en mémoire l'état des bonus et les événements de tir ; (b) enregistreur long
    (`trackrec.py` étendu) ; (c) cartographier quels paramètres de profil IA influencent quoi (un essai mesuré par paramètre).
+   **Fusion, pas copie (2026-11-09)** : pour éviter 19 clones, chaque IA garde son profil d'origine et on le
+   mélange avec le style du joueur selon un poids propre à chaque IA (ex. 20 % à 80 %) ; lignes `.aid` variées
+   (plusieurs tours du joueur, décalages latéraux) ; usage des bonus mélangé de la même façon.
    Collecte : uniquement en LAN / `Blur_test` ou sur ses propres courses, jamais via lecture mémoire pendant les
    parties en ligne AMAX (risque anti-triche, données d'autres joueurs).
 
@@ -436,3 +439,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-05 | Route 66 reverse : murs invisibles (dont un tracé enregistré qui ferme un chemin), puis premiers objets ajoutés à une carte existante (néons bleus, `neon.py`) |
 | 2026-11-09 | Projet K : feuille de route (murs/rampes de toutes les reverse → tracés IA roulés → IA entraînée → buff des IA par paramètres) |
 | 2026-11-09 | Projet K : idée d'IA buff par observation des joueurs (trajectoires, esquives, bonus) traduite en `.aid` + paramètres de profils |
+| 2026-11-09 | Projet K : IA buff = fusion profil d'origine × style joueur, poids différent par IA (pas de clones) |
