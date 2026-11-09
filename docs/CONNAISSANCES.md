@@ -1731,3 +1731,22 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   sans téléportation ; le plus court est gardé). **Premier `.aid` de Blur 2 : `Jeux_WII\blur2_aid\dubai\
   dubai_island_1.aid`** (3 163 m, 792 points, largeur 20 m fixe), avec le tour et l'image des trajets. Pas
   essayable dans Blur PC (map absente). Le tour inclut la variante prise ce tour-là.
+- **Fichiers Unity de Blur2DubaiTest** (UnityPy, `ResourceManager.m_Container`) : 4 302 maillages (dont les
+  collisions `physics_main_part_*` et `physics_route_N_*`), 2 467 textures, 4 074 matériaux, 29 `MeshCollider`,
+  77 `TextAsset` : `Brul/RaceSpline/<ville>/RaceSpline_rN` (format **BRSP** v4 : u32 version, u32 n, n × 15 f32 =
+  centre, trajectoire, vecteur latéral, bord gauche, bord droit, en axes Unity), `race_spline_sources` (les splines des
+  maps Blur 1 et de Liverpool viennent des `.aid` ; **Dubaï route 4 vient d'un acteur IA de son `actorpack.xt`**),
+  `<ville>.json` (bonus officiels avec type et position), `car_dynamics`, `cars`, `surface_grip`…
+- **Données de course officielles de Blur 2 dans les `actorpack.xt` de novembre** (Confirmé, `x360/b2race.py`) :
+  `StartPosition` (`PosActorCreate` : `WorldMatrix` Mat43 à +12, position à +48 ; `StartNumber` à +60) = **grilles de
+  départ** de chaque course, dans toutes les villes (Dubaï 4 grilles, Hong Kong 84 places, Detroit 68…) ;
+  `VehicleSplinelessLapIncrement` (3 à 5 par ville) ; **IA au format Blur 2** = `AIDataActor` (`WorldMatrix` +12,
+  `AIData` +60 : u32 boucle fermée, +64 tableau `linkNodes` = pointeur (rot16 → début de tranche) + nombre) dont les
+  nœuds `AILinkNode` (72 o : position, **normale de piste**, direction, profil, liens) sont une **tranche** du bloc
+  de nœuds de l'enregistrement, **dans le repère de l'acteur** (monde = aw + p·[ax, ay, az]) ; `AIRaceLine` =
+  points (pointeur de nœud, distance, largeur). IA présente seulement à **Dubaï** (2 courses, même boucle ouest de
+  122 nœuds, 1 et 12 embranchements, 94-100 % des nœuds à moins de 8 m de la route), **Miami** (1 boucle de 86 nœuds,
+  3,0 km) et **Ski Resort** (6 acteurs, pas de boucle fermée : course point à point, non traitée).
+- `b2official.py` : `actorpack.xt` X360 → boucles IA officielles + grilles → tours CSV + `.aid` (via `lap2aid`,
+  largeur fixe : profil des nœuds pas décodé) + image. Résultats dans `Jeux_WII\blur2_aid\<ville>\` (Dubaï 2,
+  Miami 1). Lecteurs X360 rangés dans `x360/` (`blurxt_be`, `blurpak_be`, `b2race`).
