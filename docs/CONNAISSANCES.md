@@ -718,6 +718,10 @@ Trois couches :
 - **Essai adhérence** (`Air_Default` FrictionCoefficient 1,212 → 1,6, LA River 3) : **aucun effet** (même écart, IA
   217 → 216 km/h de moyenne). Joueur 270 km/h de moyenne contre 217 pour les IA (+25 %) : l'écart vient sans doute
   des **voitures** (rang moyen des IA Hard 44, `ai_average_mp_rank_hard`), pas du pilotage. À vérifier.
+  **Correction (observation de l'utilisateur en jeu, 2026-11-09)** : le boost d'adhérence a bien un effet, mais
+  localisé : dans les **grands virages serrés**, les IA gardent une vitesse élevée sans perdre le contrôle, alors que
+  le joueur doit lever le pied. La moyenne sur le tour ne le montre pas. Essai concerné (`AI_FRICTION` ou
+  `CAREER_AI_SURFACE`) non précisé ; à mesurer par tronçon de virage (**Moyen**).
 - **Profil de vitesse le long de la piste** (LA River 3, tronçons de 400 m) : dans les virages, IA ≈ joueur (96–98 %) ;
   **en ligne droite, les IA plafonnent vers 240–250 km/h** (joueur 300–370 en enchaînant les nitros). Après chaque
   nitro, une IA reperd ≈ 100 km/h en 2 à 4 s (médiane sur 207 nitros), souvent sous sa vitesse d'avant ; joueur 65.
