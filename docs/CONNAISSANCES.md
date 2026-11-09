@@ -1767,3 +1767,13 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   longueur (3 546 m contre 3 536 et 3 679 m pour les deux boucles officielles), écart médian **9 m**, 90 % sous
   19-30 m, max ~40 m (trajectoire de course qui coupe les virages, contre une ligne officielle en zigzag : nœuds
   posés tous les ~30 m). Conclusion : un tour roulé proprement suffit pour les routes sans IA officielle.
+- **Collision de Dubaï au format Blur 1** (2026-11-09, `b2collision.py`, hors jeu) : les 29 `MeshCollider` de
+  Blur2DubaiTest (UnityPy, matrice monde par la chaîne de `Transform`, jeu = (-x, y, -z) : **98 % des sommets à moins
+  de 2 m de la collision X360**). Suffixes : `17f` chaussée (249 k triangles, 63 % au sol), `15d` murs (58 k, 71 %
+  verticaux), `8017f` autre surface roulable (40 k), `physics_route_N_*` barrières de la route N (murs seuls).
+  Méthode du projet J (`addramp.mesh_object` + `insert_objects`, base = `Blur_test\levels\flat_earth`) : triangles à
+  moins de 60 m des tours de la route, barrières des autres routes retirées. **Marina (route 4)** : 113 102 triangles →
+  444 objets, `Level.levelphysics` de 12,8 Mo ; 1er objet relu ; la voiture du tour roulé est à **0,2 m** au-dessus
+  de ce sol en médiane (sauts au-delà). Pas encore essayé en jeu : il faut aussi déplacer la grille de départ de la
+  map de base sur Dubaï et installer `route4_marina.aid`. Lancer `b2collision.py` **sans `-I`** (UnityPy est installé
+  pour l'utilisateur).
