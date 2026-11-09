@@ -1676,3 +1676,10 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
 - Pistes communauté (kareteki) : MP Temple serait le décor du menu multijoueur de Blur 2 (comme la voiture sur une piste
   de LA dans le menu de Blur 1) ; « redlinesnative » (francophone) a publié du contenu coupé de la bêta de Blur 1
   (livrées, piste de LA coupée, zone MotorMash de Brighton, anciens murs à flèches jaunes, ancienne interface jaune).
+- **Deuxième essai de `lap2aid` (version corrigée, enregistrement 282 s)** : 357 sauts de position (plus de 60 m en
+  0,25 s), dont **242 simultanés** (10 voitures ou plus au même instant = redémarrage, fin de course ou réordonnancement
+  des voitures, à exclure). Restent ~115 réapparitions individuelles ≈ **1,3 / min / IA** (≈ 5 au 1er essai). Vitesse
+  médiane avant un saut : 235 km/h (épaves de combat probables). Zone la plus touchée : autour du nœud 280 du vrai
+  mainLoop (30 sauts). Écart au milieu de la route : médiane 6-7 m, p90 ~14 m. **Il manque une référence** : même
+  mesure avec le `.aid` d'origine (`uk_brighton_1.aid.orig`) pour séparer les épaves normales des défauts du générateur.
+  Méthode : toujours exclure les sauts simultanés.
