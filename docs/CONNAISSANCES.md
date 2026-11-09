@@ -1603,3 +1603,7 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
 - Pour nous : leur source fait autorité pour les formats (`.model`, `.level*`, KSLF, pak). Notre travail X360
   (LZX, `PAK2`, inversion d'octets, listes de voitures et de cartes) peut les intéresser, et inversement. Sujet
   juridique plus sensible qu'un mod de données : c'est du code source fuité.
+- Échos de la communauté (Discord Blur, 2026-11-09, rapportés par l'utilisateur, Non vérifié) : quelqu'un annonce
+  « bientôt » des maps de Blur 2 jouables en LAN. uKER porterait du contenu Blur 2 vers l'ancien moteur, disposerait
+  d'un build Blur 2 inédit et compte s'attaquer à Blur DS. Le correctif 60 i/s de BlurRebuilt n'a pas encore été
+  vérifié par la communauté (« so far none did it right »).
