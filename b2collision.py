@@ -65,13 +65,15 @@ def lap_points(paths):
     return np.array(pts)
 
 
-def build(cols, base, route, laps, radius):
+def build(cols, base, route, laps, radius, dy=0.0):
+    """dy: height shift (a Map Builder map puts the route's lowest point 1 m above its floor: dy = 1 - lowest y)"""
     from scipy.spatial import cKDTree
     near = cKDTree(lap_points(laps))
     tris = []
     for name, (v, t) in cols.items():
         if name.startswith("physics_route_") and not name.startswith("physics_route_%d_" % route):
             continue                                   # another route's barriers
+        v = v + (0, dy, 0)
         c = v[t].mean(1)
         d, k = near.query(c[:, [0, 2]])
         for i in np.where(d < radius)[0]:
@@ -100,9 +102,10 @@ def main():
     ap.add_argument("--route", type=int, required=True)
     ap.add_argument("laps", nargs="+")
     ap.add_argument("--radius", type=float, default=60.0)
+    ap.add_argument("--dy", type=float, default=0.0)
     a = ap.parse_args()
     cols = colliders(a.unity_data)
-    data, ntri, nobj = build(cols, a.base, a.route, a.laps, a.radius)
+    data, ntri, nobj = build(cols, a.base, a.route, a.laps, a.radius, a.dy)
     open(a.out, "wb").write(data)
     print("%d colliders, %d triangles kept (<= %.0f m of the laps) -> %d objects, %d bytes -> %s"
           % (len(cols), ntri, a.radius, nobj, len(data), a.out))

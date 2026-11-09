@@ -1777,3 +1777,13 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   de ce sol en médiane (sauts au-delà). Pas encore essayé en jeu : il faut aussi déplacer la grille de départ de la
   map de base sur Dubaï et installer `route4_marina.aid`. Lancer `b2collision.py` **sans `-I`** (UnityPy est installé
   pour l'utilisateur).
+- **Map Marina (Dubaï Blur 2) construite et installée dans Blur_test** (2026-11-09, `make_b2_map.py`, pas encore
+  essayée) : `world.json` de Map Builder depuis le tour roulé (295 points / 12 m, largeur 30, tube 50, hauteur = y
+  - 2,4 m, le point le plus bas), départ `start_m` 3 454 = grille officielle (-435 ; 473), **38 bonus officiels**
+  (positions du `dubai.json` de Blur2DubaiTest en **axes Unity** : x et z à inverser), build Map Builder (variables
+  du projet J : `NFS_NO_WALLS`, `NFS_FLOOR_Y=-5`), fichiers récupérés par `make_nfs_map.main` (ses chemins BMB /
+  WORK / OUT viennent de `sys.argv` à l'import : à fixer), collision Dubaï ajoutée (107 355 triangles, 422 objets,
+  décalée de 1 - 2,4 m). Visible : la route de Map Builder (tuiles) le long du tracé, pas encore le décor Dubaï.
+  Sortie `blur_extracted\mods\b2_dubai_marina\files` (51 fichiers), installée dans Blur_test (52 fichiers remplacés,
+  sauvegardés dans `backup_blur_test`, dont la map perso précédente du dossier `flat_earth` : Rio). Ancien
+  `world.json` de Map Builder gardé en `world.json.bak`.
