@@ -24,7 +24,8 @@ local M = {
 local NEXT_MSG = "LeftThumb"
 local NEXT_KEY1, NEXT_KEY2 = "CMN_9", "CMN_0"
 -- UIEnums.SoundEffect event whose ingameui.baf wave make_reverse.music_key_sounds replaced with our sound
-local SFX_NEXT = "BossRaceLose"
+-- (BossRaceLose first: the game also played the 6.4 s career defeat jingle on it)
+local SFX_NEXT = "MotorMashCount"
 local COOLDOWN = 2.0          -- s between two skips (anti-spam)
 local SWITCH_FRAMES = 45      -- frames between "off" and "on" (> the graph's 0.5 s RaceStartDelay)
 
@@ -121,6 +122,18 @@ end
 
 local function on_message(msg)
 	if not in_race then
+		return
+	end
+	-- race over: the results screens open without a GoScreen the plugin sees, and the key still played its sound in
+	-- the menus (player, 2026-10-26); the next race screen (GoScreen) turns it back on
+	local flow = UIEnums.GameFlowMessage
+	if msg == flow.OutroStarted or msg == flow.QuitRace or msg == flow.RaceFailed then
+		in_race = false
+		if pending_on > 0 then             -- ended mid-skip: leave the player's option as it was
+			pending_on = -1
+			set_music(on_value)
+		end
+		log("race over")
 		return
 	end
 	local name = tostring(msg)
