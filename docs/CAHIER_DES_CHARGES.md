@@ -311,6 +311,18 @@ Limites attendues : géométrie Wii basse définition, tracé IA à retoucher, p
 `sunlounger`) ; (2) plusieurs matériaux par modèle ; (3) éclairage d'ombre précalculé dans les couleurs de sommets ;
 (4) à plus long terme : décoder `.levelrender` pour la route et les bâtiments éclairés.
 
+## Projet K : feuille de route reverse et IA (2026-11-09)
+
+Ordre décidé par l'utilisateur :
+1. **Murs et rampes pour toutes les maps reverse** : généraliser ce qui a été fait sur Route 66 (murs invisibles,
+   rampes ajoutées à la collision comme East River Run), map par map.
+2. **Tracés des IA** : l'utilisateur roule des tours sur chaque reverse (`trackrec.py`) ; ces tours servent de
+   ligne de course IA (`.aid`) à la place de l'inversion automatique.
+3. **IA entraînée** : essayer d'entraîner notre propre pilote (lecture seule de la mémoire pour l'état ; entrées
+   clavier/manette simulées ; Blur se met en pause sans focus, donc fenêtre au premier plan ou copie dédiée).
+4. **Buff des IA via les paramètres de Blur** : profils IA (`rldatabase.bin`, profils déjà repérés en mémoire),
+   sans patch d'exe, testé dans `Blur_test` uniquement.
+
 ## Journal
 
 | Date | Avancée |
@@ -410,3 +422,4 @@ Limites attendues : géométrie Wii basse définition, tracé IA à retoucher, p
 | 2026-11-05 | Pack LAN réversible (`lan_pack/`) : installateur / désinstallateur testés hors jeu (retour à l'identique). Ensuite : Hardcore, onglet Reverse |
 | 2026-11-05 | Hardcore construit (studio12, installé dans Blur_test, pack LAN rafraîchi). Ensuite : test en jeu, embranchements reverse map par map |
 | 2026-11-05 | Route 66 reverse : murs invisibles (dont un tracé enregistré qui ferme un chemin), puis premiers objets ajoutés à une carte existante (néons bleus, `neon.py`) |
+| 2026-11-09 | Projet K : feuille de route (murs/rampes de toutes les reverse → tracés IA roulés → IA entraînée → buff des IA par paramètres) |
