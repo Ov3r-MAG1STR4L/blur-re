@@ -1589,3 +1589,17 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   que ces textures « apparaîtront manquantes en jeu » : carrosserie en cours de refonte, textures pas encore
   branchées. M3 Drift PC : 4,2 Mo (exportée le 12/03/2010). Conversion X360 → PC du `.model` à faire (inversion
   d'octets bloc par bloc, comme `level.level`, et textures Xenon).
+
+## Projet tiers : BlurRebuilt (uKER) (2026-11-09, lecture du dépôt GitHub public)
+- https://github.com/uKER/BlurRebuilt (C++, dernier push le 07/11/2026). Blur **recompilé à partir du code source
+  PC qui a fuité** (« untouched leak », 20 770 fichiers, source de juin 2010) : DirectX 11, HDR, 64 bits, images par
+  seconde débloquées, latence audio réduite, ultra-large. **Multi en ligne via Amax Emu** (`AmaxClientHost.exe`). Ne
+  remplace pas `Blur.exe` : `BlurRebuilt.exe` + `fx11\` à copier dans le dossier du jeu (pour nous : dans la copie de
+  test seulement), et la sauvegarde `%APPDATA%\Bizarre Creations\Blur` est partagée.
+- Branches de travail (seule `master`, la fuite intacte + outils, est publique) : `blur1pc`, `blur1multi` et
+  **`blurx`**, qui semble viser le contenu de Blur 2. Le code fuité contient `amax/library/Kanzen` (nom de code de
+  Blur 2), on y lit « Blur 2 code recovered from Kanzen », une tâche « Business Bay » (quartier de Dubaï), et l'outil
+  s'appelle `blur2pc_automation`. Règle du projet : « PC serializers are the format authority ».
+- Pour nous : leur source fait autorité pour les formats (`.model`, `.level*`, KSLF, pak). Notre travail X360
+  (LZX, `PAK2`, inversion d'octets, listes de voitures et de cartes) peut les intéresser, et inversement. Sujet
+  juridique plus sensible qu'un mod de données : c'est du code source fuité.
