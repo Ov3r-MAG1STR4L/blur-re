@@ -1607,3 +1607,10 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   « bientôt » des maps de Blur 2 jouables en LAN. uKER porterait du contenu Blur 2 vers l'ancien moteur, disposerait
   d'un build Blur 2 inédit et compte s'attaquer à Blur DS. Le correctif 60 i/s de BlurRebuilt n'a pas encore été
   vérifié par la communauté (« so far none did it right »).
+- **Fiches des 45 voitures Blur 2 (novembre) = coquilles vides** (Confirmé, lecture directe des champs
+  `AmaxVehicle`, BE, 4 octets par champ) : classe A, toutes les stats d'interface (`UiSpeed`, `UiAcceleration`,
+  `UiGrip`…) et `GameplayTopSpeed` à 0, style `Balanced`, poids `Light`, santé `Medium`. Seuls le nom et le
+  constructeur diffèrent. 39 fiches pointent vers la **même** physique par défaut (réf. 287). Seules 5 ont leur
+  propre physique (`dynamics`) : Corvette ZR1, Shelby GT500 Eleanor, Ultima GTR, Bowler Nemesis, LCC Rocket (ce sont
+  aussi celles qui ont un modèle). `Traffic_Van` (2e fiche) est une copie de `Shelby_MustangGT500_Stock` de Blur 1
+  (classe C, vitesse 174). Les voitures n'avaient pas encore été réglées quand le projet s'est arrêté.
