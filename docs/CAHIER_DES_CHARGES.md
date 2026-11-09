@@ -447,3 +447,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-09 | Projet K : joueur enregistré en physique d'origine seulement ; IA = style joueur simplifié, virages serrés gardés à l'IA |
 | 2026-11-09 | Prototype Blur 2 (X360) inspecté : sain, même moteur en gros-boutiste, 32 cartes inédites (conversion à écrire) |
 | 2026-11-09 | Blur 2 : level.level et physics = PC inversé, voitures = 2 véhicules de trafic seulement ; Map Builder récent intègre des véhicules (à récupérer) |
+| 2026-11-09 | Blur 2 du 10/11/2010 : sain, maps plus avancées (Dubaï, Hong Kong, Miami, Ski Resort, LA Freeway), IA de Liverpool, table voitures refaite ; pak X360 en LZX |
