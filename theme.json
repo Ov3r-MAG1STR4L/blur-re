@@ -1,0 +1,106 @@
+{
+  "_doc": "Green Arcade Nitro V2 - Lignes droites (amp=0) et vert foncé appliqué sur toutes les couches.",
+  "speed": 1.85,
+  "wall": {
+    "face_offset": 0.52,
+    "fade": true,
+    "span": "auto",
+    "top": 0.2,
+    "bottom": 2.8,
+    "layers": [
+      {
+        "repeat": 1.0,
+        "direction": 1,
+        "curves": [
+          {
+            "centre": 0.5,
+            "width": 0.105,
+            "glow": 0.95,
+            "intensity": 1.2,
+            "color": [0, 180, 75],
+            "core": [255, 255, 255],
+            "head": 0.95,
+            "tail": 0.65,
+            "linear": true,
+            "base": 0.0,
+            "amp": 0.0,
+            "freq": 0.0,
+            "phase": 0.0
+          }
+        ]
+      },
+      {
+        "repeat": 1.15,
+        "direction": 1,
+        "curves": [
+          {
+            "centre": 0.27,
+            "width": 0.032,
+            "glow": 0.55,
+            "intensity": 0.85,
+            "color": [0, 180, 75],
+            "core": [255, 255, 255],
+            "head": 0.65,
+            "tail": 0.35,
+            "linear": true,
+            "base": 0.0,
+            "amp": 0.0,
+            "freq": 0.0,
+            "phase": 0.0
+          },
+          {
+            "centre": 0.74,
+            "width": 0.038,
+            "glow": 0.6,
+            "intensity": 0.9,
+            "color": [0, 180, 75],
+            "core": [255, 255, 255],
+            "head": 0.55,
+            "tail": 0.4,
+            "linear": true,
+            "base": 0.0,
+            "amp": 0.0,
+            "freq": 0.0,
+            "phase": 0.0
+          }
+        ]
+      },
+      {
+        "repeat": 0.88,
+        "direction": 1,
+        "curves": [
+          {
+            "centre": 0.12,
+            "width": 0.065,
+            "glow": 0.42,
+            "intensity": 0.48,
+            "color": [0, 180, 75],
+            "core": [255, 255, 255],
+            "head": 0.25,
+            "tail": 0.55,
+            "linear": true,
+            "base": 0.0,
+            "amp": 0.0,
+            "freq": 0.0,
+            "phase": 0.0
+          },
+          {
+            "centre": 0.87,
+            "width": 0.055,
+            "glow": 0.4,
+            "intensity": 0.42,
+            "color": [0, 180, 75],
+            "core": [255, 255, 255],
+            "head": 0.3,
+            "tail": 0.5,
+            "linear": true,
+            "base": 0.0,
+            "amp": 0.0,
+            "freq": 0.0,
+            "phase": 0.0
+          }
+        ]
+      }
+    ]
+  }
+}
