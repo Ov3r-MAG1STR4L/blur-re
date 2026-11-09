@@ -1514,3 +1514,12 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   la_city, ski_resort, kanzen_la_downtown/river, uk_brighton_storm/sunny, mparena_* (carpark, skiresort,
   skyscrapers, superbowleasy/hard, temple), circuit_dom, ai_circuit_* (loop, corkscrew, jump, wallride), et des
   cartes de test (physics, traffic, vehicle, graphical). Également `debug_values.xml` / `debug_frontend.xml`.
+- **Maps exploitables** (taille de `levelrender`) : la plupart des cartes « nouvelles » n'ont **aucun visuel**
+  (render 0 Mo, collisions seules) : detroit, hong_kong, la_city, liverpool, odessa, north_africa, ski_resort, miami,
+  ai_circuit_*. Maps texturées inédites : uk_brighton_storm (156 Mo stream), uk_brighton_sunny (178), kanzen_la_river
+  (91), dubai (79, partielle ?), kanzen_la_downtown (50), circuit_dom, mparena_superbowleasy. Aucun `.aid` (IA) dans
+  l'archive. Les streams X360 font environ 60 % de la taille PC (textures Xenon compressées/tilées, Probable).
+- **`level.level` X360 = PC avec les octets inversés** (Confirmé sur uk_brighton, 1802 contre 1803 octets) : mêmes
+  blocs dans le même ordre (`Header`, `MdlDat`, `StrTab`, `Models`, `Element`, `Constr`, `NavDat`, `Advert`), noms en
+  ASCII inchangés, champs 32 bits (entiers et flottants) et 16 bits inversés. Les 19 maps communes PC/X360 servent de
+  référence pour valider le convertisseur. Premier test prévu : uk_brighton X360 → PC, puis uk_brighton_storm.
