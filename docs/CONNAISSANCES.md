@@ -1721,3 +1721,13 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   `[Brul][drive-telemetry] t=… pos=(…)` dans `%USERPROFILE%\AppData\LocalLow\Personal Prototype Inspection\Blur 2
   Dubai Test\Player.log`. Lanceur : `Jeux_WII\Blur2DubaiTest\Lancer avec enregistrement.bat` (0,25 s). But : rouler un
   tour de Dubaï → `lap2aid`. Repère des coordonnées Unity / jeu à étalonner (z inversé ? échelle ?).
+- **Première conduite sur Dubaï Blur 2** (2026-11-09, utilisateur, ~9 min, 2 027 positions) : jeu fluide, map
+  affichée, textures parfois absentes (« 2242 native DDS textures »), chute dans le vide en sortant de la zone.
+  Commandes : F1 conduite / caméra libre, Q accélérer, A freiner, flèches, R remettre la voiture, Backspace grille de
+  collision, Échap menu. **Repère : jeu = (-x, y, -z) Unity** (88 % des points à moins de 5 m de la collision X360,
+  hauteur à 0,3 m près). Trajets visibles sur la carte : boucle **Dubai Island** au nord (4 tours de 3,16 à 3,25 km,
+  ~60 s), deux variantes à l'est (chemin intérieur et extérieur), sortie vers le sud.
+- `brul2lap.py` : `Player.log` → tour CSV (référence sur la boucle, tour = retour à moins de 15 m après 1 500 m,
+  sans téléportation ; le plus court est gardé). **Premier `.aid` de Blur 2 : `Jeux_WII\blur2_aid\dubai\
+  dubai_island_1.aid`** (3 163 m, 792 points, largeur 20 m fixe), avec le tour et l'image des trajets. Pas
+  essayable dans Blur PC (map absente). Le tour inclut la variante prise ce tour-là.
