@@ -1660,3 +1660,12 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   route d'un vrai `.aid`) sur `uk_brighton_1` : 741 points contre 742, écart des centres médian **0,94 m**, 95 % ≤
   6,2 m, max 9,4 m (virages lissés par l'échantillonnage à 20 m). Fichier généré installé dans `Blur_test` à la place
   de `uk_brighton_1.aid` (original gardé en `uk_brighton_1.aid.orig`) : **pas encore essayé en jeu**.
+- **Premier essai en jeu de `lap2aid` (Promenade Loop = `uk_brighton_1`, 2026-11-09, enregistrement `trackrec --all`
+  150 s)** : les IA suivent la forme du circuit, mais réapparaissent **12 à 20 fois chacune** (environ toutes les
+  10 s), sont à 15 m ou plus du milieu de la route 10 % du temps, et 3 IA restent bloquées 40 à 70 % du temps ;
+  l'arrivée était au mauvais endroit (signalé par l'utilisateur). Causes trouvées :
+  1. porte Start posée à l'index par défaut de Map Builder (-493 ; 244 au lieu de -112 ; 85) → départ = début du tour ;
+  2. largeur fixe de 24 m (route réelle 13 à 32 m) et un nœud de 119 m au raccord → largeur par point ;
+  3. couloir LOGIC (voitures hors couloir remises en piste) = largeur de la route, alors que le vrai est **15 m plus
+     large en médiane** (9,9 à 31,6) → marge de 8 m de chaque côté (`LOGIC_MARGIN`, médiane obtenue 44,4 m, vraie 38,7).
+  Version corrigée installée dans `Blur_test`, **pas encore réessayée**. Rappel : l'auto-test ne compare que la forme.
