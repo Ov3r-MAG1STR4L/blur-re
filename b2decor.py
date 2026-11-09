@@ -48,12 +48,16 @@ def extract(data_dir, laps, radius=300.0):
             if not mp.path_id:
                 continue
             mat = mp.read()
-            te = dict(mat.m_SavedProperties.m_TexEnvs).get("_BaseMap")
+            envs = dict(mat.m_SavedProperties.m_TexEnvs)
+            te = envs.get("_BaseMap")
             if te is None or not te.m_Texture.path_id:
                 continue
             k = te.m_Texture.path_id
             if k not in tex:
                 tex[k] = te.m_Texture.read().image.convert("RGBA")
+                ec = envs.get("_EnvironmentCube")
+                if ec is not None and ec.m_Texture.path_id:    # alpha = reflection mask, not cutout (as HP
+                    tex[k].putalpha(255)                       # glass): Blur 1 drew the windows black
             sc, of = (te.m_Scale.x, te.m_Scale.y), (te.m_Offset.x, te.m_Offset.y)
             for t in np.array(sub, int).reshape(-1, 3):
                 if d[t].min() <= radius:
