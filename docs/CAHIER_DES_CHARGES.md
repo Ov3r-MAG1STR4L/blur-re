@@ -323,6 +323,18 @@ Ordre décidé par l'utilisateur :
 4. **Buff des IA via les paramètres de Blur** : profils IA (`rldatabase.bin`, profils déjà repérés en mémoire),
    sans patch d'exe, testé dans `Blur_test` uniquement.
 
+   **Idée de l'utilisateur (2026-11-09)** : un agent qui observe la façon de jouer des joueurs sur une longue période
+   (trajectoires, mouvements, esquives, usage des bonus) puis « fusionne » ces données avec l'IA du jeu.
+   Faisabilité : l'IA de Blur est pilotée par des données (lignes `.aid`, profils et paramètres), pas par un modèle
+   qu'on peut remplacer sans patch d'exe. La fusion passe donc par la traduction des données observées :
+   - trajectoires → lignes de course `.aid` (moyenne des meilleurs tours par segment) ;
+   - mouvements / esquives → paramètres d'agressivité, de dépassement, d'évitement des profils IA ;
+   - bonus → fréquence et contexte d'usage (quel bonus, à quelle distance, cible devant/derrière) → paramètres d'armes des profils.
+   À faire : (a) identifier en mémoire l'état des bonus et les événements de tir ; (b) enregistreur long
+   (`trackrec.py` étendu) ; (c) cartographier quels paramètres de profil IA influencent quoi (un essai mesuré par paramètre).
+   Collecte : uniquement en LAN / `Blur_test` ou sur ses propres courses, jamais via lecture mémoire pendant les
+   parties en ligne AMAX (risque anti-triche, données d'autres joueurs).
+
 ## Journal
 
 | Date | Avancée |
@@ -423,3 +435,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-05 | Hardcore construit (studio12, installé dans Blur_test, pack LAN rafraîchi). Ensuite : test en jeu, embranchements reverse map par map |
 | 2026-11-05 | Route 66 reverse : murs invisibles (dont un tracé enregistré qui ferme un chemin), puis premiers objets ajoutés à une carte existante (néons bleus, `neon.py`) |
 | 2026-11-09 | Projet K : feuille de route (murs/rampes de toutes les reverse → tracés IA roulés → IA entraînée → buff des IA par paramètres) |
+| 2026-11-09 | Projet K : idée d'IA buff par observation des joueurs (trajectoires, esquives, bonus) traduite en `.aid` + paramètres de profils |
