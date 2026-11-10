@@ -1858,3 +1858,18 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   portique Start/Finish de Blur 2** est le rendu `draws_d0076` (texture `tex_1161_s0_startfin_diff`), x -650..-644,
   z 495..524, y 17..22 : ~210 m après la grille officielle dans le sens de course (vers l'ouest). Départ déplacé là
   (`--grid -647 509.5` → `start_m` 131) ; sol continu sur 108 m derrière, sur toute la largeur. À vérifier en jeu.
+- **Marina, 4e passe (2026-11-10, à essayer en jeu)** :
+  - Retour en jeu de la 3e passe : rendu « étrangement moche ». Cause principale supposée : l'éclairage approché
+    donnait **une teinte par triangle** → grandes taches claires / sombres sur sol et murs. **Retiré**
+    (`b2decor.LEVELS = (1.0,)`), atlas 1 024 gardés (plus de textures par modèle).
+  - **Bords par conduite le long des murs** (`make_b2_map --drive PLAYER_LOG…`, `drive_edges`) : l'utilisateur a roulé
+    Marina dans Blur2DubaiTest collé au mur gauche puis droit, chemins secondaires compris (2 journaux, 6 199 positions
+    dont ~5 300 au sol ; beaucoup de chutes dans le vide = trous de la collision Unity). Chaque position est rattachée
+    au tracé le plus proche (principal ou embranchement) ; à chaque point, positions extrêmes à gauche / droite à
+    ± 4 m le long de la section, + 1,5 m → centre et largeur (médiane sur 5 points) ; côté jamais longé = calage sur
+    les murs (`--edges`). Résultat : principal 15-60 m (médiane 37), embranchements 12-52 m. Image
+    `blur2_aid\dubai\marina_bords_conduite.png`. Piège : le journal mêle 4 lignes par mesure (forces, suspension,
+    moteur) ; seule la ligne `pos=` compte (`brul2lap.RX`).
+  - Collision : rayon 60 → **150 m** autour des tracés (144 491 triangles).
+  - Restes : si le nombre d'emplacements de route baisse, d'anciens `road_21_KK` restent dans Blur_test (cette fois
+    `road_21_29`/`30`, originaux remis depuis `backup_blur_test`).

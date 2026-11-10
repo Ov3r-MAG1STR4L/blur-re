@@ -26,7 +26,7 @@ def keep(go, tr, route):
 
 
 SUN = np.array([0.45, 0.8, 0.4]) / np.linalg.norm([0.45, 0.8, 0.4])   # game axes; a guess (high sun)
-LEVELS = (0.4, 0.55, 0.7, 0.85, 1.0)                                  # brightness steps: one atlas cell each
+LEVELS = (1.0,)     # baked shading off: one shade per triangle made blotches in game (2026-11-10); was (0.4..1.0)
 
 
 def light(P, lm, uv1):

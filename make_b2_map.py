@@ -93,6 +93,49 @@ def fit_edges(pts, walls, tree, closed, reach=30.0, along=2.5, wmin=12.0, wmax=6
     return fitted
 
 
+def drive_edges(mp, logs, margin=1.5, along=4.0, reach=40.0):
+    """--drive: edges from wall-hugging drives in Blur2DubaiTest (brul2lap.read, game axes; falls into the void and
+    stops dropped). Each driven position goes to its nearest line (main road or a branch); at each line point the
+    leftmost / rightmost positions within `along` m of the section (+ margin) give the edges; the point is moved to
+    their middle, w = their distance (median over 5 points). A side never driven keeps the wall fit (--edges)."""
+    import brul2lap
+    from scipy.spatial import cKDTree
+    a = np.vstack([brul2lap.read(f) for f in logs])
+    a = a[a[:, 4] > 5]
+    G = a[:, [1, 3]]
+    lines = [mp["points"]] + [b["points"] for b in mp.get("branches") or []]
+    dense = [np.array([(q["x"], q["z"]) for q in pts]) for pts in lines]
+    owner = np.argmin([cKDTree(D).query(G)[0] for D in dense], axis=0)
+    for k, (pts, P) in enumerate(zip(lines, dense)):
+        g = G[owner == k]
+        tree = cKDTree(g) if len(g) else None
+        off, wid = [], []
+        for i, q in enumerate(pts):
+            t = P[(i + 1) % len(P)] - P[i - 1] if k == 0 else P[min(i + 1, len(P) - 1)] - P[max(i - 1, 0)]
+            t = t / (np.linalg.norm(t) or 1)
+            lat = np.array([-t[1], t[0]])
+            near = tree.query_ball_point(P[i], reach) if tree is not None else []
+            dv = g[near] - P[i] if near else np.zeros((0, 2))
+            dv = dv[np.abs(dv @ t) < along] if len(dv) else dv
+            sl = dv @ lat
+            half = q["w"] / 2
+            l = sl.max() + margin if len(sl) and sl.max() > 0 else half
+            r = -sl.min() + margin if len(sl) and sl.min() < 0 else half
+            off.append((l - r) / 2)
+            wid.append(min(max(l + r, 12.0), 60.0))
+        for i, q in enumerate(pts):
+            j = [(i + d) % len(pts) for d in range(-2, 3)] if k == 0 else range(max(0, i - 2), min(len(pts), i + 3))
+            o, w = float(np.median([off[x] for x in j])), float(np.median([wid[x] for x in j]))
+            t = P[(i + 1) % len(P)] - P[i - 1] if k == 0 else P[min(i + 1, len(P) - 1)] - P[max(i - 1, 0)]
+            t = t / (np.linalg.norm(t) or 1)
+            c = P[i] + np.array([-t[1], t[0]]) * o
+            q.update(x=round(float(c[0]), 2), z=round(float(c[1]), 2), w=round(w, 1))
+        print("drive: line %d, %d positions, width %.0f-%.0f m (median %.0f)" % (
+            k, len(g), min(q["w"] for q in pts), max(q["w"] for q in pts), np.median([q["w"] for q in pts])))
+    mp["width"] = max(TUBE, max(q["w"] for pts in lines for q in pts) + 10)
+    return a
+
+
 def edges(mp, low, route, png):
     """--edges: main road and branches fitted between the city walls (fit_edges) + a top view check image"""
     from scipy.spatial import cKDTree
@@ -108,6 +151,13 @@ def edges(mp, low, route, png):
         print("edges: %d/%d points fitted, width %.0f-%.0f m (median %.0f)" % (
             n, len(pts), min(q["w"] for q in pts), max(q["w"] for q in pts), np.median([q["w"] for q in pts])))
     mp["width"] = max(TUBE, max(q["w"] for pts in lines for q in pts) + 10)
+    edges_png(mp, route, png, walls)
+
+
+def edges_png(mp, route, png, walls=None, drive=None):
+    """top view: walls (grey), drives (green), main road (blue) and branches (red) with their edges"""
+    lines = [mp["points"]] + [b["points"] for b in mp.get("branches") or []]
+    walls = wall_points(route) if walls is None else walls
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -116,6 +166,8 @@ def edges(mp, low, route, png):
     W = walls[(walls[:, 0] > lo[0]) & (walls[:, 0] < hi[0]) & (walls[:, 2] > lo[1]) & (walls[:, 2] < hi[1])][::3]
     fig = plt.figure(figsize=(14, 14))
     plt.scatter(W[:, 0], W[:, 2], s=0.05, c="grey")
+    if drive is not None:
+        plt.scatter(drive[:, 1], drive[:, 3], s=0.3, c="green")
     for k, pts in enumerate(lines):
         P = np.array([(q["x"], q["z"]) for q in pts])
         t = np.gradient(P, axis=0)
@@ -231,6 +283,7 @@ def main():
     ap.add_argument("--grid", type=float, nargs=2, required=True, metavar=("X", "Z"))
     ap.add_argument("--decor", action="store_true")
     ap.add_argument("--edges", action="store_true", help="road centre and width fitted between the walls")
+    ap.add_argument("--drive", nargs="+", metavar="PLAYER_LOG", help="wall-hugging drives: edges from them")
     ap.add_argument("--official", metavar="ACTORPACK", help="X360 actorpack.xt of the city: official AI branches")
     a = ap.parse_args()
     lap = [(float(r["x"]), float(r["y"]), float(r["z"])) for r in csv.DictReader(open(a.lap))]
@@ -243,6 +296,8 @@ def main():
         laps += extra
     if a.edges:
         edges(mp, low, a.route, os.path.join(a.out, "bords.png"))
+    if a.drive:
+        edges_png(mp, a.route, os.path.join(a.out, "bords_conduite.png"), drive=drive_edges(mp, a.drive))
     wfile = os.path.join(config.BMB_GAME, "Blur Map Builder", "maps", "world.json")
     if not os.path.exists(wfile + ".bak"):
         shutil.copyfile(wfile, wfile + ".bak")
@@ -270,7 +325,7 @@ def main():
         decor(files, models, nfs)
     phys = os.path.join(files, "levels", "flat_earth", "level.levelphysics")
     subprocess.run([sys.executable, os.path.join(HERE, "b2collision.py"), UNITY, phys, phys, "--route", str(a.route),
-                    *laps, "--dy", str(1.0 - low)], check=True)
+                    *laps, "--radius", "150", "--dy", str(1.0 - low)], check=True)   # all the Unity collision near the route
 
 
 if __name__ == "__main__":
