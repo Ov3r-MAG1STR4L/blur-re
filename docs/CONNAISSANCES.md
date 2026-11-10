@@ -1945,3 +1945,19 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     Probable (2 enregistrements). Sur la course 27 (boucle de Marina) : **wallride** = segments 0-3, nœuds 38 → 41
     (x -1 088..-1 117, z -305..-415, y 12, ~115 m, côté ouest) ; **tunnel** = segments 4-8, nœuds 41 → 50
     (jusqu'à x -1 168..-1 199, z -415..-685, y 12 → 61-64 : partie surélevée du virage sud-ouest). Absents du build du 10.
+- **Fusion 10 nov (référence) + 4 nov (2026-11-10, `b2nov04.fusion` → `blur2_aid\dubai\dubai_fusion_nov10_nov04.json`)** :
+  - **Récupéré** : 135 bonus du 4 (`dubai_bonus_nov04.json`), segments wallride / tunnel (`dubai_ia_meta_nov04.json`).
+  - **Bonus, rien fusionné** : `PickupPosition` en deux groupes d'enregistrements : groupe 9 (52) identique dans les
+    deux builds ; groupe **19 du 4 (83) = ancienne version du groupe 20 du 10 (48)**, même route (à l'est, ≥ 57 m de
+    Marina). Les « 35 de plus » ne sont pas des ajouts mais la différence entre deux versions du même groupe :
+    les fusionner doublerait cette route avec son ancien placement. Aucun conflit de position (rien à < 10 m d'un bonus
+    du 10), mais écartés ; gardés à part (`not_merged_nov04`). Les **100 bonus du 10 sont préservés** et sont
+    exactement ceux de Unity (`dubai.json`, 100/100 à < 2 m) déjà utilisés par la map.
+  - **Métadonnées d'IA, fusionnables** : les nœuds 38-50 de la course 27 sont identiques dans les deux builds (mêmes
+    indices, mêmes positions) → les segments s'appliquent tels quels à l'IA du 10 (`compatible_nov10: true`).
+    Emplacement : virage sud-ouest de Marina, la partie haute du tour (tour roulé à 62-66 m aux nœuds 46-48, max 77 m
+    à -1 202 ; -635). **Wallride** = approche au sol (nœuds 38-41, y 12) ; **tunnel** = la montée et la partie
+    haute (nœuds 41-50, y 12 → 62). Ce n'est pas le looping de Business Bay (route 1).
+  - **À tester** : l'effet réel de ces métadonnées dans le jeu (Blur 1 n'a pas de type équivalent connu ; pour un
+    `.aid` Blur 1 ce serait au mieux une zone de vitesse / largeur) ; la lecture des champs (1er segment, nombre,
+    drapeaux 16 / 1) repose sur deux enregistrements. Rien n'est appliqué à la map ni à Blur_test.

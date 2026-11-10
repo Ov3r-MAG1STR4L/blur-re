@@ -461,3 +461,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-10 | Marina en mode mixte : façades cuites avec la formule du shader Blur 2, sols en atlas nets ; à essayer en jeu |
 | 2026-11-10 | Comparaison des builds Blur 2 du 4 et du 10 novembre : Dubaï plus avancé le 10 (lightmaps, IA) ; le 4 apporte bonus et métadonnées IA (wallride, tunnel) + audio X360 |
 | 2026-11-10 | Compléments du 4 novembre (b2nov04.py) : 83 bonus hors Marina, wallride et tunnel situés sur Marina (virage sud-ouest) |
+| 2026-11-10 | Fusion 10/4 nov : 100 bonus du 10 gardés, 83 du 4 écartés (ancienne version d un groupe), wallride/tunnel compatibles avec l IA du 10 ; effet en jeu à tester |

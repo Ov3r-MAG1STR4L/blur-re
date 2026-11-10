@@ -44,6 +44,33 @@ def meta(r):
     return out
 
 
+def fusion(r4, r10, out):
+    """Nov 10 stays the reference. Pickups: its 100 kept; Nov 4's PickupPosition group 19 (83) is the OLD version of
+    Nov 10's group 20 (48, another route, east of Marina): not merged, kept apart as candidates. AI metadata: merged
+    when its link nodes are the same in both builds (same index, < 0.1 m) -> spans written with node indices."""
+    a, c = pickups(r4), pickups(r10)
+    g4 = [i for b, s, i, _ in r4["PickupPosition"]]
+    keep = [{"position": p.round(2).tolist(), "source": "nov10"} for p in c]
+    cand = [{"position": p.round(2).tolist(), "group": g, "nearest_nov10_m": round(float(np.linalg.norm(c - p, axis=1).min()), 1)}
+            for p, g in zip(a, g4) if np.linalg.norm(c - p, axis=1).min() >= 2]
+    meta_ok = []
+    for m in meta(r4):
+        W4 = _nodes(r4, m["race"]); W10 = _nodes(r10, m["race"])
+        ok = len(W10) == len(W4) and all(np.linalg.norm(W4[i] - W10[i]) < 0.1 for i in range(len(W4)))
+        meta_ok.append(dict(m, compatible_nov10=bool(ok)))
+    json.dump({"reference": "nov10", "pickups": keep, "not_merged_nov04": cand,
+               "ai_meta": meta_ok}, open(os.path.join(out, "dubai_fusion_nov10_nov04.json"), "w"), indent=1)
+    print("fusion:", len(keep), "bonus du 10 gardes,", len(cand), "du 4 non fusionnes ;",
+          [(m["kind"], m["compatible_nov10"]) for m in meta_ok])
+
+
+def _nodes(r, idx):
+    nodes = np.array([(f(x, 0), f(x, 4), f(x, 8)) for x, s, i, _ in r["AILinkNode"] if i == idx])
+    act = next(x for x, s, i, _ in r["AIDataActor"] if i == idx)
+    m = np.array([[f(act, 12 + 4 * k) for k in range(3 * j, 3 * j + 3)] for j in range(4)])
+    return m[3] + nodes @ m[:3]
+
+
 def main():
     p4, p10, lap, out = sys.argv[1:5]
     r4, r10 = b2race.read(p4), b2race.read(p10)
@@ -68,6 +95,7 @@ def main():
     plt.gca().set_aspect("equal")
     plt.legend()
     fig.savefig(os.path.join(out, "dubai_nov04_complements.png"), dpi=90, bbox_inches="tight")
+    fusion(r4, r10, out)
     print(len(a), "bonus (", int((d >= 2).sum()), "absents du 10 ) ;", [(m["kind"], len(m["spans"])) for m in mt], "->", out)
 
 
