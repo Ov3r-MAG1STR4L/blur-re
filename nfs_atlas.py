@@ -160,7 +160,7 @@ def rebuild(auto_pickups=True, log=print):
                NFS_SPOTS=os.path.abspath(spots), NFS_DRAW=str(M.DECOR_DRAW), NFS_NO_WALLS="1", NFS_FLOOR_Y="-5",
                NFS_GRID_GAP=str(GRID_GAP))
     r = subprocess.run([sys.executable, "build.py"], cwd=os.path.join(M.BMB, "map_builder", "flat_earth"), env=env,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, timeout=1800)     # 30 min : un blocage ne gèle plus le studio
     for line in r.stdout.splitlines():
         if line.startswith("NFS"):
             print(line)

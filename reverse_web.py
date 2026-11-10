@@ -20,11 +20,20 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import aidreverse, blurbpr, blurloc, camcycle, blurroute, bmb_levelphysics, gridreverse, maplock, make_reverse as MR  # noqa: E402
 from blurxt import XT  # noqa: E402
+import studio_safe as SAFE  # noqa: E402
 
-PORT = 8766
+PORT = int(os.environ.get("BLURRE_PORT", 8766))        # autre port : tests (tests/test_studios_http.py)
 NEAR = 60.0           # m : triangles de collision gardés autour de la ligne centrale (tout le niveau = trop lourd)
 BUILD = None
 _cache = {}
+ROUTE_NAMES = {r["new"] for r in MR.ROUTES}
+
+
+def route_name(name):
+    """liste blanche : seul un nom de route de make_reverse.ROUTES sert à former un chemin (edits, locks, cams)"""
+    if name not in ROUTE_NAMES:
+        raise SAFE.Refus("route inconnue : %r" % (name,), 404)
+    return name
 
 
 def names():
@@ -184,9 +193,18 @@ class Handler(SimpleHTTPRequestHandler):
     def send_json(self, obj, code=200):
         self.send_bytes(json.dumps(obj).encode(), "application/json", code)
 
+    def garde(self, ecriture):
+        """True (et réponse 403 envoyée) si la requête vient d'un autre site ou d'un autre nom d'hôte"""
+        r = SAFE.refus(self.headers, PORT, ecriture)
+        if r:
+            self.send_json({"error": r}, 403)
+        return bool(r)
+
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
         q = {k: v[0] for k, v in urllib.parse.parse_qs(u.query).items()}
+        if self.garde(ecriture=False):
+            return None
         try:
             if u.path == "/":
                 self.path = "/reverse.html"
@@ -195,49 +213,65 @@ class Handler(SimpleHTTPRequestHandler):
                     dict(name=r["new"], orig=r["orig"], locked=maplock.locked(r["new"]),
                          place=NAMES[r["new"]][0], title=NAMES[r["new"]][1]) for r in MR.ROUTES]))
             elif u.path == "/api/route":
-                return self.send_json(with_edits(route_data(q["name"])))
+                return self.send_json(with_edits(route_data(route_name(q.get("name")))))
             elif u.path == "/api/cams":          # caméras d'intro : celles de la route d'origine (reprises par l'inversée)
-                r = next(r for r in MR.ROUTES if r["new"] == q["name"])
+                r = next(r for r in MR.ROUTES if r["new"] == route_name(q.get("name")))
                 shots, unread = camcycle.route_shots(r["orig"])
                 shots = [s for s in shots if s["field"] != "PackCameraSequence"]   # course perso : le plan multi
                 cf = os.path.join(maplock.EDITS, q["name"] + ".cams.json")
                 own = json.load(open(cf)) if os.path.isfile(cf) else {}
                 return self.send_json(dict(shots=shots, unread=unread, own=own))
             elif u.path == "/thumb":
-                return self.send_bytes(thumb_png(q["name"]), "image/png")
+                return self.send_bytes(thumb_png(route_name(q.get("name"))), "image/png")
+        except SAFE.Refus as ex:
+            return self.send_json({"error": str(ex)}, ex.code)
         except Exception as ex:  # noqa: BLE001  (l'erreur complète part dans la page)
             return self.send_json({"error": f"{type(ex).__name__}: {ex}"}, 500)
         return super().do_GET()
 
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
-        q = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)))
-        name = q["name"]
+        if self.garde(ecriture=True):
+            return None
         try:
+            q = SAFE.lire_json(self)
+            if not isinstance(q, dict):
+                raise SAFE.Refus("objet JSON attendu")
+            name = route_name(q.get("name"))
             if u.path == "/api/cams":          # caméra d'intro perso {vista|pack: [{eye, look}]} : écrite par make_reverse
                 os.makedirs(maplock.EDITS, exist_ok=True)
                 cf = os.path.join(maplock.EDITS, name + ".cams.json")
+                if not isinstance(q.get("cams"), dict):
+                    raise SAFE.Refus("cams {vista|pack: [...]} attendu")
                 if any(q["cams"].values()):
-                    json.dump(q["cams"], open(cf, "w"), indent=1)
+                    SAFE.ecrire_json(cf, q["cams"])
                 elif os.path.isfile(cf):
-                    os.remove(cf)
+                    os.replace(cf, cf + ".bak")      # vidé : l'ancienne version reste en .bak (rien de supprimé)
                 return self.send_json({"ok": True})
             if u.path == "/api/edits":         # retouches : appliquées par make_reverse au prochain build
                 if maplock.locked(name):
                     raise ValueError(f"{name} est verrouillée : la déverrouiller avant de la retoucher")
                 os.makedirs(maplock.EDITS, exist_ok=True)
                 ef = os.path.join(maplock.EDITS, name + ".json")
+                if not isinstance(q.get("edits"), (dict, list)):
+                    raise SAFE.Refus("edits attendu")
                 if q["edits"]:
-                    json.dump(q["edits"], open(ef, "w"), indent=1)
+                    SAFE.ecrire_json(ef, q["edits"])
                 elif os.path.isfile(ef):
-                    os.remove(ef)
+                    os.replace(ef, ef + ".bak")      # vidé : l'ancienne version reste en .bak (rien de supprimé)
                 return self.send_json({"ok": True})
             if u.path == "/api/lock":
                 maplock.lock(name, BUILD)
             elif u.path == "/api/unlock":
-                os.remove(os.path.join(maplock.LOCKS, name + ".json"))
+                lf = os.path.join(maplock.LOCKS, name + ".json")
+                if os.path.isfile(lf):
+                    os.replace(lf, lf + ".bak")      # le verrou levé reste récupérable
+            else:
+                return self.send_json({"error": "inconnu : " + u.path}, 404)
             _cache.pop(name, None)
             return self.send_json({"ok": True, "locked": maplock.locked(name)})
+        except SAFE.Refus as ex:
+            return self.send_json({"error": str(ex)}, ex.code)
         except (Exception, SystemExit) as ex:  # noqa: BLE001
             return self.send_json({"error": str(ex)}, 500)
 
@@ -247,7 +281,12 @@ if __name__ == "__main__":
         (d for d in glob.glob(os.path.join(MR.E, "mods", "reverse*")) if os.path.isdir(d)), key=os.path.getmtime)
     print("build :", os.path.abspath(BUILD))
     NAMES = names()
-    srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    ThreadingHTTPServer.allow_reuse_address = False      # Windows : sinon un 2e studio écoute le même port sans erreur
+    try:
+        srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    except OSError:
+        sys.exit("Reverse Studio est déjà ouvert (port %d) : ferme l'autre fenêtre, puis relance." % PORT)
     print("Reverse Studio : http://127.0.0.1:%d  (Ctrl+C pour arrêter)" % PORT)
-    threading.Timer(1.0, lambda: webbrowser.open("http://127.0.0.1:%d" % PORT)).start()
+    if not os.environ.get("BLURRE_NO_BROWSER"):
+        threading.Timer(1.0, lambda: webbrowser.open("http://127.0.0.1:%d" % PORT)).start()
     srv.serve_forever()

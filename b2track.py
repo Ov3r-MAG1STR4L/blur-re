@@ -23,6 +23,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
 import urllib.parse
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -34,8 +35,9 @@ sys.path.insert(0, HERE)
 import brul2lap  # noqa: E402
 import config  # noqa: E402
 import make_b2_map  # noqa: E402
+import studio_safe as SAFE  # noqa: E402
 
-PORT = 8767
+PORT = int(os.environ.get("BLURRE_PORT", 8767))        # autre port : tests (tests/test_studios_http.py)
 AID = os.path.join(config.JEUX, "blur2_aid")
 DUBAI = os.path.join(AID, "dubai")
 JOURNAUX = os.path.join(AID, "journaux")
@@ -123,32 +125,57 @@ def drives(route):
 
 
 class Build:
-    """one make_b2_map run at a time; its output kept for the page"""
+    """one make_b2_map run at a time; its output kept for the page. Killed (whole process tree) after LIMIT s.
+    On success, files of OUT/files not rewritten by this build (left by an older one) go to OUT/perimes/<date>."""
+    LIMIT = 3600
     lock = threading.Lock()
-    proc, lines, key, code = None, [], None, None
+    proc, lines, key, code, t0 = None, [], None, None, 0.0
+
+    @classmethod
+    def running(cls):
+        return bool(cls.proc and cls.proc.poll() is None)
 
     @classmethod
     def start(cls, key):
         m = MAPS[key]
         with cls.lock:
-            if cls.proc and cls.proc.poll() is None:
+            if cls.running():
                 return False
             os.makedirs(m["out"], exist_ok=True)
             cmd = [sys.executable, "-u", os.path.join(HERE, "make_b2_map.py"), m["lap"],
                    os.path.join(DUBAI, "dubai_pickups_officiels.json"), m["out"], "--name", m["name"], "--city", "Dubai",
                    "--route", str(m["route"]), "--grid", *map(str, m["grid"]), "--decor", "--track", m["track"]]
+            cls.t0 = time.time()
             cls.proc = subprocess.Popen(cmd, cwd=HERE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                         text=True, encoding="utf-8", errors="replace")
             cls.lines, cls.key, cls.code = ["> " + " ".join(cmd[2:])], key, None
-        threading.Thread(target=cls.pump, daemon=True).start()
+        threading.Thread(target=cls.pump, args=(cls.proc, m), daemon=True).start()
         return True
 
     @classmethod
-    def pump(cls):
-        for line in cls.proc.stdout:
-            cls.lines.append(line.rstrip())
-        cls.code = cls.proc.wait()
-        cls.lines.append("terminé, code %d" % cls.code)
+    def pump(cls, proc, m):
+        def kill():     # make_b2_map runs Map Builder's build.py: the whole tree goes (taskkill /T)
+            cls.lines.append("délai de %d min dépassé : construction arrêtée" % (cls.LIMIT // 60))
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
+        timer = threading.Timer(cls.LIMIT, kill)
+        timer.start()
+        try:
+            for line in proc.stdout:
+                cls.lines.append(line.rstrip())
+            code = proc.wait()
+        finally:
+            timer.cancel()
+        if code == 0:
+            try:
+                old = SAFE.ecarter_perimes(os.path.join(m["out"], "files"), cls.t0, os.path.join(m["out"], "perimes"))
+                if old:
+                    cls.lines.append("%d fichiers d'une construction précédente mis de côté (perimes\\, non installés) :"
+                                     " %s" % (len(old), ", ".join(old[:8]) + (" …" if len(old) > 8 else "")))
+            except OSError as ex:
+                cls.lines.append("mise de côté des fichiers périmés impossible : %s" % ex)
+                code = 1
+        cls.lines.append("terminé, code %d" % code)
+        cls.code = code
 
 
 def blur_running():
@@ -157,25 +184,52 @@ def blur_running():
 
 
 def install(m):
-    """OUT/files over Blur_test; the originals replaced go once to BACKUP; backed up files not in this map go back"""
+    """OUT/files sur Blur_test (studio_safe.installer : copie de test seulement, copies vérifiées avant de remplacer,
+    originaux gardés une fois dans BACKUP). Puis les originaux sauvegardés qui ne font pas partie de cette map
+    (restes d'une installation précédente, ex. road_21_KK) sont remis ; les fichiers ajoutés par une installation
+    précédente et absents de celle-ci restent en place (signalés : rien n'est supprimé sans accord)."""
     files = os.path.join(m["out"], "files")
-    new = {os.path.relpath(os.path.join(d, f), files) for d, _, fs in os.walk(files) for f in fs}
-    saved = restored = 0
-    for rel in sorted(new):
-        dst, bak = os.path.join(config.BLUR_TEST, rel), os.path.join(BACKUP, rel)
-        if os.path.exists(dst) and not os.path.exists(bak):
-            os.makedirs(os.path.dirname(bak), exist_ok=True)
-            shutil.copy2(dst, bak)
-            saved += 1
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        shutil.copy2(os.path.join(files, rel), dst)
-    for d, _, fs in os.walk(BACKUP):
-        for f in fs:
-            rel = os.path.relpath(os.path.join(d, f), BACKUP)
-            if rel not in new:                         # left by an earlier install (e.g. road_21_KK): original back
-                shutil.copy2(os.path.join(d, f), os.path.join(config.BLUR_TEST, rel))
-                restored += 1
-    return "%d fichiers installés, %d originaux sauvegardés, %d originaux remis" % (len(new), saved, restored)
+    n, saved = SAFE.installer(files, config.BLUR_TEST, BACKUP)
+    new = set(SAFE.fichiers(files))
+    fa = os.path.join(BACKUP, "_absents.json")
+    restored = 0
+    for rel in SAFE.fichiers(BACKUP):
+        if rel != "_absents.json" and rel not in new:
+            shutil.copy2(os.path.join(BACKUP, rel), SAFE.dans_dossier(config.BLUR_TEST, os.path.join(config.BLUR_TEST, rel)))
+            restored += 1
+    extra = [r for r in (json.load(open(fa)) if os.path.isfile(fa) else [])
+             if r not in new and os.path.exists(os.path.join(config.BLUR_TEST, r))]
+    return "%d fichiers installés et vérifiés, %d originaux sauvegardés, %d originaux remis%s" % (
+        n, saved, restored, "" if not extra else ", %d fichiers d'une installation précédente laissés en place : %s"
+        % (len(extra), ", ".join(extra[:5])))
+
+
+def besoin(key):
+    if key is None:
+        raise SAFE.Refus("paramètre map manquant")
+    return key
+
+
+def verifier_trace(t):
+    """tracé posté par la page : structure attendue par make_b2_map --track (+ surfaces) -> Refus sinon"""
+    num = (int, float)
+    try:
+        ok = (isinstance(t, dict) and len(t["points"]) >= 3
+              and all(isinstance(q[c], num) for q in t["points"] for c in "xzwh")
+              and all(isinstance(b["from_m"], num) and isinstance(b["to_m"], num) and len(b["points"]) >= 2
+                      and all(isinstance(q[c], num) for q in b["points"] for c in "xzwh") for b in t["branches"]))
+    except (KeyError, TypeError):
+        ok = False
+    if not ok:
+        raise SAFE.Refus("tracé invalide : au moins 3 points de route {x, z, w, h}, embranchements {from_m, to_m, "
+                         "2 points}")
+    bad = [a.get("id") if isinstance(a, dict) else a for a in t.get("areas", []) if not (
+        isinstance(a, dict) and isinstance(a.get("id"), str) and isinstance(a.get("name"), str)
+        and isinstance(a.get("type"), str) and isinstance(a.get("exportable"), bool)
+        and isinstance(a.get("pts"), list) and len(a["pts"]) >= 3
+        and all(isinstance(p, dict) and isinstance(p.get(c), num) for p in a["pts"] for c in "xyz"))]
+    if bad:
+        raise SAFE.Refus("surfaces invalides (id, nom, type, exportable, 3 sommets x y z) : %s" % bad)
 
 
 def main():
@@ -194,63 +248,75 @@ def main():
             self.end_headers()
             self.wfile.write(body)
 
-        def route(self):
-            u = urllib.parse.urlparse(self.path)
-            return u.path, urllib.parse.parse_qs(u.query).get("map", [None])[0]
+        def garde(self, ecriture):
+            """True (et réponse 403 envoyée) si la requête vient d'un autre site ou d'un autre nom d'hôte"""
+            r = SAFE.refus(self.headers, PORT, ecriture)
+            if r:
+                self.send(r, code=403)
+            return bool(r)
 
         def do_GET(self):
-            path, key = self.route()
+            self.traiter(self.get)
+
+        def do_POST(self):
+            self.traiter(self.post)
+
+        def traiter(self, fn):
+            """garde, puis fn(chemin, map) ; toute erreur devient un message pour la page (jamais une connexion
+            coupée). map hors de MAPS (liste blanche) -> 404"""
+            if self.garde(ecriture=self.command == "POST"):
+                return
+            try:
+                u = urllib.parse.urlparse(self.path)
+                key = urllib.parse.parse_qs(u.query).get("map", [None])[0]
+                if key is not None and key not in MAPS:
+                    raise SAFE.Refus("map inconnue : %r" % (key,), 404)
+                fn(u.path, key)
+            except SAFE.Refus as ex:
+                self.send(str(ex), code=ex.code)
+            except Exception as ex:  # noqa: BLE001 - montrée dans la page
+                self.send("erreur serveur : %s: %s" % (type(ex).__name__, ex), code=500)
+
+        def get(self, path, key):
             if path == "/maps":
                 self.send([{"key": k, "title": m["title"], "build": m["build"]} for k, m in MAPS.items()])
-            elif path == "/data":
-                if key not in cache:
-                    cache[key] = json.dumps(load_data(MAPS[key])).encode()
-                self.send(cache[key])
-            elif path == "/drive":
-                self.send(drives(MAPS[key]["route"]) if MAPS[key].get("route") else [])
             elif path == "/build":
                 self.send({"key": Build.key, "lines": Build.lines[-400:], "code": Build.code,
                            "running": bool(Build.proc and Build.proc.poll() is None)})
-            elif path == "/png":
-                self.send(open(os.path.join(MAPS[key]["out"], "bords_trace.png"), "rb").read(), "image/png")
+            elif path in ("/data", "/drive", "/png"):
+                m = MAPS[besoin(key)]
+                if path == "/data":
+                    if key not in cache:
+                        cache[key] = json.dumps(load_data(m)).encode()
+                    self.send(cache[key])
+                elif path == "/drive":
+                    self.send(drives(m["route"]) if m.get("route") else [])
+                else:
+                    self.send(open(os.path.join(m["out"], "bords_trace.png"), "rb").read(), "image/png")
             else:
                 self.send(open(page, "rb").read(), "text/html; charset=utf-8")
 
-        def do_POST(self):
-            path, key = self.route()
-            m = MAPS[key]
-            body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        def post(self, path, key):
+            m = MAPS[besoin(key)]
             if path == "/save":
-                t = json.loads(body)
-                if len(t["points"]) < 3 or any(len(b["points"]) < 2 for b in t["branches"]):
-                    return self.send("il faut au moins 3 points de route et 2 par embranchement", code=400)
-                bad = [a.get("id") for a in t.get("areas", []) if not (
-                    isinstance(a.get("id"), str) and isinstance(a.get("name"), str) and isinstance(a.get("type"), str)
-                    and isinstance(a.get("exportable"), bool) and len(a.get("pts", [])) >= 3
-                    and all(isinstance(p.get(c), (int, float)) for p in a["pts"] for c in "xyz"))]
-                if bad:
-                    return self.send("surfaces invalides (id, nom, type, exportable, 3 sommets x y z) : %s" % bad,
-                                     code=400)
-                os.makedirs(os.path.dirname(m["track"]), exist_ok=True)
-                tmp = m["track"] + ".tmp"                   # complete file first: a crash never truncates the track
-                with open(tmp, "w") as fh:
-                    json.dump(t, fh, indent=1)
-                if os.path.exists(m["track"]):
-                    os.replace(m["track"], m["track"] + ".bak")
-                os.replace(tmp, m["track"])
+                t = SAFE.lire_json(self)
+                verifier_trace(t)
+                SAFE.ecrire_json(m["track"], t)
                 cache.pop(key, None)
                 self.send("enregistré : " + m["track"])
             elif path == "/build":
                 if not m["build"]:
-                    return self.send("construction : Dubaï seulement pour l'instant", code=400)
+                    raise SAFE.Refus("construction : Dubaï seulement pour l'instant")
                 ok = Build.start(key)
                 self.send("lancée" if ok else "une construction est déjà en cours", code=200 if ok else 409)
             elif path == "/install":
-                if Build.key != key or Build.code != 0:
-                    return self.send("construire cette map d'abord (sans erreur)", code=400)
+                if Build.key != key or Build.code != 0 or Build.running():
+                    raise SAFE.Refus("construire cette map d'abord (sans erreur)")
                 if blur_running():
-                    return self.send("Blur est ouvert : le fermer avant d'installer", code=409)
+                    raise SAFE.Refus("Blur est ouvert : le fermer avant d'installer", 409)
                 self.send(install(m))
+            else:
+                raise SAFE.Refus("inconnu : " + path, 404)
 
     ThreadingHTTPServer.allow_reuse_address = False   # Windows would share the port with an editor already open
     try:
@@ -259,7 +325,8 @@ def main():
         sys.exit("Un éditeur des tracés est déjà ouvert (port %d) : fermer sa fenêtre d'abord." % PORT)
     url = "http://127.0.0.1:%d" % PORT
     print("Tracés Blur 2 :", url)
-    webbrowser.open(url)
+    if not os.environ.get("BLURRE_NO_BROWSER"):
+        webbrowser.open(url)
     srv.serve_forever()
 
 

@@ -22,10 +22,12 @@ import struct
 import subprocess
 import sys
 import threading
+import time
 import urllib.parse
 import webbrowser
 
 import config
+import studio_safe as SAFE
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 import numpy as np
@@ -36,13 +38,17 @@ import make_nfs_map as M  # noqa: E402
 import nfs_atlas as A  # noqa: E402
 import stm2obj  # noqa: E402
 
-PORT = 8765
+PORT = int(os.environ.get("BLURRE_PORT", 8765))        # autre port : tests (tests/test_studios_http.py)
 ENV_DIR = config.ENV_DIR
 WORK = os.path.dirname(M.WORLD)
 CACHE = os.path.join(WORK, "web_cache")
 BLUR_TEST = config.BLUR_TEST
+# originaux de Blur_test remplacés par les installations de NFS Studio (studio_safe.installer). Le dossier voisin
+# backup_blur_test (installation manuelle plus ancienne, contenu d'origine non garanti) n'est pas touché.
+BACKUP = os.path.join(os.path.dirname(M.OUT), "backup_studio")
+PERIMES = os.path.join(os.path.dirname(M.OUT), "perimes")      # sorties d'une construction précédente, mises de côté
 LOG = []
-BUSY = threading.Lock()
+BUSY = threading.Lock()         # une seule construction / installation ; pris par la requête, rendu par le thread
 
 
 def log(*a):
@@ -214,7 +220,16 @@ def recenter(points, closed=True, step=10.0, passes=8):
     return [dict(x=round(float(x), 2), z=round(float(z), 2), w=round(float(w), 1)) for (x, z), w in zip(C, W)]
 
 
+def locations():
+    return sorted(glob.glob(os.path.join(ENV_DIR, "*", "*.stm")))
+
+
 def load_location(stm):
+    """stm : un des lieux de ENV_DIR (liste blanche : pas de chemin quelconque lu, ni de cache écrit pour lui)"""
+    connus = {os.path.normcase(os.path.realpath(f)): f for f in locations()}
+    stm = connus.get(os.path.normcase(os.path.realpath(stm)))
+    if stm is None:
+        raise SAFE.Refus("lieu inconnu : choisir un .stm de la liste")
     State.stm = stm
     M.STM = stm
     M.WORLD = world_path(stm)
@@ -224,42 +239,64 @@ def load_location(stm):
 
 
 def build():
-    with BUSY:
+    t0 = time.time()
+    try:
+        log("construction : début (plusieurs minutes)")
+        import builtins
+        orig = builtins.print
+        # le lecteur de modèles (BlurImportExport) affiche toute son analyse : on ne garde que nos messages
+        noise = ("|", "Shaders", "Meshes", "Vert", "Face", "Rendering", "Textures", "FX ", "ARCH", "Len ", "StrTab",
+                 "Models", "Element", "Constr", "Render", "Header", "Scene", "Coll", "MtaDbg", "MdlDat")
+        builtins.print = lambda *a, **k: None if not a or str(a[0]).strip().startswith(noise)                 or not str(a[0]).strip() else log(*a)
         try:
-            log("construction : début (plusieurs minutes)")
-            import builtins
-            orig = builtins.print
-            # le lecteur de modèles (BlurImportExport) affiche toute son analyse : on ne garde que nos messages
-            noise = ("|", "Shaders", "Meshes", "Vert", "Face", "Rendering", "Textures", "FX ", "ARCH", "Len ", "StrTab",
-                     "Models", "Element", "Constr", "Render", "Header", "Scene", "Coll", "MtaDbg", "MdlDat")
-            builtins.print = lambda *a, **k: None if not a or str(a[0]).strip().startswith(noise)                 or not str(a[0]).strip() else log(*a)
-            try:
-                A.rebuild(auto_pickups=False)
-            finally:
-                builtins.print = orig
-            log("construction : terminée")
-        except Exception:  # noqa: BLE001 - montré dans le journal, en entier
-            import traceback
-            log("construction : ERREUR " + traceback.format_exc())
+            A.rebuild(auto_pickups=False)
+        finally:
+            builtins.print = orig
+        old = SAFE.ecarter_perimes(M.OUT, t0, PERIMES)
+        if old:
+            log("%d fichiers d'une construction précédente mis de côté dans %s (non installés) : %s"
+                % (len(old), PERIMES, ", ".join(old[:8])))
+        log("construction : terminée")
+    except Exception:  # noqa: BLE001 - montré dans le journal, en entier
+        import traceback
+        log("construction : ERREUR " + traceback.format_exc())
 
 
 def install():
-    with BUSY:
-        if "blur.exe" in subprocess.run(["tasklist"], capture_output=True, text=True).stdout.lower():
-            log("installation refusée : Blur tourne")
-            return
-        n = 0
-        for root, _, files in os.walk(M.OUT):
-            for f in files:
-                src = os.path.join(root, f)
-                dst = os.path.join(BLUR_TEST, os.path.relpath(src, M.OUT))
-                os.makedirs(os.path.dirname(dst), exist_ok=True)
-                shutil.copyfile(src, dst)
-                if open(src, "rb").read() != open(dst, "rb").read():
-                    log("installation : copie différente", dst)
-                    return
-                n += 1
-        log("installation : %d fichiers copiés et vérifiés dans Blur_test" % n)
+    """studio_safe.installer : Blur_test seulement (fichier témoin), copies vérifiées avant de remplacer quoi que ce
+    soit (un écart annule tout), originaux gardés une fois dans BACKUP"""
+    if "blur.exe" in subprocess.run(["tasklist"], capture_output=True, text=True).stdout.lower():
+        log("installation refusée : Blur tourne")
+        return
+    try:
+        n, saved = SAFE.installer(M.OUT, BLUR_TEST, BACKUP)
+        log("installation : %d fichiers copiés et vérifiés dans Blur_test, %d originaux sauvegardés dans %s"
+            % (n, saved, BACKUP))
+    except Exception as ex:  # noqa: BLE001 - montrée dans le journal
+        log("installation refusée ou annulée (Blur_test inchangé) : %s" % ex)
+
+
+def run_locked(fn):
+    """fn dans un thread ; BUSY a été pris par la requête et est rendu à la fin, quoi qu'il arrive"""
+    def go():
+        try:
+            fn()
+        finally:
+            BUSY.release()
+    threading.Thread(target=go, daemon=True).start()
+
+
+def check_world(w):
+    """circuit posté par la page : structure de world.json (Map Builder) -> Refus sinon"""
+    try:
+        ok = isinstance(w, dict) and isinstance(w["locations"], list) and len(w["locations"]) > 0 and all(
+            isinstance(loc, dict) and isinstance(loc["maps"], list) and all(
+                isinstance(m, dict) and isinstance(m.get("points", []), list) for m in loc["maps"])
+            for loc in w["locations"])
+    except (KeyError, TypeError):
+        ok = False
+    if not ok:
+        raise SAFE.Refus("circuit invalide : world.json attendu ({locations: [{maps: [...]}]})")
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -277,14 +314,27 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b)
 
+    def garde(self, ecriture):
+        """True (et réponse 403 envoyée) si la requête vient d'un autre site ou d'un autre nom d'hôte"""
+        r = SAFE.refus(self.headers, PORT, ecriture)
+        if r:
+            self.send_json({"error": r}, 403)
+        return bool(r)
+
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
         q = urllib.parse.parse_qs(u.query)
+        if self.garde(ecriture=u.path == "/api/load"):     # /api/load change le lieu courant et écrit le cache
+            return None
         if u.path == "/api/locations":
-            return self.send_json(dict(current=State.stm, all=sorted(glob.glob(os.path.join(ENV_DIR, "*", "*.stm")))))
+            return self.send_json(dict(current=State.stm, all=locations()))
         if u.path == "/api/load":
+            if BUSY.locked():       # changer de lieu change les entrées de la construction en cours
+                return self.send_json({"error": "construction ou installation en cours : réessayer à la fin"}, 409)
             try:
                 return self.send_json({"stem": load_location(q.get("stm", [State.stm])[0])})
+            except SAFE.Refus as ex:
+                return self.send_json({"error": str(ex)}, ex.code)
             except Exception as ex:  # noqa: BLE001
                 return self.send_json({"error": str(ex)}, 500)
         if u.path == "/api/world":
@@ -292,8 +342,11 @@ class Handler(SimpleHTTPRequestHandler):
         if u.path == "/api/log":
             return self.send_json(LOG[-60:])
         if u.path.startswith("/cache/"):
-            p = os.path.normpath(os.path.join(CACHE, urllib.parse.unquote(u.path[7:])))
-            if not p.startswith(os.path.normpath(CACHE)) or not os.path.isfile(p):
+            try:
+                p = SAFE.dans_dossier(CACHE, os.path.join(CACHE, urllib.parse.unquote(u.path[7:])))
+            except SAFE.Refus:
+                return self.send_error(404)
+            if not os.path.isfile(p):
                 return self.send_error(404)
             data = open(p, "rb").read()
             self.send_response(200)
@@ -307,16 +360,40 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
-        body = self.rfile.read(int(self.headers.get("Content-Length", 0) or 0))
-        if u.path == "/api/world":
-            json.dump(json.loads(body), open(M.WORLD, "w"), indent=1)
-            log("circuit enregistré :", M.WORLD)
+        if self.garde(ecriture=True):
+            return None
+        try:
+            return self.post(u.path)
+        except SAFE.Refus as ex:
+            return self.send_json({"error": str(ex)}, ex.code)
+        except Exception as ex:  # noqa: BLE001 - montrée dans la page, au lieu d'une connexion coupée
+            return self.send_json({"error": "erreur serveur : %s: %s" % (type(ex).__name__, ex)}, 500)
+
+    def post(self, path):
+        if path in ("/api/build", "/api/install"):
+            if not BUSY.acquire(blocking=False):
+                return self.send_json({"error": "une opération est déjà en cours"}, 409)
+            run_locked(build if path == "/api/build" else install)
             return self.send_json({"ok": True})
-        if u.path == "/api/recenter":
-            q = json.loads(body)
-            return self.send_json(recenter(q["points"], q.get("closed", True)))
-        if u.path == "/api/options":
-            o = json.loads(body)
+        body = SAFE.lire_json(self)
+        if path == "/api/world":
+            check_world(body)
+            if BUSY.locked():       # la construction lit world.json
+                raise SAFE.Refus("construction ou installation en cours : réessayer à la fin", 409)
+            SAFE.ecrire_json(M.WORLD, body)
+            log("circuit enregistré :", M.WORLD, "(ancienne version : .bak)")
+            return self.send_json({"ok": True})
+        if path == "/api/recenter":
+            try:
+                pts = [dict(x=float(p["x"]), z=float(p["z"])) for p in body["points"]]
+                closed = bool(body.get("closed", True))
+            except (KeyError, TypeError, ValueError):
+                raise SAFE.Refus("points {x, z} attendus")
+            return self.send_json(recenter(pts, closed))
+        if path == "/api/options":
+            if BUSY.locked():       # la construction utilise ces réglages
+                raise SAFE.Refus("construction ou installation en cours : réessayer à la fin", 409)
+            o = body if isinstance(body, dict) else {}
             M.TRACK_WIDTH = float(o.get("width", M.TRACK_WIDTH))
             A.GRID_GAP = float(o.get("grid_gap", A.GRID_GAP))
             A.RADIUS = float(o.get("radius", A.RADIUS))
@@ -324,12 +401,7 @@ class Handler(SimpleHTTPRequestHandler):
             A.ZONE = float(o.get("zone", A.ZONE))
             A.GLOW = int(o.get("glow", A.GLOW))
             return self.send_json({"ok": True})
-        if u.path in ("/api/build", "/api/install"):
-            if BUSY.locked():
-                return self.send_json({"error": "une opération est déjà en cours"}, 409)
-            threading.Thread(target=build if u.path == "/api/build" else install, daemon=True).start()
-            return self.send_json({"ok": True})
-        return self.send_error(404)
+        return self.send_json({"error": "inconnu : " + path}, 404)
 
 
 if __name__ == "__main__":
@@ -341,6 +413,6 @@ if __name__ == "__main__":
         print("NFS Studio est déjà ouvert : ferme l'autre fenêtre noire, puis relance.")
         sys.exit(1)
     print("NFS Studio : http://127.0.0.1:%d  (Ctrl+C pour arrêter)" % PORT)
-    if "--no-browser" not in sys.argv:
+    if "--no-browser" not in sys.argv and not os.environ.get("BLURRE_NO_BROWSER"):
         threading.Timer(1.0, lambda: webbrowser.open("http://127.0.0.1:%d" % PORT)).start()
     srv.serve_forever()

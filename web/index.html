@@ -432,7 +432,9 @@ async function save() {
   const w = worldJson();
   if (old) { w.locations[0].id = old.locations[0].id; w.locations[0].name = old.locations[0].name;
     Object.assign(w.locations[0].maps[0], { id: old.locations[0].maps[0].id, name: old.locations[0].maps[0].name }); }
-  await fetch('/api/world', { method: 'POST', body: JSON.stringify(w) }); say('enregistré'); return true;
+  const r = await fetch('/api/world', { method: 'POST', body: JSON.stringify(w) });
+  if (!r.ok) { say('NON enregistré : ' + ((await r.json().catch(() => ({}))).error || r.status)); return false; }
+  say('enregistré'); return true;
 }
 $('save').onclick = save;
 $('build').onclick = async () => { if (!(await save())) return;
