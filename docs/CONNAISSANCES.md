@@ -1886,6 +1886,25 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   `--drive`, inutiles avec), recalcule `start_m` depuis `--grid` (Marina : `--grid -647 509.5`), réécrit les
   `branch_NN.csv` (collision, décor) depuis les embranchements édités et l'image de contrôle `bords_trace.png`.
   Vérifié hors jeu : une modification faite dans l'éditeur se retrouve dans `bords_trace.png` ; map pas reconstruite.
+  - **Éditeur complet (2026-11-10, 2e version)** : un seul lanceur, liste des maps en haut à gauche : les 4 routes
+    de Dubaï (murs = collision Unity de la route) et les autres villes Blur 2 (fond = collision X360
+    `blur2_dessin\<mois>\<ville>_map.npz` ; Miami part de sa boucle IA officielle, les autres d'un tracé vide :
+    Ctrl+clic pose les points). Tracés : `blur2_aid\dubai\marina_trace.json`, `dubai_routeN_trace.json`,
+    `blur2_aid\<ville>\<ville>[_aout]_trace.json`.
+    **Conduite** : chaque journal de `blur2_aid\journaux` (+ le `Player.log` en cours s'il n'est pas encore copié) est
+    découpé par route grâce aux lignes `SURVEY_TRACK_LOAD_BEGIN … Route 0N` ; une case par journal ; « en direct »
+    relit toutes les 3 s pendant qu'on roule dans Blur2DubaiTest. Positions arrêtées ou dans le vide retirées.
+    **Construire** (Dubaï seulement) : enregistre, lance `make_b2_map --decor --track` (sortie
+    `blur_extracted\mods\b2_dubai_<route>`), barre de progression et journal en direct ; à la fin, fenêtre avec
+    `bords_trace.png` et « Installer dans Blur_test » (refusé si Blur est ouvert). Installation : les originaux
+    remplacés sont sauvegardés une seule fois dans `b2_dubai_marina\backup_blur_test` (commun aux 4 routes) et les
+    fichiers sauvegardés qui ne font plus partie de la map sont remis (ex. anciens `road_21_KK`). Les 4 routes
+    partagent l'emplacement `flat_earth` : en installer une remplace la précédente. Un seul éditeur à la fois
+    (2e lancement sur le port 8767 refusé : sous Windows il partageait le port en silence).
+    **Vue 3D** (three.js, CDN) : rubans des tracés à leur hauteur réelle (h + y le plus bas du tour), murs et conduite
+    en points ; sert à vérifier les embranchements qui se croisent.
+    **Piège** : construire demande ~1-2 Go libres sur C: (Map Builder réécrit `root_track.pak`, 550 Mo). Disque plein
+    → `MemoryError` puis `No space left on device` dans `pak.add_aliases` (2026-11-10, 0,25 Go libres).
 - **Formule d'éclairage de Blur2DubaiTest (2026-11-10, Confirmé par désassemblage)** : shader `Blur2/InspectionSurface`
   (UnityPy : `compressedBlob` LZ4 → 4 programmes DXBC, désassemblés avec `D3DDisassemble` de `d3dcompiler_47.dll` ;
   noms des registres dans `m_ParsedForm.m_SubShaders[0].m_Passes[0].progFragment.m_CommonParameters`, typetree :
@@ -2000,9 +2019,3 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   sans doute des types de surface par triangle de la collision X360 (non lus par `b2collision`). `car_dynamics.json` :
   `downforce` / `constantDownforce` par voiture, aucun paramètre de looping. **Différent** du wallride / tunnel de
   Marina (virage sud-ouest, ≤ 77 m). Blur 1 : pas de gravité locale connue → looping non franchissable tel quel.
-  - **Routes 1-3 de Dubaï** (Business Bay, Dubai Island, Construction) dans le même éditeur : `b2track.py --route N`
-    (le `.bat` demande le numéro). Premier lancement = tour roulé `lap_routeN_*.csv` (un point / 12 m, 30 m de large,
-    sans embranchement), murs de la route N ; enregistré dans `blur2_aid\dubai\dubai_routeN_trace.json`. Pas de
-    conduite le long des murs pour ces routes (vert vide ; `--drive JOURNAL…` pour en ajouter). Un seul éditeur à la
-    fois : un 2e lancement sur le port 8767 est refusé (sous Windows, sinon, il partageait le port en silence et
-    affichait l'ancien tracé).
