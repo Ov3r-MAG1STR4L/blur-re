@@ -149,30 +149,59 @@ class Installation(unittest.TestCase):
 
 
 class InstallationTraces(unittest.TestCase):
-    """b2track.install : installation protégée + originaux remis + fichiers ajoutés laissés (signalés), sur des
-    dossiers temporaires (config.BLUR_TEST et BACKUP remplacés le temps du test)"""
-    def test_route_puis_autre_route(self):
+    """b2track.install (étape 0, 2026-11-10) : plus aucune remise automatique depuis la sauvegarde. Dossiers
+    temporaires seulement (config.BLUR_TEST et BACKUP remplacés le temps du test) ; jamais le vrai Blur_test."""
+    R = os.path.join("models", "objects", "flat_earth", "road_21_%02d.model")
+
+    def ecrire(self, base, rel, b):
+        os.makedirs(os.path.dirname(os.path.join(base, rel)), exist_ok=True)
+        open(os.path.join(base, rel), "wb").write(b)
+
+    def lire(self, base, rel):
+        return open(os.path.join(base, rel), "rb").read()
+
+    def test_map_avec_moins_de_routes(self):
         import b2track
         d = tempfile.mkdtemp()
         try:
             test, bak, out = (os.path.join(d, n) for n in ("Blur_test", "backup", "out"))
-            for f, b in (("orig.bin", b"orig"), ("road_21_29.model", b"orig29"), (S.MARQUEUR, b"t")):
-                os.makedirs(test, exist_ok=True)
-                open(os.path.join(test, f), "wb").write(b)
-            os.makedirs(os.path.join(out, "files"))
-            for f in ("orig.bin", "road_21_29.model", "ajout.bin"):          # 1re map : 3 fichiers
-                open(os.path.join(out, "files", f), "wb").write(b"map1")
+            files = os.path.join(out, "files")
+            self.ecrire(test, S.MARQUEUR, b"t")
+            self.ecrire(test, self.R % 1, b"etat_avant_01")             # présents avant toute installation
+            self.ecrire(test, self.R % 2, b"etat_avant_02")
+            # sauvegarde HÉRITÉE mélangée : un fichier d'une autre génération (road_21_09) que l'ancien code remettait
+            self.ecrire(bak, self.R % 9, b"vieille_generation_09")
+            self.ecrire(bak, "levels/flat_earth/level.levelrender", b"rendu_epoque_rio")
+            for k in (1, 2, 3):                                          # 1re map : 3 routes
+                self.ecrire(files, self.R % k, b"map1_%02d" % k)
             with mock.patch.object(b2track.config, "BLUR_TEST", test), mock.patch.object(b2track, "BACKUP", bak):
-                self.assertIn("3 fichiers installés", b2track.install({"out": out}))
-                self.assertEqual(json.load(open(os.path.join(bak, "_absents.json"))), ["ajout.bin"])
-                os.remove(os.path.join(out, "files", "road_21_29.model"))       # 2e map : sans road_21_29 ni ajout
-                os.remove(os.path.join(out, "files", "ajout.bin"))
-                r = b2track.install({"out": out})
-            self.assertIn("1 originaux remis", r)                              # road_21_29 d'origine revenu
-            self.assertIn("laissés en place : ajout.bin", r)                  # signalé, pas supprimé
-            self.assertEqual(open(os.path.join(test, "road_21_29.model"), "rb").read(), b"orig29")
-            self.assertTrue(os.path.exists(os.path.join(test, "ajout.bin")))
+                r1 = b2track.install({"out": out})
+                herite = {f: self.lire(bak, f) for f in S.fichiers(bak) if f != "_absents.json"}
+                shutil.rmtree(files)
+                self.ecrire(files, self.R % 1, b"map2_01")                # 2e map : 1 route seulement
+                r2 = b2track.install({"out": out})
+            self.assertIn("3 fichiers installés", r1)
+            self.assertIn("1 fichiers installés", r2)
+            self.assertNotIn("originaux remis", r2)                       # ancien message de la remise automatique
+            # nouvelle route installée
+            self.assertEqual(self.lire(test, self.R % 1), b"map2_01")
+            # aucun fichier réintroduit depuis la sauvegarde : 02 et 03 restent ceux de la 1re map (pas « etat_avant »)
+            self.assertEqual(self.lire(test, self.R % 2), b"map1_02")
+            self.assertEqual(self.lire(test, self.R % 3), b"map1_03")
+            self.assertFalse(os.path.exists(os.path.join(test, self.R % 9)))        # vieille génération pas copiée
+            self.assertFalse(os.path.exists(os.path.join(test, "levels", "flat_earth", "level.levelrender")))
             self.assertFalse(os.path.exists(os.path.join(test, "_absents.json")))
+            # rien de supprimé : les restes sont signalés
+            self.assertIn("2 fichiers d'une installation précédente laissés en place", r2)
+            self.assertIn("road_21_02", r2)
+            self.assertIn("road_21_03", r2)
+            # sauvegarde intacte : les fichiers hérités inchangés ; la 1re install n'a ajouté que les originaux écrasés
+            self.assertEqual(herite[self.R % 9], b"vieille_generation_09")
+            self.assertEqual(herite["levels/flat_earth/level.levelrender".replace("/", os.sep)], b"rendu_epoque_rio")
+            self.assertEqual(self.lire(bak, self.R % 1), b"etat_avant_01")
+            self.assertEqual(self.lire(bak, self.R % 2), b"etat_avant_02")
+            self.assertEqual({f: self.lire(bak, f) for f in S.fichiers(bak) if f != "_absents.json"}, herite)
+            self.assertEqual(json.load(open(os.path.join(bak, "_absents.json"))), [self.R % 3])
         finally:
             shutil.rmtree(d)
 

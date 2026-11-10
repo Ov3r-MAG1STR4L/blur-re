@@ -54,8 +54,8 @@ Sauvegardes : NFS Studio → `blur_extracted\mods\nfs_dubai\backup_studio` (nouv
 L'ancien `nfs_dubai\backup_blur_test` (installation manuelle) n'est pas touché. Tracés Blur 2 → toujours
 `b2_dubai_marina\backup_blur_test` ; son `_absents.json` a été déduit une fois (7 morceaux de route `road_21_31…37`
 ajoutés par nos installations : présents dans Blur_test, absents de la sauvegarde que l'ancien code remplissait
-avant toute copie). Tracés Blur 2 remet en plus les originaux qui ne font plus partie de la map installée et
-**signale** (sans les supprimer) les fichiers ajoutés par une installation précédente.
+avant toute copie). Tracés Blur 2 **signale** (sans rien remettre ni supprimer) les fichiers d'une installation
+précédente absents de la nouvelle map (voir « Étape 0 » plus bas).
 
 Nettoyage contrôlé de la sortie (`studio_safe.ecarter_perimes`) : à la fin d'une construction réussie, les fichiers
 de la sortie que cette construction n'a pas réécrits (restes d'une construction précédente) sont **déplacés** dans
@@ -116,3 +116,29 @@ Restent dans Blur_test 3 fichiers ajoutés par l'installation fautive, sans effe
 installation par NFS Studio.
 Correctif des tests : refus de démarrer si le port est déjà pris, processus lancé vérifié vivant, et le serveur NFS
 doit servir le circuit temporaire marqué `TEST_TEMPORAIRE` avant tout envoi ; sinon les tests s'arrêtent.
+
+## Étape 0 de l'historique (2026-11-10) : plus de remise automatique depuis les sauvegardes
+
+Avant : à la fin de chaque installation, `b2track.install` recopiait dans Blur_test **tout fichier de
+`b2_dubai_marina\backup_blur_test` absent de la nouvelle map** (but : effacer les `road_21_KK` en trop d'une map
+plus grande). Or cette sauvegarde suit la règle « 1re version vue » : chaque fichier y a été gardé au moment où une
+installation l'a écrasé pour la première fois, donc à des dates différentes. Mesuré par empreintes : son
+`level.levelphysics` est celui de NFS Dubaï phase B, son `level.levelrender` celui de l'époque Rio, aucun n'est
+l'original du jeu. Une map plus petite que la précédente aurait donc reçu des fichiers d'autres générations.
+(Pas arrivé jusqu'ici : Blur_test = sortie Marina, vérifié.)
+
+Maintenant : la boucle de remise est retirée. L'installation copie seulement la sortie de la map (copies vérifiées,
+originaux sauvegardés une fois, inchangé) ; les fichiers d'une installation précédente absents de la nouvelle map
+**restent tels quels** et sont listés dans le message (« laissés en place (rien remis ni supprimé) »). Pas de
+suppression automatique à la place : un nettoyage destructif attendra l'historique commun (`studio_history`).
+
+Conséquence connue : après une map plus petite, des morceaux de route de la précédente restent dans Blur_test
+(sans effet tant que le niveau ne les référence pas, comme `road_21_38…40` le 2026-11-10). Ils sont signalés à
+chaque installation.
+
+Test : `tests.test_studio_safe.InstallationTraces.test_map_avec_moins_de_routes` (dossiers temporaires) : sauvegarde
+héritée mélangée (`road_21_09` d'une autre génération, un `levelrender` « époque Rio »), map à 3 routes puis map à 1
+route → la route installée est la nouvelle, `road_21_02` / `03` restent ceux de la 1re map (pas les « états
+d'avant » de la sauvegarde), `road_21_09` et le `levelrender` hérités ne sont jamais copiés, les restes sont
+signalés, la sauvegarde héritée est identique avant / après. Suite complète : 37 tests ; empreinte de toutes les
+sauvegardes `mods\*\backup_*` identique avant / après ; aucun fichier de Blur_test modifié.
