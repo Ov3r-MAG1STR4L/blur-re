@@ -1873,3 +1873,16 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   - Collision : rayon 60 → **150 m** autour des tracés (144 491 triangles).
   - Restes : si le nombre d'emplacements de route baisse, d'anciens `road_21_KK` restent dans Blur_test (cette fois
     `road_21_29`/`30`, originaux remis depuis `backup_blur_test`).
+- **Éditeur des tracés Blur 2 (2026-11-10, `b2track.py` + `web/b2track.html`, `Jeux_WII\Tracés Blur 2.bat`)** : vue de
+  dessus dans le navigateur (http://127.0.0.1:8767 ; 8765 = NFS Studio, 8766 = Reverse Studio) pour corriger à la
+  main la route principale et les chemins secondaires. Affiche les murs de collision (gris, `wall_points`, 1 point
+  par m²), la conduite (vert, journaux `Player_2026-11-10_0*.log`) et les tracés avec leurs bords. Glisser un point,
+  Maj+molette ou champ « Largeur » (un point ou tout le tracé), double-clic = point ajouté (h et w interpolés),
+  Suppr = point retiré, carrés jaunes = `from_m` / `to_m` des embranchements (glisser, accrochés au point de route
+  le plus proche), « Nouvel embranchement » (2 clics sur la route, 6 points à déplacer), Ctrl+Z.
+  Enregistrer → `blur2_aid\dubai\marina_trace.json` (`{points, branches}`, champs du world.json ; ancien → `.bak`).
+  Au premier lancement, le tracé vient du world.json de Map Builder (= dernière construction).
+  **`make_b2_map.py ... --track marina_trace.json`** remplace route et embranchements (à la place de `--edges` /
+  `--drive`, inutiles avec), recalcule `start_m` depuis `--grid` (Marina : `--grid -647 509.5`), réécrit les
+  `branch_NN.csv` (collision, décor) depuis les embranchements édités et l'image de contrôle `bords_trace.png`.
+  Vérifié hors jeu : une modification faite dans l'éditeur se retrouve dans `bords_trace.png` ; map pas reconstruite.

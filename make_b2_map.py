@@ -14,6 +14,7 @@
 Output: OUT/files (to copy over Blur_test). Install separately, with a backup.
 
 usage: make_b2_map.py LAP.csv PICKUPS.json OUT --name Marina --city Dubai --route 4 --grid X Z [--decor]
+       [--official ACTORPACK] [--edges] [--drive LOG...] [--track TRACK_JSON]
 """
 import argparse, csv, json, math, os, shutil, subprocess, sys
 import numpy as np
@@ -275,6 +276,30 @@ def decor(files, models, nfs):
     print(min(len(slots), len(models)), "scenery models in", len(slots), "slots (the others emptied)")
 
 
+def track(mp, path, low, grid, route, out_dir):
+    """--track: main road and branches from the editor (b2track.py), instead of --edges / --drive; start_m again
+    from the grid (the points moved), one CSV per branch (x, y, z: collision and scenery) + a top view check image"""
+    t = json.load(open(path))
+    mp["points"], mp["branches"] = t["points"], t["branches"]
+    P = np.array([(q["x"], q["z"]) for q in mp["points"]])
+    cum = np.r_[0, np.cumsum(np.linalg.norm(np.diff(P, axis=0), axis=1))]
+    mp["start_m"] = mp["finish_m"] = int(cum[np.argmin(np.hypot(*(P - grid).T))])
+    lines = [mp["points"]] + [b["points"] for b in mp["branches"]]
+    mp["width"] = max(TUBE, max(q["w"] for pts in lines for q in pts) + 10)
+    os.makedirs(out_dir, exist_ok=True)
+    csvs = []
+    for k, b in enumerate(mp["branches"]):
+        f = os.path.join(out_dir, "branch_%02d.csv" % k)
+        with open(f, "w", newline="") as fh:
+            w = csv.writer(fh)
+            w.writerow(["x", "y", "z"])
+            w.writerows([(q["x"], round(q["h"] + low, 2), q["z"]) for q in b["points"]])
+        csvs.append(f)
+    print("track: %s, %d points, %d branches, start_m %d" % (path, len(P), len(csvs), mp["start_m"]))
+    edges_png(mp, route, os.path.join(out_dir, "bords_trace.png"))
+    return csvs
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("lap"), ap.add_argument("pickups"), ap.add_argument("out")
@@ -285,6 +310,7 @@ def main():
     ap.add_argument("--edges", action="store_true", help="road centre and width fitted between the walls")
     ap.add_argument("--drive", nargs="+", metavar="PLAYER_LOG", help="wall-hugging drives: edges from them")
     ap.add_argument("--official", metavar="ACTORPACK", help="X360 actorpack.xt of the city: official AI branches")
+    ap.add_argument("--track", metavar="TRACK_JSON", help="road and branches edited in b2track.py (replaces the above)")
     a = ap.parse_args()
     lap = [(float(r["x"]), float(r["y"]), float(r["z"])) for r in csv.DictReader(open(a.lap))]
     pk = json.load(open(a.pickups))["pickups"]
@@ -298,6 +324,8 @@ def main():
         edges(mp, low, a.route, os.path.join(a.out, "bords.png"))
     if a.drive:
         edges_png(mp, a.route, os.path.join(a.out, "bords_conduite.png"), drive=drive_edges(mp, a.drive))
+    if a.track:
+        laps = [a.lap] + track(mp, a.track, low, a.grid, a.route, a.out)
     wfile = os.path.join(config.BMB_GAME, "Blur Map Builder", "maps", "world.json")
     if not os.path.exists(wfile + ".bak"):
         shutil.copyfile(wfile, wfile + ".bak")
