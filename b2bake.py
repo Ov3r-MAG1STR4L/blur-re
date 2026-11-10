@@ -19,7 +19,7 @@ import b2decor  # noqa: E402
 SUN = np.array([0.45, 0.8, 0.4]) / np.linalg.norm([0.45, 0.8, 0.4])   # game axes; still a guess
 SUN_COLOUR = np.array([1.0, 0.95, 0.85])
 AMBIENT = np.array([1.0, 1.0, 1.0])                                     # _BakedColour of the materials seen: white
-EXPOSURE = 4.0      # Unity adapts exposure at run time (Blur2SceneExposure); (A * B.z)^2 over Dubai's lightmaps:
+EXPOSURE = 2.2      # 4.0 washed light facades to white in game (2026-11-10). Unity adapts exposure at run time (Blur2SceneExposure); (A * B.z)^2 over Dubai's lightmaps:
                     # median 0.25 (10 % 0.016, 90 % 0.55) -> the median lit surface shows its albedo
 # B.y (sun visibility) is ~0 on the used texels of the pages measured: the sun term hardly counts
 

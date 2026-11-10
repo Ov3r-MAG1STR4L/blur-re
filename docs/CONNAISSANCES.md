@@ -1912,3 +1912,25 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   triangles sans lightmap → atlas nets à tuilage (`b2decor.jobs`, sans éclairage). Moitié des emplacements chacun :
   61 modèles cuits (61 pages, les plus proches) + 61 atlas, 1 044 599 o chacun. La page cuite « a l'air corrompue »
   vue à plat : c'est un dépliage (des centaines de petits morceaux), normal.
+- **Build Blur 2 du 4 novembre 2010 contre celui du 10 (2026-11-10, comparaison hors jeu)** : `Downloads\Blur 2
+  (Nov 4, 2010 prototype).rar` (3,8 Go, 837 fichiers, dossier interne « !Blur 2 (Nov 04, 2010) [Unreleased] » :
+  daté du **4** novembre, donc antérieur au build du 10 déjà utilisé, sur lequel Blur2DubaiTest est construit).
+  Extraits à part : `blur_extracted\b2_x360_nov04\` (Dubaï, paks, audio) ; ceux du 10 dans `b2_x360_nov\full\`.
+  - **Fichiers de Dubaï** (4 nov → 10 nov) : `level.level` 9,6 → 25,6 Ko, `levelanim` 60 o → 11,7 Ko,
+    `levelphysics` 12,9 → 13,7 Mo, **`levelrender` 3,6 → 10,7 Mo**, `levelstream` 96,7 → 132,2 Mo. Paks :
+    `root.pak` 2 700 entrées toutes présentes le 10 (2 415 identiques, aucune propre à Dubaï), `gamedata.pak` :
+    seul `levels\dubai\actorpack.xt` est propre à Dubaï (160 → 175 Ko).
+  - **Rendu** : le 10 contient le système de lightmaps doubles (`g_tLightmap0/1`, pages `lightmap_*-a/-b`,
+    shaders `blend3_lm`, `blend3b_lm`), le cubemap `cubemaps/dubai_envdefault.dds`, des textures nommées
+    (`glass01_diff`…) ; le 4 n'a ni lightmap ni cubemap, des shaders par défaut (`defaultnewbs`,
+    `defaultnewe_sh.fx`) et référence `missing_texture.bmp`.
+  - **Acteurs (actorpack)** : le 10 a l'IA la plus complète (379 nœuds contre 342, 410 points de trajectoire contre
+    286, boucle de la course 30 fermée à 122 nœuds contre 105, 12 embranchements contre 11, 21 lignes de course
+    contre 14) ; le 4 a **135 emplacements de bonus** (contre 100) et des métadonnées d'IA retirées ensuite :
+    `AIMetaDataSpan` (9), **`AIWallrideMetaData`** (1 : passage sur mur / looping ?), `AITunnelMetaData` (1).
+  - **Audio** (dossier absent du build du 10) : 195 banques `.baf` + 371 `.dat`, 320 Mo ; 193 portent le nom d'une
+    banque de Blur 1 PC (tailles différentes : format X360) ; aucune propre à Dubaï (ambiances des villes de Blur 1,
+    moteurs, destructions, interface, voix).
+  - **Conclusion** : meilleure base pour Marina = le build du **10 novembre**, déjà accessible décodé via
+    Blur2DubaiTest (géométrie, 2 242 textures, lightmaps, collision, splines). Le 4 novembre n'apporte que des
+    compléments : bonus en plus et métadonnées d'IA (wallride, tunnel), à lire avec `x360/b2race.py`.
