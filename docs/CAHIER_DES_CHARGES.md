@@ -457,3 +457,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-10 | Marina : bords calés sur les murs de collision, éclairage approché (lightmap A + soleil, atlas 1 024), LA River ; à essayer en jeu |
 | 2026-11-10 | Marina : départ sous la map = trou de la collision Unity ; ligne déplacée au vrai portique Start/Finish de Blur 2 (start_m 131) |
 | 2026-11-10 | Marina : bords issus de la conduite le long des murs (--drive), éclairage approché retiré, collision à 150 m ; à essayer en jeu |
+| 2026-11-10 | Éditeur des tracés Blur 2 (`b2track.py`, « Tracés Blur 2.bat ») + `make_b2_map --track` : l'utilisateur corrige route et embranchements à la main |
