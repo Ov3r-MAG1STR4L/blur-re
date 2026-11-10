@@ -36,13 +36,28 @@ def empreinte(*chemins):
     return h.hexdigest()
 
 
+def libre(port):
+    try:
+        socket.create_connection(("127.0.0.1", port), 0.5).close()
+        return False
+    except OSError:
+        return True
+
+
 def demarrer(script, env=None):
+    """lance le serveur et attend qu'IL réponde. Refus si le port est déjà pris : le test parlerait à un autre
+    serveur, avec la vraie configuration (incident du 2026-11-10 : installation réelle dans Blur_test)"""
     port = PORTS[script]
+    if not libre(port):
+        raise RuntimeError("port %d déjà occupé : arrêter l'autre serveur avant les tests" % port)
     e = dict(os.environ, BLURRE_PORT=str(port), BLURRE_NO_BROWSER="1", **(env or {}))
     p = subprocess.Popen([sys.executable, script], cwd=HERE, env=e, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     for _ in range(240):
         try:
             socket.create_connection(("127.0.0.1", port), 0.5).close()
+            time.sleep(1)
+            if p.poll() is not None:            # un autre processus a pris le port entre-temps
+                raise RuntimeError("%s s'est arrêté : %s" % (script, p.stderr.read().decode(errors="replace")[-800:]))
             return p
         except OSError:
             if p.poll() is not None:
@@ -108,13 +123,17 @@ class NFS(Commun, unittest.TestCase):
         os.makedirs(cls.work)
         os.makedirs(os.path.join(cls.files, "levels"))
         os.makedirs(os.path.join(cls.test, "levels"))
-        vrai = os.path.join(config.STM_WORK, "world.json")
-        cls.world = json.load(open(vrai))
-        shutil.copyfile(vrai, os.path.join(cls.work, "world.json"))
+        cls.world = json.load(open(os.path.join(config.STM_WORK, "world.json")))
+        cls.world["locations"][0]["name"] = "TEST_TEMPORAIRE"        # marque : prouve que le serveur lit le dossier temporaire
+        json.dump(cls.world, open(os.path.join(cls.work, "world.json"), "w"))
         open(os.path.join(cls.files, "levels", "a.bin"), "wb").write(b"neuf")
         open(os.path.join(cls.test, "levels", "a.bin"), "wb").write(b"original")
         cls.p = demarrer("nfs_web.py", dict(BLURRE_STM_WORK=cls.work, BLURRE_NFS_OUT=cls.files,
                                             BLURRE_BLUR_TEST=cls.test))
+        w = req(cls.port, "GET", "/api/world")[1]
+        if not (isinstance(w, dict) and w["locations"][0]["name"] == "TEST_TEMPORAIRE"):
+            cls.p.kill()
+            raise RuntimeError("le serveur NFS ne lit pas le dossier temporaire : tests arrêtés avant tout envoi")
 
     @classmethod
     def tearDownClass(cls):
