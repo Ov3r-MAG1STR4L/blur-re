@@ -111,7 +111,7 @@ du lieu de `stm_work\world.json` changé en « essai ». Réparé : Blur_test re
 (créé par cette installation : l'état d'avant), les 191 fichiers de Marina vérifiés identiques à sa sortie de
 construction ; nom remis à « NFS Dubai » (celui de `world_v1`, `world_v2`, `world_guide`, le seul champ changé).
 Restent dans Blur_test 3 fichiers ajoutés par l'installation fautive, sans effet (Marina s'arrête à `road_21_37`) :
-`models\objects\flat_earth\road_21_38.model`, `_39`, `_40` (non supprimés, en attente d'accord).
+`models\objects\flat_earth\road_21_38.model`, `_39`, `_40` (supprimés le 2026-11-10 avec l'accord de l'utilisateur).
 `nfs_dubai\backup_studio` contient donc l'état « Marina installée » : c'est bien l'état d'avant la 1re
 installation par NFS Studio.
 Correctif des tests : refus de démarrer si le port est déjà pris, processus lancé vérifié vivant, et le serveur NFS
