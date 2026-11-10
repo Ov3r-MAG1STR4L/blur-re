@@ -142,3 +142,48 @@ route → la route installée est la nouvelle, `road_21_02` / `03` restent ceux 
 d'avant » de la sauvegarde), `road_21_09` et le `levelrender` hérités ne sont jamais copiés, les restes sont
 signalés, la sauvegarde héritée est identique avant / après. Suite complète : 37 tests ; empreinte de toutes les
 sauvegardes `mods\*\backup_*` identique avant / après ; aucun fichier de Blur_test modifié.
+
+## Étape 1 de l'historique (2026-11-10) : noyau `studio_history.py`
+
+Noyau seul : aucun serveur, aucune installation, aucune page n'y fait encore appel (intégration = étape 3). Aucun
+dossier d'historique réel n'a été créé ; il sera `Jeux_WII\studio_history\` à l'intégration.
+
+**Dossier d'un historique** (`Historique(racine)`) :
+- `objets\<2 premiers>\<sha256>` : contenu d'un fichier, stocké une fois (dédoublonné). Écrit à côté puis lié à sa
+  place (`os.link` : échoue si la cible existe → jamais écrasé). Déjà présent : revérifié ; s'il est abîmé, refus
+  (`ObjetCorrompu`) au lieu d'une réécriture silencieuse. Chaque lecture recalcule l'empreinte (`lire_objet`,
+  `verifier_objet` → `ObjetManquant` / `ObjetCorrompu`). Fichier modifié pendant sa copie : refus.
+- `versions\<AAAAMMJJ-HHMMSS-xxxxxx>.json` : photo complète `{chemin relatif « / »: sha256 | null (absent)}`, avec
+  date, studio, opération, cible, version précédente. Immuable (même écriture sans écrasement : un identifiant déjà
+  pris = refus). `differences(v1, v2)` → ajoutés / modifiés / retirés ; `verifier_version` contrôle tous ses objets.
+- `journal.jsonl` : une ligne par événement (`debut` d'une opération, avec version « avant », studio, pid, jeton
+  du verrou ; `fin` avec version « après » et résultat), ajoutée avec `fsync`, jamais réécrite. Chaque ligne porte
+  son rang `n` et l'empreinte de la précédente `prec` : ligne modifiée, supprimée ou déplacée → `JournalAbime`.
+  Dernière ligne incomplète (écriture coupée) → `JournalAbime` et aucun ajout tant qu'on n'a pas examiné (rien
+  n'est « réparé » en silence). Une 2e fin pour la même opération est refusée.
+- `verrou` : créé de façon exclusive (`O_CREAT | O_EXCL`) avec studio, opération, pid, date, jeton. Une 2e opération
+  (même processus ou autre) → `VerrouOccupe` avec le studio et l'opération en cours. Verrou dont le processus est
+  mort (Windows : `OpenProcess` / `GetExitCodeProcess`) ou illisible → `VerrouOccupe(orphelin=True)`, message
+  « supprimer à la main après vérification » : jamais retiré automatiquement. On ne retire que son propre verrou
+  (même jeton). `commencer` / `terminer` exigent le verrou détenu.
+
+**Statuts** : le statut d'une version vient du journal (« en_cours » tant que l'opération qui la cite n'a pas sa
+fin, sinon « terminée » ; photo hors opération = terminée). `interrompues()` = opérations sans fin dont le verrou
+n'est plus vivant : leur version « avant » est la base d'une future reprise.
+
+**Chemins** : relatifs seulement ; refus des absolus, lecteurs (`C:`), `.`, `..`, segments vides, et des liens qui
+mènent hors du dossier photographié (chemin réel, `studio_safe.dans_dossier`). Erreurs : `ErreurHistorique` et ses
+sous-classes, message explicite et code HTTP pour les studios.
+
+**Tests** : `python -m unittest tests.test_studio_history` (20, dossiers temporaires) : dédoublonnage ; objet existant
+jamais écrasé ; corruption et objet manquant ; écriture d'objet interrompue (rien laissé) ; fichier modifié pendant
+la copie ; photo / lecture / différences (ajouté, modifié, retiré, absent) ; version jamais écrasée ; version à objet
+corrompu ou manquant ; identifiants et précédente invalides ; 11 chemins hors dossier ; lien symbolique vers
+l'extérieur ; opération complète et statuts ; interruption simulée ; journal falsifié et ligne supprimée ; ligne
+incomplète ; sans verrou ; concurrence dans le même processus et depuis un autre processus ; verrou orphelin
+(signalé, intact) ; verrou illisible ; libération par un autre refusée. Suite complète : 57 tests, 2 passages.
+
+**Limites** : pas encore utilisé par les studios ; pas de restauration (étape 4) ; pas de purge (les objets
+s'accumulent : à décider plus tard, avec accord) ; un journal abîmé bloque toute opération jusqu'à examen manuel ;
+un pid réutilisé par un autre programme ferait passer un verrou orphelin pour vivant (signalé comme occupé, sûr) ;
+`os.link` exige un disque NTFS (le cas ici).
