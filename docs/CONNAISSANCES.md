@@ -1934,3 +1934,14 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   - **Conclusion** : meilleure base pour Marina = le build du **10 novembre**, déjà accessible décodé via
     Blur2DubaiTest (géométrie, 2 242 textures, lightmaps, collision, splines). Le 4 novembre n'apporte que des
     compléments : bonus en plus et métadonnées d'IA (wallride, tunnel), à lire avec `x360/b2race.py`.
+- **Compléments du build du 4 novembre récupérés (2026-11-10, `b2nov04.py`, hors jeu)** → `blur2_aid\dubai\` :
+  `dubai_bonus_nov04.json`, `dubai_ia_meta_nov04.json`, image `dubai_nov04_complements.png`.
+  - `PickupPosition` (92 o, nom « Power-Up ») : matrice monde à +12, **position à +48** (axes jeu, comme
+    `StartPosition`). 135 bonus le 4, 100 le 10 ; 52 identiques à 2 m près ; les **83 propres au 4 sont tous à l'est,
+    hors de Marina** (ancien tracé d'une autre route) : rien à ajouter à Marina.
+  - `AIMetaDataSpan` (16 o) : f32 t0, f32 t1, u32 nœud A, u32 nœud B (16 bits bas = indice dans le bloc
+    `AILinkNode` de l'enregistrement) = la portion t0..t1 du lien A → B. `AIWallrideMetaData` / `AITunnelMetaData`
+    (12 o) : u32 `0x000B00SS` (SS = 1er segment), u32 nombre de segments, u32 drapeaux (16 / 1) — lecture
+    Probable (2 enregistrements). Sur la course 27 (boucle de Marina) : **wallride** = segments 0-3, nœuds 38 → 41
+    (x -1 088..-1 117, z -305..-415, y 12, ~115 m, côté ouest) ; **tunnel** = segments 4-8, nœuds 41 → 50
+    (jusqu'à x -1 168..-1 199, z -415..-685, y 12 → 61-64 : partie surélevée du virage sud-ouest). Absents du build du 10.
