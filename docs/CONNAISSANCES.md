@@ -1961,3 +1961,42 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   - **À tester** : l'effet réel de ces métadonnées dans le jeu (Blur 1 n'a pas de type équivalent connu ; pour un
     `.aid` Blur 1 ce serait au mieux une zone de vitesse / largeur) ; la lecture des champs (1er segment, nombre,
     drapeaux 16 / 1) repose sur deux enregistrements. Rien n'est appliqué à la map ni à Blur_test.
+- **Audit du rendu Blur 2 et prototype (2026-11-10, hors jeu, rien installé ; `b2proto.py`, images
+  `blur2_aid\dubai\proto\`)** :
+  - **Ressources Unity (build du 10 nov)** : diffuses DXT1 (434) / DXT5 (101) / quelques RGBA, **sRGB** ;
+    **lightmaps DXT1 linéaires** (1 554 : pas de gamma) ; `_ipr` = `_MaterialTex` DXT1 sRGB (184 textures,
+    1 796 matériaux) ; 43 cartes de normales ; 2 cubemaps (`tex_lr6_dubai_envdefault` 256², DXT1, 6 faces + 9 mips en
+    flux dans `sharedassets1.assets.resS`, 6 × 43 704 o : une prise de vue sombre de Dubaï). Matériaux : `_BaseMap`
+    4 042, lightmap double 2 140, `_AlphaTest` 1 866, `_MaterialTex` 1 796, `_EnvironmentCube` 1 035,
+    `_NormalTex` 689, `_Blend3` 20, couches / détail / saleté / émissif < 35. Maillages : pos, normale, tangente,
+    UV0, UV1 (lightmap) (+ canal 10) pour 2 118 ; sans UV1 pour 1 992.
+  - **Shader (suite)** : reflet si `_HasMaterial` et `_HasEnvironment` : M = `_MaterialTex`(UV0) ; R = masque, G =
+    brillance (spéculaire `exp(13·G)`, flou du cubemap `lod 7·(1-G)`), B = base de Fresnel ; quantité =
+    R × (B + (1-B) × saturate(N·V+1)² × saturate(1,4·G+0,3)) ; couleur += quantité × (cube(réfléchi)² × 8 − couleur
+    + spéculaire soleil × B.y²). Découpe alpha seulement si `_AlphaTest` (seuil `_Cutoff`). Normales : carte t3
+    dans la branche principale et pour drapeaux / eau. `_Blend3` : 3 albédos mélangés par `_BlendMapTex` (20 mat.).
+  - **Shaders d'objets de Blur 1** (1 040 modèles lus) : nom = `default_` + options **retirées** : **B** relief,
+    **L** éclairage de scène, **M** carte matériau `ipr0`, **V** couleur de sommet. `default_NB_NL_NV` (669, notre
+    gabarit : sans éclairage → rendu plat), `default_NB_NL_NM_NV` (409, plantes), `default_NB_NV` (14, éclairé),
+    `default_NL_NV` (2, relief), **`default_NB_NL` (3, couleur de sommet)**, + néon, flare, eau, flaque, `MeshEffect`.
+    Les `_ipr0` (657 modèles) sont la même famille que les `_MaterialTex` de Blur 2 (même moteur Bizarre).
+  - **Prototype** (zone de la grande tour vitrée du virage sud-ouest, 85 837 triangles, 219 textures, rendu
+    logiciel, même caméra) : **REF** = formule Blur 2 au pixel ; **A** textures seules (gabarit actuel) : plat, trop
+    clair ; **B** + éclairage de scène Blur 1 : volume par orientation, sans ombres ni occlusion ; **C** textures
+    d'origine nettes + lightmap Blur 2 **échantillonnée aux sommets** (voie couleur de sommet) : **quasi identique à
+    REF**, vitres un peu trop claires ; **D** = C + reflet cubemap : **≈ REF**. Sommets tombant dans la marge mauve
+    de la lightmap : remplacés par la moyenne des autres sommets du triangle.
+  - **Conclusion** : meilleure voie = textures d'origine (tuilage, netteté) + éclairage Blur 2 en **couleurs de
+    sommet** (shader `default_NB_NL`) + reflets via la carte matériau si le shader de Blur 1 les gère (à vérifier).
+    À faire : décoder le format de sommet d'un modèle `default_NB_NL` (avec couleur) et l'écrire dans
+    `blurmodel_write` ; vérifier en jeu que la couleur de sommet module bien la texture.
+- **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
+  x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
+  ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
+  **IA** : aucun nœud d'IA du 10 nov au-dessus de 65 m → pas d'IA officielle sur le looping. **Conduite** (C# de
+  Blur2DubaiTest) : surfaces « **GravityBend** » (`GravityBendBit`, `IsGravityBend`, `GravityBendScale`,
+  `rayHitGravityBend`), « car-local gravity above 50 km/h », `UpsideDownDotProductThreshold`,
+  `ExtraArtificialGravityScale` : la gravité suit la voiture sur ces surfaces au-dessus de 50 km/h ; le bit vient
+  sans doute des types de surface par triangle de la collision X360 (non lus par `b2collision`). `car_dynamics.json` :
+  `downforce` / `constantDownforce` par voiture, aucun paramètre de looping. **Différent** du wallride / tunnel de
+  Marina (virage sud-ouest, ≤ 77 m). Blur 1 : pas de gravité locale connue → looping non franchissable tel quel.
