@@ -158,7 +158,9 @@ dossier d'historique réel n'a été créé ; il sera `Jeux_WII\studio_history\`
   pris = refus). `differences(v1, v2)` → ajoutés / modifiés / retirés ; `verifier_version` contrôle tous ses objets.
 - `journal.jsonl` : une ligne par événement (`debut` d'une opération, avec version « avant », studio, pid, jeton
   du verrou ; `fin` avec version « après » et résultat), ajoutée avec `fsync`, jamais réécrite. Chaque ligne porte
-  son rang `n` et l'empreinte de la précédente `prec` : ligne modifiée, supprimée ou déplacée → `JournalAbime`.
+  son rang `n` et l'empreinte de la précédente `prec` : ligne modifiée, supprimée **au milieu** ou déplacée →
+  `JournalAbime`. **Correction (voir « Ancres du journal ») : la chaîne seule ne détecte ni une fin coupée, ni un
+  journal vidé ou supprimé, ni un ancien journal valide remis à sa place** ; c'est le rôle des ancres.
   Dernière ligne incomplète (écriture coupée) → `JournalAbime` et aucun ajout tant qu'on n'a pas examiné (rien
   n'est « réparé » en silence). Une 2e fin pour la même opération est refusée.
 - `verrou` : créé de façon exclusive (`O_CREAT | O_EXCL`) avec studio, opération, pid, date, jeton. Une 2e opération
@@ -187,3 +189,71 @@ incomplète ; sans verrou ; concurrence dans le même processus et depuis un aut
 s'accumulent : à décider plus tard, avec accord) ; un journal abîmé bloque toute opération jusqu'à examen manuel ;
 un pid réutilisé par un autre programme ferait passer un verrou orphelin pour vivant (signalé comme occupé, sûr) ;
 `os.link` exige un disque NTFS (le cas ici).
+
+## Ancres du journal (2026-11-10) : troncature et anciens états
+
+**Constat** (essai sur le noyau `1ef4562`, journal de 6 lignes) : détectés = ligne supprimée au milieu, ligne coupée
+par une interruption ; **non détectés, opération suivante acceptée** = dernière ligne supprimée, deux dernières,
+toutes (fichier vide), journal supprimé, journal remplacé par un ancien état valide. Une chaîne de hachage prouve
+l'ordre des lignes, pas l'endroit où le journal doit finir.
+
+**Correction** : deux copies d'une ancre `{n lignes validées, empreinte de la ligne n, date, racine}` :
+`<historique>\ancre.json` et `%LOCALAPPDATA%\blurre\ancres\<clé du chemin de l'historique>.json` (hors de
+`Jeux_WII`). Écriture de chaque ligne, dans cet ordre : ligne ajoutée au journal (`fsync`), ancre externe, ancre
+locale (chacune écrite à côté, `fsync`, puis remplacement atomique). Les anciennes lignes ne sont jamais réécrites.
+
+Contrôle (`etat_integrite`) avant **toute** photo, début, fin, liste des opérations ou des versions ; en cas d'échec
+`JournalAbime` avec un message explicite, et **tout est bloqué** :
+- chaîne rompue ou dernière ligne incomplète ;
+- ancre absente, illisible, d'un contenu inattendu, ou emplacement inaccessible (`LOCALAPPDATA` absente, chemin qui
+  n'est pas un dossier) ;
+- ancres divergentes (même si chacune est cohérente avec un journal : on ne choisit jamais l'une des deux) ;
+- journal plus court que `n` (lignes validées disparues : troncature, journal vidé ou supprimé, ancien journal) ;
+- ligne `n` d'une autre empreinte (journal remplacé, même de même longueur) ;
+- plus d'une ligne au-delà de `n`.
+Une seule ligne de plus que `n` est acceptée : c'est l'état laissé par une coupure entre la ligne et les ancres ;
+elle est forcément chaînée à la ligne ancrée, et l'ajout suivant l'ancre avant d'écrire la sienne.
+Historique vierge (ni journal, ni ancres, ni version) : accepté ; dès la 1re donnée (photo ou ligne), les deux
+ancres sont écrites, donc un historique qui a des données sans ancres est refusé. Une ancre absente ou illisible
+n'est **jamais reconstruite automatiquement**.
+
+Interruptions et pannes :
+- coupure pendant l'ajout de la ligne → ligne incomplète → blocage (rien ajouté par-dessus) ;
+- disque plein à l'ouverture du journal → opération refusée, journal inchangé ;
+- coupure (ou échec) après la ligne, avant / pendant l'ancre externe → une ligne d'avance, accepté ; l'ancienne ancre
+  reste intacte (pas de fichier temporaire laissé) ;
+- coupure entre l'ancre externe et l'ancre locale → ancres divergentes → **blocage, réancrage manuel** (fenêtre de
+  quelques millisecondes ; c'est le prix de la règle « divergence = blocage ») ;
+- `%LOCALAPPDATA%` inaccessible dès la 1re écriture → photo refusée, aucune version créée sans ancres.
+
+**Réancrage** (`apercu_reancrage`, puis `reancrer(verrou, motif, confirmation)`) : manuel et explicite. L'aperçu
+montre le nombre de lignes, l'empreinte de la dernière et le contenu des deux ancres actuelles. Le réancrage exige
+le verrou, un motif non vide et, en confirmation, l'empreinte exacte de la dernière ligne (si le journal a changé
+depuis l'aperçu, refus). Il refuse un journal à chaîne rompue ou à ligne incomplète. Il **ajoute** au journal une
+ligne `reancrage` (anciennes ancres, motif, studio), puis écrit les deux ancres (avec le motif) : rien d'autre n'est
+modifié, l'événement reste dans l'historique.
+
+**Ce que ça protège, et ce que ça ne protège pas** :
+- **Accidents** (le but) : troncature, fichier vidé ou supprimé, copie partielle, restauration d'un ancien journal ou
+  d'un **ancien dossier d'historique complet** (l'ancre externe, plus récente, diverge), mauvaise manipulation,
+  coupure de courant, disque plein. Tous détectés, opérations bloquées avec un message.
+- **Une personne qui a accès aux deux emplacements** (`Jeux_WII` et `%LOCALAPPDATA%`, donc ce compte Windows) peut
+  réécrire le journal ET les deux ancres de façon cohérente : ce n'est **pas** détecté. Ce n'est pas une protection
+  contre une personne malveillante sur ce PC ; il faudrait pour cela une signature par une clé hors de sa portée.
+
+**Limites** : une coupure entre les deux ancres demande un réancrage manuel ; changer de PC ou de compte Windows
+(ancre externe absente) aussi ; une restauration volontaire de l'historique depuis une sauvegarde aussi (tracée par
+la ligne `reancrage`). Le blocage est total tant que l'intégrité n'est pas rétablie (choix prudent).
+
+**Tests** (`tests.test_studio_history`, 43 ; dossiers temporaires, `LOCALAPPDATA` redirigé vers le dossier du test) :
+les 7 altérations (+ un journal d'une autre histoire de même longueur) ; ancre locale / externe / les deux absentes ;
+ancres illisibles (texte abîmé, contenu inattendu) ; ancres divergentes ; historique vierge puis 1re photo ;
+coupure après la ligne, entre les deux ancres, pendant l'écriture d'une ancre ; disque plein à l'ajout de la ligne ;
+`LOCALAPPDATA` inaccessible ou absente, y compris dès la 1re écriture ; ancien dossier complet remis ; réancrage
+accepté (puis opérations de nouveau possibles) et refusé (sans verrou, sans motif, mauvaise confirmation, chaîne
+rompue, journal changé après l'aperçu) ; dans chaque cas d'intégrité non garantie, photo, début, fin, liste des
+opérations / versions / interruptions refusés. Suite complète : 80 tests, 2 passages, aucun ignoré.
+
+Incident pendant le développement : un premier passage des tests (avant la redirection de `LOCALAPPDATA`) a créé
+`%LOCALAPPDATA%\blurre\ancres\` avec 2 ancres d'historiques temporaires ; dossier créé par ce passage, retiré aussitôt.
+Les tests redirigent maintenant la variable elle-même.
