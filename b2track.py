@@ -19,7 +19,6 @@ import glob
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import threading
@@ -185,23 +184,20 @@ def blur_running():
 
 def install(m):
     """OUT/files sur Blur_test (studio_safe.installer : copie de test seulement, copies vérifiées avant de remplacer,
-    originaux gardés une fois dans BACKUP). Puis les originaux sauvegardés qui ne font pas partie de cette map
-    (restes d'une installation précédente, ex. road_21_KK) sont remis ; les fichiers ajoutés par une installation
-    précédente et absents de celle-ci restent en place (signalés : rien n'est supprimé sans accord)."""
+    originaux gardés une fois dans BACKUP). Rien d'autre n'est écrit : les fichiers d'une installation précédente
+    absents de celle-ci (ex. road_21_KK en trop) restent tels quels et sont seulement signalés. Plus de remise
+    automatique depuis BACKUP (2026-11-10, étape 0) : cette sauvegarde mélange plusieurs générations de maps (« 1re
+    version vue » à des dates différentes), un fichier remis pouvait venir d'une autre map. Ni suppression ni remise
+    tant que l'historique commun (studio_history) n'existe pas."""
     files = os.path.join(m["out"], "files")
     n, saved = SAFE.installer(files, config.BLUR_TEST, BACKUP)
     new = set(SAFE.fichiers(files))
     fa = os.path.join(BACKUP, "_absents.json")
-    restored = 0
-    for rel in SAFE.fichiers(BACKUP):
-        if rel != "_absents.json" and rel not in new:
-            shutil.copy2(os.path.join(BACKUP, rel), SAFE.dans_dossier(config.BLUR_TEST, os.path.join(config.BLUR_TEST, rel)))
-            restored += 1
-    extra = [r for r in (json.load(open(fa)) if os.path.isfile(fa) else [])
-             if r not in new and os.path.exists(os.path.join(config.BLUR_TEST, r))]
-    return "%d fichiers installés et vérifiés, %d originaux sauvegardés, %d originaux remis%s" % (
-        n, saved, restored, "" if not extra else ", %d fichiers d'une installation précédente laissés en place : %s"
-        % (len(extra), ", ".join(extra[:5])))
+    connus = set(SAFE.fichiers(BACKUP)) | set(json.load(open(fa)) if os.path.isfile(fa) else [])
+    restes = sorted(r for r in connus - new - {"_absents.json"} if os.path.exists(os.path.join(config.BLUR_TEST, r)))
+    return "%d fichiers installés et vérifiés, %d originaux sauvegardés%s" % (
+        n, saved, "" if not restes else ", %d fichiers d'une installation précédente laissés en place (rien remis ni "
+        "supprimé) : %s" % (len(restes), ", ".join(restes[:5]) + (" …" if len(restes) > 5 else "")))
 
 
 def besoin(key):
