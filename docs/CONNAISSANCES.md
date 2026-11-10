@@ -1905,6 +1905,20 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     en points ; sert à vérifier les embranchements qui se croisent.
     **Piège** : construire demande ~1-2 Go libres sur C: (Map Builder réécrit `root_track.pak`, 550 Mo). Disque plein
     → `MemoryError` puis `No space left on device` dans `pak.add_aliases` (2026-11-10, 0,25 Go libres).
+  - **Surfaces praticables, étape 1 (2026-11-10)** : couche « surfaces praticables » de l'éditeur, indépendante des
+    trajectoires IA, de la collision, du `.aid` et du respawn (rien n'est exporté à cette étape). Polygones libres,
+    sans limite de sommets, enregistrés dans le même fichier de tracé sous `areas` :
+    `[{id: "zone_N", name, type, exportable, pts: [{x, y, z}]}]` (types : route, embranchement, raccourci, pont,
+    tunnel, rampe, looping, mur ; looping et mur forcés non exportables : moteur Blur 1 incapable). `y` d'un nouveau
+    sommet = hauteur réelle du point de trajectoire le plus proche (sinon 0), à ajuster en 3D plus tard. Outils :
+    nouvelle surface (un clic par sommet, Entrée / clic sur le 1er sommet = fermer), glisser, double-clic sur un bord =
+    insérer, Ctrl+clic = après le sommet choisi, Suppr, Ctrl+Z, simplification Ramer-Douglas-Peucker à tolérance en m
+    (contour fermé coupé au sommet 0 et au plus éloigné). Contours affichés aussi dans la vue 3D.
+    Compatibilité : `make_b2_map --track` ignore `areas` (vérifié : rien dans world.json) ; anciens fichiers sans
+    `areas` lus tels quels. Le serveur valide chaque surface (id, nom, type, exportable, ≥ 3 sommets x y z) et écrit
+    le tracé de façon atomique (`.tmp` puis renommage, `.bak` gardé).
+    Performances : murs + conduite (~27 000 points) dessinés une fois dans une image cache tant que la vue ne change
+    pas : 1 ms par image pendant qu'on glisse un sommet (37 ms avant) ; 400 sommets ≈ 2 ms.
 - **Formule d'éclairage de Blur2DubaiTest (2026-11-10, Confirmé par désassemblage)** : shader `Blur2/InspectionSurface`
   (UnityPy : `compressedBlob` LZ4 → 4 programmes DXBC, désassemblés avec `D3DDisassemble` de `d3dcompiler_47.dll` ;
   noms des registres dans `m_ParsedForm.m_SubShaders[0].m_Passes[0].progFragment.m_CommonParameters`, typetree :

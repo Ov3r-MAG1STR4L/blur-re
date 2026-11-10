@@ -224,10 +224,20 @@ def main():
                 t = json.loads(body)
                 if len(t["points"]) < 3 or any(len(b["points"]) < 2 for b in t["branches"]):
                     return self.send("il faut au moins 3 points de route et 2 par embranchement", code=400)
+                bad = [a.get("id") for a in t.get("areas", []) if not (
+                    isinstance(a.get("id"), str) and isinstance(a.get("name"), str) and isinstance(a.get("type"), str)
+                    and isinstance(a.get("exportable"), bool) and len(a.get("pts", [])) >= 3
+                    and all(isinstance(p.get(c), (int, float)) for p in a["pts"] for c in "xyz"))]
+                if bad:
+                    return self.send("surfaces invalides (id, nom, type, exportable, 3 sommets x y z) : %s" % bad,
+                                     code=400)
                 os.makedirs(os.path.dirname(m["track"]), exist_ok=True)
+                tmp = m["track"] + ".tmp"                   # complete file first: a crash never truncates the track
+                with open(tmp, "w") as fh:
+                    json.dump(t, fh, indent=1)
                 if os.path.exists(m["track"]):
                     os.replace(m["track"], m["track"] + ".bak")
-                json.dump(t, open(m["track"], "w"), indent=1)
+                os.replace(tmp, m["track"])
                 cache.pop(key, None)
                 self.send("enregistré : " + m["track"])
             elif path == "/build":

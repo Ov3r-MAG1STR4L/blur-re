@@ -21,14 +21,30 @@ button{margin:2px 0}#w{width:60px}#aide{color:#999;font-size:12px;margin-top:6px
 <div id="p" class="box">
  <b>Tracés Blur 2</b> <select id="map"></select><br><span id="f" style="font-size:11px;color:#999"></span><br>
  <button id="save">Enregistrer</button> <button id="undo">Annuler (Ctrl+Z)</button> <button id="b3">Vue 3D</button><br>
- <button id="nb">Nouvel embranchement</button> <button id="db">Supprimer l'embranchement</button><br>
  <button id="build">Enregistrer et construire</button><br>
+ Afficher : <label><input type="checkbox" id="sa" checked> surfaces</label> <label><input type="checkbox" id="sp" checked> trajectoires</label>
  <label><input type="checkbox" id="sw" checked> murs</label> <label><input type="checkbox" id="sd" checked> conduite</label><br>
- <div id="sel">Aucun point choisi</div>
- Largeur <input id="w" type="number" step="1"> m <button id="wall">à tout ce tracé</button>
+ Modifier : <label><input type="radio" name="lay" value="paths" checked> trajectoires IA</label>
+ <label><input type="radio" name="lay" value="areas"> surfaces praticables</label>
+ <div id="ppanel">
+  <button id="nb">Nouvel embranchement</button> <button id="db">Supprimer l'embranchement</button><br>
+  <div id="sel">Aucun point choisi</div>
+  Largeur <input id="w" type="number" step="1"> m <button id="wall">à tout ce tracé</button>
+ </div>
+ <div id="apanel" style="display:none">
+  <button id="na">Nouvelle surface</button> <button id="da">Supprimer la surface</button><br>
+  <div id="ainfo">Aucune surface choisie</div>
+  Nom <input id="an" style="width:150px"> Type <select id="at"></select><br>
+  <label><input type="checkbox" id="ax"> exportable</label>
+  &nbsp; Simplifier à <input id="tol" type="number" value="0.5" step="0.1" min="0.05" style="width:50px"> m <button id="simp">Simplifier</button>
+ </div>
  <div style="margin-top:6px"><b>Conduite</b> <button id="rl">Actualiser</button>
   <label style="display:inline"><input type="checkbox" id="live"> en direct</label><div id="logs"></div></div>
- <div id="aide">Glisser un point : déplacer. Glisser le vide : se déplacer. Molette : zoom (Maj+molette : largeur du point).
+ <div id="aide"><b>Surfaces</b> (couche « surfaces praticables ») : « Nouvelle surface » puis un clic par sommet ;
+ Entrée ou clic sur le 1er sommet = fermer, Échap = arrêter. Glisser un sommet : déplacer. Double-clic sur un bord :
+ insérer un sommet. Ctrl+clic : sommet ajouté après le sommet choisi. Suppr : retirer le sommet. Clic dans une
+ surface : la choisir (nom, type, exportable). Indépendantes des trajectoires : rien n'est exporté à cette étape.<br>
+ <b>Trajectoires</b> : glisser un point : déplacer. Glisser le vide : se déplacer. Molette : zoom (Maj+molette : largeur du point).
  Double-clic sur un tracé : ajouter un point. Ctrl+clic : ajouter un point après le point choisi (dessiner ; sur
  un tracé vide, commence la route). Suppr : retirer le point. Carrés jaunes : début / fin des embranchements (glisser).
  Bleu = route, rouge = chemins secondaires, gris = murs / collision, vert = conduite. Triangle blanc = sens.
@@ -44,12 +60,108 @@ button{margin:2px 0}#w{width:60px}#aide{color:#999;font-size:12px;margin-top:6px
 <script>
 const cv = document.getElementById('c'), g = cv.getContext('2d'), $ = id => document.getElementById(id);
 let KEY, T, W = [], D = [], LOW = 0, v = {cx: 0, cz: 0, s: 1}, sel = null, drag = null, mode = null, first = null,
-  hist = [], dirty = false, logs = [];
+  hist = [], dirty = false, logs = [], bg = {c: document.createElement('canvas'), key: ''};
 const lines = () => [T.points, ...T.branches.map(b => b.points)];
 const S = (x, z) => [(x - v.cx) * v.s + cv.width / 2, -(z - v.cz) * v.s + cv.height / 2];
 const Wd = (px, py) => [(px - cv.width / 2) / v.s + v.cx, -(py - cv.height / 2) / v.s + v.cz];
 const keep = () => { hist.push(JSON.stringify(T)); if (hist.length > 200) hist.shift(); dirty = true; };
 const msg = t => $('msg').textContent = t;
+
+// ---- driveable areas: free polygons {id, name, type, exportable, pts: [{x, y, z}]}, independent of the AI paths
+const ATYPES = {route: '#33bb88', embranchement: '#ee9933', raccourci: '#cc66ee', pont: '#55ccff', tunnel: '#998877',
+  rampe: '#eeee44', looping: '#ff5555', mur: '#ff55aa'};   // 6 digits: + 2 alpha digits stays a valid colour
+const NOEXPORT = ['looping', 'mur'];          // the Blur 1 engine cannot use them (gravity always down)
+let A = null, av = null, drawing = false;      // selected area, its selected vertex, area being drawn
+const lay = () => document.querySelector('input[name=lay]:checked').value;
+const AR = () => T.areas;
+function yAt(x, z) {   // height of a new vertex: the nearest AI path point (real y), else 0
+  let best = 0, d = 1e18;
+  lines().forEach(P => P.forEach(q => { const e = (q.x - x) ** 2 + (q.z - z) ** 2; if (e < d) { d = e; best = q.h + LOW; } }));
+  return +best.toFixed(2);
+}
+const vtx = (x, z) => ({x: +x.toFixed(2), y: yAt(x, z), z: +z.toFixed(2)});
+function inside(P, x, z) {
+  let c = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++)
+    if ((P[i].z > z) != (P[j].z > z) && x < (P[j].x - P[i].x) * (z - P[i].z) / (P[j].z - P[i].z) + P[i].x) c = !c;
+  return c;
+}
+function drawAreas() {
+  AR().forEach((a, k) => {
+    const P = a.pts, on = k == A; if (!P.length) return;
+    g.beginPath(); P.forEach((p, i) => { const [x, y] = S(p.x, p.z); i ? g.lineTo(x, y) : g.moveTo(x, y); });
+    if (!(drawing && on)) g.closePath();
+    const col = ATYPES[a.type] || ATYPES.route;
+    g.fillStyle = col + (on ? '44' : '28'); if (P.length > 2) g.fill();
+    g.setLineDash(a.exportable ? [] : [6, 4]); g.strokeStyle = col; g.lineWidth = on ? 2.5 : 1.5; g.stroke(); g.setLineDash([]);
+    if (on || v.s > 0.6) P.forEach((p, i) => { const [x, y] = S(p.x, p.z), s = on && i == av ? 5 : on ? 3 : 1.5;
+      g.fillStyle = on && i == av ? '#fff' : col; g.fillRect(x - s, y - s, 2 * s, 2 * s); });
+  });
+}
+function ainfo() {
+  if (A == null) { $('ainfo').textContent = 'Aucune surface choisie'; return; }
+  const a = AR()[A], p = av != null ? a.pts[av] : null;
+  $('ainfo').textContent = a.id + ' : ' + a.pts.length + ' sommets' + (p ? ', sommet ' + av + ' : x ' + p.x.toFixed(1) + ', y ' + p.y.toFixed(1) + ', z ' + p.z.toFixed(1) : '');
+  if (document.activeElement != $('an')) $('an').value = a.name;
+  $('at').value = a.type; $('ax').checked = a.exportable;
+}
+function hitV(px, py) {   // nearest vertex within 8 px, the selected area first
+  let best = null, d = 64;
+  const order = AR().map((_, k) => k).sort((a, b) => (b == A) - (a == A));
+  for (const k of order) AR()[k].pts.forEach((p, i) => { const [x, y] = S(p.x, p.z), e = (x - px) ** 2 + (y - py) ** 2;
+    if (e < d) { d = e; best = {k, i}; } });
+  return best;
+}
+function areaDown(e) {
+  const [x, z] = Wd(e.clientX, e.clientY);
+  if (drawing) {
+    const P = AR()[A].pts, [fx, fy] = P.length ? S(P[0].x, P[0].z) : [1e9, 1e9];
+    if (P.length >= 3 && (fx - e.clientX) ** 2 + (fy - e.clientY) ** 2 < 100) return finishDraw();
+    keep(); P.push(vtx(x, z)); av = P.length - 1; return draw();
+  }
+  if (e.ctrlKey && A != null && av != null) {
+    keep(); AR()[A].pts.splice(av + 1, 0, vtx(x, z)); av++; return draw();
+  }
+  const h = hitV(e.clientX, e.clientY);
+  if (h) { keep(); A = h.k; av = h.i; drag = {av: h}; return draw(); }
+  let k = -1; AR().forEach((a, i) => { if (inside(a.pts, x, z)) k = i; });   // topmost = last drawn
+  A = k < 0 ? null : k; av = null;
+  drag = {pan: [e.clientX, e.clientY, v.cx, v.cz]}; draw();
+}
+function finishDraw() {
+  drawing = false;
+  if (A != null && AR()[A].pts.length < 3) { AR().splice(A, 1); A = null; msg('surface abandonnée (moins de 3 sommets)'); }
+  else msg('surface fermée');
+  av = null; draw();
+}
+function areaDbl(e) {   // insert a vertex on the nearest edge
+  let best = null, d = 150;
+  AR().forEach((a, k) => a.pts.forEach((p, i) => {
+    const b = a.pts[(i + 1) % a.pts.length], [ax, ay] = S(p.x, p.z), [bx, by] = S(b.x, b.z);
+    const L = (bx - ax) ** 2 + (by - ay) ** 2, t = L ? Math.max(0, Math.min(1, ((e.clientX - ax) * (bx - ax) + (e.clientY - ay) * (by - ay)) / L)) : 0;
+    const e2 = (ax + t * (bx - ax) - e.clientX) ** 2 + (ay + t * (by - ay) - e.clientY) ** 2;
+    if (e2 < d) { d = e2; best = {k, i, t}; }
+  }));
+  if (!best) return;
+  keep(); const P = AR()[best.k].pts, a = P[best.i], b = P[(best.i + 1) % P.length], [x, z] = Wd(e.clientX, e.clientY);
+  P.splice(best.i + 1, 0, {x: +x.toFixed(2), y: +(a.y + (b.y - a.y) * best.t).toFixed(2), z: +z.toFixed(2)});
+  A = best.k; av = best.i + 1; draw();
+}
+function rdp(P, tol) {   // Ramer-Douglas-Peucker on an open chain (x, z), keeps both ends
+  if (P.length < 3) return P;
+  const a = P[0], b = P[P.length - 1], dx = b.x - a.x, dz = b.z - a.z, L = Math.hypot(dx, dz);
+  let k = 0, d = 0;
+  for (let i = 1; i < P.length - 1; i++) {
+    const e = L ? Math.abs(dx * (a.z - P[i].z) - dz * (a.x - P[i].x)) / L : Math.hypot(P[i].x - a.x, P[i].z - a.z);
+    if (e > d) { d = e; k = i; }
+  }
+  return d <= tol ? [a, b] : [...rdp(P.slice(0, k + 1), tol).slice(0, -1), ...rdp(P.slice(k), tol)];
+}
+function simplify(P, tol) {   // closed polygon: cut at vertex 0 and the vertex farthest from it
+  let k = 0, d = 0; P.forEach((p, i) => { const e = Math.hypot(p.x - P[0].x, p.z - P[0].z); if (e > d) { d = e; k = i; } });
+  const out = [...rdp(P.slice(0, k + 1), tol).slice(0, -1), ...rdp([...P.slice(k), P[0]], tol).slice(0, -1)];
+  return out.length >= 3 ? out : P;
+}
 
 function cum() {   // metres along the main road from point 0 (closed loop, as Map Builder's from_m / to_m)
   const P = T.points, c = [0];
@@ -84,12 +196,21 @@ function poly(pts, closed, col, lw) {
 function draw() {
   if (!T) return;
   cv.width = innerWidth; cv.height = innerHeight;
-  g.fillStyle = '#111'; g.fillRect(0, 0, cv.width, cv.height);
-  const dot = (A, col, r) => { g.fillStyle = col; for (let i = 0; i < A.length; i += 3) { const [x, y] = S(A[i], A[i + 2]);
-    if (x > 0 && y > 0 && x < cv.width && y < cv.height) g.fillRect(x, y, r, r); } };
-  if ($('sw').checked) dot(W, '#777', Math.max(1, v.s * 1.6));
-  if ($('sd').checked) D.forEach(A => dot(A, '#2c2', 2));
-  lines().forEach((P, k) => {
+  // walls + drives (tens of thousands of dots) cached: redrawn only when the view or what is shown changes
+  const bk = [v.cx, v.cz, v.s, cv.width, cv.height, $('sw').checked, $('sd').checked].join();
+  if (bg.key != bk || bg.W != W || bg.D != D) {
+    bg.W = W; bg.D = D;
+    bg.c.width = cv.width; bg.c.height = cv.height; const b = bg.c.getContext('2d');
+    b.fillStyle = '#111'; b.fillRect(0, 0, cv.width, cv.height);
+    const dot = (P, col, r) => { b.fillStyle = col; for (let i = 0; i < P.length; i += 3) { const [x, y] = S(P[i], P[i + 2]);
+      if (x > 0 && y > 0 && x < cv.width && y < cv.height) b.fillRect(x, y, r, r); } };
+    if ($('sw').checked) dot(W, '#777', Math.max(1, v.s * 1.6));
+    if ($('sd').checked) D.forEach(L => dot(L, '#2c2', 2));
+    bg.key = bk;
+  }
+  g.drawImage(bg.c, 0, 0);
+  if ($('sa').checked) drawAreas();
+  if ($('sp').checked) lines().forEach((P, k) => {
     if (!P.length) return;
     const closed = k == 0, col = k ? '#f44' : '#48f', E = edgesOf(P, closed);
     poly(P.map(q => [q.x, q.z]), closed, col + '8', 1);
@@ -101,13 +222,14 @@ function draw() {
     g.fillStyle = '#fff'; g.beginPath(); g.moveTo(x0 + 12 * Math.cos(an), y0 + 12 * Math.sin(an));
     g.lineTo(x0 + 6 * Math.cos(an + 2.2), y0 + 6 * Math.sin(an + 2.2)); g.lineTo(x0 + 6 * Math.cos(an - 2.2), y0 + 6 * Math.sin(an - 2.2)); g.fill();
   });
-  if (T.points.length > 1) T.branches.forEach((b, k) => ['from_m', 'to_m'].forEach(key => {
+  if ($('sp').checked && T.points.length > 1) T.branches.forEach((b, k) => ['from_m', 'to_m'].forEach(key => {
     const p = atM(b[key]), [x, y] = S(p.x, p.z), on = sel && sel.k == k + 1;
     g.fillStyle = '#fd0'; g.fillRect(x - 6, y - 6, 12, 12);
     g.fillStyle = on ? '#fff' : '#fd0'; g.fillText((key == 'from_m' ? 'début ' : 'fin ') + (k + 1), x + 8, y - 8);
   }));
   if (mode) { g.fillStyle = '#fd0'; g.fillText(first == null ? 'Cliquer le départ sur la route bleue' : 'Cliquer l\'arrivée sur la route bleue', 360, cv.height - 12); }
-  info();
+  if (drawing) { g.fillStyle = '#fd0'; g.fillText('Surface : un clic par sommet ; Entrée ou clic sur le 1er sommet = fermer', 360, cv.height - 12); }
+  info(); ainfo();
 }
 function info() {
   if (!sel) { $('sel').textContent = 'Aucun point choisi'; return; }
@@ -129,6 +251,7 @@ function hitEnd(px, py) {
   return null;
 }
 cv.onmousedown = e => {
+  if (lay() == 'areas') return areaDown(e);
   const [x, z] = Wd(e.clientX, e.clientY);
   if (e.ctrlKey) {   // draw: a point after the selected one (an empty main road starts here)
     if (!sel && T.points.length) return msg('choisir d\'abord le point après lequel ajouter');
@@ -159,7 +282,8 @@ onmousemove = e => {
   if (drag.pan) { const [px, py, cx, cz] = drag.pan; v.cx = cx - (e.clientX - px) / v.s; v.cz = cz + (e.clientY - py) / v.s; }
   else {
     const [x, z] = Wd(e.clientX, e.clientY);
-    if (drag.pt) Object.assign(lines()[drag.pt.k][drag.pt.i], {x: +x.toFixed(2), z: +z.toFixed(2)});
+    if (drag.av) Object.assign(AR()[drag.av.k].pts[drag.av.i], {x: +x.toFixed(2), z: +z.toFixed(2)});
+    else if (drag.pt) Object.assign(lines()[drag.pt.k][drag.pt.i], {x: +x.toFixed(2), z: +z.toFixed(2)});
     else { const b = T.branches[drag.end.b], [, tot] = cum(); let m = nearM(x, z);
       if (drag.end.key == 'to_m' && m < b.from_m) m += Math.round(tot); if (drag.end.key == 'from_m' && m > b.to_m) m -= Math.round(tot);
       b[drag.end.key] = m; }
@@ -168,6 +292,7 @@ onmousemove = e => {
 };
 onmouseup = () => drag = null;
 cv.ondblclick = e => {   // insert a point on the nearest segment
+  if (lay() == 'areas') return drawing ? null : areaDbl(e);
   let best = null, d = 150;
   lines().forEach((P, k) => P.forEach((a, i) => {
     if ((k || P.length < 3) && i == P.length - 1) return;
@@ -190,6 +315,15 @@ cv.onwheel = e => {
 onkeydown = e => {
   if (e.target.tagName == 'INPUT' || e.target.tagName == 'SELECT') return;
   if (e.key == 'z' && e.ctrlKey) return $('undo').onclick();
+  if (lay() == 'areas') {
+    if (drawing && (e.key == 'Enter' || e.key == 'Escape')) return finishDraw();
+    if ((e.key == 'Delete' || e.key == 'Backspace') && A != null && av != null) {
+      const P = AR()[A].pts;
+      if (P.length <= 3) return msg('3 sommets minimum : « Supprimer la surface » pour l\'enlever');
+      keep(); P.splice(av, 1); av = Math.min(av, P.length - 1); draw();
+    }
+    return;
+  }
   if ((e.key == 'Delete' || e.key == 'Backspace') && sel) {
     const P = lines()[sel.k];
     if (sel.k && P.length <= 2) return msg('trop peu de points pour en retirer');
@@ -199,11 +333,35 @@ onkeydown = e => {
 };
 $('w').onchange = () => { if (!sel) return; keep(); lines()[sel.k][sel.i].w = Math.max(4, +$('w').value); draw(); };
 $('wall').onclick = () => { if (!sel) return; keep(); lines()[sel.k].forEach(q => q.w = Math.max(4, +$('w').value)); draw(); };
-$('undo').onclick = () => { if (hist.length) { T = JSON.parse(hist.pop()); sel = null; draw(); } };
+$('undo').onclick = () => { if (hist.length) { T = JSON.parse(hist.pop()); sel = null; A = null; av = null; drawing = false; draw(); } };
 $('nb').onclick = () => { mode = 'nb'; first = null; draw(); };
 $('db').onclick = () => { if (!sel || !sel.k) return msg('choisir d\'abord un point de l\'embranchement');
   keep(); T.branches.splice(sel.k - 1, 1); sel = null; draw(); };
-$('sw').onchange = $('sd').onchange = draw;
+$('sw').onchange = $('sd').onchange = $('sa').onchange = $('sp').onchange = draw;
+Object.keys(ATYPES).forEach(t => $('at').add(new Option(t, t)));
+document.querySelectorAll('input[name=lay]').forEach(r => r.onchange = () => {
+  if (drawing) finishDraw();
+  const ar = lay() == 'areas'; $('apanel').style.display = ar ? '' : 'none'; $('ppanel').style.display = ar ? 'none' : '';
+  sel = null; A = null; av = null; mode = null; draw();
+});
+$('na').onclick = () => {
+  if (drawing) finishDraw();
+  keep(); const n = AR().reduce((m, a) => Math.max(m, +(a.id.match(/\d+$/) || [0])[0]), 0) + 1;
+  AR().push({id: 'zone_' + n, name: 'Surface ' + n, type: 'route', exportable: true, pts: []});
+  A = AR().length - 1; av = null; drawing = true; draw();
+};
+$('da').onclick = () => { if (A == null) return msg('choisir d\'abord une surface (clic dedans)');
+  if (!confirm('Supprimer la surface « ' + AR()[A].name + ' » (' + AR()[A].pts.length + ' sommets) ?')) return;
+  keep(); AR().splice(A, 1); A = null; av = null; drawing = false; draw(); };
+$('an').onchange = () => { if (A == null) return; keep(); AR()[A].name = $('an').value; draw(); };
+$('at').onchange = () => { if (A == null) return; keep(); const a = AR()[A]; a.type = $('at').value;
+  if (NOEXPORT.includes(a.type)) a.exportable = false; draw(); };
+$('ax').onchange = () => { if (A == null) return; const a = AR()[A];
+  if ($('ax').checked && NOEXPORT.includes(a.type)) { $('ax').checked = false; return msg(a.type + ' : non exploitable par le moteur de Blur 1'); }
+  keep(); a.exportable = $('ax').checked; draw(); };
+$('simp').onclick = () => { if (A == null) return msg('choisir d\'abord une surface');
+  const a = AR()[A], n = a.pts.length; keep(); a.pts = simplify(a.pts, Math.max(0.05, +$('tol').value)); av = null;
+  msg('simplifiée : ' + n + ' → ' + a.pts.length + ' sommets (Ctrl+Z pour annuler)'); draw(); };
 async function post(path, body) {
   const r = await fetch(path + '?map=' + KEY, {method: 'POST', body: body ? JSON.stringify(body) : ''});
   return [r.ok, await r.json()];
@@ -235,7 +393,8 @@ async function openMap(key) {
   if (dirty && !confirm('Modifications non enregistrées : les abandonner ?')) return $('map').value = KEY;
   KEY = key; msg('chargement…'); T = null; logs = [];
   const d = await (await fetch('/data?map=' + key)).json();
-  T = d.track; W = d.walls; LOW = d.low; hist = []; sel = null; dirty = false;
+  T = d.track; T.areas = T.areas || []; W = d.walls; LOW = d.low; hist = []; sel = null; dirty = false;
+  A = null; av = null; drawing = false;
   $('f').textContent = d.file; $('build').disabled = !d.build;
   $('build').title = d.build ? '' : 'construction : Dubaï seulement pour l\'instant';
   const P = lines().flat(), X = P.length ? P.map(q => q.x) : W.filter((_, i) => i % 3 == 0), Z = P.length ? P.map(q => q.z) : W.filter((_, i) => i % 3 == 2);
@@ -319,6 +478,9 @@ window.view3d = (T, W, D, low) => {
   D.forEach(A => scene.add(pts(A, 0x22cc22, 2.5)));
   const L = [T.points, ...T.branches.map(b => b.points)];
   L.forEach((P, k) => { if (P.length > 1) scene.add(ribbon(P, k == 0, k ? 0xff4444 : 0x4488ff, low)); });
+  (T.areas || []).forEach(a => { if (a.pts.length < 3) return;   // driveable areas: outlines at their vertex heights
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(a.pts.flatMap(p => [p.x, p.y + 0.5, p.z]), 3));
+    scene.add(new THREE.LineLoop(g, new THREE.LineBasicMaterial({color: 0x33bb88}))); });
   const box = new THREE.Box3().setFromObject(scene), c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3());
   ctl.target.copy(c); cam.position.set(c.x, c.y + Math.max(s.x, s.z) * 0.6, c.z + Math.max(s.x, s.z) * 0.6); ctl.update();
 };
