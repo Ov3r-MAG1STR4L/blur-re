@@ -459,6 +459,7 @@ Ordre décidé par l'utilisateur :
 | 2026-11-10 | Marina : bords issus de la conduite le long des murs (--drive), éclairage approché retiré, collision à 150 m ; à essayer en jeu |
 | 2026-11-10 | Éditeur des tracés Blur 2 (`b2track.py`, « Tracés Blur 2.bat ») + `make_b2_map --track` : l'utilisateur corrige route et embranchements à la main |
 | 2026-11-10 | Éditeur des tracés : toutes les villes Blur 2, journaux de conduite par route (et en direct), construction + installation depuis la page, vue 3D |
+| 2026-11-10 | Éditeur des tracés, surfaces praticables étape 1 : polygones libres (dessin, sommets, propriétés, simplification), enregistrés sous `areas`, rien d'exporté |
 | 2026-11-10 | Marina en mode mixte : façades cuites avec la formule du shader Blur 2, sols en atlas nets ; à essayer en jeu |
 | 2026-11-10 | Comparaison des builds Blur 2 du 4 et du 10 novembre : Dubaï plus avancé le 10 (lightmaps, IA) ; le 4 apporte bonus et métadonnées IA (wallride, tunnel) + audio X360 |
 | 2026-11-10 | Compléments du 4 novembre (b2nov04.py) : 83 bonus hors Marina, wallride et tunnel situés sur Marina (virage sud-ouest) |
