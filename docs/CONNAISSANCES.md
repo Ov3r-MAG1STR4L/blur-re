@@ -2023,6 +2023,32 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     sommet** (shader `default_NB_NL`) + reflets via la carte matériau si le shader de Blur 1 les gère (à vérifier).
     À faire : décoder le format de sommet d'un modèle `default_NB_NL` (avec couleur) et l'écrire dans
     `blurmodel_write` ; vérifier en jeu que la couleur de sommet module bien la texture.
+- **Flux de sommets et couleurs de sommet de Blur 1 (2026-11-10, `blurmesh.py`, `test_blurmesh.py`)** :
+  - **Plusieurs flux** : un flux de sommets **par déclaration de vertex distincte** (1 436 modèles à 1 flux, 228 à
+    2, voitures 8 à 12) ; chaque flux porte sa propre déclaration et son stride ; un mesh choisit son flux par sa
+    déclaration et son début par `vOffset` (octets). Flux d'indices u16 : 1 à 2 par modèle.
+  - **En-tête d'un flux** : `02 RA01` `RA` stride `RA` n × (`RA` type ? canal sous-canal) `RA` n × u16 (offsets
+    des éléments) count `RA` longueur (= count × stride) `u32 16`, puis **remplissage de 0 à 19 octets nuls**
+    (alignement) **avant** les données : les données finissent juste avant le marqueur suivant (`02 RA01`, ou `RA`
+    pour le dernier flux), comme dans l'add-on. Lire les données juste après l'en-tête est faux (décalage).
+  - **Types d'élément** : 6 float3, **7 = 16 octets** (float4, déduit du stride sur 3 modèles), 8 half2, 9 half4,
+    0xA 4 octets, 0xB 4 octets (canal 3 normale, **canal 9 couleur**, canal 5 données).
+  - **Couleur** (0xB/9, toujours le dernier élément) : 4 octets **R, G, B, A**, 8 bits par canal, sans compression.
+    Preuves : (1) **normales** (même type 0xB) : octets 0,1,2 = x,y,z sur **60 modèles sur 60** (accord médian
+    avec les normales des triangles 0,83 contre 0,55 en z,y,x) → pas d'inversion D3DCOLOR (BGRA) ; (2)
+    `perks/shuntball1` (Shunt, rouge en jeu) : `ff 3a 3a ff` sur 118 sommets = rouge en RGBA (bleu en BGRA) ;
+    (3) octet 3 = **alpha** : fondus `ffffff00..ffffffff` dans ~40 modèles d'effets (nitro, shunt, mines).
+    **Espace** (sRGB ou linéaire) : **non déterminé** (`shaders-speed.pak` est en version 1, non lisible par
+    `blurpak`) ; à trancher par essai en jeu (dégradé de gris).
+  - **Qui en a** : 443 modèles / 1 763 (1 238 flux) ; teintées surtout voitures (valeurs de masque, pas des
+    couleurs visibles) et effets ; décor : `directionsigna` (`default_NB_NL`, 215 sommets, stride 24, tout blanc),
+    `bargehit1`. Strides avec couleur : 16 à 36.
+  - **Lecture** : 1 759 / 1 763 modèles (les 4 autres n'ont aucun flux de sommets) ; mêmes offsets que l'add-on
+    sur 10 modèles sur 10 ; index de faces < nombre de sommets partout. L'add-on, lui, échoue sur l'en-tête
+    « `Model` » (8 octets au lieu de « `  CPModel` », 12) et sur certaines sections (directionsigna, n01, lampadaires).
+  - **Écriture** : `set_colours` ne remplace que les 4 octets de couleur demandés (vérifié octet par octet),
+    refuse index hors flux et valeurs hors 0..255 ; ajouter une couleur à un flux qui n'en a pas (stride 20 → 24)
+    n'est **pas** fait (changerait tailles et offsets).
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
