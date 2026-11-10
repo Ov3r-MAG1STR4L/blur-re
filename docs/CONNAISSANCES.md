@@ -1886,3 +1886,23 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   `--drive`, inutiles avec), recalcule `start_m` depuis `--grid` (Marina : `--grid -647 509.5`), réécrit les
   `branch_NN.csv` (collision, décor) depuis les embranchements édités et l'image de contrôle `bords_trace.png`.
   Vérifié hors jeu : une modification faite dans l'éditeur se retrouve dans `bords_trace.png` ; map pas reconstruite.
+- **Formule d'éclairage de Blur2DubaiTest (2026-11-10, Confirmé par désassemblage)** : shader `Blur2/InspectionSurface`
+  (UnityPy : `compressedBlob` LZ4 → 4 programmes DXBC, désassemblés avec `D3DDisassemble` de `d3dcompiler_47.dll` ;
+  noms des registres dans `m_ParsedForm.m_SubShaders[0].m_Passes[0].progFragment.m_CommonParameters`, typetree :
+  `m_TextureParams[].m_Binding.m_Slot`, `m_ConstantBuffers[].m_VectorParams[].m_OffsetInConstantBuffer`). Textures :
+  t2 `_BaseMap`, t3 `_NormalTex`, t4 `_MaterialTex`, t5 `_EnvironmentCube`, t6 `_LightmapTex`, t7 `_Lightmap0Tex`,
+  t8 `_Lightmap1Tex`, t9 `_DetailTex`… ; lightmaps lues sur l'UV1 du maillage, transmise telle quelle par le vertex
+  shader. Branches du pixel shader, dans l'ordre : `_PrelitColor` → base × couleur de sommet² ; `_HasLightmap` →
+  base × (L.rgb × L.a)² ; **`_HasDualLightmap`** → base × ((A.rgb × B.z)² × lerp(`_BakedColour`,
+  `_Blur2EnvBakedColour`, `_Blur2EnvBlend`) + saturate(N·L) × B.y² × `_MainLightColor`) ; sinon base ×
+  (1,25 × N·L + 0,32) (+ harmoniques sphériques `_SHNodeR/G/B` si `_HasSHNode`). Mesures sur les pages de Dubaï :
+  B.y ≈ 0 sur les texels utilisés (le soleil ne compte presque pas, tout est dans l'indirect), (A × B.z)² médiane
+  0,25 → l'exposition automatique d'Unity (`Blur2SceneExposure`) remonte l'image ; texels mauves (220, 180, 255) =
+  vides. C# (`Assembly-CSharp.dll`) : exposition, brouillard, rotation du ciel (`sky_rotation_offsets.csv`), pas de
+  décodage de lightmap.
+- **`b2bake.py` (prototype, 2026-11-10)** : cuisson « comme le shader » dans l'espace des lightmaps (l'UV1 d'une
+  page = dépliage sans recouvrement de ses maillages) : pour chaque texel, triangle couvrant → base avec son vrai
+  tuilage (sRGB → linéaire) × (A × B.z)² × exposition 4, ré-encodé en sRGB. Dubaï près de Marina : 1,65 M triangles
+  à 300 m, **479 pages**, 40 % des triangles sans lightmap (route, sols à mélange…). Limite : la base n'a que la
+  définition de la page (512-1 024 texels pour beaucoup de surfaces) → éclairage juste mais textures plus floues ;
+  et 479 pages contre ~120 modèles possibles.
