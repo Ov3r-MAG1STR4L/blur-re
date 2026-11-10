@@ -353,7 +353,7 @@ def main():
     env = dict(os.environ, BMB_GAME=config.BMB_GAME, BMB_INSTALLED="1", NFS_COUNT=str(nfs), NFS_SPOTS=spots,
                NFS_DRAW=str(make_nfs_map.DECOR_DRAW), NFS_NO_WALLS="1", NFS_FLOOR_Y="-5")
     subprocess.run([sys.executable, "build.py"], cwd=os.path.join(config.BMB_GAME, "map_builder", "flat_earth"),
-                   env=env, check=True, stdout=subprocess.DEVNULL)
+                   env=env, check=True, stdout=subprocess.DEVNULL, timeout=1800)   # 30 min max (Map Builder)
     make_nfs_map.main()
     if models:
         decor(files, models, nfs)

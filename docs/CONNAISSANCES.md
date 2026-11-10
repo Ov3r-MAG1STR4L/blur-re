@@ -2033,3 +2033,12 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   sans doute des types de surface par triangle de la collision X360 (non lus par `b2collision`). `car_dynamics.json` :
   `downforce` / `constantDownforce` par voiture, aucun paramètre de looping. **Différent** du wallride / tunnel de
   Marina (virage sud-ouest, ≤ 77 m). Blur 1 : pas de gravité locale connue → looping non franchissable tel quel.
+
+## Studios web locaux : sécurité et protection des travaux (2026-11-10)
+- Priorité 1 de l'audit appliquée aux 3 studios (NFS 8765, Reverse 8766, Tracés Blur 2 8767), protections communes
+  dans `studio_safe.py` : refus des requêtes d'autres sites et du DNS rebinding (Host, Origin, Sec-Fetch-Site),
+  listes blanches de noms (routes, lieux .stm, maps), écriture atomique + `.bak`, plus aucune suppression (`.bak`),
+  installation dans Blur_test seulement si `COPIE_DE_TEST_HORS_LIGNE.txt`, copies vérifiées avant de remplacer quoi
+  que ce soit, originaux gardés une fois (+ `_absents.json`), restes des constructions précédentes déplacés dans
+  `perimes\`, délais Map Builder, verrou NFS sans course, erreurs JSON. Détail, tests (37) et limites :
+  `docs/SECURITE_STUDIOS.md`. Port et navigateur réglables : `BLURRE_PORT`, `BLURRE_NO_BROWSER`.
