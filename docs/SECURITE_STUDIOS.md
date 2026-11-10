@@ -101,3 +101,18 @@ caméras ; tracé, surfaces, enregistrement sur une copie).
   verrou sans écriture atomique ; caches `web_cache\<lieu>\index.json` écrits directement (données recalculables).
 - Fichiers ajoutés par une ancienne installation et absents de la map courante : signalés, jamais supprimés
   automatiquement (à décider à la main).
+
+## Incident du 2026-11-10 (pendant la mise en place) et réparation
+
+Des serveurs lancés à la main pour vérifier les pages (ports 18765-18767, vraie configuration) tournaient encore
+quand les tests ont été relancés : le nouveau serveur NFS du test n'a pas pu prendre le port et le test a parlé à
+l'ancien. Conséquences : `nfs_dubai\files` installé dans le vrai Blur_test (194 fichiers, par-dessus Marina) et nom
+du lieu de `stm_work\world.json` changé en « essai ». Réparé : Blur_test remis depuis `nfs_dubai\backup_studio`
+(créé par cette installation : l'état d'avant), les 191 fichiers de Marina vérifiés identiques à sa sortie de
+construction ; nom remis à « NFS Dubai » (celui de `world_v1`, `world_v2`, `world_guide`, le seul champ changé).
+Restent dans Blur_test 3 fichiers ajoutés par l'installation fautive, sans effet (Marina s'arrête à `road_21_37`) :
+`models\objects\flat_earth\road_21_38.model`, `_39`, `_40` (non supprimés, en attente d'accord).
+`nfs_dubai\backup_studio` contient donc l'état « Marina installée » : c'est bien l'état d'avant la 1re
+installation par NFS Studio.
+Correctif des tests : refus de démarrer si le port est déjà pris, processus lancé vérifié vivant, et le serveur NFS
+doit servir le circuit temporaire marqué `TEST_TEMPORAIRE` avant tout envoi ; sinon les tests s'arrêtent.
