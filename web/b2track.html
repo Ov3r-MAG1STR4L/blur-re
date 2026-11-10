@@ -2,38 +2,60 @@
 <html lang="fr"><head><meta charset="utf-8"><title>Tracés Blur 2</title>
 <style>
 body{margin:0;font:13px sans-serif;background:#111;color:#ddd;overflow:hidden}
-#c{position:absolute;inset:0}
-#p{position:absolute;top:8px;left:8px;background:#222d;padding:8px 10px;border-radius:6px;max-width:330px}
+#c,#v3{position:absolute;inset:0}#v3{display:none}
+.box{position:absolute;background:#222e;padding:8px 10px;border-radius:6px}
+#p{top:8px;left:8px;width:340px;max-height:calc(100vh - 32px);overflow:auto}
 button{margin:2px 0}#w{width:60px}#aide{color:#999;font-size:12px;margin-top:6px}
-</style></head><body>
-<canvas id="c"></canvas>
-<div id="p">
- <b>Tracés Blur 2</b> <span id="f"></span><br>
- <button id="save">Enregistrer</button> <button id="undo">Annuler (Ctrl+Z)</button><br>
+#logs label{display:block;font-size:12px}
+#bld{display:none;right:8px;bottom:8px;width:560px}#bld pre{height:220px;overflow:auto;background:#000;margin:6px 0;font-size:11px}
+#bar{height:8px;background:#333}#bar div{height:100%;width:0;background:#4c4}
+#pop{display:none;inset:0;position:absolute;background:#000b}#pop>div{margin:30px auto;width:min(900px,95vw)}
+#pop img{max-width:100%;max-height:75vh;display:block;background:#fff}
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+</head><body>
+<canvas id="c"></canvas><div id="v3"></div>
+<div id="p" class="box">
+ <b>Tracés Blur 2</b> <select id="map"></select><br><span id="f" style="font-size:11px;color:#999"></span><br>
+ <button id="save">Enregistrer</button> <button id="undo">Annuler (Ctrl+Z)</button> <button id="b3">Vue 3D</button><br>
  <button id="nb">Nouvel embranchement</button> <button id="db">Supprimer l'embranchement</button><br>
+ <button id="build">Enregistrer et construire</button><br>
  <label><input type="checkbox" id="sw" checked> murs</label> <label><input type="checkbox" id="sd" checked> conduite</label><br>
  <div id="sel">Aucun point choisi</div>
  Largeur <input id="w" type="number" step="1"> m <button id="wall">à tout ce tracé</button>
+ <div style="margin-top:6px"><b>Conduite</b> <button id="rl">Actualiser</button>
+  <label style="display:inline"><input type="checkbox" id="live"> en direct</label><div id="logs"></div></div>
  <div id="aide">Glisser un point : déplacer. Glisser le vide : se déplacer. Molette : zoom (Maj+molette : largeur du point).
- Double-clic sur un tracé : ajouter un point. Suppr : retirer le point. Carrés jaunes : début / fin des embranchements
- sur la route (glisser pour les déplacer). Bleu = route principale, rouge = chemins secondaires, gris = murs,
- vert = conduite. Le triangle blanc = premier point (sens du tracé).</div>
- <div id="msg"></div>
+ Double-clic sur un tracé : ajouter un point. Ctrl+clic : ajouter un point après le point choisi (dessiner ; sur
+ un tracé vide, commence la route). Suppr : retirer le point. Carrés jaunes : début / fin des embranchements (glisser).
+ Bleu = route, rouge = chemins secondaires, gris = murs / collision, vert = conduite. Triangle blanc = sens.
+ Conduite : lancer « Blur2DubaiTest\Lancer avec enregistrement.bat », choisir la route, rouler ; « en direct » montre
+ les positions au fur et à mesure.</div>
+ <div id="msg" style="color:#fd0"></div>
 </div>
+<div id="bld" class="box"><b id="bt">Construction</b><div id="bar"><div></div></div><pre id="bl"></pre>
+ <button id="bclose">Fermer</button></div>
+<div id="pop"><div class="box" style="position:static"><b>Contrôle de la map construite (vue de dessus)</b>
+ <img id="pimg"><button id="inst">Installer dans Blur_test</button> <button id="pno">Ne pas installer</button>
+ <span id="pmsg"></span></div></div>
 <script>
 const cv = document.getElementById('c'), g = cv.getContext('2d'), $ = id => document.getElementById(id);
-let T, W, D, v = {cx: 0, cz: 0, s: 1}, sel = null, drag = null, mode = null, first = null, hist = [];
+let KEY, T, W = [], D = [], LOW = 0, v = {cx: 0, cz: 0, s: 1}, sel = null, drag = null, mode = null, first = null,
+  hist = [], dirty = false, logs = [];
 const lines = () => [T.points, ...T.branches.map(b => b.points)];
 const S = (x, z) => [(x - v.cx) * v.s + cv.width / 2, -(z - v.cz) * v.s + cv.height / 2];
 const Wd = (px, py) => [(px - cv.width / 2) / v.s + v.cx, -(py - cv.height / 2) / v.s + v.cz];
-const keep = () => { hist.push(JSON.stringify(T)); if (hist.length > 200) hist.shift(); };
+const keep = () => { hist.push(JSON.stringify(T)); if (hist.length > 200) hist.shift(); dirty = true; };
 const msg = t => $('msg').textContent = t;
 
 function cum() {   // metres along the main road from point 0 (closed loop, as Map Builder's from_m / to_m)
   const P = T.points, c = [0];
   for (let i = 1; i < P.length; i++) c.push(c[i - 1] + Math.hypot(P[i].x - P[i - 1].x, P[i].z - P[i - 1].z));
   const n = P.length - 1;
-  return [c, c[n] + Math.hypot(P[0].x - P[n].x, P[0].z - P[n].z)];
+  return [c, n > 0 ? c[n] + Math.hypot(P[0].x - P[n].x, P[0].z - P[n].z) : 1];
 }
 function atM(m) {
   const [c, tot] = cum(), P = T.points; m = ((m % tot) + tot) % tot;
@@ -60,28 +82,31 @@ function poly(pts, closed, col, lw) {
   if (closed) g.closePath(); g.stroke();
 }
 function draw() {
+  if (!T) return;
   cv.width = innerWidth; cv.height = innerHeight;
   g.fillStyle = '#111'; g.fillRect(0, 0, cv.width, cv.height);
-  const dot = (A, col, r) => { g.fillStyle = col; for (let i = 0; i < A.length; i += 2) { const [x, y] = S(A[i], A[i + 1]);
+  const dot = (A, col, r) => { g.fillStyle = col; for (let i = 0; i < A.length; i += 3) { const [x, y] = S(A[i], A[i + 2]);
     if (x > 0 && y > 0 && x < cv.width && y < cv.height) g.fillRect(x, y, r, r); } };
-  if ($('sw').checked) dot(W, '#777', Math.max(1, v.s * .8));
-  if ($('sd').checked) dot(D, '#2c2', 2);
+  if ($('sw').checked) dot(W, '#777', Math.max(1, v.s * 1.6));
+  if ($('sd').checked) D.forEach(A => dot(A, '#2c2', 2));
   lines().forEach((P, k) => {
+    if (!P.length) return;
     const closed = k == 0, col = k ? '#f44' : '#48f', E = edgesOf(P, closed);
     poly(P.map(q => [q.x, q.z]), closed, col + '8', 1);
     poly(E.map(e => e[0]), closed, col, 2); poly(E.map(e => e[1]), closed, col, 2);
     P.forEach((q, i) => { const [x, y] = S(q.x, q.z), on = sel && sel.k == k && sel.i == i;
       g.fillStyle = on ? '#fff' : col; g.fillRect(x - (on ? 5 : 3), y - (on ? 5 : 3), on ? 10 : 6, on ? 10 : 6); });
+    if (P.length < 2) return;
     const [x0, y0] = S(P[0].x, P[0].z), [x1, y1] = S(P[1].x, P[1].z), an = Math.atan2(y1 - y0, x1 - x0);
     g.fillStyle = '#fff'; g.beginPath(); g.moveTo(x0 + 12 * Math.cos(an), y0 + 12 * Math.sin(an));
     g.lineTo(x0 + 6 * Math.cos(an + 2.2), y0 + 6 * Math.sin(an + 2.2)); g.lineTo(x0 + 6 * Math.cos(an - 2.2), y0 + 6 * Math.sin(an - 2.2)); g.fill();
   });
-  T.branches.forEach((b, k) => ['from_m', 'to_m'].forEach(key => {
+  if (T.points.length > 1) T.branches.forEach((b, k) => ['from_m', 'to_m'].forEach(key => {
     const p = atM(b[key]), [x, y] = S(p.x, p.z), on = sel && sel.k == k + 1;
     g.fillStyle = '#fd0'; g.fillRect(x - 6, y - 6, 12, 12);
     g.fillStyle = on ? '#fff' : '#fd0'; g.fillText((key == 'from_m' ? 'début ' : 'fin ') + (k + 1), x + 8, y - 8);
   }));
-  if (mode) { g.fillStyle = '#fd0'; g.fillText(first == null ? 'Cliquer le départ sur la route bleue' : 'Cliquer l\'arrivée sur la route bleue', 10, cv.height - 12); }
+  if (mode) { g.fillStyle = '#fd0'; g.fillText(first == null ? 'Cliquer le départ sur la route bleue' : 'Cliquer l\'arrivée sur la route bleue', 360, cv.height - 12); }
   info();
 }
 function info() {
@@ -97,6 +122,7 @@ function hit(px, py) {
   return best;
 }
 function hitEnd(px, py) {
+  if (T.points.length < 2) return null;
   for (let k = 0; k < T.branches.length; k++) for (const key of ['from_m', 'to_m']) {
     const p = atM(T.branches[k][key]), [x, y] = S(p.x, p.z); if (Math.abs(x - px) < 7 && Math.abs(y - py) < 7) return {b: k, key};
   }
@@ -104,7 +130,14 @@ function hitEnd(px, py) {
 }
 cv.onmousedown = e => {
   const [x, z] = Wd(e.clientX, e.clientY);
+  if (e.ctrlKey) {   // draw: a point after the selected one (an empty main road starts here)
+    if (!sel && T.points.length) return msg('choisir d\'abord le point après lequel ajouter');
+    keep(); const k = sel ? sel.k : 0, P = lines()[k], i = sel ? sel.i : -1, q = P[i] || {w: 30, h: 0};
+    P.splice(i + 1, 0, {x: +x.toFixed(2), z: +z.toFixed(2), w: q.w, h: q.h}); sel = {k, i: i + 1};
+    return draw();
+  }
   if (mode) {
+    if (T.points.length < 3) { mode = null; return msg('tracer d\'abord la route principale'); }
     if (first == null) { first = nearM(x, z); msg('départ ' + first + ' m'); }
     else {
       let fm = first, tm = nearM(x, z); const [, tot] = cum(); if (tm < fm) tm += Math.round(tot);
@@ -137,7 +170,7 @@ onmouseup = () => drag = null;
 cv.ondblclick = e => {   // insert a point on the nearest segment
   let best = null, d = 150;
   lines().forEach((P, k) => P.forEach((a, i) => {
-    if (k && i == P.length - 1) return;
+    if ((k || P.length < 3) && i == P.length - 1) return;
     const b = P[(i + 1) % P.length], [ax, ay] = S(a.x, a.z), [bx, by] = S(b.x, b.z);
     const L = (bx - ax) ** 2 + (by - ay) ** 2, t = L ? Math.max(0, Math.min(1, ((e.clientX - ax) * (bx - ax) + (e.clientY - ay) * (by - ay)) / L)) : 0;
     const e2 = (ax + t * (bx - ax) - e.clientX) ** 2 + (ay + t * (by - ay) - e.clientY) ** 2;
@@ -155,11 +188,11 @@ cv.onwheel = e => {
   const [x2, z2] = Wd(e.clientX, e.clientY); v.cx += x - x2; v.cz += z - z2; draw();
 };
 onkeydown = e => {
-  if (e.target.tagName == 'INPUT') return;
+  if (e.target.tagName == 'INPUT' || e.target.tagName == 'SELECT') return;
   if (e.key == 'z' && e.ctrlKey) return $('undo').onclick();
   if ((e.key == 'Delete' || e.key == 'Backspace') && sel) {
     const P = lines()[sel.k];
-    if (P.length <= (sel.k ? 2 : 3)) return msg('trop peu de points pour en retirer');
+    if (sel.k && P.length <= 2) return msg('trop peu de points pour en retirer');
     keep(); P.splice(sel.i, 1); sel = null; draw();
   }
   if (e.key == 'Escape') { mode = null; first = null; draw(); }
@@ -171,14 +204,128 @@ $('nb').onclick = () => { mode = 'nb'; first = null; draw(); };
 $('db').onclick = () => { if (!sel || !sel.k) return msg('choisir d\'abord un point de l\'embranchement');
   keep(); T.branches.splice(sel.k - 1, 1); sel = null; draw(); };
 $('sw').onchange = $('sd').onchange = draw;
-$('save').onclick = () => fetch('/save', {method: 'POST', body: JSON.stringify(T)})
-  .then(r => msg(r.ok ? 'enregistré (' + new Date().toLocaleTimeString() + ')' : 'échec de l\'enregistrement'));
+async function post(path, body) {
+  const r = await fetch(path + '?map=' + KEY, {method: 'POST', body: body ? JSON.stringify(body) : ''});
+  return [r.ok, await r.json()];
+}
+async function save() {
+  const [ok, t] = await post('/save', T); msg(t); if (ok) dirty = false; return ok;
+}
+$('save').onclick = save;
 onresize = draw;
-fetch('/data').then(r => r.json()).then(d => {
-  T = d.track; W = d.walls; D = d.drive; $('f').textContent = d.file;
-  const X = T.points.map(q => q.x), Z = T.points.map(q => q.z);
-  v.cx = (Math.min(...X) + Math.max(...X)) / 2; v.cz = (Math.min(...Z) + Math.max(...Z)) / 2;
-  v.s = Math.min(innerWidth / (Math.max(...X) - Math.min(...X) + 100), innerHeight / (Math.max(...Z) - Math.min(...Z) + 100));
-  draw();
+onbeforeunload = e => { if (dirty) e.preventDefault(); };
+
+// ---- drives (green): journals of Blur2DubaiTest for this route, live = re-read every 3 s
+async function loadDrives() {
+  const keepOff = new Set(logs.filter(l => !l.on).map(l => l.log));
+  logs = await (await fetch('/drive?map=' + KEY)).json();
+  logs.forEach(l => l.on = !keepOff.has(l.log));
+  $('logs').innerHTML = logs.length ? '' : '<i style="color:#999">aucun journal sur cette map</i>';
+  logs.forEach(l => { const lb = document.createElement('label');
+    lb.innerHTML = `<input type="checkbox" ${l.on ? 'checked' : ''}> ${l.log} (${l.pts.length / 3} positions)`;
+    lb.firstChild.onchange = ev => { l.on = ev.target.checked; setD(); }; $('logs').append(lb); });
+  setD();
+}
+const setD = () => { D = logs.filter(l => l.on).map(l => l.pts); draw(); };
+$('rl').onclick = loadDrives;
+setInterval(() => { if ($('live').checked) loadDrives(); }, 3000);
+
+// ---- maps
+async function openMap(key) {
+  if (dirty && !confirm('Modifications non enregistrées : les abandonner ?')) return $('map').value = KEY;
+  KEY = key; msg('chargement…'); T = null; logs = [];
+  const d = await (await fetch('/data?map=' + key)).json();
+  T = d.track; W = d.walls; LOW = d.low; hist = []; sel = null; dirty = false;
+  $('f').textContent = d.file; $('build').disabled = !d.build;
+  $('build').title = d.build ? '' : 'construction : Dubaï seulement pour l\'instant';
+  const P = lines().flat(), X = P.length ? P.map(q => q.x) : W.filter((_, i) => i % 3 == 0), Z = P.length ? P.map(q => q.z) : W.filter((_, i) => i % 3 == 2);
+  const mn = A => A.reduce((a, b) => Math.min(a, b), 1e9), mx = A => A.reduce((a, b) => Math.max(a, b), -1e9);
+  v.cx = (mn(X) + mx(X)) / 2; v.cz = (mn(Z) + mx(Z)) / 2;
+  v.s = Math.min(innerWidth / (mx(X) - mn(X) + 100), innerHeight / (mx(Z) - mn(Z) + 100));
+  msg(P.length ? '' : 'tracé vide : Ctrl+clic pour poser les points de la route');
+  loadDrives();
+}
+$('map').onchange = () => openMap($('map').value);
+fetch('/maps').then(r => r.json()).then(M => {
+  M.forEach(m => $('map').add(new Option(m.title + (m.build ? '' : ' - tracé seul'), m.key)));
+  openMap(M[0].key);
 });
+
+// ---- build, progress, check image, install
+const STEPS = ['track:', 'world.json:', 'baked models', 'models possible', 'scenery models in', 'terminé'];
+let polling = null;
+$('build').onclick = async () => {
+  if (!await save()) return;
+  const [ok, t] = await post('/build'); msg(t); if (!ok) return;
+  $('bld').style.display = 'block'; $('bt').textContent = 'Construction : ' + $('map').selectedOptions[0].text;
+  $('bar').firstChild.style.background = '#4c4';
+  clearInterval(polling); polling = setInterval(poll, 1000);
+};
+async function poll() {
+  const b = await (await fetch('/build')).json();
+  $('bl').textContent = b.lines.join('\n'); $('bl').scrollTop = 1e9;
+  const n = STEPS.filter(s => b.lines.some(l => l.includes(s))).length;
+  $('bar').firstChild.style.width = (b.running ? Math.max(5, 100 * n / STEPS.length) : 100) + '%';
+  if (b.running) return;
+  clearInterval(polling);
+  $('bar').firstChild.style.background = b.code == 0 ? '#4c4' : '#c44';
+  if (b.code == 0) { $('pimg').src = '/png?map=' + b.key + '&t=' + Date.now(); $('pmsg').textContent = ''; $('pop').style.display = 'block'; }
+  else msg('la construction a échoué : voir le journal en bas à droite');
+}
+$('bclose').onclick = () => $('bld').style.display = 'none';
+$('pno').onclick = () => { $('pop').style.display = 'none'; msg('construite, pas installée'); };
+$('inst').onclick = async () => {
+  $('pmsg').textContent = 'installation…';
+  const [ok, t] = await post('/install'); $('pmsg').textContent = t;
+  if (ok) { msg(t); setTimeout(() => $('pop').style.display = 'none', 2500); }
+};
+$('b3').onclick = () => {
+  const on = $('v3').style.display != 'block';
+  $('v3').style.display = on ? 'block' : 'none'; cv.style.display = on ? 'none' : 'block';
+  $('b3').textContent = on ? 'Vue de dessus' : 'Vue 3D';
+  if (on) window.view3d(T, $('sw').checked ? W : [], $('sd').checked ? D : [], LOW);
+};
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+// 3D check of the tracks: ribbons at their real height (h + low), walls and drives as points; y up, game axes
+const el = document.getElementById('v3'), r = new THREE.WebGLRenderer({antialias: true});
+el.append(r.domElement);
+const cam = new THREE.PerspectiveCamera(55, 1, 1, 20000), ctl = new OrbitControls(cam, r.domElement);
+let scene = null;
+const pts = (A, col, size) => { const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(A, 3));
+  return new THREE.Points(g, new THREE.PointsMaterial({color: col, size, sizeAttenuation: false})); };
+function ribbon(P, closed, col, low) {
+  const n = P.length, pos = [], idx = [];
+  P.forEach((q, i) => {
+    const a = closed ? P[(i - 1 + n) % n] : P[Math.max(i - 1, 0)], b = closed ? P[(i + 1) % n] : P[Math.min(i + 1, n - 1)];
+    let tx = b.x - a.x, tz = b.z - a.z; const L = Math.hypot(tx, tz) || 1; tx /= L; tz /= L;
+    const y = q.h + low + 0.3;
+    pos.push(q.x - tz * q.w / 2, y, q.z + tx * q.w / 2, q.x + tz * q.w / 2, y, q.z - tx * q.w / 2);
+  });
+  for (let i = 0; i < (closed ? n : n - 1); i++) { const j = (i + 1) % n; idx.push(2 * i, 2 * j, 2 * i + 1, 2 * i + 1, 2 * j, 2 * j + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+  const grp = new THREE.Group();
+  grp.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({color: col, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false})));
+  grp.add(new THREE.LineSegments(new THREE.WireframeGeometry(g), new THREE.LineBasicMaterial({color: col})));
+  return grp;
+}
+window.view3d = (T, W, D, low) => {
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0x111111);
+  scene.scale.z = -1;   // same handedness as the top view: x right, z up the screen
+  if (W.length) scene.add(pts(W, 0x888888, 1.5));
+  D.forEach(A => scene.add(pts(A, 0x22cc22, 2.5)));
+  const L = [T.points, ...T.branches.map(b => b.points)];
+  L.forEach((P, k) => { if (P.length > 1) scene.add(ribbon(P, k == 0, k ? 0xff4444 : 0x4488ff, low)); });
+  const box = new THREE.Box3().setFromObject(scene), c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3());
+  ctl.target.copy(c); cam.position.set(c.x, c.y + Math.max(s.x, s.z) * 0.6, c.z + Math.max(s.x, s.z) * 0.6); ctl.update();
+};
+(function loop() {
+  requestAnimationFrame(loop);
+  if (!scene || el.style.display != 'block') return;
+  r.setSize(innerWidth, innerHeight); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix();
+  r.render(scene, cam);
+})();
 </script></body></html>

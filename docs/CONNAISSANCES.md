@@ -2000,3 +2000,9 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   sans doute des types de surface par triangle de la collision X360 (non lus par `b2collision`). `car_dynamics.json` :
   `downforce` / `constantDownforce` par voiture, aucun paramètre de looping. **Différent** du wallride / tunnel de
   Marina (virage sud-ouest, ≤ 77 m). Blur 1 : pas de gravité locale connue → looping non franchissable tel quel.
+  - **Routes 1-3 de Dubaï** (Business Bay, Dubai Island, Construction) dans le même éditeur : `b2track.py --route N`
+    (le `.bat` demande le numéro). Premier lancement = tour roulé `lap_routeN_*.csv` (un point / 12 m, 30 m de large,
+    sans embranchement), murs de la route N ; enregistré dans `blur2_aid\dubai\dubai_routeN_trace.json`. Pas de
+    conduite le long des murs pour ces routes (vert vide ; `--drive JOURNAL…` pour en ajouter). Un seul éditeur à la
+    fois : un 2e lancement sur le port 8767 est refusé (sous Windows, sinon, il partageait le port en silence et
+    affichait l'ancien tracé).
