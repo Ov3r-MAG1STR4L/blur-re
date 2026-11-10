@@ -134,3 +134,67 @@ def bake_page(data, page, size=1024):
         out[ys + y0, xs + x0] = alb * light * EXPOSURE
         hit[ys + y0, xs + x0] = True
     return (np.clip(out, 0, 1) ** (1 / 2.2) * 255).astype(np.uint8), hit          # back to sRGB (display)
+
+
+def baked(n_y):
+    """mixed mode: walls, facades and props are baked; flat ground / road (|normal y| > 0.8) keep their sharp tiled
+    textures (b2decor atlas): the page only has the lightmap's resolution"""
+    return abs(n_y) <= 0.8
+
+
+def split(data, laps):
+    """-> (page triangles {page: [(P, uv1)]} to bake, b2decor data {"tex", "tris": [(k, P, uv0, 1.0)]} for the rest)"""
+    import collections
+    pages, rest = collections.defaultdict(list), []
+    for k, pg, P, uv0, uv1 in data["tris"]:
+        n = np.cross(P[1] - P[0], P[2] - P[0])
+        ny = n[1] / (np.linalg.norm(n) or 1)
+        if pg is not None and baked(ny):
+            pages[pg].append((P, uv1))
+        else:
+            rest.append((k, P, uv0, 1.0))
+    return pages, {"tex": {k: v for k, v in data["tex"].items() if v is not None}, "tris": rest}
+
+
+def page_models(data, pages, laps, count, size=1024, max_verts=10000):
+    """-> [(distance to the lap, baked page image, [(3 positions, 3 uv)])], nearest first, at most `count`; a page
+    with more than max_verts shared vertices is split (its parts share the image)"""
+    from PIL import Image
+    from scipy.spatial import cKDTree
+    tree = cKDTree(b2decor.lap_points(laps))
+    cand = []
+    for pg, tris in pages.items():
+        C = np.array([P.mean(0) for P, _ in tris])
+        dist = tree.query(C[:, [0, 2]])[0]
+        order = np.argsort(dist)
+        cur, keys = [], set()
+        for i in order:
+            P, uv = tris[i]
+            kk = {(tuple(np.round(p, 3)), tuple(np.round(q, 5))) for p, q in zip(P, uv)}
+            if len(keys) + len(kk - keys) > max_verts:
+                cand.append((float(dist[cur[0][0]]), pg, cur))
+                cur, keys = [], set()
+            cur.append((i, P, uv))
+            keys |= kk
+        if cur:
+            cand.append((float(dist[cur[0][0]]), pg, cur))
+    cand.sort(key=lambda c: c[0])
+    cand = cand[:count]
+    imgs, out = {}, []
+    for dd, pg, cur in cand:
+        if pg not in imgs:
+            # only this page's baked triangles: bake_page reads data["tris"] for the page, so give it just those
+            sub = {"tex": data["tex"], "lm": data["lm"],
+                   "tris": [t for t in data["tris"] if t[1] == pg and baked(_ny(t[2]))]}
+            img, hit = bake_page(sub, pg, size)
+            from scipy import ndimage                    # empty texels take the nearest baked one: no black seams
+            iy, ix = ndimage.distance_transform_edt(~hit, return_distances=False, return_indices=True)
+            imgs[pg] = Image.fromarray(img[iy, ix] if hit.any() else img).convert("RGBA")
+        out.append((dd, imgs[pg], [([tuple(p) for p in P], [tuple(q) for q in uv]) for _, P, uv in cur]))
+    print(len(cand), "baked models from", len(imgs), "pages")
+    return out
+
+
+def _ny(P):
+    n = np.cross(P[1] - P[0], P[2] - P[0])
+    return n[1] / (np.linalg.norm(n) or 1)

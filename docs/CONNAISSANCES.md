@@ -1906,3 +1906,9 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   à 300 m, **479 pages**, 40 % des triangles sans lightmap (route, sols à mélange…). Limite : la base n'a que la
   définition de la page (512-1 024 texels pour beaucoup de surfaces) → éclairage juste mais textures plus floues ;
   et 479 pages contre ~120 modèles possibles.
+- **Marina en mode mixte (2026-11-10, à essayer en jeu)** : `make_b2_map --decor` utilise `b2bake` : faces non
+  horizontales (|n.y| ≤ 0,8 : façades, murs, objets) ayant une page de lightmap → **cuites** dans leur page
+  (1 024², UV = UV1 du maillage, texels vides comblés par le plus proche cuit : pas de joints noirs) ; sols, route et
+  triangles sans lightmap → atlas nets à tuilage (`b2decor.jobs`, sans éclairage). Moitié des emplacements chacun :
+  61 modèles cuits (61 pages, les plus proches) + 61 atlas, 1 044 599 o chacun. La page cuite « a l'air corrompue »
+  vue à plat : c'est un dépliage (des centaines de petits morceaux), normal.

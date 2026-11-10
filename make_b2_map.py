@@ -340,7 +340,13 @@ def main():
     models, spots = [], os.path.abspath(os.path.join(a.out, "nfs_spots.json"))
     if a.decor:
         import b2decor
-        models = b2decor.jobs(b2decor.extract(UNITY, laps, a.route), laps, make_nfs_map.DECOR_MAX + ROAD_SLOTS)
+        import b2bake                                  # mixed: walls / props baked with Blur 2's lighting,
+        data = b2bake.extract(UNITY, laps, a.route, radius=200)          # flat ground in sharp tiled atlases
+        pages, rest = b2bake.split(data, laps)
+        total = make_nfs_map.DECOR_MAX + ROAD_SLOTS
+        cooked = [(img, t) for _, img, t in b2bake.page_models(data, pages, laps, total // 2)]
+        del data
+        models = cooked + b2decor.jobs(rest, laps, total - len(cooked))
         b2decor.sheet(models, os.path.join(a.out, "atlas.png"))
         json.dump([make_nfs_map.zone_centre(t) for _, t in models[:make_nfs_map.DECOR_MAX]], open(spots, "w"))
     nfs = min(len(models), make_nfs_map.DECOR_MAX)
