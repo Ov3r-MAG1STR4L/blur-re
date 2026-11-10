@@ -1,4 +1,4 @@
-"""Éditeur des tracés des maps Blur 2 (dans le navigateur, vue de dessus + aperçu 3D) : route principale et chemins
+r"""Éditeur des tracés des maps Blur 2 (dans le navigateur, vue de dessus + aperçu 3D) : route principale et chemins
 secondaires, puis construction et installation dans Blur_test (Dubaï).
 
 python b2track.py   puis http://127.0.0.1:8767   (« Tracés Blur 2.bat » dans Jeux_WII ouvre tout)
