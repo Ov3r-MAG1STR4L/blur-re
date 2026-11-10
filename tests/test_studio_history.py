@@ -16,11 +16,17 @@ import studio_history as H  # noqa: E402
 class Base(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp(prefix="hist_test_")
-        self.h = H.Historique(os.path.join(self.d, "historique"))
+        # jamais le vrai %LOCALAPPDATA% : ancres externes dans le dossier temporaire, et la variable elle-même
+        # redirigée le temps du test (un Historique créé sans `ancres` y écrirait sinon)
+        self.env = mock.patch.dict(os.environ, {"LOCALAPPDATA": os.path.join(self.d, "localappdata")})
+        self.env.start()
+        self.ancres = os.path.join(self.d, "localappdata", "blurre", "ancres")
+        self.h = H.Historique(os.path.join(self.d, "historique"), ancres=self.ancres)
         self.src = os.path.join(self.d, "Blur_test")
         os.makedirs(self.src)
 
     def tearDown(self):
+        self.env.stop()
         shutil.rmtree(self.d, ignore_errors=True)
 
     def ecrire(self, rel, b, base=None):
@@ -231,9 +237,9 @@ class Verrouillage(Base):
         self.h.verrouiller("Tracés Blur 2", "installation").liberer()   # rendu : de nouveau libre
 
     def test_concurrence_autre_processus(self):
-        code = ("import sys; sys.path.insert(0, %r); import studio_history as H; h = H.Historique(%r)\n"
+        code = ("import sys; sys.path.insert(0, %r); import studio_history as H; h = H.Historique(%r, ancres=%r)\n"
                 "try:\n    h.verrouiller('Reverse Studio', 'enregistrement')\n    print('OBTENU')\n"
-                "except H.VerrouOccupe as e:\n    print('REFUS', e.orphelin)") % (HERE, self.h.racine)
+                "except H.VerrouOccupe as e:\n    print('REFUS', e.orphelin)") % (HERE, self.h.racine, self.ancres)
         with self.h.verrouiller("NFS Studio", "installation"):
             r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=60)
         self.assertEqual(r.stdout.strip(), "REFUS False", r.stderr)
@@ -261,6 +267,272 @@ class Verrouillage(Base):
             faux.liberer()                                    # le verrou d'un autre n'est jamais retiré
         self.assertTrue(vr.detenu())
         vr.liberer()
+
+
+class Ancres(Base):
+    """troncature et anciens états : deux ancres (racine + « LOCALAPPDATA » temporaire). Chaque cas : altération
+    détectée ET toute opération refusée (photo, début, fin, lecture des opérations)."""
+    def preparer(self, n=3):
+        self.ecrire("a", b"1")
+        with self.h.verrouiller("s", "o") as vr:
+            for k in range(n):                                # n opérations terminées = 2n lignes
+                op = self.h.commencer(vr, "op%d" % k, "c")
+                self.h.terminer(vr, op)
+
+    def lignes(self):
+        return open(self.h.journal, "rb").read().splitlines(keepends=True)
+
+    def ecrire_journal(self, octets):
+        open(self.h.journal, "wb").write(octets)
+
+    def bloque(self, motif=None):
+        """intégrité non garantie : toutes les opérations refusées, avec un message explicite"""
+        with self.assertRaises(H.JournalAbime) as c:
+            self.h.verifier_journal()
+        if motif:
+            self.assertIn(motif, str(c.exception))
+        for essai in (lambda: self.h.photographier(self.src, ["a"], "s", "o"), self.h.operations,
+                      self.h.liste_versions, self.h.interrompues):
+            with self.assertRaises(H.JournalAbime):
+                essai()
+        vr = self.h.verrouiller("s", "o")
+        try:
+            with self.assertRaises(H.JournalAbime):
+                self.h.commencer(vr, "x", "c")
+            with self.assertRaises(H.JournalAbime):
+                self.h.terminer(vr, "x")
+        finally:
+            vr.liberer()
+
+    # ---- les 7 altérations du journal
+    def test_ligne_du_milieu_supprimee(self):
+        self.preparer()
+        L = self.lignes()
+        self.ecrire_journal(b"".join(L[:2] + L[3:]))
+        self.bloque("chaîne rompue")
+
+    def test_derniere_ligne_supprimee(self):
+        self.preparer()
+        self.ecrire_journal(b"".join(self.lignes()[:-1]))
+        self.bloque("lignes validées disparues")
+
+    def test_deux_dernieres_lignes_supprimees(self):
+        self.preparer()
+        self.ecrire_journal(b"".join(self.lignes()[:-2]))
+        self.bloque("lignes validées disparues")
+
+    def test_toutes_les_lignes_supprimees(self):
+        self.preparer()
+        self.ecrire_journal(b"")
+        self.bloque("lignes validées disparues")
+
+    def test_journal_supprime(self):
+        self.preparer()
+        os.remove(self.h.journal)
+        self.bloque("lignes validées disparues")
+
+    def test_remplace_par_un_ancien_etat_valide(self):
+        self.preparer(1)
+        ancien = open(self.h.journal, "rb").read()
+        self.preparer(2)                                      # 2 opérations de plus, puis l'ancien journal remis
+        self.ecrire_journal(ancien)
+        self.bloque("lignes validées disparues")
+
+    def test_meme_longueur_autre_contenu(self):              # ancien journal d'une autre histoire, aussi long
+        self.preparer(1)
+        autre = H.Historique(os.path.join(self.d, "autre"), ancres=os.path.join(self.d, "ancres_autre"))
+        with autre.verrouiller("s", "o") as vr:
+            op = autre.commencer(vr, "autre", "c")
+            autre.terminer(vr, op)
+        self.ecrire_journal(open(autre.journal, "rb").read())
+        self.bloque("ne correspond pas à l'ancre")
+
+    def test_ajout_interrompu(self):
+        self.preparer()
+        L = self.lignes()
+        self.ecrire_journal(b"".join(L) + L[-1][:25])
+        self.bloque("incomplète")
+
+    # ---- ancres absentes, illisibles, divergentes
+    def test_ancre_locale_absente(self):
+        self.preparer()
+        os.remove(self.h.ancre_locale)
+        self.bloque("ancre locale absente")
+        self.assertFalse(os.path.exists(self.h.ancre_locale))     # jamais reconstruite
+
+    def test_ancre_externe_absente(self):
+        self.preparer()
+        os.remove(self.h.ancre_externe)
+        self.bloque("ancre externe")
+        self.assertFalse(os.path.exists(self.h.ancre_externe))
+
+    def test_deux_ancres_absentes_avec_donnees(self):
+        self.preparer()
+        os.remove(self.h.ancre_locale)
+        os.remove(self.h.ancre_externe)
+        self.bloque("ancres absentes")
+        self.assertFalse(os.path.exists(self.h.ancre_locale) or os.path.exists(self.h.ancre_externe))
+
+    def test_ancres_illisibles(self):
+        for quelle in ("ancre_locale", "ancre_externe"):
+            with self.subTest(quelle):
+                self.tearDown()
+                self.setUp()
+                self.preparer()
+                p = getattr(self.h, quelle)
+                open(p, "w").write("{abime")
+                self.bloque("illisible")
+                self.assertEqual(open(p).read(), "{abime")    # laissée telle quelle
+                open(p, "w").write('{"n": "trois", "empreinte": 5}')
+                self.bloque("illisible")
+
+    def test_ancres_divergentes(self):
+        self.preparer()
+        a = json.load(open(self.h.ancre_externe))
+        a["n"] -= 1
+        open(self.h.ancre_externe, "w").write(json.dumps(a))
+        self.bloque("ancres divergentes")
+
+    def test_historique_vierge_puis_premiere_photo(self):
+        self.assertEqual(self.h.verifier_journal(), [])               # rien du tout : accepté
+        self.assertFalse(os.path.exists(self.h.ancre_externe))       # rien écrit hors de racine à la création
+        self.ecrire("a", b"1")
+        self.h.photographier(self.src, ["a"], "s", "o")
+        self.assertEqual(json.load(open(self.h.ancre_locale))["n"], 0)
+        self.assertEqual(json.load(open(self.h.ancre_externe))["n"], 0)
+        os.remove(self.h.ancre_locale)
+        os.remove(self.h.ancre_externe)
+        self.bloque("ancres absentes")                                # une version existe : plus « vierge »
+
+    # ---- interruptions entre chaque étape d'écriture
+    def coupure(self, appel, cible="_ecrire_ancre"):
+        """fait échouer le n-ième appel de cible pendant un commencer() -> l'exception remonte"""
+        vrai, compte = getattr(H.Historique, cible), {"n": 0}
+
+        def faux(this, *a, **k):
+            compte["n"] += 1
+            if compte["n"] == appel:
+                raise OSError(28, "No space left on device")
+            return vrai(this, *a, **k)
+        with mock.patch.object(H.Historique, cible, faux):
+            with self.h.verrouiller("s", "o") as vr:
+                with self.assertRaises(OSError):
+                    self.h.commencer(vr, "coupee", "c")
+
+    def test_coupure_apres_la_ligne_avant_les_ancres(self):
+        self.preparer()
+        self.coupure(1)                                       # ancre externe pas écrite
+        e = self.h.verifier_journal()                         # une ligne d'avance : acceptée
+        self.assertEqual((len(e), json.load(open(self.h.ancre_locale))["n"]), (7, 6))
+        with self.h.verrouiller("s", "o") as vr:
+            self.h.commencer(vr, "suivante", "c")             # l'ajout suivant ancre la ligne laissée, puis la sienne
+        self.assertEqual(json.load(open(self.h.ancre_locale))["n"], 8)
+        self.assertEqual(json.load(open(self.h.ancre_externe))["n"], 8)
+        self.assertEqual(len(self.h.verifier_journal()), 8)
+
+    def test_coupure_entre_les_deux_ancres(self):
+        self.preparer()
+        self.coupure(2)                                       # externe écrite, locale non
+        self.bloque("ancres divergentes")
+
+    def test_coupure_pendant_l_ecriture_d_une_ancre(self):
+        self.preparer()
+        avant = open(self.h.ancre_externe, "rb").read()
+        with mock.patch.object(H.os, "replace", side_effect=OSError(28, "No space left on device")):
+            with self.h.verrouiller("s", "o") as vr:
+                with self.assertRaises(OSError):
+                    self.h.commencer(vr, "coupee", "c")
+        self.assertEqual(open(self.h.ancre_externe, "rb").read(), avant)    # ancienne ancre intacte
+        self.assertEqual([f for f in os.listdir(self.ancres) if f.endswith(".tmp")], [])
+        self.assertEqual(len(self.h.verifier_journal()), 7)  # une ligne d'avance, acceptée
+
+    def test_disque_plein_pendant_l_ajout_de_la_ligne(self):
+        self.preparer()
+        avant = open(self.h.journal, "rb").read()
+        vrai_open = open
+
+        def open_plein(f, mode="r", *a, **k):
+            if f == self.h.journal and "a" in mode:
+                raise OSError(28, "No space left on device")
+            return vrai_open(f, mode, *a, **k)
+        with mock.patch("builtins.open", open_plein):
+            with self.h.verrouiller("s", "o") as vr:
+                with self.assertRaises(OSError):
+                    self.h.commencer(vr, "x", "c")
+        self.assertEqual(open(self.h.journal, "rb").read(), avant)
+        self.assertEqual(len(self.h.verifier_journal()), 6)
+
+    def test_localappdata_inaccessible(self):
+        self.preparer()
+        h = H.Historique(self.h.racine, ancres=os.path.join(self.d, "fichier_pas_dossier"))
+        open(os.path.join(self.d, "fichier_pas_dossier"), "w").write("x")
+        with self.assertRaises(H.JournalAbime):
+            h.verifier_journal()
+        with mock.patch.dict(os.environ, {}, clear=True):
+            sans = H.Historique(self.h.racine)
+        self.assertIsNone(sans.ancre_externe)
+        with self.assertRaises(H.JournalAbime) as c:
+            sans.verifier_journal()
+        self.assertIn("LOCALAPPDATA", str(c.exception))
+
+    def test_localappdata_inaccessible_des_la_premiere_ecriture(self):
+        open(os.path.join(self.d, "pas_un_dossier"), "w").write("x")
+        h = H.Historique(os.path.join(self.d, "neuf"), ancres=os.path.join(self.d, "pas_un_dossier", "ancres"))
+        self.ecrire("a", b"1")
+        with self.assertRaises(OSError):
+            h.photographier(self.src, ["a"], "s", "o")
+        self.assertEqual(os.listdir(h.versions), [])        # aucune version sans ancres
+
+    # ---- restauration d'un ancien dossier complet
+    def test_ancien_dossier_complet_remis(self):
+        self.preparer(1)
+        copie = os.path.join(self.d, "copie_historique")
+        shutil.copytree(self.h.racine, copie)                # sauvegarde du dossier entier (journal + ancre locale)
+        self.preparer(2)
+        shutil.rmtree(self.h.racine)
+        shutil.copytree(copie, self.h.racine)               # ancien dossier remis : cohérent avec lui-même
+        self.bloque("ancres divergentes")                    # mais l'ancre externe, elle, est plus récente
+
+    # ---- réancrage manuel
+    def test_reancrage_accepte_et_trace(self):
+        self.test_ancien_dossier_complet_remis()
+        ap = self.h.apercu_reancrage()
+        self.assertEqual((ap["lignes"], ap["locale"]["n"], ap["externe"]["n"]), (2, 2, 6))
+        with self.h.verrouiller("utilisateur", "réancrage") as vr:
+            self.h.reancrer(vr, "dossier restauré volontairement depuis une sauvegarde", ap["empreinte"])
+        e = self.h.verifier_journal()
+        self.assertEqual(e[-1]["type"], "reancrage")
+        self.assertEqual((e[-1]["ancienne_locale"]["n"], e[-1]["ancienne_externe"]["n"]), (2, 6))
+        self.assertEqual(json.load(open(self.h.ancre_externe))["reancrage"],
+                         "dossier restauré volontairement depuis une sauvegarde")
+        self.h.photographier(self.src, ["a"], "s", "o")      # de nouveau utilisable
+        with self.h.verrouiller("s", "o") as vr:
+            op = self.h.commencer(vr, "apres", "c")
+            self.h.terminer(vr, op)
+
+    def test_reancrage_refuse(self):
+        self.test_ancien_dossier_complet_remis()
+        ap = self.h.apercu_reancrage()
+        etat = lambda: [open(p, "rb").read() for p in (self.h.journal, self.h.ancre_locale, self.h.ancre_externe)]
+        avant = etat()
+        with self.assertRaises(H.ErreurHistorique):
+            self.h.reancrer(None, "motif", ap["empreinte"])                  # sans verrou
+        with self.h.verrouiller("utilisateur", "réancrage") as vr:
+            for motif, conf in (("", ap["empreinte"]), ("  ", ap["empreinte"]), ("motif", "mauvaise"),
+                                ("motif", None)):
+                with self.assertRaises(H.ErreurHistorique):
+                    self.h.reancrer(vr, motif, conf)
+        self.assertEqual(etat(), avant)                                       # rien d'écrit
+        L = self.lignes()
+        self.ecrire_journal(L[0].replace(b'"o', b'"x', 1) + L[1])           # 1re ligne changée : chaîne rompue
+        with self.h.verrouiller("utilisateur", "réancrage") as vr:
+            with self.assertRaises(H.JournalAbime):
+                self.h.reancrer(vr, "motif", ap["empreinte"])                # on n'ancre pas un journal abîmé
+        self.bloque("chaîne rompue")
+        self.ecrire_journal(L[0] + L[1].replace(b'"o', b'"x', 1))           # dernière ligne changée après l'aperçu
+        with self.h.verrouiller("utilisateur", "réancrage") as vr:
+            with self.assertRaises(H.ErreurHistorique):
+                self.h.reancrer(vr, "motif", ap["empreinte"])                # l'empreinte confirmée ne correspond plus
 
 
 if __name__ == "__main__":
