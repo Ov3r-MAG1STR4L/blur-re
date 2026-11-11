@@ -2120,7 +2120,25 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   Lecture attendue : **produit** (couleur × tout l'éclairage) → V(c)/V(255) identique dans les 3 groupes, noir à
   couleur 0 partout ; **somme** → écart V − T constant, rouge × vert jaunâtre ; **lumière du matériau
   indépendante** (couleur ne module que le reste) → contraste de la rangée V d'autant plus fort que la lumière du
-  matériau est faible (couleur 0 ≈ noir à 0, ≈ 225 à 110 comme au 1er essai). Captures : à venir.
+  matériau est faible (couleur 0 ≈ noir à 0, ≈ 225 à 110 comme au 1er essai). Résultat ci-dessous.
+- **2e essai en jeu (2026-11-11)** : captures `blur2_aid/vcolor/capture_essai2_{3,4,5}.webp` (3 : face aux 3
+  panneaux à 15 m ; 4 : de dos ; 5 : référence à 40 m, très voilée), mesures `blur2_aid/vcolor/mesures_essai2.txt`.
+  | lumière du matériau | V : couleur 0, 32, 64, 96, 128 (texture blanche) | T : texture idem (couleur blanche) | rouge × vert |
+  | 0   | 64, 118, 185, 224, 245 | ~100, 126, 180, 218, 246 | (133, 125, 96) **sombre** |
+  | 30  | 115, 129, 182, 237, 253 | 126, 126, 167, 214, 252 | (252, 121, 106) **rouge** |
+  | 110 | 233, 229, 240, 248, 248 | 186, 176, 189, 218, 245 | (224, 145, 120) rouge |
+  **Conclusions (Probable)** : (1) **sans lumière du matériau, la couleur de sommet multiplie la texture** : rouge
+  × vert sombre (niveau du plancher de brume), blanc × rouge → (242, 151, 114) ; (2) **la lumière du matériau
+  (vert de `ipr0`) s'ajoute par-dessus sans passer par la couleur** : dès 30, rouge × vert redevient rouge et la
+  couleur 0 remonte à 115 ; à 110 la couleur n'a presque plus d'effet (1er essai). Modèle : `sortie ≈ brume +
+  texture × (couleur × E + lumière du matériau)`. (3) **Couleur et texture répondent de la même façon** (V ≈ T à
+  ±10 pour 32…128 avec lumière 0) : la couleur est interprétée dans le **même espace que la texture**, sans
+  conversion propre ; savoir si toute la chaîne est sRGB ou linéaire reste **non tranché** (brume, saturation).
+  (4) **Gain ≈ 2** : couleur 128 sur texture blanche est déjà au blanc (245) → plage utile de la couleur 0…128.
+  **Conséquence pour l'éclairage Blur 2** : modèles avec **lumière du matériau 0** et couleur = éclairage × 128
+  (1,0 → 128, surexposition possible jusqu'à 255 = ×2). **Limites** : brume additive (~60…100) et voile qui
+  varie selon la hauteur dans l'image (« noir » de la rangée C à 114 contre 64 en rangée V, même combinaison),
+  compression webp, plancher non nul ; éclairage de scène E propre au niveau Map Builder.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
