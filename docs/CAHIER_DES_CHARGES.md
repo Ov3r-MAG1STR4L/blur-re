@@ -473,3 +473,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-11 | Panneau couleur de sommet en jeu : charge, couleur lue (ordre R,G,B confirmé), mais effet partiel (pas un produit) et image saturée ; sRGB/linéaire non tranché |
 | 2026-11-11 | 2e essai couleur de sommet installé dans Blur_vcolor : 3 panneaux à 15 m (lumière du matériau 0 / 30 / 110) + référence à 40 m ; captures attendues |
 | 2026-11-11 | 2e essai en jeu : couleur de sommet × texture quand la lumière du matériau est 0 ; cette lumière s'ajoute sans passer par la couleur ; même espace que la texture, gain ≈ 2 |
+| 2026-11-11 | Preuve de concept lightmap → couleurs de sommet : nervures de la tour (draws_d0154) dans Blur_vcolor, lumière du matériau 0 ; captures attendues, pas de généralisation |
