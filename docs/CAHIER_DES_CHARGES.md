@@ -474,3 +474,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-11 | 2e essai couleur de sommet installé dans Blur_vcolor : 3 panneaux à 15 m (lumière du matériau 0 / 30 / 110) + référence à 40 m ; captures attendues |
 | 2026-11-11 | 2e essai en jeu : couleur de sommet × texture quand la lumière du matériau est 0 ; cette lumière s'ajoute sans passer par la couleur ; même espace que la texture, gain ≈ 2 |
 | 2026-11-11 | Preuve de concept lightmap → couleurs de sommet : nervures de la tour (draws_d0154) dans Blur_vcolor, lumière du matériau 0 ; captures attendues, pas de généralisation |
+| 2026-11-11 | 2e preuve de concept : mur de béton de la tour (draws_d0088) subdivisé niveau 2, écart hors jeu 2,9 contre 16 sans subdivision ; installé dans Blur_vcolor, captures attendues |

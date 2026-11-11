@@ -32,14 +32,19 @@ GAMMA = 2.2
 TEX = 512
 LAP = r"C:/Users/sanqu/Jeux_WII/blur2_aid/dubai/lap_route4_marina.csv"
 MAUVE = np.array((0.86, 0.71, 1.0))          # empty padding of the lightmap pages
+TOWER = (np.array([-1112, 0, -744]), np.array([-1043, 110, -685]))        # draws_d0154's box + 2 m (game axes)
+_ENV = []
 
 
-def load(path_id=PIECE):
-    """the piece: P, N (game axes), uv0 (texture, _BaseMap tiling applied), uv1 (lightmap), triangles, images"""
+def load(path_id=PIECE, box=None):
+    """the piece: P, N (game axes), uv0 (texture, _BaseMap tiling applied), uv1 (lightmap), triangles, images;
+    box: only the triangles inside it (vertices renumbered)"""
     import UnityPy
     from UnityPy.helpers.MeshHelper import MeshHandler
     import b2collision
-    env = UnityPy.load(b2proto.UNITY)
+    if not _ENV:
+        _ENV.append(UnityPy.load(b2proto.UNITY))
+    env = _ENV[0]
     o = next(o for o in env.objects if o.path_id == path_id and o.type.name == "MeshRenderer")
     r = o.read()
     go = r.m_GameObject.read()
@@ -70,6 +75,12 @@ def load(path_id=PIECE):
                baked=co.get("_BakedColour", np.ones(3)).tolist(), env_baked=co.get("_EnvBakedColour", np.ones(3)).tolist(),
                alpha_test=fl.get("_AlphaTest", 0), has_material=fl.get("_HasMaterial", 0))
     tris = np.array(subs[0], int).reshape(-1, 3)
+    if box is not None:
+        tris = tris[((P >= box[0]) & (P <= box[1])).all(1)[tris].all(1)]
+        keep = np.unique(tris)
+        new = np.full(len(P), -1)
+        new[keep] = np.arange(len(keep))
+        tris, P, N, uv0, uv1 = new[tris], P[keep], N[keep], uv0[keep], uv1[keep]
     checks = dict(verts=len(P), tris=len(tris), uv1_per_vertex=len(uv1) == len(P), uv0_per_vertex=len(uv0) == len(P),
                   normals=len(N) == len(P), uv1_range=[float(uv1.min()), float(uv1.max())],
                   dual=src["dual"] > 0.5)
@@ -170,6 +181,40 @@ def subdivision_gain(pc, Lv, err, limit=0.10):
                 still_over=int((worst > limit).sum()))
 
 
+def subdivide(pc):
+    """every triangle in 4 (shared edge midpoints: no crack); positions, normals, both UV sets interpolated"""
+    T = pc["tris"]
+    e = np.sort(np.vstack([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]), 1)
+    e, inv = np.unique(e, axis=0, return_inverse=True)
+    n0 = len(pc["P"])
+    mid = n0 + inv.reshape(3, -1).T                         # per triangle: midpoint of (0,1), (1,2), (2,0)
+    q = dict(pc)
+    for k in ("P", "uv0", "uv1"):
+        q[k] = np.vstack([pc[k], (pc[k][e[:, 0]] + pc[k][e[:, 1]]) / 2])
+    nm = pc["N"][e[:, 0]] + pc["N"][e[:, 1]]
+    q["N"] = np.vstack([pc["N"], nm / np.maximum(np.linalg.norm(nm, axis=1, keepdims=True), 1e-9)])
+    a, b, c = T.T
+    ab, bc, ca = mid.T
+    q["tris"] = np.vstack([np.c_[a, ab, ca], np.c_[ab, b, bc], np.c_[ca, bc, c], np.c_[ab, bc, ca]])
+    return q
+
+
+def subdivision_levels(pid, levels=4, budget=7500):
+    """uniform subdivision, measured: vertices, triangles, area-weighted interpolation error per level"""
+    pc = load(pid, TOWER)
+    out = []
+    for lv in range(levels + 1):
+        if lv:
+            pc = subdivide(pc)
+        if len(pc["P"]) > 4 * budget:
+            break
+        Lv = vertex_light(pc)[0]
+        err, area = triangle_error(pc, Lv)
+        out.append(dict(level=lv, verts=len(pc["P"]), tris=len(pc["tris"]), err=float((err * area).sum() / area.sum()),
+                        area_over_0_10=float(area[err > .1].sum() / area.sum()), fits=len(pc["P"]) <= budget))
+    return out
+
+
 def ground_low():
     import csv
     return min(float(r["y"]) for r in csv.DictReader(open(LAP)))
@@ -195,14 +240,16 @@ def model_data(pc, Lv, matrix, low):
     return V, I, C, img.tobytes()
 
 
-def renders(pc, Lv, out_dir):
-    """offline: Blur 2 formula per pixel (REF), Blur 1 expected (vertex colours), their difference"""
+def renders(pc, Lv, out_dir, cam=None, look=None, tag="poc", extra=None):
+    """offline: Blur 2 formula per pixel (REF), Blur 1 expected (vertex colours), their difference;
+    extra = (pc, Lv) of the same piece without subdivision: its expected render as one more panel"""
     from PIL import Image, ImageDraw
     import csv
     info = dict(base=("b", 0), st=(1, 1, 0, 0), a=None, b=None, mat=None, alpha=False, cut=.5)
     T = [(pc["P"][t], pc["N"][t], pc["uv0"][t], pc["uv1"][t], info) for t in pc["tris"]]
-    c = pc["P"].mean(0)
-    cam, c = np.array((-1215.0, 45, -600)), np.array((-1080.0, 50, -715))      # b2proto's camera on this area
+    if cam is None:
+        cam, look = np.array((-1215.0, 45, -600)), np.array((-1080.0, 50, -715))   # b2proto's camera on this area
+    c = look
     tid, bary = b2proto.raster(T, cam, c)
     W, H = b2proto.W, b2proto.H
     sky = (0.72, 0.78, 0.86)
@@ -218,21 +265,157 @@ def renders(pc, Lv, out_dir):
     ref[py, px] = np.clip(base ** GAMMA * light(pc, uv1, n)[0], 0, 1) ** (1 / GAMMA)
     col = (encode(Lv)[tri] * L[:, :, None]).sum(1) / 128
     exp_[py, px] = np.clip(base * col, 0, 1)
-    diff = np.abs(ref - exp_)
+    panels = [("Blur 2 (formule, par pixel)", ref), ("Blur 1 attendu (couleurs de sommet)", exp_),
+              ("ecart x4", np.clip(np.abs(ref - exp_) * 4, 0, 1))]
+    m = tid >= 0
+    Y = np.array((0.2126, 0.7152, 0.0722))
+    lum = lambda im: (im[m] @ Y) * 255
+    stats = dict(cam=np.asarray(cam).tolist(), look=np.asarray(c).tolist(), pixels=int(m.sum()),
+                 ref_mean=float(lum(ref).mean()), exp_mean=float(lum(exp_).mean()),
+                 mean_abs_err=float(np.abs(lum(ref) - lum(exp_)).mean()),
+                 p95_abs_err=float(np.percentile(np.abs(lum(ref) - lum(exp_)), 95)),
+                 ref_std=float(lum(ref).std()), exp_std=float(lum(exp_).std()))
+    if extra is not None:                                   # same view, light from the unsubdivided vertices
+        pc0, Lv0 = extra
+        T0 = [(pc0["P"][t], pc0["N"][t], pc0["uv0"][t], pc0["uv1"][t], info) for t in pc0["tris"]]
+        tid0, bary0 = b2proto.raster(T0, cam, c)
+        e0 = np.zeros((H, W, 3)) + sky
+        q = tid0 >= 0
+        qy, qx = np.nonzero(q)
+        L0 = bary0[qy, qx]
+        tri0 = pc0["tris"][tid0[qy, qx]]
+        b0 = b2proto.tex({0: pc0["base"]}, 0, (pc0["uv0"][tri0] * L0[:, :, None]).sum(1))[:, :3]
+        e0[qy, qx] = np.clip(b0 * (encode(Lv0)[tri0] * L0[:, :, None]).sum(1) / 128, 0, 1)
+        panels.insert(2, ("Blur 1 attendu sans subdivision", e0))
+        both = m & q
+        l0, lr = (e0[both] @ Y) * 255, (ref[both] @ Y) * 255
+        stats.update(nosub_mean_abs_err=float(np.abs(lr - l0).mean()),
+                     nosub_p95_abs_err=float(np.percentile(np.abs(lr - l0), 95)), nosub_std=float(l0.std()))
     os.makedirs(out_dir, exist_ok=True)
-    sheet = Image.new("RGB", (W * 3, H), "white")
-    for k, (name, im) in enumerate((("Blur 2 (formule, par pixel)", ref), ("Blur 1 attendu (couleurs de sommet)", exp_),
-                                    ("ecart x4", np.clip(diff * 4, 0, 1)))):
+    sheet = Image.new("RGB", (W * len(panels), H), "white")
+    for k, (name, im) in enumerate(panels):
         p = Image.fromarray((im * 255).astype(np.uint8))
         ImageDraw.Draw(p).text((8, 8), name, fill=(255, 0, 0))
-        p.save(os.path.join(out_dir, "poc_%d.png" % k))
+        p.save(os.path.join(out_dir, "%s_%d.png" % (tag, k)))
         sheet.paste(p, (k * W, 0))
-    sheet.save(os.path.join(out_dir, "poc_planche.png"))
-    m = tid >= 0
-    lum = lambda im: (im[m] @ (0.2126, 0.7152, 0.0722)) * 255
-    return dict(cam=cam.tolist(), look=c.tolist(), pixels=int(m.sum()), ref_mean=float(lum(ref).mean()),
-                exp_mean=float(lum(exp_).mean()), mean_abs_err=float(np.abs(lum(ref) - lum(exp_)).mean()),
-                p95_abs_err=float(np.percentile(np.abs(lum(ref) - lum(exp_)), 95)))
+    sheet.save(os.path.join(out_dir, "%s_planche.png" % tag))
+    return stats
+
+
+def survey(ids, out):
+    """candidate solid surfaces among the tower's lots (triangles inside TOWER): size, flatness, vertex density,
+    light contrast and shadows (display light on 7 points per triangle), interpolation error, subdivision gain"""
+    rows = []
+    for pid in ids:
+        try:
+            pc = load(pid, TOWER)
+        except (AssertionError, KeyError, StopIteration) as e:
+            rows.append(dict(path=pid, error="%s %s" % (type(e).__name__, e)))
+            continue
+        if pc["src"]["alpha_test"] > .5 or len(pc["tris"]) < 40:
+            continue
+        T = pc["tris"]
+        Pt = pc["P"][T]
+        cr = np.cross(Pt[:, 1] - Pt[:, 0], Pt[:, 2] - Pt[:, 0])
+        area = 0.5 * np.linalg.norm(cr, axis=1)
+        Lv, ind, sun, empty = vertex_light(pc)
+        err, _ = triangle_error(pc, Lv)
+        bc = np.array([[1/3, 1/3, 1/3], [.5, .5, 0], [0, .5, .5], [.5, 0, .5], [2/3, 1/6, 1/6], [1/6, 2/3, 1/6], [1/6, 1/6, 2/3]])
+        d = []
+        for b in bc:
+            uv = (pc["uv1"][T] * b[None, :, None]).sum(1)
+            n = (pc["N"][T] * b[None, :, None]).sum(1)
+            n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-9)
+            d.append(np.clip(light(pc, uv, n)[0], 0, None).mean(1) ** (1 / GAMMA))
+        d = np.array(d).T                                          # triangles x 7, display light
+        w = np.repeat(area[:, None], 7, 1).ravel() / 7
+        med = np.median(d)
+        sub = subdivision_gain(pc, Lv, err)
+        rows.append(dict(path=pid, name=pc["src"]["name"], base=pc["src"]["base"], verts=len(pc["P"]), tris=len(T),
+                         area_m2=float(area.sum()), flatness=float(np.linalg.norm(cr.sum(0)) / (2 * area.sum())),
+                         verts_per_100m2=float(100 * len(pc["P"]) / area.sum()),
+                         light_p5=float(np.percentile(d, 5)), light_p95=float(np.percentile(d, 95)),
+                         shadow_share=float(w[(d < 0.6 * med).ravel()].sum() / w.sum()),
+                         intra_tri_var=float((area * (d.max(1) - d.min(1))).sum() / area.sum()),
+                         err_mean=float((area * err).sum() / area.sum()), area_err_over_0_10=float(area[err > .1].sum() / area.sum()),
+                         subdiv_new_vertices=sub.get("new_vertices", 0), subdiv_err=(sub.get("err_before"), sub.get("err_after")),
+                         mauve=int(empty.sum()), uv1=pc["checks"]["uv1_range"], lightmaps=(pc["src"]["a"], pc["src"]["b"])))
+        print(json.dumps(rows[-1], default=float), flush=True)
+    json.dump(rows, open(out, "w"), indent=1, default=float)
+    return rows
+
+
+def poc2(out_dir, game=None, pid=11220, level=2):
+    """second proof of concept: a solid surface of the tower (lot `pid` inside TOWER), uniform subdivision `level`,
+    same light formula, encoding, shader and material light 0 as the first one; game: install ONE model"""
+    import csv
+    pc0 = load(pid, TOWER)
+    Lv0 = vertex_light(pc0)[0]
+    pc = pc0
+    for _ in range(level):
+        pc = subdivide(pc)
+    Lv, ind, sun, empty = vertex_light(pc)
+    err0, area0 = triangle_error(pc0, Lv0)
+    err, area = triangle_error(pc, Lv)
+    col = encode(Lv)
+    lap = np.array([(float(r["x"]), float(r["y"]), float(r["z"])) for r in csv.DictReader(open(LAP))])
+    c = pc["P"].mean(0)
+    info = dict(base=("b", 0), st=(1, 1, 0, 0), a=None, b=None, mat=None, alpha=False, cut=.5)
+    T = [(pc["P"][t], pc["N"][t], pc["uv0"][t], pc["uv1"][t], info) for t in pc["tris"]]
+    dist = np.hypot(lap[:, 0] - c[0], lap[:, 2] - c[2])
+    best = None                                              # from the route (as in game), 25..150 m, most pixels
+    for i in np.flatnonzero((dist > 25) & (dist < 150))[::3]:
+        cam = lap[i] + (0, 2.5, 0)
+        n = (b2proto.raster(T, cam, c)[0] >= 0).sum()
+        if best is None or n > best[0]:
+            best = (n, cam)
+    w = lambda e, a: dict(err=float((e * a).sum() / a.sum()), area_over_0_10=float(a[e > .1].sum() / a.sum()))
+    r = dict(source=pc0["src"], path=pid, level=level, checks=pc0["checks"], mauve_vertices=int(empty.sum()),
+             verts=len(pc["P"]), tris=len(pc["tris"]), area_m2=float(area.sum()),
+             light=dict(mean=Lv.mean(0).tolist(), p50=float(np.percentile(Lv.mean(1), 50)), max=float(Lv.max()),
+                        sun_share=float(sun.sum() / max(1e-9, (ind + sun).sum()))),
+             colour=dict(min=int(col.min()), max=int(col.max()), mean=col.mean(0).tolist(),
+                         clipped=int((128 * np.maximum(Lv, 0) ** (1 / GAMMA) > 255).any(1).sum())),
+             interpolation=dict(level0=w(err0, area0), chosen=w(err, area)))
+    r["render"] = renders(pc, Lv, out_dir, cam=best[1], look=c, tag="poc2", extra=(pc0, Lv0))
+    if game:
+        r["installed"] = install_one(game, pc, Lv, c)
+    json.dump(r, open(os.path.join(out_dir, "poc2_rapport.json"), "w"), indent=1, default=float)
+    print(json.dumps(r, indent=1, default=float))
+    return r
+
+
+def install_one(game, pc, Lv, centre, keep=("nfs_101.model", "nfs_035.model", "nfs_048.model", "road_21_00.model",
+                                              "nfs_042.model")):
+    """write ONE slot model (a hidden slot near the piece) of the same size as the others; nothing else touched"""
+    import blurmesh
+    import blurmodel_write as W
+    import make_nfs_map as J
+    import config
+    g = os.path.normcase(os.path.abspath(game))
+    assert g != os.path.normcase(os.path.abspath(config.BLUR_TEST)) and "program files" not in g
+    ap = os.path.join(game, "gamedata", "levels", "flat_earth", "actorpack.xt")
+    flat = os.path.join(game, "models", "objects", "flat_earth")
+    mats = {}
+    for k in range(110):
+        f = "nfs_%03d.model" % k
+        if f in keep:
+            continue
+        try:
+            mats[f] = J.slot_matrix(ap, J.NFS_UID + 2 * k + 1)
+        except AssertionError:
+            pass
+    slot = min(mats, key=lambda f: np.linalg.norm(np.array(mats[f][3])[[0, 2]] - centre[[0, 2]]))
+    V, I, C, tex = model_data(pc, Lv, mats[slot], ground_low())
+    tpl = W.add_colour(open(J.TEMPLATE, "rb").read())
+    d = W.build(tpl, V, I, tex, TEX, TEX, glow=0, salt=0x56430400, pad_verts=7500, pad_indices=25600, colours=C)
+    size = {os.path.getsize(os.path.join(flat, f)) for f in os.listdir(flat) if f.startswith(("nfs_", "road_21_"))}
+    assert size == {len(d)}, (size, len(d))
+    s = blurmesh.read(d)["vertex_streams"][0]
+    assert blurmesh.colours(d, s)[:len(C)] == [tuple(x) for x in C]
+    open(os.path.join(flat, slot), "wb").write(d)
+    return dict(slot=slot, bytes=len(d),
+                slot_distance=float(np.linalg.norm(np.array(mats[slot][3])[[0, 2]] - centre[[0, 2]])))
 
 
 def report(out_dir):
@@ -300,7 +483,11 @@ def install(game, out_dir):
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "report":
+    if sys.argv[1] == "poc2":
+        poc2(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None)
+    elif sys.argv[1] == "survey":
+        survey([int(x) for x in sys.argv[3:]], sys.argv[2])
+    elif sys.argv[1] == "report":
         report(sys.argv[2])
     else:
         install(sys.argv[2], sys.argv[3])

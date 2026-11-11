@@ -2167,6 +2167,22 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     **charge et s'affiche** à sa place (nervures autour de la route, courbées à la base), texture visible, ombré qui
     varie le long des nervures, pas de saturation ni de noir. Vue rapprochée : comparaison chiffrée impossible
     (pièce en lignes fines, angles différents du rendu hors jeu) ; à refaire sur une surface pleine.
+- **2e preuve de concept, surface pleine (2026-11-11, `b2vcolor_poc.py survey|poc2`, `blur2_aid/vcolor/poc2/`)** :
+  - **Inventaire** des 54 lots de la tour (triangles dans la boîte, `candidats.json`) : surface, planéité, densité,
+    contraste, part d'ombre, erreur d'interpolation. Candidats retenus : `draws_d0088` béton (224 m², 29 % d'ombre,
+    lumière 0,36…1,45, erreur 0,21), `draws_d0050` façade (1 004 m², plane, **sans ombre**), `draws_d0037` socle
+    (176 m², 18 % d'ombre), `draws_d0104` carrelage (1 093 m² mais 63 sommets, erreur 0,61). **Subdivision
+    uniforme** (sans fissure, `subdivision.txt`) : béton 0,21 → 0,036 au niveau 2 (1 970 sommets), façade 0,18 →
+    0,025, socle 0,16 → 0,023 (niveau 3), carrelage encore 0,14 au niveau 3. Sur ces surfaces peu denses la
+    subdivision est **rentable** (contrairement aux nervures, déjà denses).
+  - **Choix** : `draws_d0088` (path 11220, `dontuse_conc`), mur de béton courbe au pied de la tour, **niveau 2**
+    (1970 sommets, 3072 triangles), même formule, même codage, `default_NB_NL`, lumière du matériau 0. Lumière moyenne
+    0.92, part du soleil 58 % ; couleurs 21…205, 0 saturé ; 0 sommet sur la marge mauve.
+  - **Hors jeu** (19069 pixels, caméra sur la route à (-1052, 11, -701)) : luminance Blur 2 85.1 / Blur 1 attendu
+    85.1 ; écart moyen **2.9** (95 % < 11.6) contre **16.0** (95 % < 37.0) sans subdivision ; contraste (écart type)
+    39.3 / 37.9 (sans subdivision 34.2) : détail lumineux en grande partie conservé.
+  - **Installé** : `nfs_056` (seul fichier changé ; nervures `nfs_042` et panneaux intacts ; état précédent dans
+    `backup_blur_vcolor_poc1_2026-11-11`). Position : x −1079, z −689, au sol. Captures en jeu : à venir.
   - **Limites** : pièce faite de lignes fines (peu lisible) ; reflet du cubemap et vitrage absents ; soleil supposé ;
     brume et plancher de Blur 1 non modélisés dans le rendu attendu.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
