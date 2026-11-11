@@ -2225,11 +2225,61 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     dense et varié de tailles différentes ; stabilité au-delà d'un tour ou sur d'autres cartes ; tout gain de
     fluidité, de temps de chargement ou de mémoire (**aucun benchmark** : seule la taille sur disque est mesurée) ;
     normales à l'écran (shader sans éclairage, contrôlées à la relecture seulement).
-  - **Pas encore essayé** : plusieurs matériaux / textures par modèle (demande un gabarit à 2 matériaux ou plus),
+  - **Pas encore essayé** (à cette date ; matériaux multiples essayés depuis, voir G4 ci-dessous) : plusieurs matériaux / textures par modèle (demande un gabarit à 2 matériaux ou plus),
     plus de 144 acteurs (demande d'ajouter des acteurs à `actorpack.xt` hors Map Builder).
   - État laissé : `Blur_vcolor` en G3b ; sauvegardes vérifiées `blur2_aid/vcolor/backup_blur_vcolor_{poc2,G2,G3a}_
     2026-11-11` (175 fichiers chacune) ; nervures et mur de béton des POC non affichés pendant ces essais (dans la
     sauvegarde POC2).
+- **G4 : matériaux multiples et plages de distance par maillage (2026-11-11 / 12, `Blur_vcolor`, captures réelles)**.
+  Détails, scripts, rapports et sauvegardes : `blur2_aid/vcolor/multi_materiaux/` (`S1_*`, `S1_T1_*`, `S1_T2_*`,
+  `S2_*`, `T3_*`).
+  - **Matériaux d'un modèle (format, Confirmé)** : deux descripteurs de shaders (`InstanceReset` : `g_lodFade`,
+    16 o ; `default_NB_NL_NV.fx` : `g_tAlbedo` et `g_tMaterial`, type 7 = indice de texture, 8 o). Table d'instances :
+    `N` u32, taille totale u32, puis N × (indice de shader u32 + valeurs). L'instance 0 (`InstanceReset`,
+    (0, 0, 1, 1)) n'a ni texture ni maillage. Le champ de matériau d'un maillage est un **u32** (`u5` de l'add-on),
+    48 o après le début de ses plages (index début, nombre ; sommets début, nombre).
+  - **S1 (Confirmé en jeu)** : `generator_box` (3 maillages, 2 instances texturées, 4 textures), réécrit en place à
+    taille égale (sommets, index, 2 textures couleur), sur l'emplacement caché `road_21_20` : les 2 matériaux
+    s'affichent, chaque maillage avec la bonne texture.
+  - **Plages de distance par maillage (Confirmé en jeu)** : liste `RA`, n, n × (`RA`, boîte 6 f32, mini f32,
+    maxi f32). « Sans limite » natif = `00 00 80 fe 00 00 80 7e` (±8,507 × 10³⁷ ; 2 377 maillages natifs).
+    `generator_box` = niveaux de détail : maillage 0 au-delà de 30 m, maillages 1 et 2 en deçà, d'où la
+    « disparition » de la bande basse vue en S1.
+    - **T1** : plage du maillage 0 mise à « sans limite » (2 octets changés) → il reste visible à toute distance.
+    - **T2** : seuil des maillages 1 et 2 passé de 30 à 200 m → visibles beaucoup plus loin ; le maillage 0 n'est
+      pas touché ; un tour sans crash.
+    - **Conclusion** : chaque maillage a sa plage, modifiable indépendamment des autres.
+    - **Non mesuré** : la distance réelle de bascule (200 m testé qualitativement), le point d'où la distance est
+      mesurée, la largeur du fondu `g_lodFade`.
+  - **S2 (Confirmé en jeu)** : `usa_la_longbeachdocks/gasworks/greydouble` (4 maillages, 4 instances texturées,
+    8 textures toutes utilisées, 1 flux de sommets, aucun niveau de détail), réécrit en place (1 014 214 o) avec
+    4 motifs, placé sur `road_21_23` (`FlashingCone_33`, sans collision) à 230 m de l'origine de l'acteur.
+    - **Résultat** : **4 matériaux distincts rendus simultanément**, fichier de 1 Mo accepté à la place d'un
+      triangle de 51 Ko, aucune disparition remarquée, un tour sans crash, T2 intact.
+    - **Boîtes à réécrire** : 10 boîtes englobantes, dont les 3 d'en-tête (`Models`, `Element`, `Constr`, avant la
+      fin de `MdlDat`), plus larges que les sommets dans ce gabarit et donc repérées par leur position.
+    - **Textures DXT5** : rendues opaques avec alpha 255.
+    - **Aspect délavé vu de dos** : non expliqué.
+  - **Dimensions de texture (Confirmé en jeu sur 1 cas)** : `gasworks_ridgerooftile_diff` fait **256 de large ×
+    512 de haut**, l'ordre de l'en-tête du fichier. Le lecteur de l'add-on affiche 512 × 256 : **ne pas inverser
+    largeur et hauteur d'après l'affichage d'un outil**. Le motif encodé en 256 × 512 s'affiche net en jeu.
+  - **Ordre d'attribution des matériaux** :
+    - **S2, observation** : les maillages 0 (`u5` 1, sommets 84…) et 1 (`u5` 2, sommets 0…) affichaient chacun le
+      matériau de l'autre ; les maillages 2 et 3 étaient corrects.
+    - **T3 (Confirmé en jeu)** : échanger seulement ces deux champs (2 octets) remet 1 et 2 à leur place, sans
+      toucher à 3 et 4. **Le moteur lit donc bien ce champ** ; l'hypothèse « champ ignoré » est écartée.
+    - **Probable** : les valeurs sont appliquées dans **l'ordre des plages de sommets**, et non dans l'ordre des
+      enregistrements de maillage. C'est la seule règle essayée qui explique S1, S2 et T3. Vérifiée seulement sur
+      les deux gabarits des prototypes S1 et S2 ; **à vérifier sur d'autres familles de modèles** avant d'en faire
+      une règle générale. Le mécanisme interne n'est pas identifié (tri au chargement, autre table).
+    - **Règle pour nos outils** : écrire ou réordonner les enregistrements de maillage dans l'ordre de leurs
+      sommets.
+  - **Non démontré** : rôle des 3 `CullNode` et mécanisme de culling ; ajout d'une instance ou d'une texture à un
+    gabarit (tout était natif) ; shaders autres que `default_NB_NL_NV` ; rendu du `greydouble` d'origine dans le jeu
+    d'origine.
+  - **État laissé** : `Blur_vcolor` = G3b + T2 (`road_21_20`) + T3 (`road_21_23`). Sauvegardes :
+    `backup_blur_vcolor_G3b_2026-11-11`, `backup_blur_vcolor_T2_2026-11-12` (177 fichiers vérifiés), et les
+    sauvegardes par emplacement dans `multi_materiaux/`.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
