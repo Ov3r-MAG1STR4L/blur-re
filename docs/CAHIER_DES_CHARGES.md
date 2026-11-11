@@ -470,3 +470,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-11 | Couleur de sommet ajoutée au gabarit (add_colour, stride 24, default_NB_NL) ; panneau de gris installé dans la copie Blur_vcolor (pas Blur_test) ; capture en jeu à faire |
 | 2026-11-11 | Crash Blur_vcolor analysé (crashdump.py sur le minidump WER) : remplissage de 0 octet avant les sommets de nos modèles (moteur : 5 à 20) ; correctif proposé, non appliqué |
 | 2026-11-11 | Remplissage des flux corrigé (5 à 20, aligné sur Scene, règle empirique) ; 148 modèles réinstallés et vérifiés dans Blur_vcolor ; capture en jeu attendue |
+| 2026-11-11 | Panneau couleur de sommet en jeu : charge, couleur lue (ordre R,G,B confirmé), mais effet partiel (pas un produit) et image saturée ; sRGB/linéaire non tranché |
