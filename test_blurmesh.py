@@ -149,7 +149,45 @@ def test_add_colour():
     print("add_colour OK")
 
 
+def test_stream_padding():
+    """vertex and face streams: zeros before the data in 5..20, data aligned on 16 from the Scene section start.
+    The rule (empirical) must hold on the original models and on every model our writer builds, colour or not,
+    whatever the vertex count (the bug: 0 bytes, game crash at Blur.exe+0x2E380E)"""
+    import blurmodel_write as W
+    n = 0
+    for p in sorted(glob.glob(ROOT + "/**/*.model", recursive=True))[::25]:
+        if "flat_earth" in p:
+            continue
+        d = open(p, "rb").read()
+        try:
+            m = bm.read(d)
+        except ValueError:
+            continue
+        sc = W.scene_start(d)
+        for s in m["vertex_streams"] + m["face_streams"]:
+            assert W.stream_pad(s["start"] - s["pad"] - sc) == s["pad"], (p, s["pad"])
+            n += 1
+    assert n > 50, n
+    t = open(W.os.path.join(W.config.BLUR_EXTRACTED, "nfs_models", "sign_wetfloor.model"), "rb").read()
+    c = W.add_colour(t)
+    V, I = W.cube()
+    rgb = bytes(64 * 64 * 3)
+    for tpl, cols in ((t, None), (c, True)):
+        for nv in range(len(V), len(V) + 16):        # every alignment of the header end
+            out = W.build(tpl, V, I, rgb, 64, 64, pad_verts=nv, pad_indices=36 + 3 * (nv % 5),
+                          colours=[(1, 2, 3, 4)] * len(V) if cols else None)
+            sc = W.scene_start(out)
+            m = bm.read(out)
+            for s in m["vertex_streams"] + m["face_streams"]:
+                assert 5 <= s["pad"] <= 20 and (s["start"] - sc) % 16 == 0, (nv, cols, s["pad"])
+    for tag, d in (("template", t), ("colour template", c)):
+        for s in bm.read(d)["vertex_streams"] + bm.read(d)["face_streams"]:
+            assert 5 <= s["pad"] <= 20, (tag, s["pad"])
+    print("stream padding OK (%d original streams, 32 builds)" % n)
+
+
 if __name__ == "__main__":
+    test_stream_padding()
     test_add_colour()
     test_layouts()
     test_positions()

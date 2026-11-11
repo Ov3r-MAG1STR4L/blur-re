@@ -2086,6 +2086,14 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   donnait 8 (stride 20), l'en-tête agrandi par `add_colour` donne 0. Ni le format couleur ni le remplacement des
   emplacements ne sont en cause d'après le vidage. Le crash de Rio (0x6DB2EB) n'a pas cette cause (416 modèles,
   remplissages valides).
+  **Correctif (2026-11-11)** : `blurmodel_write.stream_pad` = 5 + (−(position relative à Scene + 5)) mod 16
+  (règle **empirique** : vérifiée sur les 2 590 flux de sommets et tous les flux de faces d'origine, pas lue dans
+  le code du moteur), utilisée par `_assemble` pour sommets et faces. Panneau : seule différence = 16 octets nuls
+  avant les sommets + longueurs de `Model`, `Render` ×2, `Scene` (+16) ; géométrie, indices, couleurs identiques.
+  L'ancien `_assemble` donnait aussi un remplissage < 5 **sans couleur** pour certains nombres de sommets (3 avec
+  27 sommets sur le cube) : nos cartes précédentes avaient toutes 8 à 19 (vérifié : Dubaï HP, Rio, Marina).
+  Réinstallé dans Blur_vcolor (148 modèles de 28 236 o, remplissages 16 / 15) ; état « remplissage 0 » sauvegardé
+  dans `blur2_aid/vcolor/backup_blur_vcolor_pad0_2026-11-11`. Essai en jeu : à faire.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).

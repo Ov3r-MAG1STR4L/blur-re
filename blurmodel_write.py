@@ -96,17 +96,36 @@ def _mips_alpha(px, w, h, mips):
     return bytes(out)
 
 
+PAD_MIN = 5
+
+
+def stream_pad(rel):
+    """zeros between a stream header ending `rel` bytes after the Scene section start and its data:
+    PAD_MIN..PAD_MIN + 15, data aligned on 16 (empirical rule, see _assemble)"""
+    return PAD_MIN + (-(rel + PAD_MIN)) % 16
+
+
+def scene_start(d):
+    s = [s for _, s, _ in _sections(d) if d[s:s + 8] == b"Scene\0\0\0"]
+    assert len(s) == 1, s
+    return s[0]
+
+
 def _assemble(d, rep):
-    """d with the replacements rep [(start, end, bytes) or (start, end, header, data aligned pos % 16 == 12)],
-    section lengths corrected"""
+    """d with the replacements rep [(start, end, bytes) or (start, end, header, stream data)], section lengths
+    corrected. Stream data: PAD_MIN..PAD_MIN + 15 zeros after the header, data aligned on 16 from the start of the
+    Scene section (rule seen on all 2 590 vertex and all face streams of the original models, 2026-11-11 ; with 0
+    the game read 16 bytes too far and crashed: Blur_vcolor, Blur.exe+0x2E380E)"""
+    scene = scene_start(d)
+    assert all(r[0] > scene for r in rep), "remplacement avant la section Scene"   # so it does not move
     # shift[k] = (début dans le gabarit, décalage des octets du gabarit qui suivent)
     out, at, shifts = bytearray(), 0, []
     for r in sorted(rep):
         assert r[0] >= at, "remplacements qui se chevauchent"
         out += d[at:r[0]]
         out += r[2]
-        if len(r) == 4:                             # données alignées : pos % 16 == 12
-            out += b"\0" * ((12 - len(out)) % 16)
+        if len(r) == 4:
+            out += b"\0" * stream_pad(len(out) - scene)
             out += r[3]
         at = r[1]
         shifts.append((r[0], len(out) - at))
