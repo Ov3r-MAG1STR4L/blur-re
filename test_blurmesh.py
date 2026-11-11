@@ -109,7 +109,48 @@ def test_round_trip():
     print("round trip OK")
 
 
+def test_add_colour():
+    """stride 20 -> 24 on the project J template: geometry, faces, textures unchanged, sizes and offsets coherent,
+    both readers agree, build() with colours round-trips them, build() without colours unchanged (HEAD copy)"""
+    import importlib.util
+    import blurmodel_write as W
+    t = open(W.os.path.join(W.config.BLUR_EXTRACTED, "nfs_models", "sign_wetfloor.model"), "rb").read()
+    c = W.add_colour(t)
+    a, b = bm.read(t), bm.read(c)
+    s0, s1 = a["vertex_streams"][0], b["vertex_streams"][0]
+    assert (s1["stride"], s1["count"], bm.colour_offset(s1)) == (24, s0["count"], 20)
+    assert set(bm.colours(c, s1)) == {(255, 255, 255, 255)}
+    for k in range(s0["count"]):
+        assert t[s0["start"] + 20 * k:][:20] == c[s1["start"] + 24 * k:][:20]
+    f0, f1 = a["face_streams"][0], b["face_streams"][0]
+    assert t[f0["start"]:f0["start"] + f0["length"]] == c[f1["start"]:f1["start"] + f1["length"]]
+    assert t.count(b"default_NB_NL_NV.fx") == 2 and c.count(b"default_NB_NL_NV.fx") == 0
+    assert c.count(b"default_NB_NL.fx") == 2
+    assert struct.unpack_from("<I", c, 0xC)[0] - struct.unpack_from("<I", t, 0xC)[0] == len(c) - len(t)
+    tail = t[f0["start"] + f0["length"]:]                       # everything after the faces is unchanged
+    assert c.endswith(tail[-2000:])
+    V, I = W.cube()
+    rgb = bytes(range(256)) * 48
+    cols = [(k, 255 - k, 7 * k % 256, 200) for k in range(len(V))]
+    out = W.build(c, V, I, rgb, 64, 64, colours=cols, pad_verts=40, pad_indices=60)
+    s2 = bm.read(out)["vertex_streams"][0]
+    assert (s2["stride"], s2["count"]) == (24, 40) and bm.colours(out, s2)[:len(V)] == cols
+    spec = importlib.util.spec_from_file_location("bw_head", sys.argv[2] if len(sys.argv) > 2 else "")
+    if spec:
+        head = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(head)
+        assert head.build(t, V, I, rgb, 64, 64) == W.build(t, V, I, rgb, 64, 64), "stride 20 output changed"
+        print("build() without colours identical to HEAD")
+    try:
+        W.add_colour(c)
+        raise AssertionError("colour added twice")
+    except AssertionError as e:
+        assert "twice" not in str(e)
+    print("add_colour OK")
+
+
 if __name__ == "__main__":
+    test_add_colour()
     test_layouts()
     test_positions()
     test_round_trip()

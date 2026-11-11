@@ -467,3 +467,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-10 | Fusion 10/4 nov : 100 bonus du 10 gardés, 83 du 4 écartés (ancienne version d un groupe), wallride/tunnel compatibles avec l IA du 10 ; effet en jeu à tester |
 | 2026-11-10 | Audit rendu Blur 2 + prototype hors jeu (b2proto) : lightmap aux sommets + textures d origine ≈ rendu Blur 2 ; looping = surfaces GravityBend |
 | 2026-11-10 | Couleurs de sommet Blur 1 : ordre R,G,B,A confirmé (normales 60/60, Shunt rouge, alpha), lecteur multi-flux blurmesh.py (1 759/1 763 modèles) ; espace sRGB/linéaire à tester en jeu |
+| 2026-11-11 | Couleur de sommet ajoutée au gabarit (add_colour, stride 24, default_NB_NL) ; panneau de gris installé dans la copie Blur_vcolor (pas Blur_test) ; capture en jeu à faire |

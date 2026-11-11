@@ -2048,7 +2048,28 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     « `Model` » (8 octets au lieu de « `  CPModel` », 12) et sur certaines sections (directionsigna, n01, lampadaires).
   - **Écriture** : `set_colours` ne remplace que les 4 octets de couleur demandés (vérifié octet par octet),
     refuse index hors flux et valeurs hors 0..255 ; ajouter une couleur à un flux qui n'en a pas (stride 20 → 24)
-    n'est **pas** fait (changerait tailles et offsets).
+    n'est pas fait dans `blurmesh` : voir `blurmodel_write.add_colour` ci-dessous.
+  - **Ajout d'une couleur (2026-11-11, `blurmodel_write.add_colour`)** : gabarit `sign_wetfloor` (stride 20,
+    `default_NB_NL_NV`) → stride 24 + shader **`default_NB_NL`** (mêmes paramètres de matériau `g_tAlbedo`,
+    `g_tMaterial` que `directionsigna`, seul modèle de décor `default_NB_NL`). À changer, et rien d'autre :
+    (1) les **2 noms de shader** (chaîne précédée de sa longueur u32 : section matériaux + section des paramètres) ;
+    (2) la **définition de vertex** de l'en-tête (`RA` u32 n puis n × 21 o : `RA` u16 préfixe, u16 offset, u32 type,
+    u32 0, u32 canal, u8 sous-canal) : n 3 → 4, + `0 / 20 / 0B / 0 / 9 / 0` ; (3) l'**en-tête du flux** : stride
+    24, n 3 → 4, + élément `RA 0B 0 9 0`, liste d'offsets u16 `0 12 16` → `0 12 16 20` ; (4) les données (4 o par
+    sommet ajoutés). Les longueurs de section sont recalculées (`_assemble`). Contrôles : géométrie, faces et tout
+    ce qui suit identiques, relu par `blurmesh` **et** par l'add-on ; `build(..., colours=)` écrit une couleur par
+    sommet ; sans couleur, `build` donne exactement les mêmes octets qu'avant (test contre la version du dépôt).
+  - **Essai en jeu préparé (2026-11-11, `vcolor_scene.py`, `vcolor_expect.py`)** dans une copie à part,
+    `Jeux_WII\Blur_vcolor` (copie de Blur_test, 9,1 Go ; sauvegarde de ses 148 modèles d'emplacement dans
+    `blur2_aidcolorackup_blur_vcolor_flat_earth`) : 2 panneaux de 18 × 9 m en travers de la route, 40 m
+    devant et 40 m derrière le départ de Marina, faces doubles, dans `nfs_101` (les 147 autres emplacements vidés,
+    tous les modèles à 28 220 octets). Rangées : **G** dégradé continu de couleur 0 → 255 (texture blanche) ;
+    **V** couleur 0, 32 … 255 (texture blanche) ; **T** texture 0 … 255 (couleur blanche) ; **C** contrôles
+    (références blanche et noire, 128 × 128, rouge × vert, blanc × rouge, rouge × blanc, texture 128, couleur 128,
+    64 × 64). Texture 256 × 16 en bandes verticales (le sens de v ne compte pas), texel constant par bande.
+    Lecture : **V = T** → couleur et texture dans le même espace ; **V plus clair** (128 → 188) → couleur
+    linéaire avec texture sRGB ; rouge × vert **noir** → multiplication, **jaune** → addition. Image attendue :
+    `blur2_aidcolorcolor_attendu.png`. Résultat en jeu : **à venir**.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
