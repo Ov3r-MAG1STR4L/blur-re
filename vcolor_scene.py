@@ -33,6 +33,9 @@ CONTROLS = [(255, (255, 255, 255)), (255, (0, 0, 0)), (128, (128, 128, 128)), ("
 NAMES = ["blanc", "noir", "128x128", "rougeXvert", "blancXrouge", "rougeXblanc", "tex128", "vc128", "64x64"]
 AHEAD, WIDTH, BAND_H, GAP = 40.0, 18.0, 1.6, 0.25        # metres
 GLOW = 110                                                # material texture green, as the Marina decor
+# second test: the same panel at NEAR m, scaled, 3 copies side by side (left to right as seen from the start)
+# whose only difference is the material light (green of the material texture)
+NEAR, SCALE, GROUPS = 15.0, 0.45, (0, 30, 110)
 PAD = (600, 1800)
 
 
@@ -94,7 +97,17 @@ def scene(slot_matrix):
     return V, I, C, labels, start_frame()[0], start
 
 
-def _panel(V, I, C, labels, p, fwd, inv, o):
+def scene_near(slot_matrix, k):
+    """group k of GROUPS: the panel scaled by SCALE, NEAR m after the start, shifted across the road"""
+    inv, o = np.linalg.inv(np.array(slot_matrix[:3]).T), np.array(slot_matrix[3])
+    V, I, C, labels = [], [], [], []
+    p, fwd, _ = start_frame(NEAR)
+    step = WIDTH * SCALE + 1.0
+    _panel(V, I, C, labels, p, fwd, inv, o, scale=SCALE, shift=(k - (len(GROUPS) - 1) / 2) * step)
+    return V, I, C, labels
+
+
+def _panel(V, I, C, labels, p, fwd, inv, o, scale=1.0, shift=0.0):
     right = np.cross((0, 1, 0), fwd)           # seen from the start (looking along fwd), s grows to the right
     right /= np.linalg.norm(right)
     n = inv @ -fwd
@@ -102,7 +115,7 @@ def _panel(V, I, C, labels, p, fwd, inv, o):
     for corners, uv, cols, label in panel():
         base = len(V)
         for (s, t), c in zip(corners, cols):
-            q = p + right * (s - WIDTH / 2) + np.array((0, 0.3 + t, 0))
+            q = p + right * (shift + scale * (s - WIDTH / 2)) + np.array((0, 0.3 + scale * t, 0))
             V.append((*(inv @ (q - o)), *n, *uv))
             C.append((*c, 255))
         I += [base, base + 1, base + 2, base, base + 2, base + 3]           # both faces: visible whatever the
@@ -129,7 +142,16 @@ def build_all(game):
                    colours=C)
     hidden = [(0, -50, 0, 0, 1, 0, 0.5, 0.5), (0.01, -50, 0, 0, 1, 0, 0.5, 0.5), (0, -50, 0.01, 0, 1, 0, 0.5, 0.5)]
     out = {best: test}
-    for k, f in enumerate(f for f in mats if f != best):
+    near = sorted((f for f in mats if mats[f] and f != best), key=lambda f: np.linalg.norm(np.array(mats[f][3]) - p))
+    groups = {}
+    for k, (glow, f) in enumerate(zip(GROUPS, near)):
+        Vk, Ik, Ck, _ = scene_near(mats[f], k)
+        out[f] = W.build(tpl, Vk, Ik, tex, TW, TH, glow=glow, salt=0x56430200 + k, pad_verts=PAD[0],
+                         pad_indices=PAD[1], colours=Ck)
+        got = blurmesh.colours(out[f], blurmesh.read(out[f])["vertex_streams"][0])
+        assert got[:len(Ck)] == [tuple(c) for c in Ck] and Ck == C[:len(C) // 2]     # same bands as the reference
+        groups[f] = glow
+    for k, f in enumerate(f for f in mats if f not in out):
         out[f] = W.build(tpl, hidden, [0, 1, 2], tex, TW, TH, glow=GLOW, salt=0x56430100 + k,
                          pad_verts=PAD[0], pad_indices=PAD[1], colours=[(0, 0, 0, 255)] * 3)
     sizes = {len(d) for d in out.values()}
@@ -139,20 +161,22 @@ def build_all(game):
         assert s["stride"] == 24 and s["count"] == PAD[0] and blurmesh.colour_offset(s) == 20
     got = blurmesh.colours(test, blurmesh.read(test)["vertex_streams"][0])
     assert got[:len(C)] == [tuple(c) for c in C]
-    return out, best, labels, p, start
+    return out, best, labels, p, start, groups
 
 
 def main():
     game = sys.argv[1] if len(sys.argv) > 1 else r"C:/Users/sanqu/Jeux_WII/Blur_vcolor"
     g, t = os.path.normcase(os.path.abspath(game)), os.path.normcase(os.path.abspath(config.BLUR_TEST))
     assert g != t and "program files" not in g, "only a separate copy of the game"
-    out, best, labels, p, start = build_all(game)
+    out, best, labels, p, start, groups = build_all(game)
     flat = os.path.join(game, "models", "objects", "flat_earth")
     for f, d in out.items():
         assert os.path.exists(os.path.join(flat, f)), f
         open(os.path.join(flat, f), "wb").write(d)
     print("%d slot models written (%d bytes each); panel in %s at x %.1f y %.1f z %.1f, %.0f m after the start "
           "(%.1f, %.1f, %.1f)" % (len(out), len(next(iter(out.values()))), best, *p, AHEAD, *start))
+    print("second test, %.0f m after the start, left to right: %s" % (NEAR, ", ".join(
+        "%s glow %d" % (f, g) for f, g in groups.items())))
 
 
 if __name__ == "__main__":
