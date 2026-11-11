@@ -2139,6 +2139,33 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   (1,0 → 128, surexposition possible jusqu'à 255 = ×2). **Limites** : brume additive (~60…100) et voile qui
   varie selon la hauteur dans l'image (« noir » de la rangée C à 114 contre 64 en rangée V, même combinaison),
   compression webp, plancher non nul ; éclairage de scène E propre au niveau Map Builder.
+- **Preuve de concept lightmap Blur 2 → couleurs de sommet (2026-11-11, `b2vcolor_poc.py`, rapport
+  `blur2_aid/vcolor/poc/poc_rapport.json`, image `poc_planche.png`)** :
+  - **Pièce** : dans Blur 2 la tour n'est pas un objet : la boîte de la tour (65 × 55 × 110 m) recoupe **54 lots
+    de rendu** (`draws_*`, un par matériau, chacun sa page de lightmap, 40 364 triangles). Retenu : **`draws_d0154`**
+    (path 12991), seul lot entièrement dans la tour : nervures verticales de la façade (`whitepanel_square`),
+    7 458 sommets, 8 530 triangles, 1 matériau, `_HasDualLightmap`, lightmaps `tex_1490` page 645 A/B, UV1 par
+    sommet dans [0,001 ; 0,999], 0 sommet sur la marge mauve. Écartés : vitrages (`glass_test`, découpe alpha +
+    reflet), 52 autres lots.
+  - **Lumière** (formule du shader, par sommet sur UV1, bilinéaire) : `((A·B.z)² · BakedColour + sat(N·L) · B.y² ·
+    couleur soleil) × 2,2`. Moyenne 0.49, médiane 0.33, 99 % 1.75, max 2.33 ; **part du soleil 39 %** (B.y n'est
+    pas nul ici ; direction et couleur du soleil = suppositions de b2bake).
+  - **Codage** : `couleur = 128 × lumière^(1/2,2)` (Blur 1 multiplie dans l'espace de la texture, gain 2) :
+    couleurs 16…188, moyenne 86, **0 sommet saturé** (marge jusqu'à lumière 4,5). L'hypothèse `× 128` linéaire
+    donnerait une moyenne de 62 (assombrit les demi-teintes).
+  - **Précision** (écart d'affichage entre la lumière exacte et l'interpolation des sommets, 7 points par
+    triangle) : moyenne 0.070 ; 1979 triangles > 0,10 (24 % de la surface), 416 > 0,20. **Subdivision** (mesurée, non
+    appliquée) des triangles > 0,10 : +4293 sommets (budget ~10 000 dépassé), erreur 0.17 → 0.12, 1005 restent > 0,10 :
+    **coût élevé, gain faible** (ombres plus fines que les triangles).
+  - **Comparaison hors jeu** (caméra du prototype, 2176 pixels) : Blur 2 par pixel 106.3, Blur 1 attendu 107.2 (luminance
+    0-255), écart moyen 4.6, 95 % < 15.2 : niveau moyen conservé, détail perdu sur les nervures.
+  - **Installé dans Blur_vcolor** : `nfs_042` (23 m de son acteur), lumière du matériau 0, `default_NB_NL`, texture
+    d'origine 512², faces simples orientées sur les normales ; panneaux d'essai conservés ; 148 modèles de
+    413 388 o (capacité 7 500 sommets / 25 600 index, panneaux en texture 512² aux mêmes bandes) ; état précédent
+    sauvegardé dans `blur2_aid/vcolor/backup_blur_vcolor_test2_2026-11-11`. Position : x −1079, z −725 (virage
+    sud-ouest), hauteur 4…101 m. Captures en jeu : à venir.
+  - **Limites** : pièce faite de lignes fines (peu lisible) ; reflet du cubemap et vitrage absents ; soleil supposé ;
+    brume et plancher de Blur 1 non modélisés dans le rendu attendu.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
