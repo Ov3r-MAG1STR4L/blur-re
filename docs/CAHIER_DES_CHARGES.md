@@ -475,3 +475,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-11 | 2e essai en jeu : couleur de sommet × texture quand la lumière du matériau est 0 ; cette lumière s'ajoute sans passer par la couleur ; même espace que la texture, gain ≈ 2 |
 | 2026-11-11 | Preuve de concept lightmap → couleurs de sommet : nervures de la tour (draws_d0154) dans Blur_vcolor, lumière du matériau 0 ; captures attendues, pas de généralisation |
 | 2026-11-11 | 2e preuve de concept : mur de béton de la tour (draws_d0088) subdivisé niveau 2, écart hors jeu 2,9 contre 16 sans subdivision ; installé dans Blur_vcolor, captures attendues |
+| 2026-11-11 | Limites du conteneur (essais G1 à G3b, Blur_vcolor) : 65 504 sommets et index 16 bits non signés confirmés en jeu ; tailles de modèles différentes acceptées dans cet ensemble de 148 acteurs (G3b préliminaire, 263,8 → 10,87 Mo sur disque, aucun benchmark) ; limite de 144 acteurs = Map Builder ; matériaux multiples et nombre d'acteurs pas encore essayés |

@@ -2194,6 +2194,42 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     exposition, pas la conversion.
   - **Limites** : pièce faite de lignes fines (peu lisible) ; reflet du cubemap et vitrage absents ; soleil supposé ;
     brume et plancher de Blur 1 non modélisés dans le rendu attendu.
+- **Limites du conteneur Blur 1 / Map Builder (2026-11-11, essais G1 à G3b dans `Blur_vcolor` ; scripts, rapports,
+  captures et bilans hors dépôt dans `blur2_aid/vcolor/conteneur/`)** :
+  - **Audit hors jeu (Confirmé, lecture des fichiers d'origine)** : 1 536 modèles lus ; objets d'origine jusqu'à
+    **19 816 sommets**, 34 275 index et **24 textures** (`usa_la_longbeachdocks/ships/vehicletransporter`), voitures
+    jusqu'à 20 833 sommets et **174 837 index** ; 80 modèles dépassent 65 535 index, aucun 32 767 sommets.
+    123 objets du shader `default_NB_NL*` ont au moins 4 textures (2 matériaux : `_diff` + `_ipr0` chacun). Les
+    2 maillages du gabarit `sign_wetfloor` sont 2 niveaux de détail du même matériau, pas 2 matériaux. Acteurs :
+    Hackney a 1 541 acteurs d'objets (8 199 acteurs en tout), une liste de Tokyo 1 877 acteurs ; Mount Haruna en a
+    exactement 144 → **la limite de 144 acteurs est celle de Map Builder** (il réutilise cette liste), pas une
+    limite connue du moteur. Les capacités 7 500 sommets / 25 600 index des POC étaient des choix, pas des limites.
+  - **G1 (Confirmé en jeu)** : 148 modèles à 32 000 sommets (stride 24, couleur), 48 000 index ; un mur de
+    32 000 sommets réels (8 bandes de 4 000 sommets, couleur et chiffre par bande) : charge, s'affiche en entier,
+    couleurs et UV corrects, un tour sans crash.
+  - **G2 (Confirmé en jeu)** : 148 modèles à **65 504 sommets**, 98 256 index, index jusqu'à 65 503 (49 104 index
+    au-dessus de 32 767) : même mur, bandes 4 à 7 correctes → **les index sont lus en 16 bits non signés**.
+    Limite restante = format : 65 535 sommets par flux. Aucune limite du moteur rencontrée jusqu'à 1,8 Mo par modèle.
+  - **G3a (Confirmé en jeu, dans cette configuration)** : mêmes identifiants, mêmes données réelles, seuls 4 modèles
+    visibles changent de capacité (1 000 / 7 500 / 16 000 / 32 000 sommets ; 144 autres à 65 504) : cinq tailles de
+    fichier cohabitent, chargement et un tour sans crash, affichage inchangé.
+  - **G3b (premier test en jeu réussi, validation préliminaire)** : en plus, les 143 modèles cachés (1 triangle
+    sous le sol) passent de 65 504 / 98 256 à **3 sommets / 3 index, sans remplissage** (51 186 o chacun,
+    remplissages de flux 16 / 7) : chargement et un tour sans crash, modèles visibles intacts. Total des 148 modèles
+    sur disque : 263,8 → **10,87 Mo**.
+  - **Conséquence (Probable)** : la règle « tous les modèles d'un même gabarit à la même taille » (2026-10-27)
+    n'est pas nécessaire quand les identifiants de texture sont uniques, du moins dans cet ensemble de 148 acteurs.
+    La cause du crash `0x6DB2EB` reste non identifiée : identifiants uniques et taille commune avaient été corrigés
+    ensemble ; les crashs de Rio (2026-11-03) ne sont pas expliqués par ces essais.
+  - **Non démontré** : 148 tailles toutes différentes ; capacités minimales autres que 3 / 3 ; modèles au contenu
+    dense et varié de tailles différentes ; stabilité au-delà d'un tour ou sur d'autres cartes ; tout gain de
+    fluidité, de temps de chargement ou de mémoire (**aucun benchmark** : seule la taille sur disque est mesurée) ;
+    normales à l'écran (shader sans éclairage, contrôlées à la relecture seulement).
+  - **Pas encore essayé** : plusieurs matériaux / textures par modèle (demande un gabarit à 2 matériaux ou plus),
+    plus de 144 acteurs (demande d'ajouter des acteurs à `actorpack.xt` hors Map Builder).
+  - État laissé : `Blur_vcolor` en G3b ; sauvegardes vérifiées `blur2_aid/vcolor/backup_blur_vcolor_{poc2,G2,G3a}_
+    2026-11-11` (175 fichiers chacune) ; nervures et mur de béton des POC non affichés pendant ces essais (dans la
+    sauvegarde POC2).
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
