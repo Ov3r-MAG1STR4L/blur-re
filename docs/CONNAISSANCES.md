@@ -2186,6 +2186,12 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     **le mur s'affiche avec ses taches de lumière et d'ombre** aux mêmes endroits que le rendu hors jeu, sans
     saturation ; transitions douces (subdivision). Angles de vue différents du rendu hors jeu : comparaison
     qualitative seulement. Le sol noir et la brume viennent du niveau Map Builder, pas de la conversion.
+  - **Validation à caméra identique (2026-11-11, `blur2_aid/vcolor/poc2/validation_camera.md`)** : captures sans
+    métadonnées, pose de caméra inconnue ; `blur_live.py` lit position et rotation de la voiture (pas la caméra).
+    Pas de mesure chiffrée fiable en jeu avec les captures actuelles. Méthode prête : capture contrôlée (caméra
+    capot, arrêt face au mur) + pose lue en lecture seule, 2 paramètres à ajuster (hauteur capot, champ). Verdict :
+    validé qualitativement en jeu, quantitativement hors jeu (écart 2,9) ; inconnues dominantes = soleil, brume,
+    exposition, pas la conversion.
   - **Limites** : pièce faite de lignes fines (peu lisible) ; reflet du cubemap et vitrage absents ; soleil supposé ;
     brume et plancher de Blur 1 non modélisés dans le rendu attendu.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
