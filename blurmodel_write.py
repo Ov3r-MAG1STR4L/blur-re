@@ -96,68 +96,10 @@ def _mips_alpha(px, w, h, mips):
     return bytes(out)
 
 
-def build(template, verts, indices, rgb, w, h, glow=160, salt=None, pad_verts=None, pad_indices=None):
-    """verts = [(x, y, z, nx, ny, nz, u, v)], indices = triangles (u16), rgb = octets RGB (ou RGBA : transparence
-    1 bit du DXT1) w x h -> .model
-    salt : nouveaux identifiants de texture (le jeu garde une texture par identifiant ; Map Builder fait pareil) ;
-    pad_verts / pad_indices : taille fixe (sommets répétés, triangles vides) - tous les modèles Map Builder issus
-    d'un même gabarit ont la même taille ; les nôtres de tailles différentes plantent au chargement (0x6DB2EB)"""
-    if pad_verts:
-        assert len(verts) <= pad_verts, (len(verts), pad_verts)
-        verts = list(verts) + [verts[0]] * (pad_verts - len(verts))
-    if pad_indices:
-        assert len(indices) <= pad_indices, (len(indices), pad_indices)
-        indices = list(indices) + [indices[0]] * (pad_indices - len(indices))
-    assert len(verts) <= 0xFFFF
-    d = template
-    P = cpmodel.parse(d)
-    assert P["stride"] == 20 and P["vcount"] == 68 and P["fcount"] == 104, "pas le gabarit attendu"
-    rep = []                                        # (début, fin, octets) ou (début, fin, en-tête, données alignées)
-
-    # texture couleur (taille libre)
-    toff = P["textures"][DIFF][0]
-    j = toff - 12                                   # "DXT1"
-    assert d[j:j + 4] == b"DXT1"
-    old_len = struct.unpack_from("<I", d, j - 20)[0]
-    mips = int(math.log2(max(w, h))) + 1         # jusqu'au grand côté (gabarit 32x128 : 8 niveaux)
-    if len(rgb) == w * h * 4 and min(rgb[3::4]) < 128:         # transparence : notre encodeur 1 bit
-        tex = _mips_alpha(rgb, w, h, mips)              # (le shader du gabarit rend le transparent en noir, vu en jeu)
-    else:                                                      # opaque : encodeur de Map Builder, comme avant
-        tex = cpmodel.encode_mips(bytes(rgb[i] for i in range(len(rgb)) if i % 4 != 3) if len(rgb) == w * h * 4
-                                  else rgb, w, h, mips)
-    rep.append((j - 20, j - 8, struct.pack("<3I", 0x1C + len(tex), w, h)))
-    rep.append((j - 4, j, struct.pack("<I", mips)))
-    rep.append((toff, j - 16 + old_len, tex))
-    # texture matériau : même taille, couleur unie (VERT = lumière : le niveau Map Builder n'éclaire pas les objets)
-    moff, mw, mh, mm = P["textures"][MAT]
-    mat = cpmodel.encode_mips(cpmodel.solid(mw, mh, (0, glow, 0)), mw, mh, mm)
-    rep.append((moff, moff + len(mat), mat))
-
-    # sommets
-    vc = _find1(d, struct.pack("<I", 68) + b"RA\0\0" + struct.pack("<2I", 68 * 20, 16))
-    vdata = b"".join(struct.pack("<3f4B2e", x, y, z, *(max(0, min(254, round(127 + 127 * c))) for c in (nx, ny, nz)),
-                                 0, u, v) for x, y, z, nx, ny, nz, u, v in verts)
-    vs = P["vstart"]
-    rep.append((vc, vs + 68 * 20, struct.pack("<I", len(verts)) + b"RA\0\0" + struct.pack("<2I", len(vdata), 16),
-                vdata))
-    # faces
-    fc = _find1(d, b"\x02RA\x01\x00" + struct.pack("<I", 104), vs) + 5
-    assert d[fc + 8:fc + 12] == b"RA\0\0" and struct.unpack_from("<I", d, fc + 12)[0] == 208
-    fs = P["fstart"]
-    fdata = struct.pack("<%dH" % len(indices), *indices)
-    rep.append((fc, fs + 208, struct.pack("<I", len(indices)) + d[fc + 4:fc + 12] + struct.pack("<2I", len(fdata), 16),
-                fdata))
-    # maillages : les 2 niveaux de détail = tout, en liste de triangles
-    for old in (struct.pack("<4I", 76, 28, 4, 64), struct.pack("<4I", 0, 76, 0, 52)):
-        i = _find1(d, b"RA\0\0" + old, fs) + 4
-        rep.append((i, i + 16, struct.pack("<4I", 0, len(indices), 0, len(verts))))
-    i = fs
-    for _ in range(2):
-        i = d.find(b"RA\x01\x00" + struct.pack("<3I", 0, 0, 1), i + 1)
-        assert i > fs
-        rep.append((i + 12, i + 16, struct.pack("<I", 0)))
-
-    # assemblage ; shift[k] = (début dans le gabarit, décalage des octets du gabarit qui suivent)
+def _assemble(d, rep):
+    """d with the replacements rep [(start, end, bytes) or (start, end, header, data aligned pos % 16 == 12)],
+    section lengths corrected"""
+    # shift[k] = (début dans le gabarit, décalage des octets du gabarit qui suivent)
     out, at, shifts = bytearray(), 0, []
     for r in sorted(rep):
         assert r[0] >= at, "remplacements qui se chevauchent"
@@ -180,9 +122,140 @@ def build(template, verts, indices, rgb, w, h, glow=160, salt=None, pad_verts=No
         grow = shift(s + L) - shift(s)
         if grow:
             struct.pack_into("<I", out, lf + shift(lf), L + grow)
+    return out
+
+
+def build(template, verts, indices, rgb, w, h, glow=160, salt=None, pad_verts=None, pad_indices=None,
+          colours=None):
+    """verts = [(x, y, z, nx, ny, nz, u, v)], indices = triangles (u16), rgb = octets RGB (ou RGBA : transparence
+    1 bit du DXT1) w x h -> .model
+    salt : nouveaux identifiants de texture (le jeu garde une texture par identifiant ; Map Builder fait pareil) ;
+    pad_verts / pad_indices : taille fixe (sommets répétés, triangles vides) - tous les modèles Map Builder issus
+    d'un même gabarit ont la même taille ; les nôtres de tailles différentes plantent au chargement (0x6DB2EB)
+    colours : un (r, g, b, a) 0..255 par sommet, gabarit passé par add_colour() (stride 24) obligatoire"""
+    if colours is not None:
+        assert len(colours) == len(verts)
+        verts = [tuple(v) + (tuple(c),) for v, c in zip(verts, colours)]
+    if pad_verts:
+        assert len(verts) <= pad_verts, (len(verts), pad_verts)
+        verts = list(verts) + [verts[0]] * (pad_verts - len(verts))
+    if pad_indices:
+        assert len(indices) <= pad_indices, (len(indices), pad_indices)
+        indices = list(indices) + [indices[0]] * (pad_indices - len(indices))
+    assert len(verts) <= 0xFFFF
+    d = template
+    P = cpmodel.parse(d)
+    stride = 24 if colours is not None else 20
+    assert P["stride"] == stride and P["vcount"] == 68 and P["fcount"] == 104, "pas le gabarit attendu"
+    rep = []                                        # (début, fin, octets) ou (début, fin, en-tête, données alignées)
+
+    # texture couleur (taille libre)
+    toff = P["textures"][DIFF][0]
+    j = toff - 12                                   # "DXT1"
+    assert d[j:j + 4] == b"DXT1"
+    old_len = struct.unpack_from("<I", d, j - 20)[0]
+    mips = int(math.log2(max(w, h))) + 1         # jusqu'au grand côté (gabarit 32x128 : 8 niveaux)
+    if len(rgb) == w * h * 4 and min(rgb[3::4]) < 128:         # transparence : notre encodeur 1 bit
+        tex = _mips_alpha(rgb, w, h, mips)              # (le shader du gabarit rend le transparent en noir, vu en jeu)
+    else:                                                      # opaque : encodeur de Map Builder, comme avant
+        tex = cpmodel.encode_mips(bytes(rgb[i] for i in range(len(rgb)) if i % 4 != 3) if len(rgb) == w * h * 4
+                                  else rgb, w, h, mips)
+    rep.append((j - 20, j - 8, struct.pack("<3I", 0x1C + len(tex), w, h)))
+    rep.append((j - 4, j, struct.pack("<I", mips)))
+    rep.append((toff, j - 16 + old_len, tex))
+    # texture matériau : même taille, couleur unie (VERT = lumière : le niveau Map Builder n'éclaire pas les objets)
+    moff, mw, mh, mm = P["textures"][MAT]
+    mat = cpmodel.encode_mips(cpmodel.solid(mw, mh, (0, glow, 0)), mw, mh, mm)
+    rep.append((moff, moff + len(mat), mat))
+
+    # sommets
+    vc = _find1(d, struct.pack("<I", 68) + b"RA\0\0" + struct.pack("<2I", 68 * stride, 16))
+    vdata = b"".join(struct.pack("<3f4B2e", x, y, z, *(max(0, min(254, round(127 + 127 * c))) for c in (nx, ny, nz)),
+                                 0, u, v) + bytes(rgba[0] if rgba else ()) for x, y, z, nx, ny, nz, u, v, *rgba in verts)
+    assert len(vdata) == len(verts) * stride
+    vs = P["vstart"]
+    rep.append((vc, vs + 68 * stride,struct.pack("<I", len(verts)) + b"RA\0\0" + struct.pack("<2I", len(vdata), 16),
+                vdata))
+    # faces
+    fc = _find1(d, b"\x02RA\x01\x00" + struct.pack("<I", 104), vs) + 5
+    assert d[fc + 8:fc + 12] == b"RA\0\0" and struct.unpack_from("<I", d, fc + 12)[0] == 208
+    fs = P["fstart"]
+    fdata = struct.pack("<%dH" % len(indices), *indices)
+    rep.append((fc, fs + 208, struct.pack("<I", len(indices)) + d[fc + 4:fc + 12] + struct.pack("<2I", len(fdata), 16),
+                fdata))
+    # maillages : les 2 niveaux de détail = tout, en liste de triangles
+    for old in (struct.pack("<4I", 76, 28, 4, 64), struct.pack("<4I", 0, 76, 0, 52)):
+        i = _find1(d, b"RA\0\0" + old, fs) + 4
+        rep.append((i, i + 16, struct.pack("<4I", 0, len(indices), 0, len(verts))))
+    i = fs
+    for _ in range(2):
+        i = d.find(b"RA\x01\x00" + struct.pack("<3I", 0, 0, 1), i + 1)
+        assert i > fs
+        rep.append((i + 12, i + 16, struct.pack("<I", 0)))
+
+    out = _assemble(d, rep)
     xs, ys, zs = zip(*((v[0], v[1], v[2]) for v in verts))
     cpmodel.write_bbox(out, cpmodel.parse(bytes(out)), (min(xs), min(ys), min(zs), max(xs), max(ys), max(zs)))
     return cpmodel.new_texture_ids(bytes(out), salt) if salt else bytes(out)
+
+
+FX, FX_V = b"default_NB_NL_NV.fx", b"default_NB_NL.fx"
+COLOUR_DEF = b"RA\0\0" + struct.pack("<HHIII", 0, 20, 0xB, 0, 9) + b"\0"     # définition : préfixe, offset, type, 0, canal, sous-canal
+COLOUR_ELEM = b"RA\0\0" + struct.pack("<4I", 0xB, 0, 9, 0)                   # flux : type, ?, canal, sous-canal
+
+
+def add_colour(template, fill=(255, 255, 255, 255)):
+    """gabarit sign_wetfloor (pos, normale, uv = 20 o, shader default_NB_NL_NV) -> même modèle avec une couleur de
+    sommet R,G,B,A (0xB canal 9, offset 20, stride 24) et le shader default_NB_NL (même famille, avec V = couleur),
+    comme directionsigna.model. Seuls changent : les 2 noms de shader, la définition de vertex, l'en-tête et les
+    données du flux de sommets ; les longueurs de section sont recalculées."""
+    import blurmesh
+    d = template
+    m = blurmesh.read(d)
+    assert len(m["vertex_streams"]) == 1, "un seul flux de sommets attendu"
+    s = m["vertex_streams"][0]
+    assert [(e["type"], e["channel"]) for e in s["elements"]] == [(6, 0), (0xB, 3), (8, 5)] and s["stride"] == 20
+    rep = []
+    i = -1
+    for _ in range(2):                                  # nom du shader (chaîne précédée de sa longueur u32)
+        i = d.find(FX, i + 1)
+        assert i > 0 and struct.unpack_from("<I", d, i - 4)[0] == len(FX)
+        rep.append((i - 4, i + len(FX), struct.pack("<I", len(FX_V)) + FX_V))
+    assert d.find(FX, i + 1) < 0
+    # définition de vertex : 3 éléments de 21 o juste avant "RA 01000000 RA RA <nom du shader>"
+    first = d.find(FX) - 4 - 16
+    assert d[first:first + 16] == b"RA\0\0" + struct.pack("<I", 1) + b"RA\0\0RA\0\0"
+    n_at = first - 3 * 21 - 4
+    assert struct.unpack_from("<I", d, n_at)[0] == 3 and d[n_at - 4:n_at] == b"RA\0\0"
+    assert d[first - 21:first - 21 + 4] == b"RA\0\0" and struct.unpack_from("<HHI", d, first - 17) == (0, 16, 8)
+    rep.append((n_at, n_at + 4, struct.pack("<I", 4)))
+    rep.append((first, first, COLOUR_DEF))
+    # en-tête du flux : stride, nb d'éléments, + élément couleur, + offset 20, longueur, données
+    h = s["header"]
+    rep.append((h + 9, h + 13, struct.pack("<I", 24)))
+    rep.append((h + 17, h + 21, struct.pack("<I", 4)))
+    p = h + 21 + 3 * 20
+    rep.append((p, p, COLOUR_ELEM))
+    assert d[p:p + 4] == b"RA\0\0" and struct.unpack_from("<4I", d, p + 4)[0] == 3
+    rep.append((p + 4, p + 14, struct.pack("<I3H", 4, 0, 12, 16) + struct.pack("<H", 20)))
+    q = p + 14                                         # u32 nb sommets, RA, longueur, 16
+    assert struct.unpack_from("<I", d, q)[0] == s["count"] and d[q + 4:q + 8] == b"RA\0\0"
+    raw = d[s["start"]:s["start"] + s["length"]]
+    data = b"".join(raw[k:k + 20] + bytes(fill) for k in range(0, len(raw), 20))
+    rep.append((q, s["start"] + s["length"], struct.pack("<I", s["count"]) + b"RA\0\0" + struct.pack("<2I", len(data), 16),
+                data))
+    out = bytes(_assemble(d, rep))
+    # contrôles : relu par notre lecteur et par l'add-on, géométrie inchangée
+    m2 = blurmesh.read(out)
+    s2 = m2["vertex_streams"][0]
+    assert s2["stride"] == 24 and s2["count"] == s["count"] and blurmesh.colour_offset(s2) == 20
+    new = out[s2["start"]:s2["start"] + s2["length"]]
+    assert all(new[24 * k:24 * k + 20] == raw[20 * k:20 * k + 20] for k in range(s["count"]))
+    f, f2 = m["face_streams"][0], m2["face_streams"][0]
+    assert d[f["start"]:f["start"] + f["length"]] == out[f2["start"]:f2["start"] + f2["length"]]
+    P = cpmodel.parse(out)
+    assert P["stride"] == 24 and P["elements"][-1] == (0xB, 9, 20)
+    return out
 
 
 def cube(size=10.0):
