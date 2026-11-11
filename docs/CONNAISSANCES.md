@@ -2182,7 +2182,10 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     85.1 ; écart moyen **2.9** (95 % < 11.6) contre **16.0** (95 % < 37.0) sans subdivision ; contraste (écart type)
     39.3 / 37.9 (sans subdivision 34.2) : détail lumineux en grande partie conservé.
   - **Installé** : `nfs_056` (seul fichier changé ; nervures `nfs_042` et panneaux intacts ; état précédent dans
-    `backup_blur_vcolor_poc1_2026-11-11`). Position : x −1079, z −689, au sol. Captures en jeu : à venir.
+    `backup_blur_vcolor_poc1_2026-11-11`). Position : x −1079, z −689, au sol. Captures en jeu (`capture_poc2_{8,9,10}.webp`) :
+    **le mur s'affiche avec ses taches de lumière et d'ombre** aux mêmes endroits que le rendu hors jeu, sans
+    saturation ; transitions douces (subdivision). Angles de vue différents du rendu hors jeu : comparaison
+    qualitative seulement. Le sol noir et la brume viennent du niveau Map Builder, pas de la conversion.
   - **Limites** : pièce faite de lignes fines (peu lisible) ; reflet du cubemap et vitrage absents ; soleil supposé ;
     brume et plancher de Blur 1 non modélisés dans le rendu attendu.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
