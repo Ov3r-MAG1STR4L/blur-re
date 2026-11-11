@@ -2163,7 +2163,10 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     d'origine 512², faces simples orientées sur les normales ; panneaux d'essai conservés ; 148 modèles de
     413 388 o (capacité 7 500 sommets / 25 600 index, panneaux en texture 512² aux mêmes bandes) ; état précédent
     sauvegardé dans `blur2_aid/vcolor/backup_blur_vcolor_test2_2026-11-11`. Position : x −1079, z −725 (virage
-    sud-ouest), hauteur 4…101 m. Captures en jeu : à venir.
+    sud-ouest), hauteur 4…101 m. Captures en jeu (2026-11-11, `blur2_aid/vcolor/poc/capture_poc_{6,7}.webp`) :
+    **charge et s'affiche** à sa place (nervures autour de la route, courbées à la base), texture visible, ombré qui
+    varie le long des nervures, pas de saturation ni de noir. Vue rapprochée : comparaison chiffrée impossible
+    (pièce en lignes fines, angles différents du rendu hors jeu) ; à refaire sur une surface pleine.
   - **Limites** : pièce faite de lignes fines (peu lisible) ; reflet du cubemap et vitrage absents ; soleil supposé ;
     brume et plancher de Blur 1 non modélisés dans le rendu attendu.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
