@@ -2111,6 +2111,16 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   `ipr0`, réglé à 110 comme le décor Marina, n'en dépendrait pas) ; le plancher vient de la brume. Ajustement
   grossier `sortie ≈ 127 + K·texture·(A + B·couleur)` : K·A ≈ 95, K·B ≈ 113 → la couleur ne pèse qu'environ la
   moitié du terme éclairé. La surexposition (glow 110) explique aussi en partie l'aspect délavé du décor Marina.
+- **2e essai préparé (2026-11-11, `vcolor_scene.py`, contrôle `vcolor_check.py`)** : panneau de référence à 40 m
+  inchangé (octet pour octet) + **3 copies du même panneau à 15 m**, échelle 0,45 (8,1 m de large), côte à côte,
+  ne différant que par la **lumière du matériau** (vert de la texture `ipr0`) : de gauche à droite vu du départ
+  `road_21_00` = **0**, `nfs_048` = **30**, `nfs_035` = **110**. Mêmes bandes et couleurs. 148 modèles de
+  28 236 o vérifiés (remplissages 16 / 15, alignés sur Scene, sections, relus par les 2 lecteurs, couleurs, vert du
+  matériau) ; état du 1er essai sauvegardé dans `blur2_aid/vcolor/backup_blur_vcolor_test1_2026-11-11`.
+  Lecture attendue : **produit** (couleur × tout l'éclairage) → V(c)/V(255) identique dans les 3 groupes, noir à
+  couleur 0 partout ; **somme** → écart V − T constant, rouge × vert jaunâtre ; **lumière du matériau
+  indépendante** (couleur ne module que le reste) → contraste de la rangée V d'autant plus fort que la lumière du
+  matériau est faible (couleur 0 ≈ noir à 0, ≈ 225 à 110 comme au 1er essai). Captures : à venir.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
