@@ -2069,7 +2069,23 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     64 × 64). Texture 256 × 16 en bandes verticales (le sens de v ne compte pas), texel constant par bande.
     Lecture : **V = T** → couleur et texture dans le même espace ; **V plus clair** (128 → 188) → couleur
     linéaire avec texture sRGB ; rouge × vert **noir** → multiplication, **jaune** → addition. Image attendue :
-    `blur2_aid/vcolor/vcolor_attendu.png`. Résultat en jeu : **à venir**.
+    `blur2_aid/vcolor/vcolor_attendu.png`. Résultat en jeu : **crash au chargement**, voir ci-dessous.
+- **Crash de Blur_vcolor au chargement de flat_earth (2026-11-11, Confirmé par le vidage)** : WER (minidump par
+  défaut, `%LOCALAPPDATA%\CrashDumps\Blur.exe.17100.dmp`) ; analyse hors jeu par **`crashdump.py`** (exception,
+  registres, code désassemblé, pile reconstruite avec le code de `Blur.exe`). `0xC0000005` lecture de 0 en
+  `Blur.exe+0x2E380E` (`mov esi, [edi]`, edi = 0) : lecteur d'objet précédé d'un octet de type ; type 0 → pointeur
+  nul. Pile : `0x884F00` (fichier modèle : `Model`/`Header`/`MdlDat`/`Coll`/`Render`) → `0xD5CD30` (section
+  `Render`/`Scene`) → `0x72E290` → `0x72E180` → `0x6EB940` → `0x6D3EB0` → `0x6EA2A0` → `0x6E6870` → `0x6E5F10` →
+  `0x6E37D0`. L'objet flux sur la pile porte « Scene » et la longueur **26 425** = section Scene de **nos** modèles
+  (la roue `dodge_viperacr_stock` dont le nom traîne sur la pile : 456 624). Curseur = fichier `0x5465` : l'octet
+  de type lu est le dernier de `RA  ` dans l'en-tête du flux de faces, **16 octets** après son début (`0x5454`).
+  **Cause** : **remplissage avant les données du flux de sommets = 0** dans nos 148 modèles ; dans les **1 584
+  modèles d'origine** il vaut toujours **5 à 20** (faces : 5 à 19, impairs), avec données alignées sur 16 par
+  rapport au début de la section `Scene`. Le moteur saute donc au moins 5 octets puis aligne : avec 0 il tombe 16
+  octets trop loin. Origine : `blurmodel_write._assemble` aligne « pos % 16 == 12 » sans minimum ; le gabarit
+  donnait 8 (stride 20), l'en-tête agrandi par `add_colour` donne 0. Ni le format couleur ni le remplacement des
+  emplacements ne sont en cause d'après le vidage. Le crash de Rio (0x6DB2EB) n'a pas cette cause (416 modèles,
+  remplissages valides).
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
