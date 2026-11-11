@@ -472,3 +472,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-11 | Remplissage des flux corrigé (5 à 20, aligné sur Scene, règle empirique) ; 148 modèles réinstallés et vérifiés dans Blur_vcolor ; capture en jeu attendue |
 | 2026-11-11 | Panneau couleur de sommet en jeu : charge, couleur lue (ordre R,G,B confirmé), mais effet partiel (pas un produit) et image saturée ; sRGB/linéaire non tranché |
 | 2026-11-11 | 2e essai couleur de sommet installé dans Blur_vcolor : 3 panneaux à 15 m (lumière du matériau 0 / 30 / 110) + référence à 40 m ; captures attendues |
+| 2026-11-11 | 2e essai en jeu : couleur de sommet × texture quand la lumière du matériau est 0 ; cette lumière s'ajoute sans passer par la couleur ; même espace que la texture, gain ≈ 2 |
