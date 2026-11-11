@@ -2078,7 +2078,7 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   `Render`/`Scene`) → `0x72E290` → `0x72E180` → `0x6EB940` → `0x6D3EB0` → `0x6EA2A0` → `0x6E6870` → `0x6E5F10` →
   `0x6E37D0`. L'objet flux sur la pile porte « Scene » et la longueur **26 425** = section Scene de **nos** modèles
   (la roue `dodge_viperacr_stock` dont le nom traîne sur la pile : 456 624). Curseur = fichier `0x5465` : l'octet
-  de type lu est le dernier de `RA  ` dans l'en-tête du flux de faces, **16 octets** après son début (`0x5454`).
+  de type lu est le dernier de `RA 00 00` dans l'en-tête du flux de faces, **16 octets** après son début (`0x5454`).
   **Cause** : **remplissage avant les données du flux de sommets = 0** dans nos 148 modèles ; dans les **1 584
   modèles d'origine** il vaut toujours **5 à 20** (faces : 5 à 19, impairs), avec données alignées sur 16 par
   rapport au début de la section `Scene`. Le moteur saute donc au moins 5 octets puis aligne : avec 0 il tombe 16
