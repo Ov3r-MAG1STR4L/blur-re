@@ -2061,7 +2061,7 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     sommet ; sans couleur, `build` donne exactement les mêmes octets qu'avant (test contre la version du dépôt).
   - **Essai en jeu préparé (2026-11-11, `vcolor_scene.py`, `vcolor_expect.py`)** dans une copie à part,
     `Jeux_WII\Blur_vcolor` (copie de Blur_test, 9,1 Go ; sauvegarde de ses 148 modèles d'emplacement dans
-    `blur2_aidcolorackup_blur_vcolor_flat_earth`) : 2 panneaux de 18 × 9 m en travers de la route, 40 m
+    `blur2_aid/vcolor/backup_blur_vcolor_flat_earth`) : 2 panneaux de 18 × 9 m en travers de la route, 40 m
     devant et 40 m derrière le départ de Marina, faces doubles, dans `nfs_101` (les 147 autres emplacements vidés,
     tous les modèles à 28 220 octets). Rangées : **G** dégradé continu de couleur 0 → 255 (texture blanche) ;
     **V** couleur 0, 32 … 255 (texture blanche) ; **T** texture 0 … 255 (couleur blanche) ; **C** contrôles
@@ -2069,7 +2069,7 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
     64 × 64). Texture 256 × 16 en bandes verticales (le sens de v ne compte pas), texel constant par bande.
     Lecture : **V = T** → couleur et texture dans le même espace ; **V plus clair** (128 → 188) → couleur
     linéaire avec texture sRGB ; rouge × vert **noir** → multiplication, **jaune** → addition. Image attendue :
-    `blur2_aidcolorcolor_attendu.png`. Résultat en jeu : **à venir**.
+    `blur2_aid/vcolor/vcolor_attendu.png`. Résultat en jeu : **à venir**.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
