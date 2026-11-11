@@ -2093,7 +2093,24 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   L'ancien `_assemble` donnait aussi un remplissage < 5 **sans couleur** pour certains nombres de sommets (3 avec
   27 sommets sur le cube) : nos cartes précédentes avaient toutes 8 à 19 (vérifié : Dubaï HP, Rio, Marina).
   Réinstallé dans Blur_vcolor (148 modèles de 28 236 o, remplissages 16 / 15) ; état « remplissage 0 » sauvegardé
-  dans `blur2_aid/vcolor/backup_blur_vcolor_pad0_2026-11-11`. Essai en jeu : à faire.
+  dans `blur2_aid/vcolor/backup_blur_vcolor_pad0_2026-11-11`. Essai en jeu : voir ci-dessous.
+- **Essai en jeu du panneau (2026-11-11, Confirmé : charge et s'affiche)** : captures
+  `blur2_aid/vcolor/capture_panneau_{avant,arriere}.webp`, mesures (médianes, les 2 panneaux concordent à ±10) :
+  rangée T (texture 0…255, couleur blanche) : 127, 137, 179, 219, 252, puis saturé ; rangée V (texture blanche,
+  couleur 0…255) : 222, 230, 245, puis saturé ; contrôles : blanc 254, **noir (couleur 0) 225**, 128×128 194,
+  **rouge × vert (227, 137, 129)**, blanc × rouge (254, 231, 224) rosé, rouge × blanc (254, 166, 159), texture 128
+  251, couleur 128 254, 64×64 192. Ciel à côté ≈ (224, 223, 205).
+  **Conclusions** : (1) `default_NB_NL` + couleur de sommet (stride 24) **chargent et s'affichent** ; (2) la
+  couleur est **lue et agit** (dégradé et bandes V monotones) et dans l'ordre **R,G,B** (couleur rouge → vert et
+  bleu baissent, R intact : en BGRA ce serait l'inverse) ; (3) elle **ne multiplie pas tout le résultat** : couleur
+  0 ne donne pas du noir (225 au lieu de ~127 pour une texture noire), rouge × vert n'est ni noir (produit) ni jaune
+  (somme) ; son poids est faible devant celui de la texture. (4) Image **surexposée** (texture 128 déjà à 252) et
+  plancher ≈ 127 même pour une texture noire (brume du niveau ou terme indépendant de la texture) : **sRGB ou
+  linéaire non déterminable** avec ce réglage.
+  **Hypothèses non vérifiées** : la couleur ne module qu'une partie de l'éclairage (le vert de la carte matériau
+  `ipr0`, réglé à 110 comme le décor Marina, n'en dépendrait pas) ; le plancher vient de la brume. Ajustement
+  grossier `sortie ≈ 127 + K·texture·(A + B·couleur)` : K·A ≈ 95, K·B ≈ 113 → la couleur ne pèse qu'environ la
+  moitié du terme éclairé. La surexposition (glow 110) explique aussi en partie l'aspect délavé du décor Marina.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
