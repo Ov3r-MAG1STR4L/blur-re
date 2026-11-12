@@ -999,7 +999,7 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   `CurrentHealthPercentInput`) vaut 0,01 (≈ 480 Hz) dès 0,1, multiplié par `HealthFilterCutOffLevel` (type 55 sur
   `CurrentHealthLevelInput`) qui ne vaut 1 qu'au niveau critique. **La constante `(FFFF, 0)` comme unique terme de
   `HighPassFinal` (type 41) n'a pas pris en jeu** ; correctif : l'entrée de coupure du filtre `PerkSurroundHighPass`
-  `(HighPassFinal, 1.0)` → `(FFFF, 0)`, même forme que `CollisionSurroundHighPass`, à confirmer en jeu. Le battement
+  `(HighPassFinal, 1.0)` → `(FFFF, 0)`, même forme que `CollisionSurroundHighPass` : **Confirmé en jeu (2026-11-13)**, plus de son aigu. Effet de bord constaté : le battement de cœur de santé critique ne s'entend plus non plus (cause non établie, `ingameuistereo` est d'origine) ; accepté par l'utilisateur. Le battement
   `HUD_HealthLow` (`ingameuistereo`, 0,6 s, ~82 Hz, chaque seconde en état critique) n'était pas en cause : gardé.
 - **Termes des objets min / max / produit (types 42 / 41 / 37)** : paires `(objet, 0)` avec l'index **brut** de
   l'objet, ou constante `(FFFF, valeur)` (ex. `PerkHitRingModDry` = `(28, 0) (FFFF, 1.0)`). La forme `objet << 16`
