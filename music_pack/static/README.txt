@@ -6,7 +6,8 @@ Play YOUR OWN music during races in Blur (PC), and:
       controller: press L3 (left stick click) twice quickly
       keyboard (French AZERTY layout): the 9 / ç key or the 0 / à key of the top row
       (2 seconds minimum between two skips; a short sound confirms the skip)
-  - shuffle: every track plays once in a random order, then the order repeats;
+  - shuffle: every track plays once in a random order, then the order repeats; each game session
+    starts at a random point of that order;
   - choose how the game's effects change the sound (power-ups, crashes, wrecked, low health):
       on      = as in the original game
       partial = softer effects
@@ -40,11 +41,11 @@ INSTALL (step by step)
        - which playlists, by number (several at once: "1 2" mixes the game's tracks with yours);
        - the game effects: 1 on, 2 partial, 3 off.
      Each new track is converted once (about 10 to 30 s per track), then kept for next time.
-  6. Play: double-click "Launch Blur.bat" (new random order each time; it asks for administrator
-     rights to write the new order, say no to keep the previous order). Starting Blur.exe directly
-     also works, with the same order as last time.
+  6. Play: start Blur as you usually do (Blur.exe, TextMod or any other launcher). Nothing else
+     to run: each session starts at a random point of the shuffled order. A brand new order is
+     drawn each time you run "Choose music.bat".
 
-Changing playlists or effects later: close Blur, run "Choose music.bat" again.
+Changing playlists or effects, or a new shuffled order: close Blur, run "Choose music.bat" again.
 Added a track to a folder: same thing, run "Choose music.bat" again.
 
 

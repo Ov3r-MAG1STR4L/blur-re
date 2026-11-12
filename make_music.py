@@ -248,7 +248,62 @@ def shuffle_loop(j, objs, seed=None):
         if op == 0x1101 and rs2[p_ + 1] > cut:
             rs2[p_ + 1] -= 3
     j.set_code(s_rs, rs, rs2)
+    random_start(j, var, sel0, nt[-2] >> 16, n)
     return order
+
+
+def random_start(j, var, sel, play, n):
+    """The shuffle index starts at 0 at each game launch: same tracks in the same order every session (unless rebuilt,
+    which needed a launcher; players start Blur through other tools, TextMod...). At the first track of a session, a new
+    script MusicShuffleStartScript draws the game's own random selector (unused by the shuffle) and sets the index from
+    it, then calls play; afterwards (MusicShuffleStarted = 1) it just calls play. Every `0x1200 play` call now goes
+    through it (NextTrack, RaceStart). Selector = [33, name, FF, 0, m] + m * [FF, k.0, FF, 1.0, FF, 0, FF, 1.0].
+    ponytail: m = min(n, GROUP_MAX) start points spread over the order (selectors above 32 entries misbehave)."""
+    m = min(n, GROUP_MAX)
+    starts = [k * n // m for k in range(m)]
+    s = j.find(33, "InGameMusicSelectorIndex")
+    assert j.w[s + 2:s + 4] == [FF, 0] and sel == obj_index(j, "InGameMusicSelectorIndex"), (j.w[s:s + 5], sel)
+    old = j.w[s + 4]
+    j.w[s + 4] = m
+    j.w[s + 5:s + 5 + 8 * old] = sum(([FF, f32(k), FF, F1, FF, 0, FF, F1] for k in range(m)), [])
+    started = j.count
+    j.w += [20, j.name("MusicShuffleStarted"), 0]
+    j.count += 1
+    # [started == 1 -> CALL] [started = 1] [draw] [m cases] [end]  [m bodies: index = start, call play]  CALL: call play
+    head = [0x1317, started << 16, F1, 0x1101, None, 0x1004, F1, 0x1002, started << 16, 0x1000, sel << 16, 0]
+    body0 = len(head) + 5 * m + 1
+    code = head + sum(([0x1317, sel << 16, f32(k), 0x1101, body0 + 7 * k] for k in range(m)), []) + [0x1202]
+    code += sum(([0x1004, f32(st), 0x1002, var << 16, 0x1200, play << 16, 0x1202] for st in starts), [])
+    code[4] = len(code)
+    code += [0x1200, play << 16, 0x1202]
+    init = j.count
+    j.w += [189, j.name("MusicShuffleStartScript"), len(code)] + code
+    j.count += 1
+    calls = 0
+    for name in ("InGameLicensedMusicNextTrackScript", "RaceStartScript"):
+        s_c, c = j.code(name)
+        new = c.copy()
+        for p_, op in script_ops(c):
+            if c[p_:p_ + 2] == [0x1200, play << 16]:
+                new[p_ + 1] = init << 16
+                calls += 1
+        j.set_code(s_c, c, new)
+    assert calls >= 2, calls
+
+
+def random_start_check(j):
+    """Simulation of MusicShuffleStartScript for every selector value: the shuffle index it sets (check)."""
+    _, code = j.code("MusicShuffleStartScript")
+    fl = lambda w: struct.unpack("<f", struct.pack("<I", w))[0]
+    out = []
+    p = 12
+    while code[p] == 0x1317:
+        b = code[code[p + 4]:code[p + 4] + 7]
+        assert b[0] == 0x1004 and b[2] == 0x1002 and b[4] == 0x1200 and b[6] == 0x1202, b
+        out.append(fl(b[1]))
+        p += 5
+    assert code[p] == 0x1202 and code[code[4]] == 0x1200, code
+    return out
 
 
 def shuffle_sequence(j, steps):
