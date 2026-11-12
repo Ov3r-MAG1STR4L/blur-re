@@ -984,6 +984,21 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   reconstruits et relus sans erreur. **Essai en jeu (2026-10-23, mode non)** : il reste un changement sonore à
   l'activation de tous les bonus sauf nitro et bouclier, et un autre quand la voiture a presque perdu toute sa vie.
   Les entrées JBOA responsables restent à identifier.
+- **Mode « non » : les deux restes trouvés (2026-11-12, Fort, lu dans les graphes ; correction pas encore testée en
+  jeu)**. (1) Dans `finalsubmix`, chaque bonus lance un minuteur dont la courbe (`BargeFireVolume`, `BoltHitVolume`…
+  13 courbes, nitro compris) descend à `PerkVolumeViewportsDucking` (0 en solo) pendant environ 1 s ; ces courbes
+  multiplient les mixeurs musique, réverb, IA, auditeur et DOPO (l'ancien correctif ne visait que la musique).
+  (2) **`finalperksubmix.dat`** = second étage d'effets sur tout le mixage final (entrée `FinalSubMixSFXInput`) :
+  bit crusher (bombe, choc, shunt), ring mod (barge, bolt, nitro reçu), flanger (shunt), passe-bas (réparation) et un
+  passe-haut toujours actif dont la coupure = max (type 41, `HighPassFinal`) des courbes de charge des bonus et de
+  **`HealthFilterCutOff`** (santé faible : `CurrentHealthPercentInput`, ~0,01 × 48 kHz). Dans les scripts,
+  `0x1000 effet 0` = actif, `1` = court-circuité (`StartScript` met tout à 1). Correctif (`make_music`,
+  `no_perk_volumes`, `no_perk_submix_effects`) : courbes de volume aplaties à 1 ; les 8 activations passent à 1 ;
+  `HighPassFinal` = constante 0. Le bip `HUD_HealthLow` (`ingameuistereo`) est un son d'interface, gardé.
+- **Termes des objets min / max / produit (types 42 / 41 / 37)** : paires `(objet, 0)` avec l'index **brut** de
+  l'objet, ou constante `(FFFF, valeur)` (ex. `PerkHitRingModDry` = `(28, 0) (FFFF, 1.0)`). La forme `objet << 16`
+  ne sert que dans les scripts : l'ancien mode « non » l'utilisait à tort pour `PerkFilterCutOff` et
+  `RGBBitCrusherDepthFinal`, remplacée par une constante (`make_music.set_terms`).
 - **Russian Hill Route 1 Reverse (2026-10-21)** : `USA_SanFran_RussianHill_R` (nom ≤ 25 car. : plus long emplacement
   d'image libre `USA_LA_Downtown_FigureOf8`, n° 121 ; plus aucun emplacement libre ensuite pour ce format), texte
   `CRN_ROUTE_1_REVERSE` (partagé avec Brighton). La route a un raccourci (bloc `Carpark` + `JunctionCarpark`) : retirés du
@@ -2355,6 +2370,44 @@ Rapport complet avec offsets : `Jeux_WII\blur2_aid\easter_eggs\rapport.md` (scri
     - l'acteur est à 336 m du modèle, sans problème constaté.
   - **État laissé** : `Blur_vcolor` = G3b + T2 (`road_21_20`) + T3 (`road_21_23`) + G5d (`road_21_08`,
     `a5632dab…`). Sauvegardes G5b, G5c et du modèle natif `road_21_08` dans `conversion_facade/`.
+- **G7 : rendu des matériaux transparents, témoin `fence01` (2026-11-12, `Blur_vcolor`, captures réelles)**.
+  Rapports et fichiers : `blur2_aid/G7/` (`G7_palmier_audit.md`, `crash/G7_crash_R3.md`, `crash/G7_crash_R3_seul.md`,
+  `temoin_R3c/G7_rendu_R3c.md`, `temoin_R3R5/G7_temoin_R3R5.md`, scripts `r3c.py`, `r3r5.py`, `r3r5r6.py`).
+  - **Gabarit** : `spa_barcelona_gracia/construction/fence01.model` (`781ff1a1…`), shader unique
+    `default_NB_NL_NM_NV.fx` (paramètres `g_tAlbedo` et `g_lodFade`, aucun état de rendu dans le fichier) ; textures
+    `db_bluematerial_alpha_diff` (DXT5 512 × 256, bâche) et `steelpole_diff` (DXT1 64 × 512, tube). Placé par
+    translation rigide sur `road_21_34` (axes identité, `PhysType` None), au pied du palmier de P1.
+  - **Confirmé en jeu** :
+    - `default_NB_NL_NM_NV` fait un **test d'alpha** : un pixel est affiché ou rejeté, sans transparence progressive.
+      Les fines rayures sur la bâche sont la découpe dans les plis à alpha faible (16 % des texels sous 128).
+    - **Instance 1 = tubes** (R0 à R3, `u5` = 1, `steelpole_diff`) ; **instance 2 = bâche** (R4 à R7, `u5` = 2).
+      Le lien instance → texture est établi par le rendu en jeu ; le champ de la table d'instances qui le porte
+      n'est **pas décodé**.
+    - **R5 = plis** de la bâche (68 triangles), **R6 = fond plat** (4 triangles), tous deux de près (< 80 m). R5 seul
+      laisse de grandes zones triangulaires manquantes ; R6 les comble.
+    - Bâche visible **des deux côtés** (R5 et R6 ont chacun autant de triangles par face), couleur correcte, aucun
+      scintillement observé.
+  - **Crash au chargement des premiers témoins (cause établie par 4 dumps, corrigée et confirmée en jeu)** :
+    `Blur.exe+0x2F0140`, dans le décodage de la section `Scene` (index u32 lu × 56 octets, sans borne). Mon script
+    `G7/temoin/temoin.py` avait pris 24 octets de la **table d'instances de matériaux** (offset 215 753,
+    `0, 0, 0, 1.0, 1.0, 1`) pour une boîte et les avait translatés : index de shader −124,462. Corrigé dans R3c (seuls
+    ces octets remis). **Règle** : ne réécrire que les boîtes qui correspondent à une vraie boîte (filtre strict de
+    P1), jamais la table d'instances. Le chemin d'une roue de véhicule présent sur la pile est un reste, pas le
+    fichier en cause (déjà vu le 11/11).
+  - **Conséquences pour les palmiers** :
+    - ne pas placer la couronne dans un maillage de l'instance 1 (P1 l'avait mise dans R3 : elle a été dessinée avec la
+      texture de tube, opaque, d'où ses rectangles sombres, une déduction cohérente avec ces essais) ;
+    - utiliser un maillage de l'instance 2 (R5 : 68 triangles et 97 sommets, trop petit pour la couronne telle
+      quelle) ;
+    - prévoir une découpe d'alpha nette, sans dégradé ;
+    - le rendu final dépend aussi du problème d'éclairage ci-dessous.
+  - **Hypothèse ouverte (non démontrée)** : l'objet semble n'être éclairé que par les phares, sans éclairage ambiant
+    du niveau. Piste : `flat_earth/level.levelrender` ne déclare que `default_LN_NB_NL_NM_NV.fx` (variante lightmap),
+    pas `default_NB_NL_NM_NV.fx` utilisé par le modèle. **Ce n'est pas une règle sur les shaders ou les niveaux.**
+  - **État laissé** : `road_21_34` = R3 + R5 + R6 (`e5dcbb97…`) ; P1 retiré (`road_21_26` d'origine `f36a51b6…`, P1
+    sauvegardé dans `G7/crash/P1_installe_road_21_26.model`, `9f9041eb…`). Versions et sauvegardes : R3
+    `temoin_R3/` (`1532a285…`), R3c `temoin_R3c/` (`49e31738…`), R3 + R5 `temoin_R3R5/` (`f79070d3…`), R3 + R5 + R6
+    `temoin_R3R5R6/` (`e5dcbb97…`), triangle d'origine `temoin_R3/sauvegarde_road_21_34.model` (`cfa69061…`).
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).

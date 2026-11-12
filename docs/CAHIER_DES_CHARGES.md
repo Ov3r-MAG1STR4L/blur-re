@@ -263,7 +263,7 @@ Ordre de travail :
 textes et bonus sont orientés dans le sens de course, puis les IA suivent les circuits. Pas de nouveau lot et pas de
 commit avant ces corrections et la validation en jeu.
 
-## Projet I : passer à la musique suivante avec un bouton — à étudier
+## Projet I : passer à la musique suivante avec un bouton — fait (validé en jeu le 2026-10-26)
 
 **Demande** : pendant une course, permettre au joueur de passer au morceau suivant sans attendre la fin du morceau.
 
@@ -479,3 +479,5 @@ Ordre décidé par l'utilisateur :
 | 2026-11-12 | G4, matériaux multiples et plages de distance (Blur_vcolor, captures) : 2 puis 4 matériaux dans un modèle natif réécrit (S1, S2) ; plages de distance par maillage indépendantes (T1, T2) ; texture 256 × 512 confirmée (ordre de l'en-tête) ; le champ de matériau d'un maillage est lu, et appliqué selon l'ordre des sommets (T3, probable, 2 gabarits) |
 | 2026-11-12 | G5 : première façade réelle de Dubai Marina (Blur 2, `i0046`, 4 matériaux) convertie et validée en jeu (G5b à G5d) ; géométrie et matériaux affichés correctement (textures matériau mates (41, 0, 49), `u5` de chaque enregistrement) ; la règle « ordre des sommets » de G4 est contredite : la règle générale d'affectation des matériaux reste non résolue |
 | 2026-11-12 | Fouille des prototypes Blur 2 (lecture seule) : `.xex` devkit déchiffrés (clé AES nulle), assertions signées par les développeurs, `.loc` X360 lus ; route 4 de Dubaï nommée officiellement « Route 04 - Marina » ; aucun message d'adieu ; rapport `blur2_aid\easter_eggs\rapport.md` |
+| 2026-11-12 | G7, témoin `fence01` sur `road_21_34` (Blur_vcolor, captures) : crash au chargement causé par mon script (table d'instances de matériaux prise pour une boîte, `Blur.exe+0x2F0140`, 4 dumps), corrigé dans R3c qui charge (cadre visible) ; R3 + R5 : bâche affichée mais avec de grandes zones manquantes ; R3 + R5 + R6 : surface complète, des deux côtés, couleur correcte ; `default_NB_NL_NM_NV` = test d'alpha confirmé ; instance 1 = tubes, instance 2 = bâche ; éclairage ambiant absent (hypothèse ouverte : variante `LN` seule déclarée par le niveau) ; P1 retiré, fichiers et empreintes dans `blur2_aid/G7/` |
+| 2026-11-12 | Musique, mode « non » : les deux restes trouvés et neutralisés hors jeu : baisse de volume du décor, des IA et de la réverb sur chaque bonus (`finalsubmix`) et second étage d'effets `finalperksubmix.dat` (bit crusher, ring mod, flanger, passe-bas, passe-haut des bonus et de la santé faible) ; à tester en course |
