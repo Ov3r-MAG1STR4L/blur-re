@@ -1521,6 +1521,24 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   d'un autre joueur ni en partie LAN.
 - Suite prévue : difficulté Hardcore au-dessus de Difficile, onglet « Reverse » dans le menu multi.
 
+## Pack musique pour la communauté (2026-11-13)
+- `music_pack/` : `make_zip.py` → `Jeux_WII\Blur_Music.zip` (26 Ko, en anglais) : `Choose music.bat`, `Launch Blur.bat`,
+  `Uninstall.bat`, `README.txt` (tutoriel), `Music\` (dossier « original » + une playlist vide), `tools\` (`pack.py` +
+  `make_music.py`, `blurbaf.py`, `blurpak.py`, `musicctl.lua` du dépôt). Aucun fichier du jeu ni morceau dedans.
+- Le dossier `Blur_Music` se pose à côté de `Blur.exe`. Premier lancement (`pack.py`) : `cacheoot.pak` → racine du
+  jeu et `root_streaming.pak` → `audio\`, extraits **depuis les paks du joueur** (fichiers en clair déjà présents
+  gardés), puis paks (et `.sig`) renommés `.off` ; originaux utiles gardés dans `tools\data` (variable
+  d'environnement `BLUR_MUSIC_E` lue par `make_music`) ; son de la touche (`make_music.music_key_sounds`, déplacé de
+  `make_reverse`) ; plugin `musicctl` + `require` ajouté au `plugins.lua` du joueur. Tout est noté dans `backup\`
+  (fichiers ajoutés, paks renommés, fichiers remplacés sauvegardés) : `Uninstall.bat` remet le jeu à l'identique.
+- Python 3 + numpy + ffmpeg requis : `Choose music.bat` propose de les installer (winget). L'ordre aléatoire repart du
+  même point à chaque lancement du jeu : `Launch Blur.bat` reconstruit l'ordre (élévation administrateur, jeu dans
+  Program Files) puis lance Blur.
+- **Testé hors jeu (2026-11-13)** sur un faux dossier de jeu (paks réels) : installation, menu, remélange,
+  désinstallation = fichiers identiques à l'avant (sha1, lecture seule de `plugins.lua` comprise) ; fichiers produits
+  identiques à ceux validés en jeu dans `Blur_test`. **Pas testés** : les `.bat` (élévation, winget), une vraie
+  installation de Blur, et le jeu **en ligne** avec les paks `root` / `root_streaming` en clair.
+
 ## Prototype « Blur 2 » Xbox 360 du 31/08/2010 (2026-11-09, liste de l'archive, rien d'extrait sauf un en-tête)
 - Archive `Downloads\Blur 2 (Aug 31, 2010 prototype).rar` : RAR5 de 6,2 Go (7,0 Go décompressé), 979 fichiers. Le
   `tar` de Windows refuse (dictionnaire trop grand), il faut 7-Zip. Dossier `KanzenDev\` (nom de code « Kanzen »),

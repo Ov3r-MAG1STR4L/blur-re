@@ -1,4 +1,4 @@
--- MusicCtl: skip to the next race track with a key (projet I, test copy only).
+-- MusicCtl: skip to the next race track with a key (projet I; also shipped in the community music pack).
 --
 -- No engine message skips a track (UIEnums.GameFlowMessage only has Start/StopIngameAudio = ALL game sound). But
 -- audio/dat/music_controller.dat reacts to its MusicType input: MusicTypeGate -> MusicTypeResetScript stops the

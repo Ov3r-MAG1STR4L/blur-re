@@ -20,11 +20,12 @@ import numpy as np
 import blurbaf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-E = os.path.join(HERE, "..", "blur_extracted")
-MUSIC_DIR = os.path.join(HERE, "..", "Blur_musiques")          # one sub-folder per playlist (not in the repository)
-CACHE = os.path.join(E, "music_cache")                          # encoded tracks, reused between builds
-OUT = os.path.join(E, "mods", "music", "files")
-TEST = os.path.join(HERE, "..", "Blur_test")
+_env = lambda name, default: os.environ.get("BLUR_MUSIC_" + name, default)   # set by the community pack (music_pack)
+E = _env("E", os.path.join(HERE, "..", "blur_extracted"))       # needs root\audio\... and root_streaming\...
+MUSIC_DIR = _env("MUSIC_DIR", os.path.join(HERE, "..", "Blur_musiques"))   # one sub-folder per playlist (not in the repo)
+CACHE = _env("CACHE", os.path.join(E, "music_cache"))           # encoded tracks, reused between builds
+OUT = _env("OUT", os.path.join(E, "mods", "music", "files"))
+TEST = _env("TEST", os.path.join(HERE, "..", "Blur_test"))      # where install() copies the files
 AUDIO_EXT = (".mp3", ".wav", ".flac", ".ogg", ".m4a")
 FF = 0xFFFF
 F1 = 0x3F800000                                                 # 1.0f
@@ -41,7 +42,7 @@ def pcm48(src):
     m = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", src, "-af", "ebur128", "-f", "null", "-"],
                        capture_output=True, encoding="utf-8", errors="replace").stderr   # file names like 『BLUR』
     gain = LUFS - float(m.rsplit("I:", 1)[1].split("LUFS")[0])
-    print(f"  volume {gain:+.1f} dB vers {LUFS} LUFS")
+    print(f"  volume {gain:+.1f} dB -> {LUFS} LUFS")
     with tempfile.TemporaryDirectory() as d:
         out = os.path.join(d, "a.wav")
         subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-ar", "48000", "-ac", "2",
@@ -57,7 +58,7 @@ def encoded(src, pcm16=False):
     h = hashlib.sha1(open(src, "rb").read() + f"|{LUFS}|v1".encode()).hexdigest()
     data_p, meta_p = os.path.join(CACHE, f"{h}.{kind}"), os.path.join(CACHE, h + ".json")
     if not (os.path.exists(data_p) and os.path.exists(meta_p)):
-        print(f"  préparation ({kind}, une seule fois) :", os.path.basename(src))
+        print(f"  converting ({kind}, once):", os.path.basename(src))
         pcm = pcm48(src)
         os.makedirs(CACHE, exist_ok=True)
         open(data_p, "wb").write(pcm.astype("<i2").tobytes() if pcm16 else blurbaf.encode_psx(pcm))
@@ -476,6 +477,30 @@ def no_bitcrusher(j):
     set_terms(j, 42, "RGBBitCrusherDepthFinal", 32.0)
 
 
+KEY_SOUND_SECONDS = 1.7     # musicctl next-track sound: race_fail_fill cut at 1.7 s from the file start (player)
+
+
+def music_key_sounds(out):
+    """Sound of the musicctl plugin's next-track key. The Lua can only play UIEnums.SoundEffect events. BossRaceLose
+    was tried first: the game also plays the 6.4 s career defeat jingle (menumusic_ns race_fail_fill, music graph)
+    on it; the player liked its start. So MotorMashCount (cut Motor Mash mode, plays only its own wave in ingameui)
+    gets the first KEY_SOUND_SECONDS of race_fail_fill: its wave replaced in ingameui.baf (used by that event only;
+    mono like the original: MonoToStereoMixer), 150 ms fade out, peak -3 dBFS."""
+    b = open(os.path.join(E, "root", "audio", "menumusic_ns.baf"), "rb").read()
+    w = next(w for w in blurbaf.parse(b)["waves"] if w["name"] == "race_fail_fill")
+    x = np.asarray(blurbaf.decode(b, w), dtype=float).reshape(-1, w["channels"]).mean(axis=1)
+    x = x[:int(w["rate"] * KEY_SOUND_SECONDS)]           # measured from the file start, as the player listened
+    if w["rate"] != 48000:
+        x = np.interp(np.arange(0, len(x) - 1, w["rate"] / 48000), np.arange(len(x)), x)
+    x[-7200:] *= np.linspace(1, 0, 7200)
+    x = (x / np.abs(x).max() * 0.7 * 32767).astype(np.int16)[:, None]
+    b = open(os.path.join(E, "root", "audio", "ingameui.baf"), "rb").read()
+    b = blurbaf.replace_wave(b, "HUD_MotorMashCount", x, 48000)
+    os.makedirs(os.path.join(out, "audio"), exist_ok=True)
+    open(os.path.join(out, "audio", "ingameui.baf"), "wb").write(b)
+    print("musicctl sound: ingameui.baf HUD_MotorMashCount (next track)")
+
+
 def wave_name(path, used):
     """Bank sound name from the file name: letters and digits only, at most 31 bytes, unique."""
     base = "".join(c for c in os.path.splitext(os.path.basename(path))[0] if c.isascii() and c.isalnum())[:28] or "Track"
@@ -510,7 +535,7 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
                 files.append(path)
     for k, path in enumerate(files):
         name = wave_name(path, used)
-        print("morceau", "InGameMusic%02d" % (23 + k), "=", os.path.basename(path))
+        print("track", "InGameMusic%02d" % (23 + k), "=", os.path.basename(path))
         data, samples = encoded(path, pcm16)
         if pcm16:
             bank = blurbaf.add_pcm_wave(bank, name, np.frombuffer(data, "<i2").reshape(-1, 2), 48000)
@@ -518,16 +543,16 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
             bank = blurbaf.add_wave(bank, name, None, 48000, data=data, samples=samples)
         objs.append(add_track(j, "%02d" % (23 + k), name))
     if not objs:
-        raise SystemExit("playlist vide : aucun morceau choisi")
+        raise SystemExit("empty playlist: no track chosen")
     if shuffle:
         order = shuffle_loop(j, objs)
         assert shuffle_sequence(j, 2 * len(objs)) == order * 2, "simulation de l'ordre aléatoire"
-        mode = f"aléatoire en boucle, nouvel ordre à chaque préparation"
+        mode = "looping shuffle, new order at each build"
     else:
         sizes = playlist(j, objs)
         reached = play_targets(j)
         assert reached == set(objs), ("simulation", sorted(set(objs) - reached), sorted(reached - set(objs)))
-        mode = f"tirage au hasard, groupes {' + '.join(map(str, sizes))}"
+        mode = f"random draw, groups {' + '.join(map(str, sizes))}"
     fs = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalsubmix.dat"), "rb").read())
     fps = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalperksubmix.dat"), "rb").read())
     if effects == "oui":
@@ -549,19 +574,19 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
     open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
     open(os.path.join(out, "audio", "dat", "finalperksubmix.dat"), "wb").write(fps.build())
-    return f"{len(objs)} morceaux en course ({mode}) ; effets du jeu sur le son : {effects} ; qualité : {'haute (non compressée)' if pcm16 else 'normale'}"
+    return f"{len(objs)} race tracks ({mode}); game effects on the sound: {effects}; quality: {'high (uncompressed)' if pcm16 else 'normal'}"
 
 
 def install(out=OUT, test=TEST):
     """Copy the built files into the test copy (Blur must be closed)."""
     if b"Blur.exe" in subprocess.run(["tasklist", "/fi", "imagename eq Blur.exe"], capture_output=True).stdout:
-        raise SystemExit("Blur est lancé : ferme-le puis recommence.")
+        raise SystemExit("Blur is running: close it and try again.")
     for rel in ("audio/ingamemusic.baf", "audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat",
                 "audio/dat/finalperksubmix.dat"):
         src, dst = os.path.join(out, rel), os.path.join(test, rel)
         if not os.path.exists(dst) or open(src, "rb").read() != open(dst, "rb").read():
             shutil.copyfile(src, dst)
-            print("installé :", rel)
+            print("installed:", rel)
 
 
 if __name__ == "__main__":

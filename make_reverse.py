@@ -18,6 +18,7 @@ import numpy as np
 import addramp, aidreverse, camcycle, maplock, blurbaf, blurbpr, blurloc, bluripf, blurroute, gridreverse, thumbreverse
 from blurxt import XT
 from kslfwrite import KSLF
+from make_music import music_key_sounds
 
 HARDCORE = True                # custom races: levels moved up one step (see step 6b)
 MAX_AI_PER_CONSOLE = 19        # multiplayer.bin MultiplayerConfig, original 4; 19 = 20 cars (49 tested: clamped to 20)
@@ -276,30 +277,6 @@ def renew_uids(ap, names):
         struct.pack_into("<I", b, x.locate(n, p)[0], uid)
     open(ap, "wb").write(b)
     return len(paths)
-
-
-KEY_SOUND_SECONDS = 1.7     # musicctl next-track sound: race_fail_fill cut at 1.7 s from the file start (player)
-
-
-def music_key_sounds(out):
-    """Sound of the musicctl plugin's next-track key. The Lua can only play UIEnums.SoundEffect events. BossRaceLose
-    was tried first: the game also plays the 6.4 s career defeat jingle (menumusic_ns race_fail_fill, music graph)
-    on it; the player liked its start. So MotorMashCount (cut Motor Mash mode, plays only its own wave in ingameui)
-    gets the first KEY_SOUND_SECONDS of race_fail_fill: its wave replaced in ingameui.baf (used by that event only;
-    mono like the original: MonoToStereoMixer), 150 ms fade out, peak -3 dBFS."""
-    b = open(os.path.join(E, "root", "audio", "menumusic_ns.baf"), "rb").read()
-    w = next(w for w in blurbaf.parse(b)["waves"] if w["name"] == "race_fail_fill")
-    x = np.asarray(blurbaf.decode(b, w), dtype=float).reshape(-1, w["channels"]).mean(axis=1)
-    x = x[:int(w["rate"] * KEY_SOUND_SECONDS)]           # measured from the file start, as the player listened
-    if w["rate"] != 48000:
-        x = np.interp(np.arange(0, len(x) - 1, w["rate"] / 48000), np.arange(len(x)), x)
-    x[-7200:] *= np.linspace(1, 0, 7200)
-    x = (x / np.abs(x).max() * 0.7 * 32767).astype(np.int16)[:, None]
-    b = open(os.path.join(E, "root", "audio", "ingameui.baf"), "rb").read()
-    b = blurbaf.replace_wave(b, "HUD_MotorMashCount", x, 48000)
-    os.makedirs(os.path.join(out, "audio"), exist_ok=True)
-    open(os.path.join(out, "audio", "ingameui.baf"), "wb").write(b)
-    print("musicctl sound: ingameui.baf HUD_MotorMashCount (next track)")
 
 
 def main(out, routes_only=False):
