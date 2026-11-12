@@ -406,6 +406,14 @@ def no_perk_submix_effects(j):
     set_terms(j, 41, "HighPassFinal", 0.0)
 
 
+def no_low_health_beat(j):
+    """ingameuistereo.dat: HUD_HealthLow (0.6 s low thump, ~82 Hz) replayed every second by LowHealthTimer while
+    health is critical: still heard over the music in "non" (player, 2026-11-13). Its 3 play triggers (arg 0) become
+    stops (arg 1, as in LastGaspInitiatedScript)."""
+    n = set_trigger_args(j, ("HUD_HealthLowSound",), 0, 1)
+    assert n == 3, n
+
+
 def set_curve_outputs(j, name, values):
     """Replace selected constant y-values in a type-21 curve, keyed by the point's x-value."""
     s = j.find(21, name)
@@ -526,6 +534,7 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         mode = f"tirage au hasard, groupes {' + '.join(map(str, sizes))}"
     fs = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalsubmix.dat"), "rb").read())
     fps = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalperksubmix.dat"), "rb").read())
+    ui = Jboa(open(os.path.join(E, "root", "audio", "dat", "ingameuistereo.dat"), "rb").read())
     if effects == "oui":
         wreck_muffle(fs)
     elif effects == "partiel":
@@ -540,11 +549,13 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         no_collision_effects(fs)
         no_bitcrusher(fs)
         no_perk_submix_effects(fps)
+        no_low_health_beat(ui)
     os.makedirs(os.path.join(out, "audio", "dat"), exist_ok=True)
     open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
     open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
     open(os.path.join(out, "audio", "dat", "finalperksubmix.dat"), "wb").write(fps.build())
+    open(os.path.join(out, "audio", "dat", "ingameuistereo.dat"), "wb").write(ui.build())
     return f"{len(objs)} morceaux en course ({mode}) ; effets du jeu sur le son : {effects} ; qualité : {'haute (non compressée)' if pcm16 else 'normale'}"
 
 
@@ -553,7 +564,7 @@ def install(out=OUT, test=TEST):
     if b"Blur.exe" in subprocess.run(["tasklist", "/fi", "imagename eq Blur.exe"], capture_output=True).stdout:
         raise SystemExit("Blur est lancé : ferme-le puis recommence.")
     for rel in ("audio/ingamemusic.baf", "audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat",
-                "audio/dat/finalperksubmix.dat"):
+                "audio/dat/finalperksubmix.dat", "audio/dat/ingameuistereo.dat"):
         src, dst = os.path.join(out, rel), os.path.join(test, rel)
         if not os.path.exists(dst) or open(src, "rb").read() != open(dst, "rb").read():
             shutil.copyfile(src, dst)
