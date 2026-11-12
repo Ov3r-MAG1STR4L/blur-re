@@ -1525,15 +1525,21 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
 - `music_pack/` : `make_zip.py` → `Jeux_WII\Blur_Music.zip` (26 Ko, en anglais) : `Choose music.bat`, `Launch Blur.bat`,
   `Uninstall.bat`, `README.txt` (tutoriel), `Music\` (dossier « original » + une playlist vide), `tools\` (`pack.py` +
   `make_music.py`, `blurbaf.py`, `blurpak.py`, `musicctl.lua` du dépôt). Aucun fichier du jeu ni morceau dedans.
-- Le dossier `Blur_Music` se pose à côté de `Blur.exe`. Premier lancement (`pack.py`) : `cacheoot.pak` → racine du
+- Le dossier `Blur_Music` se pose à côté de `Blur.exe`. Premier lancement (`pack.py`) : `cache
+oot.pak` → racine du
   jeu et `root_streaming.pak` → `audio\`, extraits **depuis les paks du joueur** (fichiers en clair déjà présents
   gardés), puis paks (et `.sig`) renommés `.off` ; originaux utiles gardés dans `tools\data` (variable
   d'environnement `BLUR_MUSIC_E` lue par `make_music`) ; son de la touche (`make_music.music_key_sounds`, déplacé de
   `make_reverse`) ; plugin `musicctl` + `require` ajouté au `plugins.lua` du joueur. Tout est noté dans `backup\`
   (fichiers ajoutés, paks renommés, fichiers remplacés sauvegardés) : `Uninstall.bat` remet le jeu à l'identique.
-- Python 3 + numpy + ffmpeg requis : `Choose music.bat` propose de les installer (winget). L'ordre aléatoire repart du
-  même point à chaque lancement du jeu : `Launch Blur.bat` reconstruit l'ordre (élévation administrateur, jeu dans
-  Program Files) puis lance Blur.
+- Python 3 + numpy + ffmpeg requis : `Choose music.bat` propose de les installer (winget). Pas de lanceur : les joueurs
+  démarrent Blur par d'autres outils (TextMod…). **Départ aléatoire dans le jeu (2026-11-13, simulé, à confirmer en
+  jeu)** : l'index du mélange repartait de 0 à chaque lancement (même ordre à chaque session sans reconstruction).
+  `make_music.random_start` : script `MusicShuffleStartScript` ; si `MusicShuffleStarted` (type 20) vaut 0, il le met
+  à 1, tire le sélecteur d'origine `InGameMusicSelectorIndex` (inutilisé par le mélange, réécrit avec min(n, 32)
+  entrées) et fixe l'index selon la valeur tirée, puis appelle la lecture ; ensuite il appelle seulement la lecture.
+  Les deux appels `0x1200 lecture` (NextTrack, RaceStart) passent par lui. `jboadump.py` ne lit pas
+  `music_controller.dat` (noms d'ondes dans la table des noms).
 - **Testé hors jeu (2026-11-13)** sur un faux dossier de jeu (paks réels) : installation, menu, remélange,
   désinstallation = fichiers identiques à l'avant (sha1, lecture seule de `plugins.lua` comprise) ; fichiers produits
   identiques à ceux validés en jeu dans `Blur_test`. **Pas testés** : les `.bat` (élévation, winget), une vraie

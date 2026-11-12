@@ -3,7 +3,7 @@
 game's effects on the sound (on / partial / off). Shipped in Blur_Music\\tools\\ (built by music_pack/make_zip.py);
 the Blur_Music folder goes next to Blur.exe.
 
-usage: pack.py menu | reshuffle | uninstall
+usage: pack.py menu | uninstall
 First run (menu): a pak wins over loose files, so cache\\root.pak and cache\\root_streaming.pak are laid loose from the
 PLAYER'S OWN paks (root -> <game>\\, root_streaming -> <game>\\audio\\, existing loose files kept) and set aside as
 .off; the few originals the music build needs are kept in tools\\data. Everything is recorded in backup\\ (added
@@ -147,8 +147,8 @@ def menu():
     print("\nPreparing... (each new track is converted only once: the first time can take a few minutes)\n")
     build(chosen, EFFECTS[rep])
     json.dump({"folders": chosen, "effects": EFFECTS[rep]}, open(LAST, "w", encoding="utf-8"), indent=1)
-    print(f"\nDone: effects {EFFECT_NAMES[EFFECTS[rep]]}. Start the game with \"Launch Blur.bat\" "
-          "(new random order each time) or Blur.exe (same order as last time).")
+    print(f"\nDone: effects {EFFECT_NAMES[EFFECTS[rep]]}. Start Blur as usual (Blur.exe, TextMod...): "
+          "each session starts at a random point of the shuffled order.")
 
 
 def uninstall():
@@ -201,12 +201,6 @@ def main():
     if cmd == "uninstall":
         return uninstall()
     blur_closed()
-    if cmd == "reshuffle":
-        if os.path.exists(DONE) and os.path.exists(LAST):
-            last = json.load(open(LAST, encoding="utf-8"))
-            print("New random order for the race music...")
-            build(last["folders"], last["effects"])
-        return
     if not shutil.which("ffmpeg"):
         stop("ffmpeg not found: run \"Choose music.bat\" again, it offers to install it.")
     prepare()
