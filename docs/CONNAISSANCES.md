@@ -995,11 +995,12 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   `0x1000 effet 0` = actif, `1` = court-circuité (`StartScript` met tout à 1). Correctif (`make_music`,
   `no_perk_volumes`, `no_perk_submix_effects`) : courbes de volume aplaties à 1 ; les 8 activations passent à 1 ;
   `HighPassFinal` = constante 0. **Essai en jeu (2026-11-13)** : plus de baisse de volume sur les bonus (Confirmé),
-  mais l'effet en état critique reste. Seule autre réaction à la santé dans les graphes (`system`, `ingameui`,
-  `finalsubmix` n'en ont pas) : **`HUD_HealthLow`** (`ingameuistereo`, banque `ingameui`) = battement grave de 0,6 s
-  (pic ~82 Hz) rejoué chaque seconde par `LowHealthTimer` (`LowHealthSwitch` sur `CurrentHealthLevel` > 0,5).
-  En « non », ses 3 ordres de lecture (`0x1000 son 0`) deviennent des arrêts (`1`) (`make_music.no_low_health_beat`) ;
-  hypothèse à confirmer en jeu.
+  mais en état critique le son devient **aigu** : c'est le passe-haut santé. `HealthFilterCutOffPercent` (sur
+  `CurrentHealthPercentInput`) vaut 0,01 (≈ 480 Hz) dès 0,1, multiplié par `HealthFilterCutOffLevel` (type 55 sur
+  `CurrentHealthLevelInput`) qui ne vaut 1 qu'au niveau critique. **La constante `(FFFF, 0)` comme unique terme de
+  `HighPassFinal` (type 41) n'a pas pris en jeu** ; correctif : l'entrée de coupure du filtre `PerkSurroundHighPass`
+  `(HighPassFinal, 1.0)` → `(FFFF, 0)`, même forme que `CollisionSurroundHighPass`, à confirmer en jeu. Le battement
+  `HUD_HealthLow` (`ingameuistereo`, 0,6 s, ~82 Hz, chaque seconde en état critique) n'était pas en cause : gardé.
 - **Termes des objets min / max / produit (types 42 / 41 / 37)** : paires `(objet, 0)` avec l'index **brut** de
   l'objet, ou constante `(FFFF, valeur)` (ex. `PerkHitRingModDry` = `(28, 0) (FFFF, 1.0)`). La forme `objet << 16`
   ne sert que dans les scripts : l'ancien mode « non » l'utilisait à tort pour `PerkFilterCutOff` et
