@@ -18,8 +18,9 @@ MUSIC = {"Music/1 - Blur original/About this folder.txt":
 
 def main(out):
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
-        for f in sorted(os.listdir(os.path.join(HERE, "static"))):
-            z.write(os.path.join(HERE, "static", f), "Blur_Music/" + f)
+        for f in sorted(os.listdir(os.path.join(HERE, "static"))):   # CRLF: cmd misreads labels / goto with LF
+            text = open(os.path.join(HERE, "static", f), "rb").read().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+            z.writestr("Blur_Music/" + f, text)
         for name, text in MUSIC.items():
             z.writestr("Blur_Music/" + name, text)
         for f in TOOLS:
