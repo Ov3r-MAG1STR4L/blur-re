@@ -72,7 +72,7 @@ déclencher, 3 mots ; `0x1002` affecter ; `0x1004` empiler ; `0x1101` saut ; `0x
 `0x1317` comparer). Ajouter des objets UNIQUEMENT en fin de liste (aucun index existant ne bouge).
 
 **2026-11-12 : les deux corrections ci-dessous sont faites dans `make_music.py` (voir CONNAISSANCES, « Mode non :
-les deux restes trouvés »), reconstruites et relues hors jeu ; reste l'essai en course.**
+les deux restes trouvés »), reconstruites et relues hors jeu ; **validées en jeu le 2026-11-13** : mode « non » terminé.**
 
 Corrections après essai en jeu du mode « non » :
 - les changements sonores subsistent à l'activation de certains bonus (tous sauf nitro et bouclier) ; identifier
