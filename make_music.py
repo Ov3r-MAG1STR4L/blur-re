@@ -400,18 +400,14 @@ def no_perk_submix_effects(j):
     """finalperksubmix.dat (second effect stage on the whole final mix): power-up hits enable a bit crusher, ring mod,
     flanger and the repair low-pass (trigger arg 0 = on, 1 = bypass; StartScript sets all to 1): they stay bypassed.
     The high-pass is always on, cut-off = max of the charge curves and of HealthFilterCutOff (low health effect,
-    player 2026-10-23): one constant 0 term (cut-off 0 = no filter)."""
+    player 2026-10-23; ~0.01 x 48 kHz at critical health level). A constant term in HighPassFinal (type 41) did not
+    work in game (sound still thin, 2026-11-13): the filter's cut-off input (HighPassFinal, 1.0) is set to the
+    constant 0 instead, as for CollisionSurroundHighPass in finalsubmix."""
     n = set_trigger_args(j, ("PerkHitBitCrusher", "PerkHitRingMod", "PerkHitFlanger", "PerkSurroundLowPass"), 0, 1)
     assert n == 8, n
-    set_terms(j, 41, "HighPassFinal", 0.0)
-
-
-def no_low_health_beat(j):
-    """ingameuistereo.dat: HUD_HealthLow (0.6 s low thump, ~82 Hz) replayed every second by LowHealthTimer while
-    health is critical: still heard over the music in "non" (player, 2026-11-13). Its 3 play triggers (arg 0) become
-    stops (arg 1, as in LastGaspInitiatedScript)."""
-    n = set_trigger_args(j, ("HUD_HealthLowSound",), 0, 1)
-    assert n == 3, n
+    s = j.find(147, "PerkSurroundHighPass")
+    assert j.w[s + 6:s + 8] == [obj_index(j, "HighPassFinal"), F1]
+    j.w[s + 6:s + 8] = [FF, 0]
 
 
 def set_curve_outputs(j, name, values):
@@ -534,7 +530,6 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         mode = f"tirage au hasard, groupes {' + '.join(map(str, sizes))}"
     fs = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalsubmix.dat"), "rb").read())
     fps = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalperksubmix.dat"), "rb").read())
-    ui = Jboa(open(os.path.join(E, "root", "audio", "dat", "ingameuistereo.dat"), "rb").read())
     if effects == "oui":
         wreck_muffle(fs)
     elif effects == "partiel":
@@ -549,13 +544,11 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         no_collision_effects(fs)
         no_bitcrusher(fs)
         no_perk_submix_effects(fps)
-        no_low_health_beat(ui)
     os.makedirs(os.path.join(out, "audio", "dat"), exist_ok=True)
     open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
     open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
     open(os.path.join(out, "audio", "dat", "finalperksubmix.dat"), "wb").write(fps.build())
-    open(os.path.join(out, "audio", "dat", "ingameuistereo.dat"), "wb").write(ui.build())
     return f"{len(objs)} morceaux en course ({mode}) ; effets du jeu sur le son : {effects} ; qualité : {'haute (non compressée)' if pcm16 else 'normale'}"
 
 
@@ -564,7 +557,7 @@ def install(out=OUT, test=TEST):
     if b"Blur.exe" in subprocess.run(["tasklist", "/fi", "imagename eq Blur.exe"], capture_output=True).stdout:
         raise SystemExit("Blur est lancé : ferme-le puis recommence.")
     for rel in ("audio/ingamemusic.baf", "audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat",
-                "audio/dat/finalperksubmix.dat", "audio/dat/ingameuistereo.dat"):
+                "audio/dat/finalperksubmix.dat"):
         src, dst = os.path.join(out, rel), os.path.join(test, rel)
         if not os.path.exists(dst) or open(src, "rb").read() != open(dst, "rb").read():
             shutil.copyfile(src, dst)
