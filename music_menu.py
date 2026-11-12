@@ -58,7 +58,8 @@ def main():
     run(chosen, effects, pcm16)
     with open(LAST, "w", encoding="utf-8") as f:
         json.dump({"dossiers": chosen, "effets": effects, "haute_qualite": pcm16}, f, ensure_ascii=False, indent=1)
-    print("\nC'est prêt. Lance le jeu avec « Tester le mod.bat » (il remélange l'ordre à chaque lancement).")
+    launcher = os.environ.get("BLUR_MUSIC_LAUNCHER", "Tester le mod.bat")
+    print(f"\nC'est prêt. Lance le jeu avec « {launcher} » (il remélange l'ordre à chaque lancement).")
 
 
 if __name__ == "__main__":
