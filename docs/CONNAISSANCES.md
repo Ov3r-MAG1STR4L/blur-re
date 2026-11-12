@@ -2268,18 +2268,66 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
       matériau de l'autre ; les maillages 2 et 3 étaient corrects.
     - **T3 (Confirmé en jeu)** : échanger seulement ces deux champs (2 octets) remet 1 et 2 à leur place, sans
       toucher à 3 et 4. **Le moteur lit donc bien ce champ** ; l'hypothèse « champ ignoré » est écartée.
-    - **Probable** : les valeurs sont appliquées dans **l'ordre des plages de sommets**, et non dans l'ordre des
-      enregistrements de maillage. C'est la seule règle essayée qui explique S1, S2 et T3. Vérifiée seulement sur
-      les deux gabarits des prototypes S1 et S2 ; **à vérifier sur d'autres familles de modèles** avant d'en faire
-      une règle générale. Le mécanisme interne n'est pas identifié (tri au chargement, autre table).
-    - **Règle pour nos outils** : écrire ou réordonner les enregistrements de maillage dans l'ordre de leurs
-      sommets.
+    - **Hypothèse du 2026-11-12, contredite par G5d le même jour** : « les valeurs sont appliquées dans l'ordre des
+      plages de sommets ». Elle expliquait S1, S2 et T3, mais pas G5d (voir G5 ci-dessous). **Ce n'est pas une règle
+      établie, ni générale.**
+    - **État actuel** : l'affectation des matériaux dépend des enregistrements de maillage (champ `u5`, lu par le
+      moteur). Sur le même gabarit `greydouble`, S2 / T3 (R0 et R1 échangés) et G5d (chaque enregistrement prend son
+      propre `u5`) donnent des résultats opposés. **L'écart reste inexpliqué.**
+    - **Piste non confirmée** : dans S2, chaque maillage n'avait que 4 sommets utiles, le reste de sa plage étant
+      rempli de sommets en double. Dans G5d, le mur en a 341.
+    - **Pour nos outils** : aucune règle d'ordre n'est validée. Vérifier en jeu l'affectation de chaque nouveau
+      modèle multi-matériaux.
   - **Non démontré** : rôle des 3 `CullNode` et mécanisme de culling ; ajout d'une instance ou d'une texture à un
     gabarit (tout était natif) ; shaders autres que `default_NB_NL_NV` ; rendu du `greydouble` d'origine dans le jeu
     d'origine.
   - **État laissé** : `Blur_vcolor` = G3b + T2 (`road_21_20`) + T3 (`road_21_23`). Sauvegardes :
     `backup_blur_vcolor_G3b_2026-11-11`, `backup_blur_vcolor_T2_2026-11-12` (177 fichiers vérifiés), et les
     sauvegardes par emplacement dans `multi_materiaux/`.
+- **G5 : première conversion d'un objet réel de Dubai Marina (2026-11-12, `Blur_vcolor`, captures réelles)**.
+  Rapports, scripts, captures et paquets : `blur2_aid/G5/` (`G5_selection_premier_modele.md`, `g5_inventaire.*`) et
+  `blur2_aid/G5/conversion_facade/` (`G5b_conversion_facade_bilan.md`, `G5c/G5c_materiaux_neutres_bilan.md`,
+  `G5d/G5d_rapport.json`, `captures/`, `g5b_extract.py`, `g5b_convert.py`, `G5c/g5c_*.py`).
+  - **Source** : données Unity de Blur2DubaiTest (build X360 du 10/11/2010 reconstruit par uKER).
+    - Chaque rendu y a **un seul matériau**. Le décor fixe (`draws_dNNNN`) est découpé par zone et par matériau ;
+      les objets isolables sont les instances `draws2_dD_sS_iI`, dont les lots qui partagent `_iI` et la même place
+      forment un objet.
+    - Objet retenu : **module de façade `node_0075_0014da55` / `i0046`**. 4 lots (mur 341 sommets / 254 triangles,
+      fenêtre 32 / 16, porte-fenêtre 2 12 / 6, porte-fenêtre 1 4 / 2), chacun avec un couple `_diff` + `_ipr0` en
+      DXT1, sans alpha, normal map ni lightmap.
+  - **G5b (conversion, Confirmé en jeu pour la géométrie)** : réécriture en place dans `greydouble` (4 maillages,
+    4 instances, 8 textures), sur l'emplacement `road_21_08`, 60 m après le départ et 35 m sur le côté.
+    - **Repère** : jeu = (−x, y, −z) Unity est une rotation (déterminant +1), donc le sens des triangles est conservé ;
+      même convention mesurée sur le gabarit natif et sur la source.
+    - **Normales et UV** : 1 normale nulle recalculée ; UV gardées avec v → 1 − v, sans rabattement (le gabarit
+      natif utilise lui-même des UV de −20 à 21).
+    - **Textures couleur** : redimensionnées aux emplacements du gabarit (mur 1 024 × 512 → 512², PSNR 39 dB).
+    - **En jeu** : forme, position et stabilité correctes, mais aspect blanc bleuté avec des motifs de tuyauteries
+      et de losanges.
+  - **G5c (textures matériau neutres, Confirmé en jeu)** : seules les 4 textures matériau (celles du gazomètre)
+    sont remplacées par une **valeur unie (41, 0, 49)**, relevée sur `parking_hut_concreteblocks_ipr0` (béton
+    natif, même shader).
+    - **En jeu** : les motifs et l'aspect vitré disparaissent, ce qui confirme qu'ils venaient des textures matériau
+      du gazomètre.
+    - **Piège** : l'encodeur `cpmodel.encode_mips` tronque une couleur unie (41, 0, 49 → 33, 0, 41) ; les blocs DXT1
+      ont donc été écrits directement.
+  - **G5d (Confirmé en jeu)** : `u5` mis au matériau de chaque enregistrement lui-même (mur 3, porte-fenêtre 2 → 4,
+    fenêtre 1, porte-fenêtre 1 → 2 ; seuls 2 octets changent par rapport à G5c).
+    - **Résultat** : façade beige avec ses joints, petites fenêtres, ouvertures centrales et toit à leur place,
+      conforme à l'aperçu hors jeu, sans crash.
+    - **Avant correction** (G5c, `u5` écrits selon l'ordre des sommets) : le mur et la porte-fenêtre 2 avaient
+      échangé leurs textures, ce que reproduit un rendu hors jeu à textures échangées.
+  - **Limites** :
+    - les textures matériau `_ipr0` de Blur 2 ne sont **pas interchangeables** avec celles de Blur 1 : vert élevé
+      dans Blur 2, vert à 0 dans Blur 1, corrélations différentes ;
+    - **« canal rouge = brillance ou reflet »** est une déduction expérimentale, pas une spécification du shader :
+      43 textures natives, mats R ≈ 41, brillants R ≈ 173, exception `concreteblock1` R 148 ;
+    - la **porte d'entrée** (bas du centre) paraît sombre à lamelles : à vérifier en gros plan ;
+    - un seul objet, sans alpha, normal map ni lightmap : cela ne valide pas les autres types d'objets ou de
+      matériaux de Blur 2 ;
+    - l'acteur est à 336 m du modèle, sans problème constaté.
+  - **État laissé** : `Blur_vcolor` = G3b + T2 (`road_21_20`) + T3 (`road_21_23`) + G5d (`road_21_08`,
+    `a5632dab…`). Sauvegardes G5b, G5c et du modèle natif `road_21_08` dans `conversion_facade/`.
 - **Looping de Business Bay (2026-11-10, analyse)** : sommet du tour roulé à 182 m (x 458, z -725 ; zone > 40 m :
   x 149..868, z -726..-125). **Collision** : chaussée normale `17f` (main_part_003/004) + murs `15d`, jusqu'à 208 m,
   ~190 triangles à l'envers au sommet ; aucun collider dédié ; `8017f` n'en fait pas partie (sols bas, ≤ 71 m).
