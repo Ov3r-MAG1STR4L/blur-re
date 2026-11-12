@@ -369,14 +369,41 @@ def no_perk_duck(j):
     j.w[s + 3:s + 3 + 2 * n] = sum(pairs, [])
 
 
-def no_perk_music_volume(j):
-    """finalsubmix.dat: MusicMixerVolumeUnscaled (type 37) is the product of one volume curve per power-up event
-    (BargeFireVolume, BoltFireVolume... dipping to 0.5 / 0.7 for about a second, NitrousVolume too); "non" still
-    changed the music on every power-up but nitro and shield (player, 2026-10-23). A single constant 1.0 term."""
-    s = j.find(37, "MusicMixerVolumeUnscaled")
-    n = j.w[s + 2] & 0xFFFF
-    j.w[s + 2] = (j.w[s + 2] & 0xFFFF0000) | 1
-    j.w[s + 3:s + 3 + 2 * n] = [FF, F1]
+PERK_VOLUMES = ("BargeFireVolume", "BargeLastGaspVolume", "BargeHitVolume", "BoltFireVolume", "BoltHitVolume",
+                "BombFireVolume", "BombHitVolume", "NitrousVolume", "RepairHitVolume", "ShockFireVolume",
+                "ShockHitVolume", "ShuntFireVolume", "ShuntHitVolume")
+
+
+def no_perk_volumes(j):
+    """finalsubmix.dat: each power-up fires a timer whose curve dips to PerkVolumeViewportsDucking (0 in solo) for
+    about a second; these curves multiply the music, reverb, AI, listener and DOPO mixers ("non" only flattened the
+    music: other power-ups still changed the sound, player 2026-10-23). Every point -> 1.0."""
+    for name in PERK_VOLUMES:
+        s = j.find(21, name)
+        for i in range(j.w[s + 5]):
+            j.w[s + 7 + 3 * i:s + 9 + 3 * i] = [FF, F1]
+
+
+def set_trigger_args(j, objs, old, new):
+    """Rewrite every `0x1000 obj old` instruction to `0x1000 obj new` in all scripts (pattern match: some opcodes of
+    these scripts are not decoded). Returns the number of changes."""
+    want = {obj_index(j, o) << 16 for o in objs}
+    changed = 0
+    for i in range(len(j.w) - 2):
+        if j.w[i] == 0x1000 and j.w[i + 1] in want and j.w[i + 2] == old:
+            j.w[i + 2] = new
+            changed += 1
+    return changed
+
+
+def no_perk_submix_effects(j):
+    """finalperksubmix.dat (second effect stage on the whole final mix): power-up hits enable a bit crusher, ring mod,
+    flanger and the repair low-pass (trigger arg 0 = on, 1 = bypass; StartScript sets all to 1): they stay bypassed.
+    The high-pass is always on, cut-off = max of the charge curves and of HealthFilterCutOff (low health effect,
+    player 2026-10-23): one constant 0 term (cut-off 0 = no filter)."""
+    n = set_trigger_args(j, ("PerkHitBitCrusher", "PerkHitRingMod", "PerkHitFlanger", "PerkSurroundLowPass"), 0, 1)
+    assert n == 8, n
+    set_terms(j, 41, "HighPassFinal", 0.0)
 
 
 def set_curve_outputs(j, name, values):
@@ -409,15 +436,18 @@ def soften_shield(j):
         j.set_code(s, old, code)
 
 
-def no_perk_lowpass(j):
-    """Keep a single unity term so nitro, shield, and wreck filters cannot muffle the final mix."""
-    variable = j.count
-    j.w += [20, j.name("NoPerkLowPassVariable"), F1]
-    j.count += 1
-    s = j.find(42, "PerkFilterCutOff")
+def set_terms(j, typ, name, value):
+    """Replace all terms of a min / max / product object (types 42 / 41 / 37: count word, then (obj, 0) pairs) by one
+    constant (FFFF, value), the form the game itself uses (PerkHitRingModDry = (28, 0) (FFFF, 1.0))."""
+    s = j.find(typ, name)
     n = j.w[s + 2] & 0xFFFF
     j.w[s + 2] = (j.w[s + 2] & 0xFFFF0000) | 1
-    j.w[s + 3:s + 3 + 2 * n] = [variable << 16, 0]
+    j.w[s + 3:s + 3 + 2 * n] = [FF, f32(value)]
+
+
+def no_perk_lowpass(j):
+    """Keep a single unity term so nitro, shield, and wreck filters cannot muffle the final mix."""
+    set_terms(j, 42, "PerkFilterCutOff", 1.0)
 
 
 def soften_perk_effects(j):
@@ -439,13 +469,7 @@ def no_collision_effects(j):
 
 def no_bitcrusher(j):
     """Set the bit-crusher depth input to its documented neutral value."""
-    variable = j.count
-    j.w += [20, j.name("NoBitCrusherDepthVariable"), f32(32)]
-    j.count += 1
-    s = j.find(42, "RGBBitCrusherDepthFinal")
-    n = j.w[s + 2] & 0xFFFF
-    j.w[s + 2] = (j.w[s + 2] & 0xFFFF0000) | 1
-    j.w[s + 3:s + 3 + 2 * n] = [variable << 16, 0]
+    set_terms(j, 42, "RGBBitCrusherDepthFinal", 32.0)
 
 
 def wave_name(path, used):
@@ -501,6 +525,7 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         assert reached == set(objs), ("simulation", sorted(set(objs) - reached), sorted(reached - set(objs)))
         mode = f"tirage au hasard, groupes {' + '.join(map(str, sizes))}"
     fs = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalsubmix.dat"), "rb").read())
+    fps = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalperksubmix.dat"), "rb").read())
     if effects == "oui":
         wreck_muffle(fs)
     elif effects == "partiel":
@@ -510,14 +535,16 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         wreck_muffle(fs, cutoff=0.06)
     else:
         no_perk_duck(fs)
-        no_perk_music_volume(fs)
+        no_perk_volumes(fs)
         no_perk_lowpass(fs)
         no_collision_effects(fs)
         no_bitcrusher(fs)
+        no_perk_submix_effects(fps)
     os.makedirs(os.path.join(out, "audio", "dat"), exist_ok=True)
     open(os.path.join(out, "audio", "ingamemusic.baf"), "wb").write(bank)
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
     open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
+    open(os.path.join(out, "audio", "dat", "finalperksubmix.dat"), "wb").write(fps.build())
     return f"{len(objs)} morceaux en course ({mode}) ; effets du jeu sur le son : {effects} ; qualité : {'haute (non compressée)' if pcm16 else 'normale'}"
 
 
@@ -525,7 +552,8 @@ def install(out=OUT, test=TEST):
     """Copy the built files into the test copy (Blur must be closed)."""
     if b"Blur.exe" in subprocess.run(["tasklist", "/fi", "imagename eq Blur.exe"], capture_output=True).stdout:
         raise SystemExit("Blur est lancé : ferme-le puis recommence.")
-    for rel in ("audio/ingamemusic.baf", "audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat"):
+    for rel in ("audio/ingamemusic.baf", "audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat",
+                "audio/dat/finalperksubmix.dat"):
         src, dst = os.path.join(out, rel), os.path.join(test, rel)
         if not os.path.exists(dst) or open(src, "rb").read() != open(dst, "rb").read():
             shutil.copyfile(src, dst)
