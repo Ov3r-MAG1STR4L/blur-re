@@ -1590,6 +1590,33 @@ Outil : `nfs_diag/pc_diag.py STM WORLD SPOTS LEVELPHYSICS_ORIGINAL` (lecture seu
   branchées. M3 Drift PC : 4,2 Mo (exportée le 12/03/2010). Conversion X360 → PC du `.model` à faire (inversion
   d'octets bloc par bloc, comme `level.level`, et textures Xenon).
 
+### Prototypes Blur 2 : exécutables déchiffrés et messages des développeurs (2026-11-12, lecture seule)
+Rapport complet avec offsets : `Jeux_WII\blur2_aid\easter_eggs\rapport.md` (scripts dans `scripts\`).
+- **Les `.xex` se déchiffrent** (Confirmé, image commençant par `MZ`) : ce sont des XEX2 devkit (ils importent `xbdm.xex`),
+  chiffrés en AES avec la **clé devkit nulle** (clé de fichier à `sec_off + 0x150`, déchiffrée en ECB, puis le corps en
+  CBC avec un IV nul) et en compression « basic » (blocs données + zéros, pas de LZX). Script :
+  `easter_eggs\scripts\xexdec.ps1` (AES .NET). Dates PE : 31/08/2010, 04/11/2010, 10/11/2010 (Speed et Release).
+- **`Kanzen_Release.xex` (10/11) est la meilleure source** : seul build à garder les assertions (les builds Speed les
+  retirent). On y lit des noms de développeurs (CharlieA pour l'IA et les routes, LloydW, DavidG, GavinY, SteveB, WillB,
+  Mark T, AS, SN) et quelques messages familiers (« Spawning Pools have gone tits up!!!!! », « speak to GavinY :( »).
+- **`.loc` X360** = même OLTX que le PC, en gros-boutiste UTF-16BE (Confirmé sur 24 fichiers ; lecteur
+  `easter_eggs\scripts\locbe.py`).
+- **Noms officiels des routes de Dubaï** (Confirmé, `cityandroutenames.loc` du 10/11) : `CRN_DUBAI_1` « Route 01 - Business
+  Bay », `_2` « Route 02 - Dubai Island », `_3` « Route 03 - Construction », **`_4` « Route 04 - Marina »**. Les autres
+  villes de Blur 2 y ont aussi leurs routes (Detroit, Hong Kong, Liverpool, Miami, North Africa, Odessa, Ski Resort…).
+- Contenus de développement nouveaux par rapport au PC : neuf « villes » personnelles `CRN_USER_*` (Ste_W, Gaz_R, Rob_H,
+  Martin_B, Feargal_P, Dave_C, Dan_M, Derek_C, Nigel_M), « Zephyrus' Playground » (= Kanzen LA River), « Rollercoaster
+  Test » (= `circuit_dom`), variables `Cheats.ShowAllGarage` et `Cheats.UnlockAllApps`, `Debug.ShowDevCities`, environ
+  25 modèles de personnages de cinématiques `cut_*`, autocollants de test (« Barge-tastic »).
+- `credits.txt` du gamedata = crédits Activision de Blur 1 (aucun crédit Blur 2). **Aucun message d'adieu ni allusion à
+  la fermeture du studio** dans les exécutables ni dans les textes (recherche faite). Les builds datent du 10/11/2010 au
+  plus tard, donc d'avant l'annonce de la fermeture du studio par Activision (environ une semaine plus tard ; date
+  rappelée de mémoire, non vérifiée ici).
+- Restes de Blur 1 (aussi dans `Blur.exe` PC, donc pas propres à Blur 2) : triche « voiture chromée », `UnlockShannon`,
+  code de moto `RP_MotorbikeDynamics`, dialogues de debug « Mentor / Arch Rival / Buddy », adresse e-mail du système de
+  log par e-mail du moteur.
+- Non fait : sections `MtaDbg` des modèles (décompression LZX trop lente), `.xt` binaires, paks d'août.
+
 ## Projet tiers : BlurRebuilt (uKER) (2026-11-09, lecture du dépôt GitHub public)
 - https://github.com/uKER/BlurRebuilt (C++, dernier push le 07/11/2026). Blur **recompilé à partir du code source
   PC qui a fuité** (« untouched leak », 20 770 fichiers, source de juin 2010) : DirectX 11, HDR, 64 bits, images par
