@@ -52,12 +52,13 @@ end
 -- behind "Position", texture hud_grad) and Position_Title (the blue "Position" label, style Secondary, Main_1), its
 -- number children hidden. Bottom-left; lights up like a failing lamp, holds HOLD s, slides left while fading out.
 -- Units: the HUD's panel units (Position_Title row = 1.5 high). Tuning knobs below; everything is logged.
-local POS_X, BOTTOM = 1.0, 7.0          -- banner top-left: POS_X from the left edge, BOTTOM above the screen's bottom
-                                        -- (probe 7: the parent's origin is its top-left, y goes down, whatever the justify)
-local TEXT_DX, TEXT_DY = 1.0, -0.5      -- text inside the banner (as Position_Title vs Pos_Backing in the HUD)
+-- ChangePosition works in the viewport's own units (GetSize(HUD.ViewportId[1]) = about 725-740 x 408, origin top-left,
+-- y down, whatever the justify), sizes in panel units (1 unit = about 8.7 of those: 'Position' = 4.94 units long).
+local POS_X, BOTTOM = 20.0, 80.0        -- banner top-left: POS_X from the left edge, BOTTOM above the screen's bottom
+local TEXT_DX, TEXT_DY = 9.0, -2.0      -- text inside the banner (Position_Title vs Pos_Backing: 1.0, -0.25 units)
 local TEXT_SCALE = 1.25                 -- a bit bigger than "Position"
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0   -- backing width = text length * K * scale + pad
-local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
+local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 160.0
 local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0.6, 0.40, 0.0, 0.48, 1.0, 0.53, 0.3, 0.60, 1.0 }
 
 local banner = nil                      -- created in a hook (never at load time)
