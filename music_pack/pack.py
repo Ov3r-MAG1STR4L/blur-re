@@ -60,11 +60,19 @@ def prepare():
         stop("A previous installation was interrupted: run \"Uninstall.bat\" first, then try again.")
     if not os.path.exists(os.path.join(GAME, "Blur.exe")):
         stop(f"Blur.exe not found in {GAME}: put the Blur_Music folder inside the Blur folder (next to Blur.exe).")
-    for pak, _ in PAKS:
-        if not os.path.exists(os.path.join(GAME, "cache", pak + ".pak")):
-            off = " (cache\\" + pak + ".pak.off is there)" if os.path.exists(os.path.join(GAME, "cache", pak + ".pak.off")) else ""
-            stop(f"cache\\{pak}.pak not found{off}: another mod, or an older interrupted Blur Music install, set it "
-                 "aside. If it was Blur Music, see \"Recovering from an interrupted install\" in README.txt.")
+    cache = os.path.join(GAME, "cache")
+    aside = [pak for pak, _ in PAKS if not os.path.exists(os.path.join(cache, pak + ".pak"))]
+    if aside:
+        if not all(os.path.exists(os.path.join(cache, pak + ".pak.off")) for pak in aside):
+            stop(f"cache\\{aside[0]}.pak not found: cannot install.")
+        print(f"cache\\{aside[0]}.pak was renamed to .pak.off, by another mod or by an older Blur Music install that"
+              " was interrupted\n(older versions kept their backup inside the Blur_Music folder).")
+        if input("Was it an older Blur Music install? Put the game files back and continue? (Y/N): ").strip().lower() != "y":
+            stop("Nothing changed. Uninstall the other mod first, then run \"Choose music.bat\" again.")
+        for pak in aside:                                 # the loose files it left are taken back below (same content)
+            for ext in (".pak", ".sig"):
+                if os.path.exists(os.path.join(cache, pak + ext + ".off")):
+                    os.replace(os.path.join(cache, pak + ext + ".off"), os.path.join(cache, pak + ext))
     free = shutil.disk_usage(GAME).free
     if free < 3 * 1024 ** 3:
         stop(f"About 3 GB of free space is needed on the game's drive ({free / 1024 ** 3:.1f} GB free).")
@@ -75,6 +83,7 @@ def prepare():
             dst = os.path.join(SAVED, rel.replace("/", os.sep))
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy2(game_path(rel), dst)
+    same = set()
     with open(ADDED, "a", encoding="utf-8") as added:     # written as we go: an interrupted run can be undone
         for pak, dest in PAKS:
             p = blurpak.Pak(os.path.join(GAME, "cache", pak + ".pak"))
@@ -88,9 +97,13 @@ def prepare():
                     open(keep, "wb").write(data)
                     want.discard(path.lower())
                 rel = f"{dest}/{path}" if dest else path
-                if not os.path.exists(game_path(rel)):
+                new = not os.path.exists(game_path(rel))
+                if new:
                     os.makedirs(os.path.dirname(game_path(rel)), exist_ok=True)
                     open(game_path(rel), "wb").write(data)
+                elif open(game_path(rel), "rb").read() == data:  # same as the pak (an older run's leftover): ours
+                    same.add(rel)
+                if new or rel in same:
                     added.write(rel + "\n")
                     added.flush()
                 if k % 500 == 0 or k == len(p.files):
@@ -98,6 +111,8 @@ def prepare():
             p.f.close()
             if want:
                 stop(f"Files missing from {pak}.pak: {sorted(want)}")
+    for rel in same & set(WRITTEN):                       # not the player's version: no backup to put back
+        os.remove(os.path.join(SAVED, rel.replace("/", os.sep)))
     for pak, _ in PAKS:                                   # a pak wins over loose files: set it aside
         for ext in (".pak", ".sig"):
             src = os.path.join(GAME, "cache", pak + ext)
