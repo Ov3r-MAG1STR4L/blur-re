@@ -16,6 +16,8 @@ import blurloc, make_music as mm
 
 TEXT_HASH = 0x0B1E0001                                  # probes 1-4: "Blur Music probe: hash text OK" (shown in game)
 TITLE_HASH, TRACK_A_HASH, TRACK_B_HASH = 0x0B1E0002, 0x0B1E0003, 0x0B1E0004
+GRID = [(x, y, 0x0B1E0100 + k) for k, (x, y) in enumerate((x, y) for y in (-180, -90, 0, 90, 180)
+                                                       for x in (-320, -160, 0, 160, 320))]
 HUD_LOC = os.path.join(mm.TEST, "gamedata", "xt", "loc", "hud.loc")
 PLUGINS = os.path.join(mm.TEST, "amax", "plugins", "plugins.lua")
 PLUGIN_DIR = os.path.join(mm.TEST, "amax", "plugins", "musicprobe")
@@ -141,10 +143,50 @@ local function banner_tick()                              -- called every frame
 	if not ok then banner_hide() end
 end
 
+-- calibration grid (player's idea, 2026-11-13): probe 7 put the banner nowhere and flashed something at the centre,
+-- so the ChangePosition origin is not known. GRID labels, each showing its own "x,y", are placed with ChangePosition
+-- under HUD.ViewportId[1] (justify TopLeft); a screenshot gives the mapping. The default position is logged too.
+local GRID = { @GRID@ }
+local grid = nil                                         -- created in a hook
+
+local function grid_toggle()
+	if grid then
+		for _, id in ipairs(grid) do pcall(UIButtons.SetActive, id, false) end
+		grid = nil
+		log("grid off")
+		return
+	end
+	local parent = type(HUD) == "table" and type(HUD.ViewportId) == "table" and (HUD.ViewportId[1] or HUD.ViewportId[0])
+	if not parent then log("grid: no HUD.ViewportId") return end
+	grid = {}
+	for i = 1, #GRID, 3 do
+		local ok, err = pcall(function()
+			local id = UIButtons.CloneXtGadgetByName("hud_objects", "Position_Title")
+			for _, child in ipairs({ "Position_Amount", "Position_AmountOf" }) do
+				local c = UIButtons.FindChildByName(id, child)
+				if c then UIButtons.SetActive(c, false) end
+			end
+			UIButtons.SetParent(id, parent, UIEnums.Justify.TopLeft)
+			if i == 1 then
+				local x, y = UIButtons.GetPosition(id)
+				log("grid: default position after SetParent " .. tostring(x) .. ", " .. tostring(y))
+			end
+			UIButtons.ChangePosition(id, GRID[i], GRID[i + 1], 0.0)
+			UIButtons.ChangeText(id, GRID[i + 2])
+			UIButtons.SetActive(id, true)
+			grid[#grid + 1] = id
+		end)
+		if not ok then log("grid FAILED " .. tostring(err)) break end
+	end
+	log("grid on: " .. #grid .. " labels")
+end
+
 local STEPS = {
-	function() set_music(0) pending = { 45, 2 } now_playing(TRACK_A_HASH) end,   -- 1: track A
-	function() set_music(0) pending = { 45, 3 } now_playing(TRACK_B_HASH) end,   -- 2: track B
-	function() banner_hide() set_music(0) pending = { 45, orig_type or 1 } end,  -- 3: back to normal
+	function() grid_toggle() end,                                                -- 1: calibration grid on
+	function() grid_toggle() end,                                                -- 2: grid off
+	function() set_music(0) pending = { 45, 2 } now_playing(TRACK_A_HASH) end,   -- 3: track A
+	function() set_music(0) pending = { 45, 3 } now_playing(TRACK_B_HASH) end,   -- 4: track B
+	function() banner_hide() set_music(0) pending = { 45, orig_type or 1 } end,  -- 5: back to normal
 }
 
 local function next_step()
@@ -280,10 +322,13 @@ def main():
     blurloc.add_text(d, "BLURMUSIC_NOW_PLAYING", TITLE_HASH, {"en": "Now playing", "fr": "En écoute"})
     blurloc.add_text(d, "BLURMUSIC_TRACK_A", TRACK_A_HASH, {"en": titles[0]})
     blurloc.add_text(d, "BLURMUSIC_TRACK_B", TRACK_B_HASH, {"en": titles[1]})
+    for gx, gy, gh in GRID:
+        blurloc.add_text(d, f"BLURMUSIC_GRID_{gh & 0xFF}", gh, {"en": f"{gx},{gy}"})
     os.chmod(HUD_LOC, 0o666)
     open(HUD_LOC, "wb").write(blurloc.build(d))
     os.makedirs(PLUGIN_DIR, exist_ok=True)
     lua = (PLUGIN.replace("@TITLE@", str(TITLE_HASH)).replace("@HA@", str(TRACK_A_HASH)).replace("@HB@", str(TRACK_B_HASH))
+           .replace("@GRID@", ", ".join(f"{gx}, {gy}, {gh}" for gx, gy, gh in GRID))
            .replace("@A@", names[0]).replace("@B@", names[1]))
     open(os.path.join(PLUGIN_DIR, "musicprobe.lua"), "w", encoding="utf-8", newline="\n").write(lua)
     lst = open(PLUGINS, encoding="utf-8").read()
