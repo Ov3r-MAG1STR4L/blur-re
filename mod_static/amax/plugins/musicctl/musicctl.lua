@@ -141,6 +141,18 @@ local function banner_place(dx, alpha)
 	end
 end
 
+local function banner_drop()                            -- hide every piece and forget them (a new set is built later)
+	if banner then
+		for _, k in ipairs({ "bg", "txt", "swirl" }) do
+			if banner[k] then pcall(UIButtons.SetActive, banner[k], false) end
+		end
+		for i = 1, INFO_LINES do
+			if banner.info[i] then pcall(UIButtons.SetActive, banner.info[i], false) end
+		end
+	end
+	banner = nil
+end
+
 local function banner_hide()
 	if banner and banner.t0 then
 		pcall(UIButtons.SetActive, banner.bg, false)
@@ -185,7 +197,10 @@ local function banner_show(p)
 		end
 		UIButtons.SetActive(banner.txt, true)
 	end)
-	if not ok then log("banner failed: " .. tostring(err)) end
+	if not ok then                                       -- dead gadgets (HUD rebuilt): drop them, rebuilt next time
+		log("banner failed: " .. tostring(err))
+		banner = nil
+	end
 end
 
 local function banner_tick()
@@ -347,9 +362,11 @@ function M.GoScreen(screen, _opts)
 		race_end()
 	end
 	if s == "ingame\\hud.lua" and in_race and not hud_ready then
-		banner_hide()
-		banner = nil                                      -- built under the race HUD only: under the intro's view it
+		banner_drop()                                     -- built under the race HUD only: under the intro's view it
 		hud_ready = true                                  -- sat top-left, off-screen (2026-11-13)
+	elseif ingame and in_race and hud_ready and s ~= "ingame\\hud.lua" then
+		banner_drop()                                     -- pause / options: back in the race the HUD is rebuilt and
+		hud_ready = false                                 -- our old gadgets were dead (banner gone for good, 2026-11-13)
 	elseif not ingame then
 		local t = options()                               -- menus: never leave a value of ours in the options
 		if t and t.music_type ~= nil and t.music_type >= 2 then set_music(1) end
