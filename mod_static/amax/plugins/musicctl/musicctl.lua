@@ -38,6 +38,9 @@ local INFO_SCALE, INFO_LINES, LINE_DY = 0.85, 2, 1.6   -- info lines under the t
 -- texture light_paint_02, green Support_0), cloned, recoloured to the blue of "Position" (Main_1 = 12 125 253) and
 -- played with its own timeline (fan_demand_win_on: texture scroll 0.5-3 s, fade in and out) when the banner shows
 local SWIRL, SWIRL_COLOUR, SWIRL_TL = true, "!255 12 125 253", "fan_demand_win_on"
+local SW_X, SW_Y, SW_SCALE = 0.0, 0.0, 1.0       -- streak offset from its default place, scale (tuned live: keys 1-6)
+local TUNE_SWIRL = true                         -- keys 1/2 up/down, 3/4 left/right, 5/6 smaller/bigger, logged
+local MID_MIN = 0.2                             -- backing middle piece height with no info line (HUD units)
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0
 local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
 local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0.6, 0.40, 0.0, 0.48, 1.0, 0.53, 0.3, 0.60, 1.0 }
@@ -96,10 +99,12 @@ local function banner_build()
 	if not parent then return nil end
 	local b = { info = {} }
 	b.bg = UIButtons.CloneXtGadgetByName("hud_objects", "Pos_Backing")
-	-- one gradient piece only: the body (Pos_BackingMiddle) kept its own offset once resized (player, 2026-11-13)
-	local mid = UIButtons.FindChildByName(b.bg, "Pos_BackingMiddle")
-	b.mid = mid                                           -- hidden again after every SetActive(bg, true): it reactivates it
-	if mid then UIButtons.SetActive(mid, false) end
+	-- the backing is three hud_grad pieces (ui.json): Pos_Backing (top), its child Pos_BackingMiddle (stretchable) and
+	-- that one's child Pos_BackingBottom: all three get the same width, the middle the height of the info lines (the
+	-- "hole" of 2026-11-13 was the middle hidden while the bottom stayed, 12 wide)
+	b.mid = UIButtons.FindChildByName(b.bg, "Pos_BackingMiddle")
+	b.bottom = b.mid and UIButtons.FindChildByName(b.mid, "Pos_BackingBottom")
+	log("backing pieces " .. tostring(b.bg) .. " " .. tostring(b.mid) .. " " .. tostring(b.bottom))
 	UIButtons.SetParent(b.bg, parent, UIEnums.Justify.BottomLeft)
 	b.txt = clone_label(parent, TEXT_SCALE)
 	for i = 1, INFO_LINES do b.info[i] = clone_label(parent, INFO_SCALE) end
@@ -112,6 +117,8 @@ local function banner_build()
 		local ok, sw = pcall(UIButtons.CloneXtGadgetByName, "hud_objects", "shp_FanSwirlWin")
 		if ok and sw then
 			UIButtons.SetParent(sw, vp, UIEnums.Justify.MiddleCentre)
+			local sx, sy, sz = UIButtons.GetPosition(sw)
+			b.sw_home = { sx or 0, sy or 0, sz or 0 }
 			pcall(UIButtons.ChangeColour, sw, SWIRL_COLOUR)
 			b.swirl = sw
 		end
@@ -129,7 +136,9 @@ local function banner_place(dx, alpha)
 		UIButtons.ChangeAlpha(banner.info[i], alpha)
 	end
 	UIButtons.ChangeAlpha(banner.bg, alpha)
-	pcall(UIButtons.SetAlphaIntensity, banner.bg, alpha, alpha)   -- the backing draws its intensity as alpha
+	for _, piece in ipairs({ banner.bg, banner.mid, banner.bottom }) do   -- the backing draws its intensity as alpha
+		pcall(UIButtons.SetAlphaIntensity, piece, alpha, alpha)
+	end
 end
 
 local function banner_hide()
@@ -161,13 +170,17 @@ local function banner_show(p)
 			UIButtons.SetActive(banner.info[i], h ~= nil)
 		end
 		w = math.max(WIDTH_MIN, w * WIDTH_K + WIDTH_PAD)
-		UIButtons.ChangeSize(banner.bg, w, banner.h + LINE_DY * banner.lines)
+		UIButtons.ChangeSize(banner.bg, w, banner.h)
+		if banner.mid then UIButtons.ChangeSize(banner.mid, w, MID_MIN + LINE_DY * banner.lines) end
+		if banner.bottom then UIButtons.ChangeSize(banner.bottom, w, banner.h) end
 		banner.t0 = clock
 		banner_place(0, 0.0)
 		UIButtons.SetActive(banner.bg, true)
-		if banner.mid then UIButtons.SetActive(banner.mid, false) end   -- the parent's SetActive turned the body on
 		if banner.swirl then                                -- the game's own streak animation, in blue
 			UIButtons.SetActive(banner.swirl, true)
+			local home = banner.sw_home
+			if home then pcall(UIButtons.ChangePosition, banner.swirl, home[1] + SW_X, home[2] + SW_Y, home[3]) end
+			pcall(UIButtons.ChangeScale, banner.swirl, SW_SCALE, SW_SCALE, 1.0)
 			pcall(UIButtons.TimeLineActive, SWIRL_TL, true, 0.0)
 		end
 		UIButtons.SetActive(banner.txt, true)
@@ -277,6 +290,13 @@ local function tick()
 		if key ~= last_key then                           -- a held key keeps its value: new keys only
 			last_key = key
 			if key == NEXT_KEY1 or key == NEXT_KEY2 then next_track() end
+			local move = TUNE_SWIRL and ({ CMN_1 = { 0, -20, 0 }, CMN_2 = { 0, 20, 0 }, CMN_3 = { -20, 0, 0 }, CMN_4 = { 20, 0, 0 },
+				CMN_5 = { 0, 0, -0.1 }, CMN_6 = { 0, 0, 0.1 } })[key]
+			if move then
+				SW_X, SW_Y, SW_SCALE = SW_X + move[1], SW_Y + move[2], math.max(0.1, SW_SCALE + move[3])
+				log(string.format("tune swirl SW_X %.0f SW_Y %.0f SW_SCALE %.1f", SW_X, SW_Y, SW_SCALE))
+				banner_show(pos)
+			end
 		end
 	end
 end
