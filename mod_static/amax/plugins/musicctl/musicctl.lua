@@ -33,7 +33,7 @@ local FIRST_START = 4.0                   -- s from the race HUD to the first tr
 local POS_X, POS_Y = -4.5, 8.0
 local TEXT_DX, TEXT_DY = 1.0, -0.5
 local TEXT_SCALE = 1.25
-local INFO_SCALE, INFO_LINES, LINE_DY = 0.85, 2, 1.4   -- info lines under the title (artist, album)
+local INFO_SCALE, INFO_LINES, LINE_DY = 0.85, 2, 1.6   -- info lines under the title (artist, album)
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0
 local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
 local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0.6, 0.40, 0.0, 0.48, 1.0, 0.53, 0.3, 0.60, 1.0 }
@@ -94,6 +94,7 @@ local function banner_build()
 	b.bg = UIButtons.CloneXtGadgetByName("hud_objects", "Pos_Backing")
 	-- one gradient piece only: the body (Pos_BackingMiddle) kept its own offset once resized (player, 2026-11-13)
 	local mid = UIButtons.FindChildByName(b.bg, "Pos_BackingMiddle")
+	b.mid = mid                                           -- hidden again after every SetActive(bg, true): it reactivates it
 	if mid then UIButtons.SetActive(mid, false) end
 	UIButtons.SetParent(b.bg, parent, UIEnums.Justify.BottomLeft)
 	b.txt = clone_label(parent, TEXT_SCALE)
@@ -148,6 +149,7 @@ local function banner_show(p)
 		banner.t0 = clock
 		banner_place(0, 0.0)
 		UIButtons.SetActive(banner.bg, true)
+		if banner.mid then UIButtons.SetActive(banner.mid, false) end   -- the parent's SetActive turned the body on
 		UIButtons.SetActive(banner.txt, true)
 	end)
 	if not ok then log("banner failed: " .. tostring(err)) end
