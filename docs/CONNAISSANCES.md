@@ -1567,6 +1567,17 @@ Demande de la communauté : afficher le titre quand la musique change. Deux ques
   quelconque (2, 3…) au graphe ? Si oui : le graphe joue le morceau n° `MusicType - 2`, le plugin connaît l'ordre
   (fichier Lua écrit par le pack) et affiche le titre. Fin naturelle d'un morceau : le plugin devrait la prévoir par
   les durées (pauses, recommencement : fragile) ou le graphe enchaîner seul (le plugin ne saurait plus).
+- **Sonde 1 (`music_probe.py`), essai en jeu 2026-11-13 (LAN, Blur_test)** :
+  - **Confirmé en jeu : le Lua choisit le morceau.** `Amax.UpdateAudioOptions` avec `music_type` = 2 puis 3 (en passant
+    par 0 pour franchir la porte) : le graphe reçoit la valeur telle quelle ; `RaceStartScript` patché a joué le
+    morceau A (2) puis B (3), comme prévu. Le moteur ne borne pas l'option à 0 / 1.
+  - **Confirmé en jeu : `UIText.X` = code (hash) de la clé dans le `.loc`** (`UIText.HUD_POS` = 15029575, le hash de
+    `HUD_POS` dans `hud.loc`). Donc une entrée `.loc` ajoutée avec un hash choisi devrait s'afficher via
+    `ChangeText(id, hash)` (affichage pas encore vu).
+  - **Popup de montée de rang absente en LAN** : `GUI.mp_rank_up_ids` = nil (créée seulement en multijoueur en ligne,
+    probablement aussi absente en carrière). Il faut une autre méthode d'affichage (sonde 2 : élément cloné d'un
+    gabarit du HUD présent dans toutes les courses).
+  - Touches : `UIButtons.GetKeyInput()` donne `CMN_8` pour la touche 8, `CMN_1` pour 1.
 - **Repli simple** : afficher le titre seulement après un appui sur « suivant »… impossible aussi sans savoir lequel
   le graphe a tiré. Tout dépend donc du test `music_type`.
 - Essai proposé (Blur_test) : graphe sonde où `MusicType` = 2 et 3 jouent deux morceaux précis, plugin qui écrit 2 ou
