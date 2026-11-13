@@ -6,19 +6,19 @@ the Blur_Music folder goes next to Blur.exe.
 usage: pack.py menu | uninstall
 First run (menu): a pak wins over loose files, so cache\\root.pak and cache\\root_streaming.pak are laid loose from the
 PLAYER'S OWN paks (root -> <game>\\, root_streaming -> <game>\\audio\\, existing loose files kept) and set aside as
-.off; the few originals the music build needs are kept in tools\\data. Everything is recorded in backup\\ (added
+.off; the few originals the music build needs are kept in its data\\ folder. Everything is recorded in <game>\\Blur_Music_backup\\ (added
 files, renamed paks, files saved before being replaced) so uninstall puts the game back as it was."""
 import json, os, re, shutil, subprocess, sys
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 PACK = os.path.dirname(TOOLS)
 GAME = os.path.dirname(PACK)
-STATE = os.path.join(PACK, "backup")
+STATE = os.path.join(GAME, "Blur_Music_backup")      # outside the pack folder: survives a pack update (player, 2026-11-13)
 DONE = os.path.join(STATE, "installed.txt")
 ADDED = os.path.join(STATE, "added.txt")
 RENAMED = os.path.join(STATE, "renamed.txt")
 SAVED = os.path.join(STATE, "files")
-DATA = os.path.join(TOOLS, "data")
+DATA = os.path.join(STATE, "data")
 MUSIC = os.path.join(PACK, "Music")
 LAST = os.path.join(MUSIC, "last_selection.json")
 os.environ.update({"BLUR_MUSIC_E": DATA, "BLUR_MUSIC_MUSIC_DIR": MUSIC, "BLUR_MUSIC_TEST": GAME,
@@ -62,7 +62,9 @@ def prepare():
         stop(f"Blur.exe not found in {GAME}: put the Blur_Music folder inside the Blur folder (next to Blur.exe).")
     for pak, _ in PAKS:
         if not os.path.exists(os.path.join(GAME, "cache", pak + ".pak")):
-            stop(f"cache\\{pak}.pak not found (already set aside by another mod?): cannot install.")
+            off = " (cache\\" + pak + ".pak.off is there)" if os.path.exists(os.path.join(GAME, "cache", pak + ".pak.off")) else ""
+            stop(f"cache\\{pak}.pak not found{off}: another mod, or an older interrupted Blur Music install, set it "
+                 "aside. If it was Blur Music, see \"Recovering from an interrupted install\" in README.txt.")
     free = shutil.disk_usage(GAME).free
     if free < 3 * 1024 ** 3:
         stop(f"About 3 GB of free space is needed on the game's drive ({free / 1024 ** 3:.1f} GB free).")
