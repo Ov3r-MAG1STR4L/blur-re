@@ -20,8 +20,13 @@ REQUIREMENTS
 ------------
   - Blur for PC. The next-track key needs AMAX (amax folder in the game folder).
   - About 3 GB of free disk space (the game's audio is unpacked once, see "How it works").
-  - Python 3 with numpy and numba, and ffmpeg (used to convert your music to the game's format).
-    "Choose music.bat" offers to install them for you (with winget, Windows 10/11).
+  - Python 3 and ffmpeg (used to convert your music to the game's format). Install them once:
+      Python 3: https://www.python.org/downloads/  (tick "Add python.exe to PATH" in the installer)
+      ffmpeg:   in a command prompt, type   winget install Gyan.FFmpeg
+                (or download it from https://www.gyan.dev/ffmpeg/builds/ and add its "bin" folder
+                to PATH)
+    Then close and reopen any open command prompt. The Python modules numpy and numba are installed
+    by "Choose music.bat" itself (with pip, Python's own installer).
 
 
 INSTALL (step by step)
@@ -33,9 +38,10 @@ INSTALL (step by step)
         Music\1 - Blur original\    = the game's own 23 race tracks (leave it as it is)
         Music\2 - My playlist\      = put your files here
      You can create as many folders as you like (e.g. "3 - Rock", "4 - Electro").
-  4. Double-click "Choose music.bat" and accept the administrator prompt
-     (the Blur folder is protected by Windows).
-       - If Python or ffmpeg are missing, answer Y to install them, then run the .bat again.
+  4. Double-click "Choose music.bat".
+       - If Blur is in a protected folder (e.g. C:\Program Files (x86)\...), Windows does not let it
+         write there: right-click "Choose music.bat" and choose "Run as administrator" instead.
+         The window tells you when this is needed. Same for "Uninstall.bat".
        - The FIRST run unpacks the game's files: it takes a few minutes. Do not close the window.
   5. Answer the two questions:
        - which playlists, by number (several at once: "1 2" mixes the game's tracks with yours);

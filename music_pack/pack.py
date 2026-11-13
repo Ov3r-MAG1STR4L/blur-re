@@ -213,20 +213,38 @@ def uninstall():
     print("Uninstalled: the game is back as it was (your converted tracks stay in tools\\cache).")
 
 
+ADMIN = ("Windows does not let this window write in the Blur folder (it is protected, e.g. in Program Files).\n"
+         "Right-click the .bat file and choose \"Run as administrator\".")
+
+
+def writable():
+    """The .bat files do not ask for administrator rights by themselves (antivirus false positive, 2026-11-13)."""
+    test = os.path.join(GAME, "blur_music_write_test.tmp")
+    try:
+        open(test, "w").close()
+        os.remove(test)
+    except PermissionError:
+        stop(ADMIN)
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "menu"
+    writable()
     if cmd == "uninstall":
         return uninstall()
     blur_closed()
     try:                                                  # checked before touching the game
         import numba  # noqa: F401  (blurbaf's encoder)
     except ImportError:
-        stop("Python module numba not found: run \"Choose music.bat\" again, it installs it.")
+        stop("Python module numba not found: see \"REQUIREMENTS\" in README.txt.")
     if not shutil.which("ffmpeg"):
-        stop("ffmpeg not found: run \"Choose music.bat\" again, it offers to install it.")
+        stop("ffmpeg not found: see \"REQUIREMENTS\" in README.txt.")
     prepare()
     menu()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except PermissionError as e:                          # a protected file deeper in the game folder
+        stop(f"{e}\n{ADMIN}\nThen run it again (an interrupted first run asks to run \"Uninstall.bat\" first).")
