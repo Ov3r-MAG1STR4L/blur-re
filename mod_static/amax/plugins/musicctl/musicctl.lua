@@ -34,6 +34,9 @@ local POS_X, POS_Y = -4.5, 8.0
 local TEXT_DX, TEXT_DY = 1.0, -0.5
 local TEXT_SCALE = 1.25
 local INFO_SCALE, INFO_LINES, LINE_DY = 0.85, 2, 1.6   -- info lines under the title (artist, album)
+-- animated overlay (player, 2026-11-13): the game's own scrolling clouds of the rank-up popup (mp_rank_up_clouds,
+-- texture text_clouds, a 10 s looping u scroll that starts by itself), laid on the backing
+local CLOUDS, CLOUDS_ALPHA, CLOUDS_W, CLOUDS_H = true, 0.5, 1.0, 1.0   -- size factors vs the backing
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0
 local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
 local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0.6, 0.40, 0.0, 0.48, 1.0, 0.53, 0.3, 0.60, 1.0 }
@@ -102,6 +105,17 @@ local function banner_build()
 	local _, h = UIButtons.GetSize(b.bg)
 	local _, _, z = UIButtons.GetPosition(b.bg)
 	b.h, b.z, b.lines = h, z or 0.0, 0
+	if CLOUDS then
+		local ok, c = pcall(UIButtons.CloneXtGadgetByName, "hud_objects", "mp_rank_up_clouds")
+		if ok and c then
+			UIButtons.SetParent(c, parent, UIEnums.Justify.BottomLeft)
+			local cw, ch = UIButtons.GetSize(c)
+			log("clouds " .. tostring(c) .. " size " .. tostring(cw) .. " x " .. tostring(ch))
+			b.clouds = c
+		else
+			log("clouds: no clone (" .. tostring(c) .. ")")
+		end
+	end
 	return b
 end
 
@@ -114,12 +128,17 @@ local function banner_place(dx, alpha)
 		UIButtons.ChangeAlpha(banner.info[i], alpha)
 	end
 	UIButtons.ChangeAlpha(banner.bg, alpha)
+	if banner.clouds then
+		UIButtons.ChangePosition(banner.clouds, POS_X + dx, POS_Y, banner.z)
+		UIButtons.ChangeAlpha(banner.clouds, alpha * CLOUDS_ALPHA)
+	end
 	pcall(UIButtons.SetAlphaIntensity, banner.bg, alpha, alpha)   -- the backing draws its intensity as alpha
 end
 
 local function banner_hide()
 	if banner and banner.t0 then
 		pcall(UIButtons.SetActive, banner.bg, false)
+		if banner.clouds then pcall(UIButtons.SetActive, banner.clouds, false) end
 		pcall(UIButtons.SetActive, banner.txt, false)
 		for i = 1, INFO_LINES do pcall(UIButtons.SetActive, banner.info[i], false) end
 		banner.t0 = nil
@@ -146,10 +165,12 @@ local function banner_show(p)
 		end
 		w = math.max(WIDTH_MIN, w * WIDTH_K + WIDTH_PAD)
 		UIButtons.ChangeSize(banner.bg, w, banner.h + LINE_DY * banner.lines)
+		if banner.clouds then UIButtons.ChangeSize(banner.clouds, w * CLOUDS_W, (banner.h + LINE_DY * banner.lines) * CLOUDS_H) end
 		banner.t0 = clock
 		banner_place(0, 0.0)
 		UIButtons.SetActive(banner.bg, true)
 		if banner.mid then UIButtons.SetActive(banner.mid, false) end   -- the parent's SetActive turned the body on
+		if banner.clouds then UIButtons.SetActive(banner.clouds, true) end
 		UIButtons.SetActive(banner.txt, true)
 	end)
 	if not ok then log("banner failed: " .. tostring(err)) end
