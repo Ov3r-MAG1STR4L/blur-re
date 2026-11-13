@@ -12,7 +12,17 @@ import hashlib, json, os, re, shutil, subprocess, sys
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 PACK = os.path.dirname(TOOLS)
-GAME = os.path.dirname(PACK)
+def find_game(here):
+    """The Blur folder: the pack's parent, or (Blur_Music unzipped next to the game folder instead of inside it, a
+    player's report 2026-11-13) the one sub-folder of that parent that holds Blur.exe."""
+    if os.path.exists(os.path.join(here, "Blur.exe")):
+        return here
+    found = [os.path.join(here, d) for d in sorted(os.listdir(here))
+             if os.path.isfile(os.path.join(here, d, "Blur.exe"))]
+    return found[0] if len(found) == 1 else here
+
+
+GAME = find_game(os.path.dirname(PACK))
 STATE = os.path.join(GAME, "Blur_Music_backup")      # outside the pack folder: survives a pack update (player, 2026-11-13)
 DONE = os.path.join(STATE, "installed.txt")
 ADDED = os.path.join(STATE, "added.txt")
@@ -61,7 +71,8 @@ def prepare():
     if os.path.exists(STATE):
         stop("A previous installation was interrupted: run \"Uninstall.bat\" first, then try again.")
     if not os.path.exists(os.path.join(GAME, "Blur.exe")):
-        stop(f"Blur.exe not found in {GAME}: put the Blur_Music folder inside the Blur folder (next to Blur.exe).")
+        stop(f"Blur.exe not found in {GAME} nor in its sub-folders: put the Blur_Music folder inside the Blur folder "
+             "(the one that contains Blur.exe).")
     cache = os.path.join(GAME, "cache")
     aside = [pak for pak, _ in PAKS if not os.path.exists(os.path.join(cache, pak + ".pak"))]
     if aside:
@@ -78,6 +89,7 @@ def prepare():
     free = shutil.disk_usage(GAME).free
     if free < 3 * 1024 ** 3:
         stop(f"About 3 GB of free space is needed on the game's drive ({free / 1024 ** 3:.1f} GB free).")
+    print(f"Blur folder: {GAME}")
     print("First run: unpacking the game's audio and data files (a few minutes, about 1.7 GB)...")
     os.makedirs(SAVED)
     for rel in WRITTEN:                                   # the player's own versions, put back by uninstall
