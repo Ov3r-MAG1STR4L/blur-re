@@ -201,6 +201,10 @@ def main():
     if cmd == "uninstall":
         return uninstall()
     blur_closed()
+    try:                                                  # checked before touching the game
+        import numba  # noqa: F401  (blurbaf's encoder)
+    except ImportError:
+        stop("Python module numba not found: run \"Choose music.bat\" again, it installs it.")
     if not shutil.which("ffmpeg"):
         stop("ffmpeg not found: run \"Choose music.bat\" again, it offers to install it.")
     prepare()
