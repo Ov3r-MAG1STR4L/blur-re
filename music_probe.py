@@ -68,7 +68,9 @@ local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0
 local banner = nil                      -- created in a hook (never at load time)
 
 local function banner_build()
-	local parent = type(HUD) == "table" and type(HUD.ViewportId) == "table" and (HUD.ViewportId[1] or HUD.ViewportId[0])
+	-- HUD.ViewportId3d: the parent of the HUD's own "Position" label (diag); HUD.ViewportId (origin at the screen
+	-- centre) showed nothing of ours but a small rectangle at the centre (2026-11-13)
+	local parent = type(HUD) == "table" and type(HUD.ViewportId3d) == "table" and (HUD.ViewportId3d[1] or HUD.ViewportId3d[0])
 	if not parent then log("banner: no HUD.ViewportId") return nil end
 	local b = {}
 	b.bg = UIButtons.CloneXtGadgetByName("hud_objects", "Pos_Backing")
@@ -161,7 +163,9 @@ local function grid_toggle()
 		log("grid off")
 		return
 	end
-	local parent = type(HUD) == "table" and type(HUD.ViewportId) == "table" and (HUD.ViewportId[1] or HUD.ViewportId[0])
+	-- HUD.ViewportId3d: the parent of the HUD's own "Position" label (diag); HUD.ViewportId (origin at the screen
+	-- centre) showed nothing of ours but a small rectangle at the centre (2026-11-13)
+	local parent = type(HUD) == "table" and type(HUD.ViewportId3d) == "table" and (HUD.ViewportId3d[1] or HUD.ViewportId3d[0])
 	if not parent then log("grid: no HUD.ViewportId") return end
 	grid = {}
 	for i = 1, #GRID, 3 do
