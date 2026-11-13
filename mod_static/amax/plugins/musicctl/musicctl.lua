@@ -18,7 +18,7 @@ local M = {
 	},
 }
 
-local TRACKS = {}                         -- filled by make_music.write_titles: { {title hash, seconds}, ... }
+local TRACKS = {}                         -- filled by make_music.write_titles: { {title hash, seconds, info hashes...}, ... }
 
 local NEXT_MSG = "LeftThumb"              -- UIEnums.Message of L3 (R3 = RightThumb; the d-pad is used by the game)
 local NEXT_KEY1, NEXT_KEY2 = "CMN_9", "CMN_0"
@@ -33,6 +33,7 @@ local FIRST_START = 4.0                   -- s from the race HUD to the first tr
 local POS_X, POS_Y = -4.5, 8.0
 local TEXT_DX, TEXT_DY = 1.0, -0.5
 local TEXT_SCALE = 1.25
+local INFO_SCALE, INFO_LINES, LINE_DY = 0.85, 2, 1.4   -- info lines under the title (artist, album)
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0
 local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
 local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0.6, 0.40, 0.0, 0.48, 1.0, 0.53, 0.3, 0.60, 1.0 }
@@ -74,24 +75,32 @@ local function set_music(v)
 end
 
 -- banner -------------------------------------------------------------------------------------------------------------
+local function clone_label(parent, scale)               -- a "Position" label without its number children
+	local id = UIButtons.CloneXtGadgetByName("hud_objects", "Position_Title")
+	for _, child in ipairs({ "Position_Amount", "Position_AmountOf" }) do
+		local c = UIButtons.FindChildByName(id, child)
+		if c then UIButtons.SetActive(c, false) end
+	end
+	-- BottomLeft: the anchor the player's placement (-4.5, 8) was tuned with in music_probe (TopLeft put it at the top)
+	UIButtons.SetParent(id, parent, UIEnums.Justify.BottomLeft)
+	UIButtons.ChangeScale(id, scale, scale, 1.0)
+	return id
+end
+
 local function banner_build()
 	local parent = type(HUD) == "table" and type(HUD.ViewportId3d) == "table" and (HUD.ViewportId3d[1] or HUD.ViewportId3d[0])
 	if not parent then return nil end
-	local b = {}
+	local b = { info = {} }
 	b.bg = UIButtons.CloneXtGadgetByName("hud_objects", "Pos_Backing")
-	b.txt = UIButtons.CloneXtGadgetByName("hud_objects", "Position_Title")
-	for _, child in ipairs({ "Position_Amount", "Position_AmountOf" }) do
-		local c = UIButtons.FindChildByName(b.txt, child)
-		if c then UIButtons.SetActive(c, false) end
-	end
-	b.mid = UIButtons.FindChildByName(b.bg, "Pos_BackingMiddle")
-	-- BottomLeft: the anchor the player's placement (-4.5, 8) was tuned with in music_probe (TopLeft put it at the top)
+	-- one gradient piece only: the body (Pos_BackingMiddle) kept its own offset once resized (player, 2026-11-13)
+	local mid = UIButtons.FindChildByName(b.bg, "Pos_BackingMiddle")
+	if mid then UIButtons.SetActive(mid, false) end
 	UIButtons.SetParent(b.bg, parent, UIEnums.Justify.BottomLeft)
-	UIButtons.SetParent(b.txt, parent, UIEnums.Justify.BottomLeft)
-	UIButtons.ChangeScale(b.txt, TEXT_SCALE, TEXT_SCALE, 1.0)
+	b.txt = clone_label(parent, TEXT_SCALE)
+	for i = 1, INFO_LINES do b.info[i] = clone_label(parent, INFO_SCALE) end
 	local _, h = UIButtons.GetSize(b.bg)
 	local _, _, z = UIButtons.GetPosition(b.bg)
-	b.h, b.z = h, z or 0.0
+	b.h, b.z, b.lines = h, z or 0.0, 0
 	return b
 end
 
@@ -99,15 +108,19 @@ local function banner_place(dx, alpha)
 	UIButtons.ChangePosition(banner.bg, POS_X + dx, POS_Y, banner.z)
 	UIButtons.ChangePosition(banner.txt, POS_X + dx + TEXT_DX, POS_Y + TEXT_DY, banner.z)
 	UIButtons.ChangeAlpha(banner.txt, alpha)
+	for i = 1, banner.lines do                            -- info lines under the title (y goes up)
+		UIButtons.ChangePosition(banner.info[i], POS_X + dx + TEXT_DX, POS_Y + TEXT_DY - LINE_DY * i, banner.z)
+		UIButtons.ChangeAlpha(banner.info[i], alpha)
+	end
 	UIButtons.ChangeAlpha(banner.bg, alpha)
 	pcall(UIButtons.SetAlphaIntensity, banner.bg, alpha, alpha)   -- the backing draws its intensity as alpha
-	if banner.mid then pcall(UIButtons.SetAlphaIntensity, banner.mid, alpha, alpha) end
 end
 
 local function banner_hide()
 	if banner and banner.t0 then
 		pcall(UIButtons.SetActive, banner.bg, false)
 		pcall(UIButtons.SetActive, banner.txt, false)
+		for i = 1, INFO_LINES do pcall(UIButtons.SetActive, banner.info[i], false) end
 		banner.t0 = nil
 	end
 end
@@ -119,13 +132,19 @@ local function banner_show(p)
 		banner = banner or banner_build()
 		if not banner then return end
 		UIButtons.ChangeText(banner.txt, track[1])
-		local len = UIButtons.GetStaticTextLength(banner.txt) or 0
-		local w = math.max(WIDTH_MIN, len * WIDTH_K * TEXT_SCALE + WIDTH_PAD)
-		UIButtons.ChangeSize(banner.bg, w, banner.h)
-		if banner.mid then
-			local _, mh = UIButtons.GetSize(banner.mid)
-			UIButtons.ChangeSize(banner.mid, w, mh)
+		local w = (UIButtons.GetStaticTextLength(banner.txt) or 0) * TEXT_SCALE
+		banner.lines = 0
+		for i = 1, INFO_LINES do
+			local h = track[2 + i]                         -- TRACKS entry: title hash, seconds, info line hashes
+			if h then
+				banner.lines = i
+				UIButtons.ChangeText(banner.info[i], h)
+				w = math.max(w, (UIButtons.GetStaticTextLength(banner.info[i]) or 0) * INFO_SCALE)
+			end
+			UIButtons.SetActive(banner.info[i], h ~= nil)
 		end
+		w = math.max(WIDTH_MIN, w * WIDTH_K + WIDTH_PAD)
+		UIButtons.ChangeSize(banner.bg, w, banner.h + LINE_DY * banner.lines)
 		banner.t0 = clock
 		banner_place(0, 0.0)
 		UIButtons.SetActive(banner.bg, true)

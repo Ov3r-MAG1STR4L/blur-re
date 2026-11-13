@@ -570,15 +570,34 @@ def wave_name(path, used):
     return name
 
 
-def track_title(path):
-    """Banner text (player's rule, 2026-11-13): "artist - title" from the tags, the title alone when it already holds
-    " - " (downloaded files often have the uploader as artist), else the file name without its extension."""
+def track_tags(path):
+    """title / artist / album tags of an audio file (ffprobe; empty when missing or no ffprobe)."""
     try:
-        r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format_tags=title,artist", "-of", "json", path],
+        r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format_tags=title,artist,album", "-of", "json", path],
                            capture_output=True, encoding="utf-8", errors="replace")
-        tags = {k.lower(): v.strip() for k, v in json.loads(r.stdout or "{}").get("format", {}).get("tags", {}).items()}
+        return {k.lower(): v.strip() for k, v in json.loads(r.stdout or "{}").get("format", {}).get("tags", {}).items()}
     except (OSError, ValueError):
-        tags = {}
+        return {}
+
+
+def track_lines(path):
+    """Banner lines (player, 2026-11-13): the title, then one line per extra info: the artist when the title does not
+    already hold it, the album when it differs from the title. Empty tags give no line."""
+    tags = track_tags(path)
+    title = track_title(path, tags)
+    artist, album = tags.get("artist", ""), tags.get("album", "")
+    lines = [title]
+    if artist and artist.lower() not in title.lower():
+        lines.append(artist)
+    if album and album.lower() != tags.get("title", "").lower() and album.lower() not in title.lower():
+        lines.append(album)
+    return lines
+
+
+def track_title(path, tags=None):
+    """Banner title (player's rule, 2026-11-13): "artist - title" from the tags, the title alone when it already holds
+    " - " (downloaded files often have the uploader as artist), else the file name without its extension."""
+    tags = track_tags(path) if tags is None else tags
     title, artist = tags.get("title", ""), tags.get("artist", "")
     if title and artist and " - " not in title:
         return f"{artist} - {title}"
@@ -640,7 +659,7 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     for o in originals:                                   # original object i is named names[i + 1]
         w = j.w[j.find(60, names[o + 1].decode()) + 3]
         wave = bytes(j.names[w:j.names.index(b"\0", w)]).decode()
-        info[o] = (wave, waves[wave]["samples"] / waves[wave]["rate"] if wave in waves else 180.0)
+        info[o] = ([wave], waves[wave]["samples"] / waves[wave]["rate"] if wave in waves else 180.0)
     for d in folders:
         audio = sorted(f for f in os.listdir(d) if f.lower().endswith(AUDIO_EXT))
         if not audio and "original" in os.path.basename(d).lower():
@@ -660,7 +679,7 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         else:
             bank = blurbaf.add_wave(bank, name, None, 48000, data=data, samples=samples)
         objs.append(add_track(j, "%02d" % (23 + k), name))
-        info[objs[-1]] = (track_title(path), samples / 48000)
+        info[objs[-1]] = (track_lines(path), samples / 48000)
     if not objs:
         raise SystemExit("empty playlist: no track chosen")
     if shuffle:
@@ -707,19 +726,22 @@ def write_titles(tracks, out):
     and musicctl.lua from its template, its line "local TRACKS = {}" filled with {hash, seconds} per position."""
     import blurloc
     d = blurloc.parse_raw(open(HUD_LOC, "rb").read())
-    for p, (title, _) in enumerate(tracks):
-        blurloc.add_text(d, f"BLURMUSIC_TRACK_{p}", TITLE_HASH0 + p, {"en": title})
+    for p, (lines, _) in enumerate(tracks):              # hashes: title TITLE_HASH0 + p, info line i: + 0x800 + 4p + i
+        for i, text in enumerate(lines):
+            h = TITLE_HASH0 + p if i == 0 else TITLE_HASH0 + 0x800 + 4 * p + i
+            blurloc.add_text(d, f"BLURMUSIC_TRACK_{p}_{i}", h, {"en": text})
     os.makedirs(os.path.join(out, "gamedata", "xt", "loc"), exist_ok=True)
     open(os.path.join(out, "gamedata", "xt", "loc", "hud.loc"), "wb").write(blurloc.build(d))
     lua = open(PLUGIN_TEMPLATE, encoding="utf-8").read()
     line = "local TRACKS = {}"
     assert lua.count(line) == 1, "musicctl.lua: no 'local TRACKS = {}' line"
-    lua = lua.replace(line, "local TRACKS = { " + ", ".join(f"{{ {TITLE_HASH0 + p}, {sec:.1f} }}"
-                                                      for p, (_, sec) in enumerate(tracks)) + " }")
+    lua = lua.replace(line, "local TRACKS = { " + ", ".join(
+        "{ " + ", ".join([str(TITLE_HASH0 + p), f"{sec:.1f}"] + [str(TITLE_HASH0 + 0x800 + 4 * p + i) for i in range(1, min(len(lines), 4))]) + " }"
+        for p, (lines, sec) in enumerate(tracks)) + " }")
     os.makedirs(os.path.join(out, "amax", "plugins", "musicctl"), exist_ok=True)
     open(os.path.join(out, "amax", "plugins", "musicctl", "musicctl.lua"), "w", encoding="utf-8", newline="\n").write(lua)
-    for p, (title, sec) in enumerate(tracks):
-        print(f"  position {p}: {title} ({sec:.0f} s)")
+    for p, (lines, sec) in enumerate(tracks):
+        print(f"  position {p}: {' / '.join(lines)} ({sec:.0f} s)")
 
 
 def install(out=OUT, test=TEST):
