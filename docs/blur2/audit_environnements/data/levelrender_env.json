@@ -1,0 +1,4236 @@
+{
+ "b1_pc/figure_eight": {
+  "endian": "LE (PC)",
+  "taille": 978033,
+  "LSData": {
+   "n": 1125,
+   "octets_par_echantillon": 24.014
+  },
+  "LSTree": {
+   "taille": 13232
+  },
+  "Lights": {
+   "taille": 3072,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsL"
+  ]
+ },
+ "b1_pc/flat_earth": {
+  "endian": "LE (PC)",
+  "taille": 978033,
+  "LSData": {
+   "n": 1125,
+   "octets_par_echantillon": 24.014
+  },
+  "LSTree": {
+   "taille": 13232
+  },
+  "Lights": {
+   "taille": 3072,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsL"
+  ]
+ },
+ "b1_pc/flat_earth_2": {
+  "endian": "LE (PC)",
+  "taille": 978033,
+  "LSData": {
+   "n": 1125,
+   "octets_par_echantillon": 24.014
+  },
+  "LSTree": {
+   "taille": 13232
+  },
+  "Lights": {
+   "taille": 3072,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsL"
+  ]
+ },
+ "b1_pc/flat_earth_3": {
+  "endian": "LE (PC)",
+  "taille": 978033,
+  "LSData": {
+   "n": 1125,
+   "octets_par_echantillon": 24.014
+  },
+  "LSTree": {
+   "taille": 13232
+  },
+  "Lights": {
+   "taille": 3072,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsL"
+  ]
+ },
+ "b1_pc/jpn_mharuna": {
+  "endian": "LE (PC)",
+  "taille": 7434653,
+  "LSData": {
+   "n": 20045,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 282036
+  },
+  "Lights": {
+   "taille": 230316,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 181,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Haruna_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Haruna_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsJ"
+  ]
+ },
+ "b1_pc/jpn_tokyo_shutoko": {
+  "endian": "LE (PC)",
+  "taille": 9938004,
+  "LSData": {
+   "n": 32520,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 430136
+  },
+  "Lights": {
+   "taille": 442500,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Shutoko_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Shutoko_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsK"
+  ]
+ },
+ "b1_pc/showroom": {
+  "endian": "LE (PC)",
+  "taille": 978033,
+  "LSData": {
+   "n": 1125,
+   "octets_par_echantillon": 24.014
+  },
+  "LSTree": {
+   "taille": 13232
+  },
+  "Lights": {
+   "taille": 3072,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsL"
+  ]
+ },
+ "b1_pc/spa_barcelona_bowl_multiplayer": {
+  "endian": "LE (PC)",
+  "taille": 962088,
+  "LSData": {
+   "n": 3247,
+   "octets_par_echantillon": 24.005
+  },
+  "LSTree": {
+   "taille": 64658
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 179,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Oval_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Oval_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsH"
+  ]
+ },
+ "b1_pc/spa_barcelona_gracia": {
+  "endian": "LE (PC)",
+  "taille": 9095776,
+  "LSData": {
+   "n": 22045,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 281616
+  },
+  "Lights": {
+   "taille": 399536,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 181,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Gracia_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "IBsky_K",
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Gracia_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsJ"
+  ]
+ },
+ "b1_pc/spa_barcelona_oval": {
+  "endian": "LE (PC)",
+  "taille": 5677660,
+  "LSData": {
+   "n": 11810,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 174534
+  },
+  "Lights": {
+   "taille": 89764,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 179,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Oval_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": true,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 1,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Oval_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsH"
+  ]
+ },
+ "b1_pc/uk_brighton": {
+  "endian": "LE (PC)",
+  "taille": 11730851,
+  "LSData": {
+   "n": 34117,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 499488
+  },
+  "Lights": {
+   "taille": 188416,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Brighton_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "IBsky_K",
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Brighton_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsL"
+  ]
+ },
+ "b1_pc/uk_london_hackney": {
+  "endian": "LE (PC)",
+  "taille": 11081735,
+  "LSData": {
+   "n": 21170,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 260200
+  },
+  "Lights": {
+   "taille": 224096,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Hackney_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "IBsky_K",
+   "WaterCubeMap_LN_NV.fxRA",
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Hackney_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsK"
+  ]
+ },
+ "b1_pc/usa_amboy": {
+  "endian": "LE (PC)",
+  "taille": 11263032,
+  "LSData": {
+   "n": 31055,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 557430
+  },
+  "Lights": {
+   "taille": 70172,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 180,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.ddsCrowd",
+   "sKy",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsI"
+  ]
+ },
+ "b1_pc/usa_amboy_multiplayer": {
+  "endian": "LE (PC)",
+  "taille": 13523432,
+  "LSData": {
+   "n": 3361,
+   "octets_par_echantillon": 24.005
+  },
+  "LSTree": {
+   "taille": 91332
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 180,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": true,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 2,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.ddsCrowd",
+   "sKy",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsI"
+  ]
+ },
+ "b1_pc/usa_la_downtown": {
+  "endian": "LE (PC)",
+  "taille": 9796454,
+  "LSData": {
+   "n": 38799,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 471254
+  },
+  "Lights": {
+   "taille": 567652,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 186,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "V^SKy",
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsO"
+  ]
+ },
+ "b1_pc/usa_la_downtown_multiplayer": {
+  "endian": "LE (PC)",
+  "taille": 1743524,
+  "LSData": {
+   "n": 3806,
+   "octets_par_echantillon": 24.004
+  },
+  "LSTree": {
+   "taille": 46600
+  },
+  "Lights": {
+   "taille": 81176,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 191,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_Bowl_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_Bowl_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsT"
+  ]
+ },
+ "b1_pc/usa_la_longbeachdocks": {
+  "endian": "LE (PC)",
+  "taille": 13319217,
+  "LSData": {
+   "n": 51496,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 665876
+  },
+  "Lights": {
+   "taille": 252648,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Docks_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "IBsky_K",
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Docks_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsL"
+  ]
+ },
+ "b1_pc/usa_la_multiplayer_highrise": {
+  "endian": "LE (PC)",
+  "taille": 1963904,
+  "LSData": {
+   "n": 2931,
+   "octets_par_echantillon": 24.005
+  },
+  "LSTree": {
+   "taille": 34178
+  },
+  "Lights": {
+   "taille": 203060,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 186,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsO"
+  ]
+ },
+ "b1_pc/usa_la_observatory": {
+  "endian": "LE (PC)",
+  "taille": 7113135,
+  "LSData": {
+   "n": 24414,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 332796
+  },
+  "Lights": {
+   "taille": 7112,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 186,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Observatory_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "SKY",
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Observatory_001.ddsCrowd",
+   "sKY",
+   "sKydAAAA8d",
+   "sKydAAAAXd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsO"
+  ]
+ },
+ "b1_pc/usa_la_river": {
+  "endian": "LE (PC)",
+  "taille": 9873988,
+  "LSData": {
+   "n": 21363,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 512026
+  },
+  "Lights": {
+   "taille": 1328,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_River_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_River_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsL"
+  ]
+ },
+ "b1_pc/usa_ny_dumbo": {
+  "endian": "LE (PC)",
+  "taille": 9033374,
+  "LSData": {
+   "n": 29438,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 385708
+  },
+  "Lights": {
+   "taille": 676628,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 180,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Dumbo_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "IBsky_K",
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Dumbo_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsI"
+  ]
+ },
+ "b1_pc/usa_sanfran_russianhill": {
+  "endian": "LE (PC)",
+  "taille": 5135398,
+  "LSData": {
+   "n": 11851,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 163306
+  },
+  "Lights": {
+   "taille": 374168,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 186,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\RussianHill_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\RussianHill_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsO"
+  ]
+ },
+ "b1_pc/usa_sanfran_sausalito": {
+  "endian": "LE (PC)",
+  "taille": 13687680,
+  "LSData": {
+   "n": 34077,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 561582
+  },
+  "Lights": {
+   "taille": 330020,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 184,
+    "dds": [
+     "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Sausalito_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Z:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Sausalito_001.ddsCrowd",
+   "z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemapsM"
+  ]
+ },
+ "nov10/dubai": {
+  "endian": "BE (X360)",
+  "taille": 10736246,
+  "LSData": {
+   "n": 24917,
+   "octets_par_echantillon": 16.001
+  },
+  "LSTree": {
+   "taille": 452220
+  },
+  "Lights": {
+   "taille": 4128,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 265,
+    "dds": [
+     "cz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps/Dubai_EnvDefault.dds"
+    ],
+    "noms": [
+     "Dubai_EnvDefault"
+    ],
+    "n?": 1,
+    "position?": [
+     -899.42,
+     14.76,
+     -189.74
+    ]
+   }
+  ],
+  "g_tEnvironment": true,
+  "g_tLightmap0/1": true,
+  "pages_lightmap": 2,
+  "chaines_env": [
+   "Dubai_EnvDefault",
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "cz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps/Dubai_EnvDefault.dds",
+   "dubai_envdefault",
+   "dubai_envdefaultAR"
+  ]
+ },
+ "nov04/dubai": {
+  "endian": "BE (X360)",
+  "taille": 3570058,
+  "LSData": {
+   "n": 75926,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 1354464
+  },
+  "Lights": {
+   "taille": 3732,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds}a"
+  ]
+ },
+ "nov10/_test_ai": {
+  "endian": "BE (X360)",
+  "taille": 4698724,
+  "LSData": {
+   "n": 480,
+   "octets_par_echantillon": 16.033
+  },
+  "LSTree": {
+   "taille": 3494916
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+  ]
+ },
+ "nov10/_test_audio": {
+  "endian": "BE (X360)",
+  "taille": 5666492,
+  "LSData": {
+   "n": 61007,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 3480768
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_e83598d8\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_e83598d8",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_e83598d8\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_e83598d8\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds."
+  ]
+ },
+ "nov10/_test_effects": {
+  "endian": "BE (X360)",
+  "taille": 396871,
+  "LSData": {
+   "n": 0,
+   "octets_par_echantillon": null
+  },
+  "LSTree": {
+   "taille": 32
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 198,
+    "dds": [
+     "Oz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "main",
+     "assets",
+     "Kanzen",
+     "shar"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Cz:\\p4\\kanzen\\main\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Oz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+  ]
+ },
+ "nov10/_test_events": {
+  "endian": "BE (X360)",
+  "taille": 1139590,
+  "LSData": {
+   "n": 10231,
+   "octets_par_echantillon": 16.002
+  },
+  "LSTree": {
+   "taille": 427652
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds9"
+  ]
+ },
+ "nov10/_test_handofgod": {
+  "endian": "BE (X360)",
+  "taille": 4746520,
+  "LSData": {
+   "n": 2919,
+   "octets_par_echantillon": 16.005
+  },
+  "LSTree": {
+   "taille": 3494916
+  },
+  "Lights": {
+   "taille": 1572,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds2"
+  ]
+ },
+ "nov10/_test_lighting": {
+  "endian": "BE (X360)",
+  "taille": 800450,
+  "LSData": {
+   "n": 5257,
+   "octets_par_echantillon": 16.003
+  },
+  "LSTree": {
+   "taille": 260160
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 220,
+    "dds": [
+     "Zz:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Zz:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+  ]
+ },
+ "nov10/_test_materials": {
+  "endian": "BE (X360)",
+  "taille": 1210052,
+  "LSData": {
+   "n": 20555,
+   "octets_par_echantillon": 16.001
+  },
+  "LSTree": {
+   "taille": 382612
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 200,
+    "dds": [
+     "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "main",
+     "assets",
+     "Kanzen",
+     "shar"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Cz:\\p4\\kanzen\\main\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+  ]
+ },
+ "nov10/_test_shadertech": {
+  "endian": "BE (X360)",
+  "taille": 635217,
+  "LSData": {
+   "n": 5748,
+   "octets_par_echantillon": 16.003
+  },
+  "LSTree": {
+   "taille": 103252
+  },
+  "Lights": {
+   "taille": 460,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 306,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_e83598d8\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "locator1"
+    ],
+    "n?": 1,
+    "position?": [
+     -3.0,
+     -1.22,
+     19.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_e83598d8\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_e83598d8\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+  ]
+ },
+ "nov10/_test_surfaces": {
+  "endian": "BE (X360)",
+  "taille": 1871074,
+  "LSData": {
+   "n": 25313,
+   "octets_par_echantillon": 16.001
+  },
+  "LSTree": {
+   "taille": 852472
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds2"
+  ]
+ },
+ "nov10/_test_traffic": {
+  "endian": "BE (X360)",
+  "taille": 400999,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_e83598d8\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_e83598d8",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_e83598d8\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_e83598d8\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds."
+  ]
+ },
+ "nov10/detroit": {
+  "endian": "BE (X360)",
+  "taille": 1909226,
+  "LSData": {
+   "n": 37086,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 659736
+  },
+  "Lights": {
+   "taille": 1060,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 220,
+    "dds": [
+     "Zz:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Zz:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.ddsM"
+  ]
+ },
+ "nov10/fx_testlevel": {
+  "endian": "BE (X360)",
+  "taille": 5763081,
+  "LSData": {
+   "n": 23672,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 3049720
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 197,
+    "dds": [
+     "JZ:\\p4\\kanzen\\main\\assets\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_2c881110",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Gz:\\p4\\kanzen\\branch_2c881110\\assets\\global_assets\\exp\\textures\\cubemaps",
+   "JZ:\\p4\\kanzen\\main\\assets\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.dds"
+  ]
+ },
+ "nov10/graphical": {
+  "endian": "BE (X360)",
+  "taille": 25347328,
+  "LSData": {
+   "n": 49252,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 3494916
+  },
+  "Lights": {
+   "taille": 49940,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 193,
+    "dds": [
+     "MZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Graphical_001.dds"
+    ],
+    "noms": [
+     "KanzenDev",
+     "assets",
+     "circuits",
+     "shared_"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "@z:\\KanzenDev\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "MZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Graphical_001.dds"
+  ]
+ },
+ "nov10/hong_kong": {
+  "endian": "BE (X360)",
+  "taille": 62931124,
+  "LSData": {
+   "n": 167193,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 3511224
+  },
+  "Lights": {
+   "taille": 1044,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 220,
+    "dds": [
+     "Zz:\\p4\\kanzen\\branch_fc418432\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_fc418432",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_fc418432\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Zz:\\p4\\kanzen\\branch_fc418432\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+  ]
+ },
+ "nov10/la_city": {
+  "endian": "BE (X360)",
+  "taille": 31412527,
+  "LSData": {
+   "n": 107732,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 1993508
+  },
+  "Lights": {
+   "taille": 1944,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 220,
+    "dds": [
+     "Zz:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Zz:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.ddsq)o"
+  ]
+ },
+ "nov10/la_freeway": {
+  "endian": "BE (X360)",
+  "taille": 4307038,
+  "LSData": {
+   "n": 65044,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 1320652
+  },
+  "Lights": {
+   "taille": 223948,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 220,
+    "dds": [
+     "Zz:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Zz:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.ddsO"
+  ]
+ },
+ "nov10/la_longbeachdocks": {
+  "endian": "BE (X360)",
+  "taille": 9124794,
+  "LSData": {
+   "n": 163058,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 3510252
+  },
+  "Lights": {
+   "taille": 268428,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds}a"
+  ]
+ },
+ "nov10/barcelona_gracia": {
+  "endian": "BE (X360)",
+  "taille": 1081518,
+  "Lights": {
+   "taille": 391668,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 185,
+    "dds": [
+     "Iassets\\kanzen\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Gracia_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "main",
+     "assets",
+     "shared_asse"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "<z:\\p4\\kanzen\\main\\assets\\shared_assets\\exp\\textures\\cubemaps",
+   "Iassets\\kanzen\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Gracia_001.dds"
+  ]
+ },
+ "nov10/liverpool": {
+  "endian": "BE (X360)",
+  "taille": 66494453,
+  "LSData": {
+   "n": 20176,
+   "octets_par_echantillon": 16.001
+  },
+  "LSTree": {
+   "taille": 3522132
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 220,
+    "dds": [
+     "Zz:\\p4\\kanzen\\branch_1b751f22\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_1b751f22",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_1b751f22\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Zz:\\p4\\kanzen\\branch_1b751f22\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.ddsd"
+  ]
+ },
+ "nov10/miami": {
+  "endian": "BE (X360)",
+  "taille": 7915359,
+  "LSData": {
+   "n": 190660,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 3518532
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+  ]
+ },
+ "nov10/mp_barcelona": {
+  "endian": "BE (X360)",
+  "taille": 3000424,
+  "LSData": {
+   "n": 36012,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 1646076
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 200,
+    "dds": [
+     "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "main",
+     "assets",
+     "Kanzen",
+     "shar"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Cz:\\p4\\kanzen\\main\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+  ]
+ },
+ "nov10/mp_bowlarena": {
+  "endian": "BE (X360)",
+  "taille": 3072012,
+  "LSData": {
+   "n": 39181,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 1665000
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 200,
+    "dds": [
+     "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "main",
+     "assets",
+     "Kanzen",
+     "shar"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Cz:\\p4\\kanzen\\main\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+  ]
+ },
+ "nov10/mp_detriot": {
+  "endian": "BE (X360)",
+  "taille": 2879696,
+  "LSData": {
+   "n": 33117,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 1592436
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 200,
+    "dds": [
+     "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "main",
+     "assets",
+     "Kanzen",
+     "shar"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Cz:\\p4\\kanzen\\main\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+  ]
+ },
+ "nov10/mp_skiresort": {
+  "endian": "BE (X360)",
+  "taille": 2393608,
+  "LSData": {
+   "n": 30661,
+   "octets_par_echantillon": 16.001
+  },
+  "LSTree": {
+   "taille": 1227588
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 200,
+    "dds": [
+     "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "main",
+     "assets",
+     "Kanzen",
+     "shar"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Cz:\\p4\\kanzen\\main\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+  ]
+ },
+ "nov10/mp_skyscrapers": {
+  "endian": "BE (X360)",
+  "taille": 2105171,
+  "LSData": {
+   "n": 34585,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 936632
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 200,
+    "dds": [
+     "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "main",
+     "assets",
+     "Kanzen",
+     "shar"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Cz:\\p4\\kanzen\\main\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+  ]
+ },
+ "nov10/mp_temple": {
+  "endian": "BE (X360)",
+  "taille": 3925892,
+  "LSData": {
+   "n": 59299,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 2101944
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 200,
+    "dds": [
+     "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "main",
+     "assets",
+     "Kanzen",
+     "shar"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Cz:\\p4\\kanzen\\main\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Qz:\\p4\\kanzen\\main\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+  ]
+ },
+ "nov10/north_africa": {
+  "endian": "BE (X360)",
+  "taille": 4905304,
+  "LSData": {
+   "n": 114443,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 2094012
+  },
+  "Lights": {
+   "taille": 700,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.ddsm"
+  ]
+ },
+ "nov10/odessa": {
+  "endian": "BE (X360)",
+  "taille": 44032767,
+  "LSData": {
+   "n": 150489,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 2941704
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 220,
+    "dds": [
+     "Zz:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Zz:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+  ]
+ },
+ "nov10/quickexport": {
+  "endian": "BE (X360)",
+  "taille": 78005087,
+  "Lights": {
+   "taille": 6144,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 183,
+    "dds": [
+     "@\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "main",
+     "assets",
+     "Kanzen",
+     "shar"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "@\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds",
+   "Cz:\\p4\\kanzen\\main\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "_ENV"
+  ]
+ },
+ "nov10/showroom": {
+  "endian": "BE (X360)",
+  "taille": 745374,
+  "LSData": {
+   "n": 13198,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 319244
+  },
+  "Lights": {
+   "taille": 1096,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 184,
+    "dds": [
+     "Hz:\\p4\\kanzen\\main\\assets\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "main",
+     "assets",
+     "shared_asse"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "<z:\\p4\\kanzen\\main\\assets\\shared_assets\\exp\\textures\\cubemaps",
+   "Hz:\\p4\\kanzen\\main\\assets\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+  ]
+ },
+ "nov10/ski_resort": {
+  "endian": "BE (X360)",
+  "taille": 13214054,
+  "LSData": {
+   "n": 45540,
+   "octets_par_echantillon": 16.0
+  },
+  "LSTree": {
+   "taille": 809364
+  },
+  "Lights": {
+   "taille": 30092,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_1b751f22\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_1b751f22",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_1b751f22\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_1b751f22\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+  ]
+ },
+ "nov10/spa_barcelona_bowl_multiplayer": {
+  "endian": "BE (X360)",
+  "taille": 4565195,
+  "LSData": {
+   "n": 65233,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 1546096
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 223,
+    "dds": [
+     "]z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\gracia_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "]z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\gracia_001.dds"
+  ]
+ },
+ "nov10/spa_barcelona_gracia": {
+  "endian": "BE (X360)",
+  "taille": 17569015,
+  "LSData": {
+   "n": 142085,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 3530088
+  },
+  "Lights": {
+   "taille": 400728,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 190,
+    "dds": [
+     "JZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Gracia_001.dds"
+    ],
+    "noms": [
+     "KanzenDev",
+     "assets",
+     "circuits",
+     "shared_"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "@z:\\KanzenDev\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "JZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Gracia_001.dds",
+   "sky"
+  ]
+ },
+ "nov10/spa_barcelona_oval": {
+  "endian": "BE (X360)",
+  "taille": 11608320,
+  "LSData": {
+   "n": 138071,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 3521016
+  },
+  "Lights": {
+   "taille": 27784,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 221,
+    "dds": [
+     "[z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\oval_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 2,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "[z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\oval_001.dds"
+  ]
+ },
+ "nov10/traffictestlevel2": {
+  "endian": "BE (X360)",
+  "taille": 12985,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 188,
+    "dds": [
+     "Lz:\\Racer2010\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Racer2010",
+     "assets",
+     "circuits",
+     "shared_"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "@z:\\Racer2010\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Lz:\\Racer2010\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "nov10/usa_amboy": {
+  "endian": "BE (X360)",
+  "taille": 12541065,
+  "LSData": {
+   "n": 176321,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 3503340
+  },
+  "Lights": {
+   "taille": 2188,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 222,
+    "dds": [
+     "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "\\z:\\p4\\kanzen\\branch_c86cc738\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\amboy_001.ddss",
+   "sKY"
+  ]
+ },
+ "nov10/usa_amboy_multiplayer": {
+  "endian": "BE (X360)",
+  "taille": 15773076,
+  "LSData": {
+   "n": 81305,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 2200440
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 189,
+    "dds": [
+     "IZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.dds"
+    ],
+    "noms": [
+     "KanzenDev",
+     "assets",
+     "circuits",
+     "shared_"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 2,
+  "chaines_env": [
+   "@z:\\KanzenDev\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "IZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.dds",
+   "osKY"
+  ]
+ },
+ "nov10/usa_la_longbeachdocks": {
+  "endian": "BE (X360)",
+  "taille": 16044568,
+  "LSData": {
+   "n": 120208,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 3506220
+  },
+  "Lights": {
+   "taille": 224420,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 225,
+    "dds": [
+     "_z:\\p4\\kanzen\\branch_e83598d8\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\la_docks_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_e83598d8",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_e83598d8\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "_z:\\p4\\kanzen\\branch_e83598d8\\assets\\kanzen\\shared_assets\\exp\\textures\\cubemaps\\la_docks_001.dds6T"
+  ]
+ },
+ "nov10/usa_la_observatory": {
+  "endian": "BE (X360)",
+  "taille": 4883676,
+  "Lights": {
+   "taille": 7112,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 209,
+    "dds": [
+     "Oz:\\amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\observatory_001.dds"
+    ],
+    "noms": [
+     "kanzen",
+     "branch_c86cc738",
+     "assets"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "Nz:\\p4\\kanzen\\branch_c86cc738\\assets\\Kanzen\\shared_assets\\exp\\textures\\cubemaps",
+   "Oz:\\amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\observatory_001.dds"
+  ]
+ },
+ "nov10/vehicletestscene": {
+  "endian": "BE (X360)",
+  "taille": 1637739,
+  "LSData": {
+   "n": 24572,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 576920
+  },
+  "Lights": {
+   "taille": 120,
+   "n?": 1
+  },
+  "CubePt3": [
+   {
+    "taille": 192,
+    "dds": [
+     "Lz:\\KanzenDev\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "KanzenDev",
+     "assets",
+     "circuits",
+     "shared_"
+    ],
+    "n?": 0,
+    "position?": [
+     0.0,
+     -0.0,
+     0.0
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "@z:\\KanzenDev\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Lz:\\KanzenDev\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+  ]
+ },
+ "aug31/ai_circuit_01": {
+  "endian": "BE (X360)",
+  "taille": 2194,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/ai_circuit_corkscrew": {
+  "endian": "BE (X360)",
+  "taille": 2194,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/ai_circuit_jump": {
+  "endian": "BE (X360)",
+  "taille": 2194,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/ai_circuit_loop": {
+  "endian": "BE (X360)",
+  "taille": 2194,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/ai_circuit_wallride": {
+  "endian": "BE (X360)",
+  "taille": 2318,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/circuit_dom": {
+  "endian": "BE (X360)",
+  "taille": 2565940,
+  "LSData": {
+   "n": 0,
+   "octets_par_echantillon": null
+  },
+  "LSTree": {
+   "taille": 32
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/detroit": {
+  "endian": "BE (X360)",
+  "taille": 22556,
+  "Lights": {
+   "taille": 2488,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/dubai": {
+  "endian": "BE (X360)",
+  "taille": 7223299,
+  "LSData": {
+   "n": 73357,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 1651140
+  },
+  "Lights": {
+   "taille": 4676,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 193,
+    "dds": [
+     "TZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Dubai_Sunny_001.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "TZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Dubai_Sunny_001.ddsCrowd"
+  ]
+ },
+ "aug31/graphical": {
+  "endian": "BE (X360)",
+  "taille": 20520325,
+  "LSData": {
+   "n": 48359,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 1415028
+  },
+  "Lights": {
+   "taille": 43448,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 184,
+    "dds": [
+     "MZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Graphical_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "MZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Graphical_001.ddsCrowd"
+  ]
+ },
+ "aug31/hong_kong": {
+  "endian": "BE (X360)",
+  "taille": 11003,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/jpn_mharuna": {
+  "endian": "BE (X360)",
+  "taille": 7685821,
+  "LSData": {
+   "n": 20023,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 282036
+  },
+  "Lights": {
+   "taille": 230316,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 181,
+    "dds": [
+     "JZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Haruna_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "JZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Haruna_001.ddsCrowd"
+  ]
+ },
+ "aug31/jpn_tokyo_shutoko": {
+  "endian": "BE (X360)",
+  "taille": 10592944,
+  "LSData": {
+   "n": 32520,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 430136
+  },
+  "Lights": {
+   "taille": 442500,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "KZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Shutoko_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "KZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Shutoko_001.ddsCrowd"
+  ]
+ },
+ "aug31/kanzen_la_downtown": {
+  "endian": "BE (X360)",
+  "taille": 16468730,
+  "LSData": {
+   "n": 20998,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 290080
+  },
+  "Lights": {
+   "taille": 3284,
+   "n?": 1
+  },
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": []
+ },
+ "aug31/kanzen_la_river": {
+  "endian": "BE (X360)",
+  "taille": 12528930,
+  "LSData": {
+   "n": 47335,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 575056
+  },
+  "Lights": {
+   "taille": 9424,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/la_city": {
+  "endian": "BE (X360)",
+  "taille": 16775,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/liverpool": {
+  "endian": "BE (X360)",
+  "taille": 14486,
+  "Lights": {
+   "taille": 4348,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/miami": {
+  "endian": "BE (X360)",
+  "taille": 2577,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/mparena_carpark": {
+  "endian": "BE (X360)",
+  "taille": 596518,
+  "LSData": {
+   "n": 3182,
+   "octets_par_echantillon": 24.005
+  },
+  "LSTree": {
+   "taille": 65666
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 185,
+    "dds": [
+     "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.ddsCrowd"
+  ]
+ },
+ "aug31/mparena_skiresort": {
+  "endian": "BE (X360)",
+  "taille": 590921,
+  "LSData": {
+   "n": 4260,
+   "octets_par_echantillon": 24.004
+  },
+  "LSTree": {
+   "taille": 49434
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 185,
+    "dds": [
+     "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.ddsCrowd"
+  ]
+ },
+ "aug31/mparena_skyscrapers": {
+  "endian": "BE (X360)",
+  "taille": 543263,
+  "LSData": {
+   "n": 3013,
+   "octets_par_echantillon": 24.005
+  },
+  "LSTree": {
+   "taille": 38506
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 185,
+    "dds": [
+     "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.ddsCrowd"
+  ]
+ },
+ "aug31/mparena_superbowleasy": {
+  "endian": "BE (X360)",
+  "taille": 402639,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 185,
+    "dds": [
+     "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.ddsCrowd"
+  ]
+ },
+ "aug31/mparena_superbowlhard": {
+  "endian": "BE (X360)",
+  "taille": 597575,
+  "LSData": {
+   "n": 3031,
+   "octets_par_echantillon": 24.005
+  },
+  "LSTree": {
+   "taille": 68018
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 185,
+    "dds": [
+     "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.ddsCrowd"
+  ]
+ },
+ "aug31/mparena_temple": {
+  "endian": "BE (X360)",
+  "taille": 698181,
+  "LSData": {
+   "n": 5778,
+   "octets_par_echantillon": 24.003
+  },
+  "LSTree": {
+   "taille": 86768
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 185,
+    "dds": [
+     "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "LZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Default.ddsCrowd"
+  ]
+ },
+ "aug31/north_africa": {
+  "endian": "BE (X360)",
+  "taille": 11887,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/odessa": {
+  "endian": "BE (X360)",
+  "taille": 8715,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/physics_test_level": {
+  "endian": "BE (X360)",
+  "taille": 4111,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/showroom": {
+  "endian": "BE (X360)",
+  "taille": 1279585,
+  "LSData": {
+   "n": 1125,
+   "octets_par_echantillon": 24.014
+  },
+  "LSTree": {
+   "taille": 13232
+  },
+  "Lights": {
+   "taille": 3072,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "LZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "LZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Showroom_001.ddsCrowd"
+  ]
+ },
+ "aug31/ski_resort": {
+  "endian": "BE (X360)",
+  "taille": 16107,
+  "Lights": {
+   "taille": 3804,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/spa_barcelona_bowl_multiplayer": {
+  "endian": "BE (X360)",
+  "taille": 1093412,
+  "LSData": {
+   "n": 3247,
+   "octets_par_echantillon": 24.005
+  },
+  "LSTree": {
+   "taille": 64658
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 179,
+    "dds": [
+     "HZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Oval_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "HZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Oval_001.ddsCrowd"
+  ]
+ },
+ "aug31/spa_barcelona_gracia": {
+  "endian": "BE (X360)",
+  "taille": 10221840,
+  "LSData": {
+   "n": 22039,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 281616
+  },
+  "Lights": {
+   "taille": 399536,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 181,
+    "dds": [
+     "JZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Gracia_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "JZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Gracia_001.ddsCrowd"
+  ]
+ },
+ "aug31/spa_barcelona_oval": {
+  "endian": "BE (X360)",
+  "taille": 6349622,
+  "LSData": {
+   "n": 11754,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 174534
+  },
+  "Lights": {
+   "taille": 89764,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 179,
+    "dds": [
+     "HZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Oval_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": true,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 1,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "HZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Oval_001.ddsCrowd"
+  ]
+ },
+ "aug31/test_building_ride": {
+  "endian": "BE (X360)",
+  "taille": 2194,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/traffictestlevel2": {
+  "endian": "BE (X360)",
+  "taille": 12985,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 188,
+    "dds": [
+     "Lz:\\Racer2010\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Racer2010",
+     "assets",
+     "circuits",
+     "shared_"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "@z:\\Racer2010\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Lz:\\Racer2010\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/traffic_test_level": {
+  "endian": "BE (X360)",
+  "taille": 2543,
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/uk_brighton": {
+  "endian": "BE (X360)",
+  "taille": 12678195,
+  "LSData": {
+   "n": 33982,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 499488
+  },
+  "Lights": {
+   "taille": 188416,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "LZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Brighton_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "LZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Brighton_001.ddsCrowd"
+  ]
+ },
+ "aug31/uk_brighton_storm": {
+  "endian": "BE (X360)",
+  "taille": 5245037,
+  "LSData": {
+   "n": 7887,
+   "octets_par_echantillon": 24.002
+  },
+  "LSTree": {
+   "taille": 98612
+  },
+  "Lights": {
+   "taille": 186056,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 196,
+    "dds": [
+     "WZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Brighton_Storm_001.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "WZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Brighton_Storm_001.ddsCrowd"
+  ]
+ },
+ "aug31/uk_brighton_sunny": {
+  "endian": "BE (X360)",
+  "taille": 11476590,
+  "LSData": {
+   "n": 32022,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 497472
+  },
+  "Lights": {
+   "taille": 187828,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 196,
+    "dds": [
+     "WZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Brighton_Sunny_001.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "SKYf",
+   "SkY",
+   "WZ:\\Racer2010\\assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Brighton_Sunny_001.ddsCrowd"
+  ]
+ },
+ "aug31/uk_london_hackney": {
+  "endian": "BE (X360)",
+  "taille": 13260419,
+  "LSData": {
+   "n": 21155,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 260200
+  },
+  "Lights": {
+   "taille": 224096,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "KZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Hackney_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "KZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Hackney_001.ddsCrowd",
+   "WaterCubeMap_LN_NV.fxAR"
+  ]
+ },
+ "aug31/usa_amboy": {
+  "endian": "BE (X360)",
+  "taille": 12122200,
+  "LSData": {
+   "n": 31055,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 557430
+  },
+  "Lights": {
+   "taille": 70172,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 180,
+    "dds": [
+     "IZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "IZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.ddsCrowd",
+   "sKY",
+   "skY"
+  ]
+ },
+ "aug31/usa_amboy_multiplayer": {
+  "endian": "BE (X360)",
+  "taille": 12824984,
+  "LSData": {
+   "n": 3361,
+   "octets_par_echantillon": 24.005
+  },
+  "LSTree": {
+   "taille": 91332
+  },
+  "Lights": {
+   "taille": 192,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 180,
+    "dds": [
+     "IZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": true,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 2,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "IZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Amboy_001.ddsCrowd"
+  ]
+ },
+ "aug31/usa_la_downtown": {
+  "endian": "BE (X360)",
+  "taille": 10466350,
+  "LSData": {
+   "n": 38781,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 471254
+  },
+  "Lights": {
+   "taille": 567652,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 186,
+    "dds": [
+     "OZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "OZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_001.ddsCrowd"
+  ]
+ },
+ "aug31/usa_la_downtown_multiplayer": {
+  "endian": "BE (X360)",
+  "taille": 2218788,
+  "LSData": {
+   "n": 3806,
+   "octets_par_echantillon": 24.004
+  },
+  "LSTree": {
+   "taille": 46600
+  },
+  "Lights": {
+   "taille": 81176,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 191,
+    "dds": [
+     "TZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_Bowl_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "TZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_Bowl_001.ddsCrowd"
+  ]
+ },
+ "aug31/usa_la_longbeachdocks": {
+  "endian": "BE (X360)",
+  "taille": 14312541,
+  "LSData": {
+   "n": 51469,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 665876
+  },
+  "Lights": {
+   "taille": 252648,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "LZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Docks_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "LZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Docks_001.ddsCrowd"
+  ]
+ },
+ "aug31/usa_la_multiplayer_highrise": {
+  "endian": "BE (X360)",
+  "taille": 2436908,
+  "LSData": {
+   "n": 2930,
+   "octets_par_echantillon": 24.005
+  },
+  "LSTree": {
+   "taille": 34178
+  },
+  "Lights": {
+   "taille": 203060,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 186,
+    "dds": [
+     "OZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "OZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_Downtown_001.ddsCrowd"
+  ]
+ },
+ "aug31/usa_la_observatory": {
+  "endian": "BE (X360)",
+  "taille": 7383083,
+  "LSData": {
+   "n": 24381,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 332796
+  },
+  "Lights": {
+   "taille": 7112,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 186,
+    "dds": [
+     "OZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Observatory_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "OZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Observatory_001.ddsCrowd"
+  ]
+ },
+ "aug31/usa_la_river": {
+  "endian": "BE (X360)",
+  "taille": 10120448,
+  "LSData": {
+   "n": 21363,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 512026
+  },
+  "Lights": {
+   "taille": 1328,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 183,
+    "dds": [
+     "LZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_River_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "LZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\LA_River_001.ddsCrowd"
+  ]
+ },
+ "aug31/usa_ny_dumbo": {
+  "endian": "BE (X360)",
+  "taille": 9923674,
+  "LSData": {
+   "n": 29462,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 385708
+  },
+  "Lights": {
+   "taille": 676628,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 180,
+    "dds": [
+     "IZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Dumbo_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "IZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Dumbo_001.ddsCrowd"
+  ]
+ },
+ "aug31/usa_sanfran_russianhill": {
+  "endian": "BE (X360)",
+  "taille": 5890366,
+  "LSData": {
+   "n": 11837,
+   "octets_par_echantillon": 24.001
+  },
+  "LSTree": {
+   "taille": 163306
+  },
+  "Lights": {
+   "taille": 374168,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 186,
+    "dds": [
+     "OZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\RussianHill_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "OZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\RussianHill_001.ddsCrowd"
+  ]
+ },
+ "aug31/usa_sanfran_sausalito": {
+  "endian": "BE (X360)",
+  "taille": 14221856,
+  "LSData": {
+   "n": 33923,
+   "octets_par_echantillon": 24.0
+  },
+  "LSTree": {
+   "taille": 561582
+  },
+  "Lights": {
+   "taille": 330020,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 184,
+    "dds": [
+     "MZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Sausalito_001.dds"
+    ],
+    "noms": [
+     "Amax",
+     "assets",
+     "circuits",
+     "shared_asset"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   ";z:\\Amax\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "MZ:\\Amax\\Assets\\Circuits\\Shared_Assets\\EXP\\Textures\\Cubemaps\\Sausalito_001.ddsCrowd"
+  ]
+ },
+ "aug31/vehicletestscene": {
+  "endian": "BE (X360)",
+  "taille": 4179,
+  "Lights": {
+   "taille": 1108,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ },
+ "aug31/vehicle_test_scene": {
+  "endian": "BE (X360)",
+  "taille": 4179,
+  "Lights": {
+   "taille": 1108,
+   "n?": 1
+  },
+  "CubePt2": [
+   {
+    "taille": 182,
+    "dds": [
+     "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.dds"
+    ],
+    "noms": [
+     "Kanzen",
+     "assets",
+     "circuits",
+     "shared_ass"
+    ]
+   }
+  ],
+  "g_tEnvironment": false,
+  "g_tLightmap0/1": false,
+  "pages_lightmap": 0,
+  "chaines_env": [
+   "=z:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps",
+   "Iz:\\Kanzen\\assets\\circuits\\shared_assets\\exp\\textures\\cubemaps\\default.ddsCrowd"
+  ]
+ }
+}

@@ -1,0 +1,1038 @@
+{
+ "aug31": {
+  "ai_circuit_01": {
+   "level": 1729,
+   "levelphysics": 728264,
+   "levelrender": 2194,
+   "levelstream": 45056
+  },
+  "ai_circuit_corkscrew": {
+   "level": 2253,
+   "levelphysics": 845027,
+   "levelrender": 2194,
+   "levelstream": 57344
+  },
+  "ai_circuit_jump": {
+   "level": 3146,
+   "levelphysics": 746173,
+   "levelrender": 2194,
+   "levelstream": 45056
+  },
+  "ai_circuit_loop": {
+   "level": 2191,
+   "levelphysics": 737100,
+   "levelrender": 2194,
+   "levelstream": 45056
+  },
+  "ai_circuit_wallride": {
+   "level": 3061,
+   "levelphysics": 874742,
+   "levelrender": 2318,
+   "levelstream": 61440
+  },
+  "circuit_dom": {
+   "level": 1335,
+   "levelcrowd": 96,
+   "levelphysics": 2727304,
+   "levelrender": 2565940,
+   "levelstream": 23672832
+  },
+  "detroit": {
+   "level": 1273,
+   "levelphysics": 17851967,
+   "levelrender": 22556,
+   "levelstream": 7419904
+  },
+  "dubai": {
+   "level": 18008,
+   "levelphysics": 14233462,
+   "levelrender": 7223299,
+   "levelstream": 79005696
+  },
+  "graphical": {
+   "level": 20503,
+   "levelphysics": 52337,
+   "levelrender": 20520325,
+   "levelstream": 23310336
+  },
+  "hong_kong": {
+   "level": 801,
+   "levelphysics": 8185646,
+   "levelrender": 11003,
+   "levelstream": 2600960
+  },
+  "jpn_mharuna": {
+   "level": 1233,
+   "levelphysics": 3542863,
+   "levelrender": 7685821,
+   "levelstream": 176410624
+  },
+  "jpn_tokyo_shutoko": {
+   "level": 3541,
+   "levelphysics": 3150265,
+   "levelrender": 10592944,
+   "levelstream": 147279872
+  },
+  "kanzen_la_downtown": {
+   "level": 891636,
+   "levelphysics": 6535208,
+   "levelrender": 16468730,
+   "levelstream": 49469440
+  },
+  "kanzen_la_river": {
+   "level": 9086,
+   "levelcrowd": 15320,
+   "levelphysics": 3362737,
+   "levelrender": 12528930,
+   "levelstream": 90884096
+  },
+  "la_city": {
+   "level": 885,
+   "levelphysics": 13710406,
+   "levelrender": 16775,
+   "levelstream": 5292032
+  },
+  "liverpool": {
+   "level": 1065,
+   "levelphysics": 3500059,
+   "levelrender": 14486,
+   "levelstream": 2650112
+  },
+  "miami": {
+   "level": 801,
+   "levelphysics": 17485,
+   "levelrender": 2577,
+   "levelstream": 788480
+  },
+  "mparena_carpark": {
+   "level": 611,
+   "levelphysics": 47456,
+   "levelrender": 596518,
+   "levelstream": 3194880
+  },
+  "mparena_skiresort": {
+   "level": 611,
+   "levelphysics": 186664,
+   "levelrender": 590921,
+   "levelstream": 999424
+  },
+  "mparena_skyscrapers": {
+   "level": 5741,
+   "levelphysics": 30280,
+   "levelrender": 543263,
+   "levelstream": 1720320
+  },
+  "mparena_superbowleasy": {
+   "level": 692,
+   "levelphysics": 207586,
+   "levelrender": 402639,
+   "levelstream": 21694464
+  },
+  "mparena_superbowlhard": {
+   "level": 611,
+   "levelphysics": 94343,
+   "levelrender": 597575,
+   "levelstream": 7045120
+  },
+  "mparena_temple": {
+   "level": 611,
+   "levelphysics": 649009,
+   "levelrender": 698181,
+   "levelstream": 5998592
+  },
+  "north_africa": {
+   "level": 801,
+   "levelphysics": 9783691,
+   "levelrender": 11887,
+   "levelstream": 3842048
+  },
+  "odessa": {
+   "level": 2761,
+   "levelphysics": 4870803,
+   "levelrender": 8715,
+   "levelstream": 1683456
+  },
+  "physics_test_level": {
+   "level": 2591,
+   "levelphysics": 57884,
+   "levelrender": 4111,
+   "levelstream": 63488
+  },
+  "showroom": {
+   "level": 611,
+   "levelphysics": 158443,
+   "levelrender": 1279585,
+   "levelstream": 16476160
+  },
+  "ski_resort": {
+   "level": 801,
+   "levelphysics": 5530411,
+   "levelrender": 16107,
+   "levelstream": 5646336
+  },
+  "spa_barcelona_bowl_multiplayer": {
+   "level": 994,
+   "levelphysics": 184397,
+   "levelrender": 1093412,
+   "levelstream": 48662528
+  },
+  "spa_barcelona_gracia": {
+   "level": 996,
+   "levelphysics": 5569121,
+   "levelrender": 10221840,
+   "levelstream": 287635456
+  },
+  "spa_barcelona_oval": {
+   "level": 6884,
+   "levelphysics": 3260059,
+   "levelrender": 6349622,
+   "levelstream": 122744832
+  },
+  "test_building_ride": {
+   "level": 5832,
+   "levelphysics": 909157,
+   "levelrender": 2194,
+   "levelstream": 59392
+  },
+  "traffictestlevel2": {
+   "level": 45613,
+   "levelphysics": 1646611,
+   "levelrender": 12985,
+   "levelstream": 1126400
+  },
+  "traffic_test_level": {
+   "level": 1064,
+   "levelphysics": 105419,
+   "levelrender": 2543,
+   "levelstream": 724992
+  },
+  "uk_brighton": {
+   "level": 1802,
+   "levelphysics": 5595906,
+   "levelrender": 12678195,
+   "levelstream": 190445568
+  },
+  "uk_brighton_storm": {
+   "level": 472645,
+   "levelphysics": 2137460,
+   "levelrender": 5245037,
+   "levelstream": 156145664
+  },
+  "uk_brighton_sunny": {
+   "level": 283099,
+   "levelphysics": 4187998,
+   "levelrender": 11476590,
+   "levelstream": 177774592
+  },
+  "uk_london_hackney": {
+   "level": 15132,
+   "levelphysics": 4158979,
+   "levelrender": 13260419,
+   "levelstream": 176183296
+  },
+  "usa_amboy": {
+   "level": 1035,
+   "levelphysics": 4442528,
+   "levelrender": 12122200,
+   "levelstream": 200425472
+  },
+  "usa_amboy_multiplayer": {
+   "level": 369054,
+   "levelphysics": 1414477,
+   "levelrender": 12824984,
+   "levelstream": 63500288
+  },
+  "usa_la_downtown": {
+   "level": 2034,
+   "levelphysics": 6628706,
+   "levelrender": 10466350,
+   "levelstream": 146405376
+  },
+  "usa_la_downtown_multiplayer": {
+   "level": 1968,
+   "levelphysics": 513843,
+   "levelrender": 2218788,
+   "levelstream": 47040512
+  },
+  "usa_la_longbeachdocks": {
+   "level": 922,
+   "levelphysics": 2214990,
+   "levelrender": 14312541,
+   "levelstream": 132993024
+  },
+  "usa_la_multiplayer_highrise": {
+   "level": 87573,
+   "levelphysics": 136451,
+   "levelrender": 2436908,
+   "levelstream": 21002240
+  },
+  "usa_la_observatory": {
+   "level": 610,
+   "levelphysics": 4715868,
+   "levelrender": 7383083,
+   "levelstream": 114653184
+  },
+  "usa_la_river": {
+   "level": 818,
+   "levelphysics": 1945409,
+   "levelrender": 10120448,
+   "levelstream": 138840064
+  },
+  "usa_ny_dumbo": {
+   "level": 18687,
+   "levelphysics": 3670228,
+   "levelrender": 9923674,
+   "levelstream": 355135488
+  },
+  "usa_sanfran_russianhill": {
+   "level": 2186,
+   "levelphysics": 1513282,
+   "levelrender": 5890366,
+   "levelstream": 358303744
+  },
+  "usa_sanfran_sausalito": {
+   "level": 23276,
+   "levelphysics": 5836796,
+   "levelrender": 14221856,
+   "levelstream": 194101248
+  },
+  "vehicletestscene": {
+   "level": 2984,
+   "levelphysics": 686572,
+   "levelrender": 4179,
+   "levelstream": 1296384
+  },
+  "vehicle_test_scene": {
+   "level": 2765,
+   "levelphysics": 686572,
+   "levelrender": 4179,
+   "levelstream": 1296384
+  }
+ },
+ "nov10": {
+  "detroit": {
+   "level": 973,
+   "levelanim": 60,
+   "levelphysics": 7333546,
+   "levelrender": 1909226,
+   "levelstream": 18855936
+  },
+  "dubai": {
+   "level": 25598,
+   "levelanim": 11676,
+   "levelphysics": 13656372,
+   "levelrender": 10736246,
+   "levelstream": 132179968
+  },
+  "fx_testlevel": {
+   "level": 2469,
+   "levelanim": 1084,
+   "levelphysics": 2008,
+   "levelrender": 5763081,
+   "levelstream": 974848
+  },
+  "graphical": {
+   "level": 202732,
+   "levelanim": 14172,
+   "levelphysics": 50534,
+   "levelrender": 25347328,
+   "levelstream": 13967360
+  },
+  "hong_kong": {
+   "level": 1104,
+   "levelanim": 61772,
+   "levelphysics": 8411136,
+   "levelrender": 62931124,
+   "levelstream": 33173504
+  },
+  "la_city": {
+   "level": 1457,
+   "levelanim": 27808,
+   "levelphysics": 1896530,
+   "levelrender": 31412527,
+   "levelstream": 16183296
+  },
+  "la_freeway": {
+   "level": 7055,
+   "levelanim": 60,
+   "levelphysics": 3297345,
+   "levelrender": 4307038,
+   "levelstream": 76777472
+  },
+  "la_longbeachdocks": {
+   "level": 36128,
+   "levelanim": 60,
+   "levelphysics": 2496526,
+   "levelrender": 9124794,
+   "levelstream": 79630336
+  },
+  "liverpool": {
+   "level": 3912,
+   "levelanim": 34596,
+   "levelphysics": 669910,
+   "levelrender": 66494453,
+   "levelstream": 538624
+  },
+  "miami": {
+   "level": 12735,
+   "levelanim": 2184,
+   "levelphysics": 27044247,
+   "levelrender": 7915359,
+   "levelstream": 60112896
+  },
+  "mp_barcelona": {
+   "level": 2130,
+   "levelanim": 60,
+   "levelphysics": 178129,
+   "levelrender": 3000424,
+   "levelstream": 9928704
+  },
+  "mp_bowlarena": {
+   "level": 2130,
+   "levelanim": 60,
+   "levelphysics": 93989,
+   "levelrender": 3072012,
+   "levelstream": 4165632
+  },
+  "mp_detriot": {
+   "level": 2202,
+   "levelanim": 60,
+   "levelphysics": 46172,
+   "levelrender": 2879696,
+   "levelstream": 2461696
+  },
+  "mp_skiresort": {
+   "level": 2130,
+   "levelanim": 60,
+   "levelphysics": 187803,
+   "levelrender": 2393608,
+   "levelstream": 849920
+  },
+  "mp_skyscrapers": {
+   "level": 2130,
+   "levelanim": 60,
+   "levelphysics": 28705,
+   "levelrender": 2105171,
+   "levelstream": 1513472
+  },
+  "mp_temple": {
+   "level": 2130,
+   "levelanim": 60,
+   "levelphysics": 636122,
+   "levelrender": 3925892,
+   "levelstream": 3301376
+  },
+  "north_africa": {
+   "level": 973,
+   "levelanim": 60,
+   "levelphysics": 10339513,
+   "levelrender": 4905304,
+   "levelstream": 13307904
+  },
+  "odessa": {
+   "level": 1236,
+   "levelanim": 30572,
+   "levelphysics": 5798331,
+   "levelrender": 44032767,
+   "levelstream": 16556032
+  },
+  "quickexport": {
+   "level": 3761,
+   "levelanim": 40972,
+   "levelphysics": 11900155,
+   "levelrender": 78005087,
+   "levelstream": 11112448
+  },
+  "showroom": {
+   "level": 3219,
+   "levelanim": 60,
+   "levelphysics": 133701,
+   "levelrender": 745374,
+   "levelstream": 12158976
+  },
+  "ski_resort": {
+   "level": 3129,
+   "levelanim": 15064,
+   "levelphysics": 10368067,
+   "levelrender": 13214054,
+   "levelstream": 79210496
+  },
+  "spa_barcelona_bowl_multiplayer": {
+   "level": 1633,
+   "levelanim": 572,
+   "levelphysics": 180920,
+   "levelrender": 4565195,
+   "levelstream": 43780096
+  },
+  "spa_barcelona_gracia": {
+   "level": 203482,
+   "levelanim": 5724,
+   "levelphysics": 5514282,
+   "levelrender": 17569015,
+   "levelstream": 254126080
+  },
+  "spa_barcelona_oval": {
+   "level": 107859,
+   "levelanim": 3892,
+   "levelphysics": 2969816,
+   "levelrender": 11608320,
+   "levelstream": 92354560
+  },
+  "traffictestlevel2": {
+   "level": 45613,
+   "levelphysics": 1646611,
+   "levelrender": 12985,
+   "levelstream": 1126400
+  },
+  "usa_amboy": {
+   "level": 7172947,
+   "levelanim": 60,
+   "levelphysics": 4139773,
+   "levelrender": 12541065,
+   "levelstream": 141674496
+  },
+  "usa_amboy_multiplayer": {
+   "level": 567402,
+   "levelanim": 876,
+   "levelphysics": 1417677,
+   "levelrender": 15773076,
+   "levelstream": 61853696
+  },
+  "usa_la_longbeachdocks": {
+   "level": 39789,
+   "levelanim": 6164,
+   "levelphysics": 1482506,
+   "levelrender": 16044568,
+   "levelstream": 86112256
+  },
+  "usa_la_observatory": {
+   "level": 80184,
+   "levelanim": 6492,
+   "levelphysics": 4416763,
+   "levelrender": 4883676,
+   "levelstream": 5515264
+  },
+  "vehicletestscene": {
+   "level": 2223,
+   "levelanim": 316,
+   "levelphysics": 2951,
+   "levelrender": 1637739,
+   "levelstream": 1044480
+  },
+  "_test_ai": {
+   "level": 1320,
+   "levelanim": 60,
+   "levelphysics": 592,
+   "levelrender": 4698724,
+   "levelstream": 16384
+  },
+  "_test_audio": {
+   "level": 1359,
+   "levelanim": 60,
+   "levelphysics": 1249750,
+   "levelrender": 5666492,
+   "levelstream": 9910272
+  },
+  "_test_effects": {
+   "level": 1963,
+   "levelanim": 60,
+   "levelphysics": 2008,
+   "levelrender": 396871,
+   "levelstream": 976896
+  },
+  "_test_events": {
+   "level": 1748,
+   "levelanim": 3754274,
+   "levelphysics": 127097,
+   "levelrender": 1139590,
+   "levelstream": 374784
+  },
+  "_test_handofgod": {
+   "level": 1348,
+   "levelanim": 60,
+   "levelphysics": 2532459,
+   "levelrender": 4746520,
+   "levelstream": 1112064
+  },
+  "_test_lighting": {
+   "level": 973,
+   "levelanim": 60,
+   "levelphysics": 16544,
+   "levelrender": 800450,
+   "levelstream": 67584
+  },
+  "_test_materials": {
+   "level": 961,
+   "levelanim": 60,
+   "levelphysics": 418,
+   "levelrender": 1210052,
+   "levelstream": 5027840
+  },
+  "_test_shadertech": {
+   "level": 1606,
+   "levelanim": 60,
+   "levelphysics": 167918,
+   "levelrender": 635217,
+   "levelstream": 12124160
+  },
+  "_test_surfaces": {
+   "level": 1475,
+   "levelanim": 60,
+   "levelphysics": 2669872,
+   "levelrender": 1871074,
+   "levelstream": 12969984
+  },
+  "_test_traffic": {
+   "level": 1055,
+   "levelanim": 60,
+   "levelphysics": 1678601,
+   "levelrender": 400999,
+   "levelstream": 518144
+  }
+ },
+ "nov04": {
+  "detroit": {
+   "level": 2217,
+   "levelanim": 60,
+   "levelphysics": 7352266,
+   "levelrender": 1912254,
+   "levelstream": 17276928
+  },
+  "dubai": {
+   "level": 9574,
+   "levelanim": 60,
+   "levelphysics": 12906630,
+   "levelrender": 3570058,
+   "levelstream": 96700416
+  },
+  "fx_testlevel": {
+   "level": 2469,
+   "levelanim": 1084,
+   "levelphysics": 2008,
+   "levelrender": 5763081,
+   "levelstream": 974848
+  },
+  "graphical": {
+   "level": 202732,
+   "levelanim": 14172,
+   "levelphysics": 50534,
+   "levelrender": 25347328,
+   "levelstream": 13967360
+  },
+  "hong_kong": {
+   "level": 2172,
+   "levelanim": 61772,
+   "levelphysics": 8818788,
+   "levelrender": 62958496,
+   "levelstream": 33107968
+  },
+  "la_city": {
+   "level": 5000,
+   "levelanim": 27808,
+   "levelphysics": 1896530,
+   "levelrender": 31412827,
+   "levelstream": 16222208
+  },
+  "la_freeway": {
+   "level": 9771,
+   "levelanim": 60,
+   "levelphysics": 2775033,
+   "levelrender": 3974213,
+   "levelstream": 97050624
+  },
+  "la_longbeachdocks": {
+   "level": 36128,
+   "levelanim": 60,
+   "levelphysics": 2496526,
+   "levelrender": 9124794,
+   "levelstream": 79630336
+  },
+  "liverpool": {
+   "level": 3912,
+   "levelanim": 34596,
+   "levelphysics": 669910,
+   "levelrender": 66494453,
+   "levelstream": 538624
+  },
+  "miami": {
+   "level": 15195,
+   "levelanim": 60,
+   "levelphysics": 23966881,
+   "levelrender": 7945757,
+   "levelstream": 70451200
+  },
+  "mp_barcelona": {
+   "level": 2130,
+   "levelanim": 60,
+   "levelphysics": 178129,
+   "levelrender": 3000424,
+   "levelstream": 9928704
+  },
+  "mp_bowlarena": {
+   "level": 2130,
+   "levelanim": 60,
+   "levelphysics": 93989,
+   "levelrender": 3072012,
+   "levelstream": 4165632
+  },
+  "mp_detriot": {
+   "level": 2202,
+   "levelanim": 60,
+   "levelphysics": 46172,
+   "levelrender": 2879696,
+   "levelstream": 2461696
+  },
+  "mp_skiresort": {
+   "level": 2130,
+   "levelanim": 60,
+   "levelphysics": 187803,
+   "levelrender": 2393608,
+   "levelstream": 849920
+  },
+  "mp_skyscrapers": {
+   "level": 2130,
+   "levelanim": 60,
+   "levelphysics": 28705,
+   "levelrender": 2105171,
+   "levelstream": 1513472
+  },
+  "mp_temple": {
+   "level": 2130,
+   "levelanim": 60,
+   "levelphysics": 636122,
+   "levelrender": 3925892,
+   "levelstream": 3301376
+  },
+  "north_africa": {
+   "level": 2041,
+   "levelanim": 60,
+   "levelphysics": 3368619,
+   "levelrender": 4417116,
+   "levelstream": 11003904
+  },
+  "odessa": {
+   "level": 2480,
+   "levelanim": 30572,
+   "levelphysics": 5798331,
+   "levelrender": 44024015,
+   "levelstream": 16596992
+  },
+  "quickexport": {
+   "level": 3761,
+   "levelanim": 40972,
+   "levelphysics": 11900155,
+   "levelrender": 78005087,
+   "levelstream": 11112448
+  },
+  "showroom": {
+   "level": 3219,
+   "levelanim": 60,
+   "levelphysics": 133701,
+   "levelrender": 745374,
+   "levelstream": 12158976
+  },
+  "ski_resort": {
+   "level": 3925,
+   "levelanim": 15736,
+   "levelphysics": 11100067,
+   "levelrender": 14534278,
+   "levelstream": 74006528
+  },
+  "spa_barcelona_bowl_multiplayer": {
+   "level": 2880,
+   "levelanim": 572,
+   "levelphysics": 180920,
+   "levelrender": 4474887,
+   "levelstream": 43798528
+  },
+  "spa_barcelona_gracia": {
+   "level": 203482,
+   "levelanim": 5724,
+   "levelphysics": 5514282,
+   "levelrender": 17569015,
+   "levelstream": 254126080
+  },
+  "spa_barcelona_oval": {
+   "level": 115666,
+   "levelanim": 3892,
+   "levelphysics": 2969816,
+   "levelrender": 11642968,
+   "levelstream": 87676928
+  },
+  "traffictestlevel2": {
+   "level": 45613,
+   "levelphysics": 1646611,
+   "levelrender": 12985,
+   "levelstream": 1126400
+  },
+  "usa_amboy": {
+   "level": 7175620,
+   "levelanim": 60,
+   "levelphysics": 4139773,
+   "levelrender": 8805673,
+   "levelstream": 143796224
+  },
+  "usa_amboy_multiplayer": {
+   "level": 567402,
+   "levelanim": 876,
+   "levelphysics": 1417677,
+   "levelrender": 15773076,
+   "levelstream": 61853696
+  },
+  "usa_la_longbeachdocks": {
+   "level": 35983,
+   "levelanim": 6164,
+   "levelphysics": 1482506,
+   "levelrender": 16129064,
+   "levelstream": 86075392
+  },
+  "usa_la_observatory": {
+   "level": 31832,
+   "levelanim": 6492,
+   "levelphysics": 4416763,
+   "levelrender": 4883896,
+   "levelstream": 5525504
+  },
+  "vehicletestscene": {
+   "level": 2223,
+   "levelanim": 316,
+   "levelphysics": 2951,
+   "levelrender": 1637739,
+   "levelstream": 1044480
+  },
+  "_test_ai": {
+   "level": 2648,
+   "levelanim": 60,
+   "levelphysics": 592,
+   "levelrender": 4701404,
+   "levelstream": 16384
+  },
+  "_test_audio": {
+   "level": 8608,
+   "levelanim": 60,
+   "levelphysics": 1249750,
+   "levelrender": 5677625,
+   "levelstream": 10872832
+  },
+  "_test_effects": {
+   "level": 2145,
+   "levelanim": 60,
+   "levelphysics": 2008,
+   "levelrender": 396790,
+   "levelstream": 976896
+  },
+  "_test_events": {
+   "level": 2536,
+   "levelanim": 64886,
+   "levelphysics": 127097,
+   "levelrender": 1155584,
+   "levelstream": 372736
+  },
+  "_test_handofgod": {
+   "level": 2676,
+   "levelanim": 60,
+   "levelphysics": 2532375,
+   "levelrender": 4755047,
+   "levelstream": 1097728
+  },
+  "_test_lighting": {
+   "level": 2041,
+   "levelanim": 60,
+   "levelphysics": 40994,
+   "levelrender": 1115562,
+   "levelstream": 8921088
+  },
+  "_test_materials": {
+   "level": 16101,
+   "levelanim": 60,
+   "levelphysics": 177541,
+   "levelrender": 411922,
+   "levelstream": 4229120
+  },
+  "_test_shadertech": {
+   "level": 15430,
+   "levelanim": 60,
+   "levelphysics": 168071,
+   "levelrender": 21494059,
+   "levelstream": 2048
+  },
+  "_test_surfaces": {
+   "level": 2674,
+   "levelanim": 60,
+   "levelphysics": 824957,
+   "levelrender": 1496696,
+   "levelstream": 9625600
+  },
+  "_test_traffic": {
+   "level": 2123,
+   "levelanim": 60,
+   "levelphysics": 1678601,
+   "levelrender": 400999,
+   "levelstream": 518144
+  }
+ },
+ "_fichiers_env": {
+  "aug31": [
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/dontship/textures/Environment.dds",
+    262304
+   ],
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/dontship/textures/Headlights.dds",
+    98432
+   ],
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/gamedata/xt/EnvironmentalSettings.bin",
+    71960
+   ],
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/gamedata/xt/Lighting.bin",
+    37108
+   ],
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/graphics/textures/postprocess/Brighton_Storm_LUT_01.dds",
+    131200
+   ],
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/graphics/textures/postprocess/Brighton_Storm_LUT_02.dds",
+    131200
+   ],
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/graphics/textures/postprocess/Brighton_Sunny_LUT_01.dds",
+    131200
+   ],
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/graphics/textures/postprocess/Brighton_Sunny_LUT_02.dds",
+    131200
+   ],
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/graphics/textures/postprocess/Brighton_TEST_LUT.dds",
+    131200
+   ],
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/graphics/textures/postprocess/Dubai_Sunny_LUT_01.dds",
+    131200
+   ],
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/graphics/textures/skies/hdr_cloudy07_ldr.texture",
+    4194424
+   ],
+   [
+    "Blur 2 (Aug 31, 2010) [Fixed]/KanzenDev/graphics/textures/skies/hdr_stormy01_ldr.texture",
+    4194424
+   ]
+  ],
+  "nov10": [
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/Environment.dds",
+    262304
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/Headlights.dds",
+    98432
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_cloudy01.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_cloudy03.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_cloudy04.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_cloudy09.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_stormy01.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset02.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset03.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset04.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset05.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset06.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset07.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset08.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset09.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset10.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset11.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset12.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset13.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset14.texture",
+    1048700
+   ],
+   [
+    "Blur 2 (Nov 10, 2010)/dontship/textures/skies/hdr_sunset15.texture",
+    1048700
+   ]
+  ],
+  "nov04": [
+   [
+    "!Blur 2 (Nov 04, 2010) [Unreleased]/dontship/textures/Environment.dds",
+    262304
+   ],
+   [
+    "!Blur 2 (Nov 04, 2010) [Unreleased]/dontship/textures/Headlights.dds",
+    98432
+   ],
+   [
+    "!Blur 2 (Nov 04, 2010) [Unreleased]/dontship/textures/skies/hdr_cloudy01.texture",
+    1048700
+   ],
+   [
+    "!Blur 2 (Nov 04, 2010) [Unreleased]/dontship/textures/skies/hdr_cloudy03.texture",
+    1048700
+   ],
+   [
+    "!Blur 2 (Nov 04, 2010) [Unreleased]/dontship/textures/skies/hdr_cloudy04.texture",
+    1048700
+   ],
+   [
+    "!Blur 2 (Nov 04, 2010) [Unreleased]/dontship/textures/skies/hdr_cloudy09.texture",
+    1048700
+   ]
+  ]
+ }
+}

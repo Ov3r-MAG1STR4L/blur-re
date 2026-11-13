@@ -2449,6 +2449,78 @@ Rapport complet avec offsets : `Jeux_WII\blur2_aid\easter_eggs\rapport.md` (scri
   `downforce` / `constantDownforce` par voiture, aucun paramètre de looping. **Différent** du wallride / tunnel de
   Marina (virage sud-ouest, ≤ 77 m). Blur 1 : pas de gravité locale connue → looping non franchissable tel quel.
 
+## Audit A : environnements et éclairage de Blur 2 (2026-11-13, lecture seule, rien d'essayé en jeu)
+Rapport complet, inventaire et scripts : `docs/blur2/audit_environnements/`. Le dossier de travail, avec les tables
+`.bin` extraites, est `blur2_aid/Audit_Environnements/`. Sources lues :
+- tables X360 des builds 31 août, 4 nov et 10 nov ;
+- 116 `levelrender` (23 Blur 1 PC, 51 du 31 août, 41 du 10 nov, Dubaï du 4 nov), ceux des archives lus en mémoire ;
+- Blur2DubaiTest (Unity).
+
+Ce sont des résultats de lecture de données, **pas une validation fonctionnelle**.
+
+**Établi (lu dans les données)**
+- **Les réglages ont changé de table.**
+  - Blur 2 les sort de `amax.bin` et les place dans `environmentalsettings.bin`.
+  - Le lien ville → réglages est dans `tracks.bin` (`City.EnvironmentSettings` / `FlashbackSettings`, références par
+    hash).
+  - `lighting.bin` ne contient que `CutSceneLightDef`.
+- **`LightingSettings` a la même structure de 188 o que dans Blur 1**, identique dans les trois builds :
+  - `LightingInfo` @0 (Sun / Sky / Baked / Emissive) ;
+  - `FogSettings` @64 ;
+  - `cubemapTexture` @108 ;
+  - `SkySettings` @112 ;
+  - `PostProcess` @152.
+
+  Il se reporte champ à champ, après inversion d'octets. Le X360 stocke aussi les drapeaux de champ (u16) aux octets
+  inversés. Types nouveaux absents de Blur 1 : `LayerFogSettings` (Ski Resort) et `CutSceneLightDef`.
+- **Ciel, cubemap et échantillons de lumière sont trois ressources séparées.**
+  - Le ciel (`SkySettings.texture`, bande 2048 × 512) est désigné à part de `cubemapTexture` et des blocs
+    `CubePt2/3`.
+  - Aucun `levelrender` ne cite de ciel.
+  - Dans Blur 1, l'ambiant vient de `LSData` et les reflets du cube (`C_EnvironmentSampler`), jamais du ciel.
+- **Formats** :
+
+  | Build | Bloc cube | Échantillons `LSData` |
+  |---|---|---|
+  | Blur 1 | `CubePt2` (sans nom ni position) | 24 o / échantillon |
+  | Blur 2, 31 août | `CubePt2` | 24 o (même format que Blur 1) |
+  | Blur 2, 4 et 10 nov | `CubePt3` (nom + position) | 16 o sur les maps refaites, 24 o sur les maps reprises |
+
+  Le changement a eu lieu entre le 31 août et le 4 nov.
+- **Ambiance propre à Dubaï : seulement en août.**
+  - Réglage `@4bd06c1e` : ciel `HFD_HemiClouds16` (rotation 0,273, intensité 0,5), exposition 3,0–10,0, LUT
+    `Dubai_Sunny_LUT_01`.
+  - Niveau d'août : 73 357 échantillons à 24 o, cube `Dubai_Sunny_001.dds`.
+  - Au 10 nov, le réglage de Dubaï `@58c1f104` est une copie non réglée du défaut `@0a6eee76` :
+    `HFD_HemiSunset27`, LUT `LA_Downtown_02`. Ce défaut est partagé par 17 villes.
+  - Au 10 nov, le seul cube propre est `Dubai_EnvDefault`, placé en (−899,4 ; 14,8 ; −189,7). Les autres niveaux
+    citent `default` ou `amboy_001` en (0, 0, 0).
+- **Blur 1 a déjà de nombreuses ressources communes.**
+  - 17 ciels communs se trouvent dans `root.pak` PC.
+  - Les LUT communes sont présentes.
+  - Ciels propres à Blur 2 : `deep_blue_sky`, `pink_sunset`, `HFD_HemiClouds08/12/16/17`, entre autres.
+
+**Hypothèses**
+- Les 16 o de `LSData` contiendraient un SH de luminance à 4 termes, une teinte RGB et un coefficient.
+- La position lue dans `CubePt3` est une hypothèse.
+- Les dimensions des ciels Blur 2 sont déduites de la taille des fichiers.
+- Le ciel n'est qu'un fond dans Blur 2 aussi : non lu dans les shaders X360.
+
+**Non vérifié**
+- L'opérateur de tonalité de Blur 2 : les échelles d'exposition diffèrent.
+- La texture de `Dubai_Sunny_001.dds`, introuvable sous ce nom.
+- La correspondance entre la géométrie du Dubaï d'août et la map Marina.
+- Le décodage du graphe `PostFxMatrix`.
+- L'écart de noms des champs d'exposition entre Map Builder et le schéma Blur 2 (+152 / +156 / +160).
+- Aucun essai en jeu n'a été fait.
+
+**Pistes de portage**, sans essai :
+1. Écrire l'ambiance d'août de Dubaï (réglages, ciel, LUT) en place dans l'enregistrement de la ville, avec la méthode
+   Map Builder. Pas de shader à toucher ; seul `HFD_HemiClouds16` est à convertir depuis le X360.
+2. Reprendre les `LSData` à 24 o du Dubaï d'août, avec simple inversion d'octets. Condition : géométrie identique à la
+   map Marina.
+3. Mettre le cube de Dubaï dans `CubePt2` : `Dubai_Sunny_001` d'août, ou `Dubai_EnvDefault` du 10 nov à convertir.
+
 ## Studios web locaux : sécurité et protection des travaux (2026-11-10)
 - Priorité 1 de l'audit appliquée aux 3 studios (NFS 8765, Reverse 8766, Tracés Blur 2 8767), protections communes
   dans `studio_safe.py` : refus des requêtes d'autres sites et du DNS rebinding (Host, Origin, Sec-Fetch-Site),

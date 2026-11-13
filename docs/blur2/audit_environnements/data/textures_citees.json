@@ -1,0 +1,1300 @@
+{
+ "graphics/textures/skies/HFD_HemiSunset27.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "hfd_hemisunset27.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "hfd_hemisunset27.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\hfd_hemisunset27.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "nov10:Dubai",
+   "nov10:MP_BowlArena",
+   "nov10:LA_City",
+   "nov10:_Test_Events",
+   "nov10:Hong_Kong",
+   "nov10:LA_LongBeachDocks",
+   "nov10:User_Dave_C",
+   "nov10:User_Martin_B",
+   "nov10:User_Dan_M",
+   "nov10:User_Feargal_P",
+   "nov10:User_Derek_C",
+   "nov10:Detroit",
+   "nov10:User_Ste_W",
+   "nov10:Miami",
+   "nov10:_Test_Effects",
+   "nov10:North_Africa",
+   "nov10:Odessa",
+   "nov10:User_Gaz_R",
+   "nov10:MP_SkiResort",
+   "nov10:MP_Detriot",
+   "nov10:MP_Barcelona",
+   "nov10:User_Rob_H",
+   "nov10:User_Nigel_M",
+   "nov10:_Test_Audio",
+   "nov10:_Test_AI",
+   "nov10:Liverpool",
+   "nov10:_Test_HandOfGod",
+   "nov10:MP_SkyScrapers",
+   "nov10:MP_Temple",
+   "nov10:Graphical",
+   "nov04:Dubai",
+   "nov04:MP_BowlArena",
+   "nov04:Ski_Resort",
+   "nov04:LA_City",
+   "nov04:_Test_Events",
+   "nov04:Hong_Kong",
+   "nov04:LA_LongBeachDocks",
+   "nov04:User_Dave_C",
+   "nov04:User_Martin_B",
+   "nov04:User_Dan_M",
+   "nov04:User_Feargal_P",
+   "nov04:User_Derek_C",
+   "nov04:Detroit",
+   "nov04:User_Ste_W",
+   "nov04:Miami",
+   "nov04:_Test_Effects",
+   "nov04:North_Africa",
+   "nov04:Odessa",
+   "nov04:User_Gaz_R",
+   "nov04:MP_SkiResort",
+   "nov04:MP_Detriot",
+   "nov04:MP_Barcelona",
+   "nov04:User_Rob_H",
+   "nov04:User_Nigel_M",
+   "nov04:_Test_Audio",
+   "nov04:_Test_AI",
+   "nov04:Liverpool",
+   "nov04:_Test_HandOfGod",
+   "nov04:MP_SkyScrapers",
+   "nov04:MP_Temple",
+   "nov04:Graphical",
+   "aug31:Ski_Resort",
+   "aug31:QuickExport",
+   "aug31:USA_LA_River",
+   "aug31:Kanzen_LA_Downtown",
+   "aug31:USA_LA_Observatory",
+   "aug31:Graphical",
+   "aug31:traffictestlevel2"
+  ]
+ },
+ "graphics\\textures\\postprocess\\LA_Downtown_02_LUT.dd": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "la_downtown_02_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "la_downtown_02_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\la_downtown_02_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "nov10:Dubai",
+   "nov10:MP_BowlArena",
+   "nov10:Ski_Resort",
+   "nov10:QuickExport",
+   "nov10:LA_City",
+   "nov10:_Test_Events",
+   "nov10:_Test_ShaderTech",
+   "nov10:Hong_Kong",
+   "nov10:LA_LongBeachDocks",
+   "nov10:User_Dave_C",
+   "nov10:User_Martin_B",
+   "nov10:User_Dan_M",
+   "nov10:User_Feargal_P",
+   "nov10:User_Derek_C",
+   "nov10:Detroit",
+   "nov10:User_Ste_W",
+   "nov10:_Test_Materials",
+   "nov10:Miami",
+   "nov10:_Test_Effects",
+   "nov10:North_Africa",
+   "nov10:Odessa",
+   "nov10:User_Gaz_R",
+   "nov10:MP_SkiResort",
+   "nov10:_Test_Lighting",
+   "nov10:MP_Detriot",
+   "nov10:MP_Barcelona",
+   "nov10:User_Rob_H",
+   "nov10:User_Nigel_M",
+   "nov10:_Test_Surfaces",
+   "nov10:_Test_Audio",
+   "nov10:_Test_AI",
+   "nov10:Liverpool",
+   "nov10:_Test_HandOfGod",
+   "nov10:MP_SkyScrapers",
+   "nov10:MP_Temple",
+   "nov10:Graphical",
+   "nov04:Dubai",
+   "nov04:MP_BowlArena",
+   "nov04:Ski_Resort",
+   "nov04:QuickExport",
+   "nov04:LA_City",
+   "nov04:_Test_Events",
+   "nov04:_Test_ShaderTech",
+   "nov04:Hong_Kong",
+   "nov04:LA_LongBeachDocks",
+   "nov04:User_Dave_C",
+   "nov04:User_Martin_B",
+   "nov04:User_Dan_M",
+   "nov04:User_Feargal_P",
+   "nov04:User_Derek_C",
+   "nov04:Detroit",
+   "nov04:User_Ste_W",
+   "nov04:_Test_Materials",
+   "nov04:Miami",
+   "nov04:_Test_Effects",
+   "nov04:North_Africa",
+   "nov04:Odessa",
+   "nov04:User_Gaz_R",
+   "nov04:MP_SkiResort",
+   "nov04:_Test_Lighting",
+   "nov04:MP_Detriot",
+   "nov04:MP_Barcelona",
+   "nov04:User_Rob_H",
+   "nov04:User_Nigel_M",
+   "nov04:_Test_Surfaces",
+   "nov04:_Test_Audio",
+   "nov04:_Test_AI",
+   "nov04:Liverpool",
+   "nov04:_Test_HandOfGod",
+   "nov04:MP_SkyScrapers",
+   "nov04:MP_Temple",
+   "nov04:Graphical"
+  ]
+ },
+ "graphics/textures/skies/hf12.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "hf12.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "hf12.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\hf12.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "nov10:SPA_Barcelona_Oval",
+   "nov10:SPA_Barcelona_Bowl_Multiplayer",
+   "nov04:SPA_Barcelona_Oval",
+   "nov04:SPA_Barcelona_Bowl_Multiplayer",
+   "aug31:SPA_Barcelona_Oval",
+   "aug31:SPA_Barcelona_Bowl_Multiplayer"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Barca_Oval_03_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "barca_oval_03_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "barca_oval_03_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\barca_oval_03_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "nov10:SPA_Barcelona_Oval",
+   "nov04:SPA_Barcelona_Oval"
+  ]
+ },
+ "graphics/textures/skies/deep_blue_sky.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "deep_blue_sky.texture",
+    1048700
+   ],
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": [
+   "nov10:Ski_Resort"
+  ]
+ },
+ "dontship\\textures\\skies\\hdr_cloudy01.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": [
+   "nov10:QuickExport",
+   "nov04:QuickExport"
+  ]
+ },
+ "graphics/textures/skies/t02c.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "t02c.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "t02c.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\t02c.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "nov10:ShowRoom",
+   "nov10:LA_Freeway",
+   "nov04:ShowRoom",
+   "nov04:LA_Freeway",
+   "aug31:ShowRoom",
+   "aug31:USA_LA_Downtown"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Showroom_LUT_07.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "showroom_lut_07.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "showroom_lut_07.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\showroom_lut_07.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "nov10:ShowRoom",
+   "nov04:ShowRoom",
+   "aug31:ShowRoom"
+  ]
+ },
+ "dontship/textures/t02b.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\t02b.dds",
+    524416
+   ]
+  },
+  "villes": [
+   "nov10:VehicleTestScene",
+   "nov04:VehicleTestScene",
+   "aug31:VehicleTestScene"
+  ]
+ },
+ "dontship\\textures\\skies\\hdr_cloudy09.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": [
+   "nov10:_Test_ShaderTech",
+   "nov10:_Test_Materials",
+   "nov10:_Test_Traffic",
+   "nov10:_Test_Lighting",
+   "nov10:_Test_Surfaces",
+   "nov04:_Test_ShaderTech",
+   "nov04:_Test_Materials",
+   "nov04:_Test_Traffic",
+   "nov04:_Test_Lighting",
+   "nov04:_Test_Surfaces"
+  ]
+ },
+ "graphics\\textures\\postprocess\\LA_Docks_01_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "la_docks_01_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "la_docks_01_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\la_docks_01_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "nov10:LA_Freeway",
+   "nov04:LA_Freeway",
+   "aug31:Odessa"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Barca_Bowl_01_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "barca_bowl_01_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "barca_bowl_01_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\barca_bowl_01_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "nov10:SPA_Barcelona_Bowl_Multiplayer",
+   "nov04:SPA_Barcelona_Bowl_Multiplayer",
+   "aug31:SPA_Barcelona_Bowl_Multiplayer"
+  ]
+ },
+ "graphics/textures/skies/v09b.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "v09b.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "v09b.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\v09b.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "nov10:SPA_Barcelona_Gracia",
+   "nov04:SPA_Barcelona_Gracia",
+   "aug31:SPA_Barcelona_Gracia",
+   "aug31:Miami"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Barca_Gracia_06_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "barca_gracia_06_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "barca_gracia_06_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\barca_gracia_06_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "nov10:SPA_Barcelona_Gracia",
+   "nov04:SPA_Barcelona_Gracia",
+   "aug31:SPA_Barcelona_Gracia",
+   "aug31:traffictestlevel2"
+  ]
+ },
+ "graphics/textures/skies/s10.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "s10.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "s10.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\s10.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "nov10:USA_Amboy",
+   "nov04:USA_Amboy",
+   "aug31:USA_Amboy",
+   "aug31:USA_Amboy_Multiplayer"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Amboy_04_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "amboy_04_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "amboy_04_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\amboy_04_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "nov10:USA_Amboy",
+   "nov04:USA_Amboy",
+   "aug31:neilg_UK_Brighton_Storm",
+   "aug31:Circuit_Dom",
+   "aug31:USA_Amboy_Multiplayer"
+  ]
+ },
+ "graphics/textures/skies/HFD_HemiTwilight06.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "hfd_hemitwilight06.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "hfd_hemitwilight06.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\hfd_hemitwilight06.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "nov10:USA_LA_LongBeachDocks",
+   "nov04:USA_LA_LongBeachDocks",
+   "aug31:USA_LA_LongBeachDocks"
+  ]
+ },
+ "graphics\\textures\\postprocess\\LA_Docks_02_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "la_docks_02_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "la_docks_02_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\la_docks_02_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "nov10:USA_LA_LongBeachDocks",
+   "nov04:USA_LA_LongBeachDocks",
+   "aug31:USA_LA_LongBeachDocks"
+  ]
+ },
+ "dontship/textures/79b.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\79b.dds",
+    524416
+   ]
+  },
+  "villes": [
+   "nov10:USA_LA_Observatory",
+   "nov04:USA_LA_Observatory"
+  ]
+ },
+ "graphics\\textures\\postprocess\\La_River_02_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "la_river_02_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "la_river_02_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\la_river_02_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "nov10:USA_LA_Observatory",
+   "nov04:USA_LA_Observatory",
+   "aug31:LA_City",
+   "aug31:Hong_Kong",
+   "aug31:Detroit",
+   "aug31:North_Africa"
+  ]
+ },
+ "dontship/textures/v06b.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\v06b.dds",
+    524416
+   ]
+  },
+  "villes": []
+ },
+ "dontship/textures/Hackney_CubeMap.dds": {
+  "type": "cubemap",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\hackney_cubemap.dds",
+    262352
+   ]
+  },
+  "villes": []
+ },
+ "graphics/textures/skies/hf03.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "hf03.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "hf03.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\hf03.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "aug31:USA_SanFran_Sausalito"
+  ]
+ },
+ "graphics/textures/skies/t02d.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "t02d.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "t02d.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\t02d.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "aug31:USA_LA_Multiplayer_Highrise"
+  ]
+ },
+ "dontship/textures/LA_Downtown_001.dds": {
+  "type": "cubemap",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": []
+ },
+ "dontship/textures/s_bc.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\s_bc.dds",
+    524416
+   ]
+  },
+  "villes": []
+ },
+ "dontship/textures/79.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\79.dds",
+    524416
+   ]
+  },
+  "villes": []
+ },
+ "graphics/textures/skies/Night_Cloudy_Moon_08.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "night_cloudy_moon_08.texture",
+    1048696
+   ],
+   "b2_nov04": [
+    "night_cloudy_moon_08.texture",
+    1048696
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\night_cloudy_moon_08.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "aug31:UK_Brighton",
+   "aug31:JPN_MHaruna"
+  ]
+ },
+ "graphics/textures/skies/v06c.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "v06c.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "v06c.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\v06c.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "aug31:UK_London_Hackney"
+  ]
+ },
+ "graphics/textures/skies/Night_Cloudy_City_01.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "night_cloudy_city_01.texture",
+    1048696
+   ],
+   "b2_nov04": [
+    "night_cloudy_city_01.texture",
+    1048696
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\night_cloudy_city_01.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "aug31:USA_NY_Dumbo"
+  ]
+ },
+ "dontship/textures/s16d.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\s16d.dds",
+    2097280
+   ]
+  },
+  "villes": [
+   "aug31:Hong_Kong",
+   "aug31:Liverpool"
+  ]
+ },
+ "dontship/textures/LA_River_CubeMap.dds": {
+  "type": "cubemap",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\la_river_cubemap.dds",
+    262352
+   ]
+  },
+  "villes": [
+   "aug31:Hong_Kong",
+   "aug31:Liverpool"
+  ]
+ },
+ "graphics/textures/skies/v09.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "v09.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "v09.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\v09.texture",
+    1048660
+   ]
+  },
+  "villes": []
+ },
+ "dontship/textures/t01.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": []
+ },
+ "graphics/textures/skies/hf10.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "hf10.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "hf10.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\hf10.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "aug31:neilg_UK_Brighton_Storm",
+   "aug31:Circuit_Dom"
+  ]
+ },
+ "dontship\\textures\\Test01.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": []
+ },
+ "dontship/textures/s_b.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\s_b.dds",
+    524416
+   ]
+  },
+  "villes": []
+ },
+ "graphics/textures/skies/HFD_HemiClouds08.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": [
+   "aug31:UK_Brighton_Sunny"
+  ]
+ },
+ "dontship/textures/sunny.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\sunny.dds",
+    1398256
+   ]
+  },
+  "villes": []
+ },
+ "graphics/textures/skies/hdr_sunset12_ldr.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "hdr_sunset12_ldr.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "hdr_sunset12_ldr.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\hdr_sunset12_ldr.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "aug31:USA_LA_Downtown_Multiplayer"
+  ]
+ },
+ "dontship/textures/s10.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "s10.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "s10.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\dontship\\textures\\s10.dds",
+    524416
+   ]
+  },
+  "villes": []
+ },
+ "dontship/textures/Istanbul_TEST_2.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": [
+   "aug31:LA_City",
+   "aug31:Detroit",
+   "aug31:North_Africa",
+   "aug31:Odessa",
+   "aug31:Kanzen_LA_River"
+  ]
+ },
+ "dontship/textures/f03d.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\f03d.dds",
+    524416
+   ]
+  },
+  "villes": []
+ },
+ "graphics/textures/skies/HFD_HemiSunset18.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "hfd_hemisunset18.texture",
+    1048696
+   ],
+   "b2_nov04": [
+    "hfd_hemisunset18.texture",
+    1048696
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\hfd_hemisunset18.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "aug31:USA_SanFran_RussianHill"
+  ]
+ },
+ "graphics/textures/skies/night_cloudy_moon_06.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "night_cloudy_moon_06.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "night_cloudy_moon_06.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\night_cloudy_moon_06.texture",
+    1048660
+   ]
+  },
+  "villes": [
+   "aug31:JPN_Tokyo_Shutoko"
+  ]
+ },
+ "graphics/textures/skies/HFD_HemiClouds17.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "hfd_hemiclouds17.texture",
+    4194424
+   ],
+   "b2_nov04": [
+    "hfd_hemiclouds17.texture",
+    4194424
+   ],
+   "b1_pc": null
+  },
+  "villes": [
+   "aug31:UK_Brighton_Storm"
+  ]
+ },
+ "dontship/textures/hf05.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": []
+ },
+ "dontship/textures/v05.dds": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": [
+    "\\dontship\\textures\\v05.dds",
+    524416
+   ]
+  },
+  "villes": []
+ },
+ "graphics/textures/skies/f01c.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": [
+    "f01c.texture",
+    1048700
+   ],
+   "b2_nov04": [
+    "f01c.texture",
+    1048700
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\skies\\f01c.texture",
+    1048660
+   ]
+  },
+  "villes": []
+ },
+ "graphics/textures/skies/HFD_HemiClouds16.texture": {
+  "type": "ciel",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": [
+   "aug31:Dubai"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Dubai_Sunny_LUT_01.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": [
+   "aug31:Dubai"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Brighton_Sunny_LUT_02.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": [
+   "aug31:SPA_Barcelona_Oval",
+   "aug31:USA_LA_River",
+   "aug31:USA_SanFran_Sausalito",
+   "aug31:Kanzen_LA_Downtown",
+   "aug31:USA_LA_Observatory",
+   "aug31:USA_Amboy"
+  ]
+ },
+ "graphics\\textures\\postprocess\\SF_Sausalito_02_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "sf_sausalito_02_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "sf_sausalito_02_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\sf_sausalito_02_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:Ski_Resort"
+  ]
+ },
+ "graphics\\textures\\postprocess\\LA_Downtown_02_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "la_downtown_02_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "la_downtown_02_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\la_downtown_02_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:QuickExport",
+   "aug31:Graphical",
+   "aug31:USA_LA_Downtown"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Brighton_02_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "brighton_02_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "brighton_02_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\brighton_02_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:UK_Brighton"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Japan_Shutoko_05_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "japan_shutoko_05_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "japan_shutoko_05_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\japan_shutoko_05_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:JPN_Tokyo_Shutoko"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Hackney_04_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "hackney_04_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "hackney_04_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\hackney_04_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:UK_London_Hackney"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Brighton_Sunny_LUT_04.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": [
+   "aug31:UK_Brighton_Sunny"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Highrise_01_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "highrise_01_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "highrise_01_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\highrise_01_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:USA_LA_Multiplayer_Highrise"
+  ]
+ },
+ "graphics\\textures\\postprocess\\SF_Russian_03_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "sf_russian_03_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "sf_russian_03_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\sf_russian_03_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:USA_SanFran_RussianHill",
+   "aug31:Kanzen_LA_River"
+  ]
+ },
+ "graphics\\textures\\postprocess\\LA_Downtown_Bowl_02_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "la_downtown_bowl_02_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "la_downtown_bowl_02_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\la_downtown_bowl_02_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:USA_LA_Downtown_Multiplayer"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Haruna_01_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "haruna_01_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "haruna_01_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\haruna_01_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:JPN_MHaruna"
+  ]
+ },
+ "graphics\\textures\\postprocess\\NYC_07_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "nyc_07_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "nyc_07_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\nyc_07_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:USA_NY_Dumbo"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Hollywood_01_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "hollywood_01_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "hollywood_01_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\hollywood_01_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:Miami"
+  ]
+ },
+ "graphics\\textures\\postprocess\\Brighton_Storm_LUT_02.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": null,
+   "b2_nov04": null,
+   "b1_pc": null
+  },
+  "villes": [
+   "aug31:UK_Brighton_Storm"
+  ]
+ },
+ "graphics\\textures\\postprocess\\LA_River_01_cut_LUT.dds": {
+  "type": "lut",
+  "presence": {
+   "b2_nov10": [
+    "la_river_01_cut_lut.dds",
+    131200
+   ],
+   "b2_nov04": [
+    "la_river_01_cut_lut.dds",
+    131200
+   ],
+   "b1_pc": [
+    "\\graphics\\textures\\postprocess\\la_river_01_cut_lut.dds",
+    131200
+   ]
+  },
+  "villes": [
+   "aug31:Liverpool"
+  ]
+ }
+}
