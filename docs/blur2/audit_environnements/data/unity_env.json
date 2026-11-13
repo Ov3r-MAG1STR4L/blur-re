@@ -1,0 +1,1797 @@
+{
+ "level0": {
+  "Camera": [
+   {
+    "m_GameObject": {
+     "m_FileID": 0,
+     "m_PathID": 2
+    },
+    "m_Enabled": 1,
+    "m_ClearFlags": 2,
+    "m_BackGroundColor": {
+     "r": 0.0,
+     "g": 0.0,
+     "b": 0.0,
+     "a": 1.0
+    },
+    "m_projectionMatrixMode": 1,
+    "m_GateFitMode": 2,
+    "m_Iso": 200,
+    "m_ShutterSpeed": 0.004999999888241291,
+    "m_Aperture": 16.0,
+    "m_FocusDistance": 10.0,
+    "m_FocalLength": 50.0,
+    "m_BladeCount": 5,
+    "m_Curvature": {
+     "x": 2.0,
+     "y": 11.0
+    },
+    "m_BarrelClipping": 0.25,
+    "m_Anamorphism": 0.0,
+    "m_SensorSize": {
+     "x": 36.0,
+     "y": 24.0
+    },
+    "m_LensShift": {
+     "x": 0.0,
+     "y": 0.0
+    },
+    "m_NormalizedViewPortRect": {
+     "x": 0.0,
+     "y": 0.0,
+     "width": 1.0,
+     "height": 1.0
+    },
+    "near clip plane": 0.30000001192092896,
+    "far clip plane": 1000.0,
+    "field of view": 60.0,
+    "orthographic": false,
+    "orthographic size": 5.0,
+    "m_Depth": 0.0,
+    "m_CullingMask": {
+     "m_Bits": 4294967295
+    },
+    "m_RenderingPath": -1,
+    "m_TargetTexture": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_TargetDisplay": 0,
+    "m_TargetEye": 3,
+    "m_HDR": true,
+    "m_AllowMSAA": true,
+    "m_AllowDynamicResolution": false,
+    "m_ForceIntoRT": false,
+    "m_OcclusionCulling": true,
+    "m_StereoConvergence": 10.0,
+    "m_StereoSeparation": 0.02199999988079071
+   }
+  ],
+  "RenderSettings": [
+   {
+    "m_Fog": false,
+    "m_FogColor": {
+     "r": 0.5,
+     "g": 0.5,
+     "b": 0.5,
+     "a": 1.0
+    },
+    "m_FogMode": 3,
+    "m_FogDensity": 0.009999999776482582,
+    "m_LinearFogStart": 0.0,
+    "m_LinearFogEnd": 300.0,
+    "m_AmbientSkyColor": {
+     "r": 0.21199999749660492,
+     "g": 0.22699999809265137,
+     "b": 0.2590000033378601,
+     "a": 1.0
+    },
+    "m_AmbientEquatorColor": {
+     "r": 0.11400000005960464,
+     "g": 0.125,
+     "b": 0.13300000131130219,
+     "a": 1.0
+    },
+    "m_AmbientGroundColor": {
+     "r": 0.04699999839067459,
+     "g": 0.0430000014603138,
+     "b": 0.03500000014901161,
+     "a": 1.0
+    },
+    "m_AmbientIntensity": 1.0,
+    "m_AmbientMode": 0,
+    "m_SubtractiveShadowColor": {
+     "r": 0.41999998688697815,
+     "g": 0.4779999852180481,
+     "b": 0.6269999742507935,
+     "a": 1.0
+    },
+    "m_SkyboxMaterial": {
+     "m_FileID": 2,
+     "m_PathID": 2
+    },
+    "m_HaloStrength": 0.5,
+    "m_FlareStrength": 1.0,
+    "m_FlareFadeSpeed": 3.0,
+    "m_HaloTexture": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_SpotCookie": {
+     "m_FileID": 3,
+     "m_PathID": 10001
+    },
+    "m_DefaultReflectionMode": 0,
+    "m_DefaultReflectionResolution": 128,
+    "m_ReflectionBounces": 1,
+    "m_ReflectionIntensity": 1.0,
+    "m_CustomReflection": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_AmbientProbe": {
+     "sh[ 0]": 0.180283784866333,
+     "sh[ 1]": -0.005682311486452818,
+     "sh[ 2]": -0.012560680508613586,
+     "sh[ 3]": 0.007252015173435211,
+     "sh[ 4]": 0.0056999679654836655,
+     "sh[ 5]": -0.00987242255359888,
+     "sh[ 6]": 0.010330158285796642,
+     "sh[ 7]": -0.010436316952109337,
+     "sh[ 8]": 0.025035569444298744,
+     "sh[ 9]": 0.22571411728858948,
+     "sh[10]": 0.04134383052587509,
+     "sh[11]": -0.019753262400627136,
+     "sh[12]": 0.011403260752558708,
+     "sh[13]": 0.009111973457038403,
+     "sh[14]": -0.015783270820975304,
+     "sh[15]": 0.014379967004060745,
+     "sh[16]": -0.015223595313727856,
+     "sh[17]": 0.03443606197834015,
+     "sh[18]": 0.3069228529930115,
+     "sh[19]": 0.12748494744300842,
+     "sh[20]": -0.034053392708301544,
+     "sh[21]": 0.019656643271446228,
+     "sh[22]": 0.016365190967917442,
+     "sh[23]": -0.028349149972200394,
+     "sh[24]": 0.01771555282175541,
+     "sh[25]": -0.02208525687456131,
+     "sh[26]": 0.040465496480464935
+    },
+    "m_GeneratedSkyboxReflection": {
+     "m_FileID": 2,
+     "m_PathID": 5
+    },
+    "m_Sun": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_IndirectSpecularColor": {
+     "r": 0.180283784866333,
+     "g": 0.22571411728858948,
+     "b": 0.3069228529930115,
+     "a": 1.0
+    },
+    "m_UseRadianceAmbientProbe": false
+   }
+  ],
+  "LightmapSettings": [
+   {
+    "m_EnlightenSceneMapping": {
+     "m_Renderers": [],
+     "m_Systems": [],
+     "m_Probesets": [],
+     "m_SystemAtlases": [],
+     "m_TerrainChunks": [],
+     "m_CAHMap": {
+      "m_Map": []
+     }
+    },
+    "m_BakeOnSceneLoad": 0,
+    "m_LightProbes": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_Lightmaps": [],
+    "m_LightmapsMode": 1,
+    "m_GISettings": {
+     "m_BounceScale": 1.0,
+     "m_IndirectOutputScale": 1.0,
+     "m_AlbedoBoost": 1.0,
+     "m_EnvironmentLightingMode": 0,
+     "m_EnableBakedLightmaps": true,
+     "m_EnableRealtimeLightmaps": false
+    },
+    "m_LightingSettings": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    }
+   }
+  ]
+ },
+ "level1": {
+  "Camera": [
+   {
+    "m_GameObject": {
+     "m_FileID": 0,
+     "m_PathID": 42
+    },
+    "m_Enabled": 1,
+    "m_ClearFlags": 1,
+    "m_BackGroundColor": {
+     "r": 0.1921568661928177,
+     "g": 0.3019607961177826,
+     "b": 0.4745098054409027,
+     "a": 0.0
+    },
+    "m_projectionMatrixMode": 1,
+    "m_GateFitMode": 2,
+    "m_Iso": 200,
+    "m_ShutterSpeed": 0.004999999888241291,
+    "m_Aperture": 16.0,
+    "m_FocusDistance": 10.0,
+    "m_FocalLength": 50.0,
+    "m_BladeCount": 5,
+    "m_Curvature": {
+     "x": 2.0,
+     "y": 11.0
+    },
+    "m_BarrelClipping": 0.25,
+    "m_Anamorphism": 0.0,
+    "m_SensorSize": {
+     "x": 36.0,
+     "y": 24.0
+    },
+    "m_LensShift": {
+     "x": 0.0,
+     "y": 0.0
+    },
+    "m_NormalizedViewPortRect": {
+     "x": 0.0,
+     "y": 0.0,
+     "width": 1.0,
+     "height": 1.0
+    },
+    "near clip plane": 0.494968980550766,
+    "far clip plane": 39597.51953125,
+    "field of view": 50.0,
+    "orthographic": false,
+    "orthographic size": 5.0,
+    "m_Depth": 0.0,
+    "m_CullingMask": {
+     "m_Bits": 4294967295
+    },
+    "m_RenderingPath": -1,
+    "m_TargetTexture": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_TargetDisplay": 0,
+    "m_TargetEye": 3,
+    "m_HDR": true,
+    "m_AllowMSAA": true,
+    "m_AllowDynamicResolution": false,
+    "m_ForceIntoRT": false,
+    "m_OcclusionCulling": true,
+    "m_StereoConvergence": 10.0,
+    "m_StereoSeparation": 0.02199999988079071
+   }
+  ],
+  "RenderSettings": [
+   {
+    "m_Fog": false,
+    "m_FogColor": {
+     "r": 0.5,
+     "g": 0.5,
+     "b": 0.5,
+     "a": 1.0
+    },
+    "m_FogMode": 3,
+    "m_FogDensity": 0.009999999776482582,
+    "m_LinearFogStart": 0.0,
+    "m_LinearFogEnd": 300.0,
+    "m_AmbientSkyColor": {
+     "r": 0.41999998688697815,
+     "g": 0.4399999976158142,
+     "b": 0.47999998927116394,
+     "a": 1.0
+    },
+    "m_AmbientEquatorColor": {
+     "r": 0.11400000005960464,
+     "g": 0.125,
+     "b": 0.13300000131130219,
+     "a": 1.0
+    },
+    "m_AmbientGroundColor": {
+     "r": 0.04699999839067459,
+     "g": 0.0430000014603138,
+     "b": 0.03500000014901161,
+     "a": 1.0
+    },
+    "m_AmbientIntensity": 1.0,
+    "m_AmbientMode": 3,
+    "m_SubtractiveShadowColor": {
+     "r": 0.41999998688697815,
+     "g": 0.4779999852180481,
+     "b": 0.6269999742507935,
+     "a": 1.0
+    },
+    "m_SkyboxMaterial": {
+     "m_FileID": 2,
+     "m_PathID": 2
+    },
+    "m_HaloStrength": 0.5,
+    "m_FlareStrength": 1.0,
+    "m_FlareFadeSpeed": 3.0,
+    "m_HaloTexture": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_SpotCookie": {
+     "m_FileID": 3,
+     "m_PathID": 10001
+    },
+    "m_DefaultReflectionMode": 0,
+    "m_DefaultReflectionResolution": 128,
+    "m_ReflectionBounces": 1,
+    "m_ReflectionIntensity": 1.0,
+    "m_CustomReflection": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_AmbientProbe": {
+     "sh[ 0]": 0.180283784866333,
+     "sh[ 1]": -0.005682311486452818,
+     "sh[ 2]": -0.012560680508613586,
+     "sh[ 3]": 0.007252015173435211,
+     "sh[ 4]": 0.0056999679654836655,
+     "sh[ 5]": -0.00987242255359888,
+     "sh[ 6]": 0.010330158285796642,
+     "sh[ 7]": -0.010436316952109337,
+     "sh[ 8]": 0.025035569444298744,
+     "sh[ 9]": 0.22571411728858948,
+     "sh[10]": 0.04134383052587509,
+     "sh[11]": -0.019753262400627136,
+     "sh[12]": 0.011403260752558708,
+     "sh[13]": 0.009111973457038403,
+     "sh[14]": -0.015783270820975304,
+     "sh[15]": 0.014379967004060745,
+     "sh[16]": -0.015223595313727856,
+     "sh[17]": 0.03443606197834015,
+     "sh[18]": 0.3069228529930115,
+     "sh[19]": 0.12748494744300842,
+     "sh[20]": -0.034053392708301544,
+     "sh[21]": 0.019656643271446228,
+     "sh[22]": 0.016365190967917442,
+     "sh[23]": -0.028349149972200394,
+     "sh[24]": 0.01771555282175541,
+     "sh[25]": -0.02208525687456131,
+     "sh[26]": 0.040465496480464935
+    },
+    "m_GeneratedSkyboxReflection": {
+     "m_FileID": 4,
+     "m_PathID": 5
+    },
+    "m_Sun": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_IndirectSpecularColor": {
+     "r": 0.180283784866333,
+     "g": 0.22571411728858948,
+     "b": 0.3069228529930115,
+     "a": 1.0
+    },
+    "m_UseRadianceAmbientProbe": false
+   }
+  ],
+  "Light": [
+   {
+    "m_GameObject": {
+     "m_FileID": 0,
+     "m_PathID": 346
+    },
+    "m_Enabled": 1,
+    "m_Type": 1,
+    "m_Color": {
+     "r": 1.0,
+     "g": 0.983876645565033,
+     "b": 0.9172470569610596,
+     "a": 1.0
+    },
+    "m_Intensity": 1.0,
+    "m_Range": 10.0,
+    "m_SpotAngle": 30.0,
+    "m_InnerSpotAngle": 21.802080154418945,
+    "m_CookieSize2D": {
+     "x": 0.5,
+     "y": 0.5
+    },
+    "m_Shadows": {
+     "m_Type": 2,
+     "m_Resolution": -1,
+     "m_CustomResolution": -1,
+     "m_Strength": 1.0,
+     "m_Bias": 0.05000000074505806,
+     "m_NormalBias": 0.4000000059604645,
+     "m_NearPlane": 0.20000000298023224,
+     "m_CullingMatrixOverride": {
+      "e00": 1.0,
+      "e01": 0.0,
+      "e02": 0.0,
+      "e03": 0.0,
+      "e10": 0.0,
+      "e11": 1.0,
+      "e12": 0.0,
+      "e13": 0.0,
+      "e20": 0.0,
+      "e21": 0.0,
+      "e22": 1.0,
+      "e23": 0.0,
+      "e30": 0.0,
+      "e31": 0.0,
+      "e32": 0.0,
+      "e33": 1.0
+     },
+     "m_UseCullingMatrixOverride": false
+    },
+    "m_Cookie": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_DrawHalo": false,
+    "m_BakingOutput": {
+     "probeOcclusionLightIndex": -1,
+     "occlusionMaskChannel": -1,
+     "lightmapBakeMode": {
+      "lightmapBakeType": 4,
+      "mixedLightingMode": 2
+     },
+     "isBaked": false
+    },
+    "m_Flare": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_RenderMode": 0,
+    "m_CullingMask": {
+     "m_Bits": 4294967295
+    },
+    "m_RenderingLayerMask": 1,
+    "m_Lightmapping": 4,
+    "m_LightShadowCasterMode": 0,
+    "m_AreaSize": {
+     "x": 1.0,
+     "y": 1.0
+    },
+    "m_BounceIntensity": 1.0,
+    "m_ColorTemperature": 6570.0,
+    "m_UseColorTemperature": false,
+    "m_BoundingSphereOverride": {
+     "x": 0.0,
+     "y": 0.0,
+     "z": 0.0,
+     "w": 0.0
+    },
+    "m_UseBoundingSphereOverride": false,
+    "m_UseViewFrustumForShadowCasterCull": true,
+    "m_ForceVisible": false,
+    "m_ShapeRadius": 0.02500000037252903,
+    "m_LightUnit": 1,
+    "m_LuxAtDistance": 1.0,
+    "m_EnableSpotReflector": true
+   }
+  ],
+  "LightmapSettings": [
+   {
+    "m_EnlightenSceneMapping": {
+     "m_Renderers": [],
+     "m_Systems": [],
+     "m_Probesets": [],
+     "m_SystemAtlases": [],
+     "m_TerrainChunks": [],
+     "m_CAHMap": {
+      "m_Map": []
+     }
+    },
+    "m_BakeOnSceneLoad": 0,
+    "m_LightProbes": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    },
+    "m_Lightmaps": [],
+    "m_LightmapsMode": 1,
+    "m_GISettings": {
+     "m_BounceScale": 1.0,
+     "m_IndirectOutputScale": 1.0,
+     "m_AlbedoBoost": 1.0,
+     "m_EnvironmentLightingMode": 0,
+     "m_EnableBakedLightmaps": true,
+     "m_EnableRealtimeLightmaps": false
+    },
+    "m_LightingSettings": {
+     "m_FileID": 0,
+     "m_PathID": 0
+    }
+   }
+  ]
+ },
+ "sharedassets0": [
+  {
+   "type": "PreloadData",
+   "data": {
+    "m_Name": "",
+    "m_Assets": [
+     {
+      "m_FileID": 1,
+      "m_PathID": 10001
+     },
+     {
+      "m_FileID": 2,
+      "m_PathID": 246
+     }
+    ],
+    "m_Dependencies": [],
+    "m_ExplicitDataLayout": false
+   }
+  },
+  {
+   "type": "Material",
+   "data": {
+    "m_Name": "Default-Skybox",
+    "m_Shader": {
+     "m_FileID": 0,
+     "m_PathID": 4
+    },
+    "m_ValidKeywords": [
+     "_SUNDISK_SIMPLE"
+    ],
+    "m_InvalidKeywords": [],
+    "m_LightmapFlags": 5,
+    "m_EnableInstancingVariants": false,
+    "m_DoubleSidedGI": false,
+    "m_CustomRenderQueue": -1,
+    "stringTagMap": [],
+    "disabledShaderPasses": [],
+    "m_SavedProperties": {
+     "m_TexEnvs": [],
+     "m_Ints": [],
+     "m_Floats": [
+      [
+       "_AtmosphereThickness",
+       1.0
+      ],
+      [
+       "_Exposure",
+       1.2999999523162842
+      ],
+      [
+       "_SunDisk",
+       1.0
+      ],
+      [
+       "_SunSize",
+       0.03999999910593033
+      ],
+      [
+       "_SunSizeConvergence",
+       5.0
+      ]
+     ],
+     "m_Colors": [
+      [
+       "_GroundColor",
+       {
+        "r": 0.36899998784065247,
+        "g": 0.3490000069141388,
+        "b": 0.3409999907016754,
+        "a": 1.0
+       }
+      ],
+      [
+       "_SkyTint",
+       {
+        "r": 0.5,
+        "g": 0.5,
+        "b": 0.5,
+        "a": 1.0
+       }
+      ]
+     ]
+    },
+    "m_BuildTextureStacks": []
+   }
+  },
+  {
+   "type": "Texture2D",
+   "data": {
+    "m_Name": "Blur2TitleArt",
+    "m_IsAlphaChannelOptional": true,
+    "m_Width": 3840,
+    "m_Height": 2160,
+    "m_CompleteImageSize": 4147200,
+    "m_MipsStripped": 0,
+    "m_TextureFormat": 10,
+    "m_MipCount": 1,
+    "m_IsReadable": false,
+    "m_IsPreProcessed": false,
+    "m_IgnoreMipmapLimit": false,
+    "m_MipmapLimitGroupName": "",
+    "m_StreamingMipmaps": false,
+    "m_StreamingMipmapsPriority": 0,
+    "m_ImageCount": 1,
+    "m_TextureDimension": 2,
+    "m_TextureSettings": {
+     "m_FilterMode": 1,
+     "m_Aniso": 1,
+     "m_MipBias": 0.0,
+     "m_WrapU": 1,
+     "m_WrapV": 1,
+     "m_WrapW": 1
+    },
+    "m_LightmapFormat": 0,
+    "m_ColorSpace": 1,
+    "m_PlatformBlob": [],
+    "image data": "b''",
+    "m_StreamData": {
+     "offset": 0,
+     "size": 4147200,
+     "path": "sharedassets0.assets.resS"
+    }
+   }
+  },
+  {
+   "type": "Shader",
+   "data": {
+    "_tronque": "{\"m_Name\": \"\", \"m_ParsedForm\": {\"m_PropInfo\": {\"m_Props\": [{\"m_Name\": \"_SunDisk\", \"m_Description\": \"Sun\", \"m_Attributes\": [\"KeywordEnum(None, Simple, High Quality)\"], \"m_Type\": 2, \"m_Flags\": 0, \"m_DefValue[0]\": 2.0, \"m_DefValue[1]\": 0.0, \"m_DefValue[2]\": 0.0, \"m_DefValue[3]\": 0.0, \"m_DefTexture\": {\"m_DefaultName\": \"\", \"m_TexDim\": 1}}, {\"m_Name\": \"_SunSize\", \"m_Description\": \"Sun Size\", \"m_Attributes\": [], \"m_Type\": 3, \"m_Flags\": 0, \"m_DefValue[0]\": 0.03999999910593033, \"m_DefValue[1]\": 0.0, \"m_DefValue[2]\": 1.0, \"m_DefValue[3]\": 0.0, \"m_DefTexture\": {\"m_DefaultName\": \"\", \"m_TexDim\": 1}}, {\"m_Name\": \"_SunSizeConvergence\", \"m_Description\": \"Sun Size Convergence\", \"m_Attributes\": [], \"m_Type\": 3, \"m_Flags\": 0, \"m_DefValue[0]\": 5.0, \"m_DefValue[1]\": 1.0, \"m_DefValue[2]\": 10.0, \"m_DefValue[3]\": 0.0, \"m_DefTexture\": {\"m_DefaultName\": \"\", \"m_TexDim\": 1}}, {\"m_Name\": \"_AtmosphereThickness\", \"m_Description\": \"Atmosphere Thickness\", \"m_Attributes\": [], \"m_Type\": 3, \"m_Flags\": 0, \"m_DefValue[0]\": 1.0, \"m_DefValue[1]\": 0.0, \"m_DefValue[2]\": 5.0, \"m_DefValue[3]\": 0.0, \"m_DefTexture\": {\"m_DefaultName\": \"\", \"m_TexDim\": 1}}, {\"m_Name\": \"_SkyTint\", \"m_Description\": \"Sky Tint\", \"m_Attributes\": [], \"m_Type\": 0, \"m_Flags\": 0, \"m_DefValue[0]\": 0.5, \"m_DefValue[1]\": 0.5, \"m_DefValue[2]\": 0.5, \"m_DefValue[3]\": 1.0, \"m_DefTexture\": {\"m_DefaultName\": \"\", \"m_TexDim\": 1}}, {\"m_Name\": \"_GroundColor\", \"m_Description\": \"Ground\", \"m_Attributes\": [], \"m_Type\": 0, \"m_Flags\": 0, \"m_DefValue[0]\": 0.36899998784065247, \"m_DefValue[1]\": 0.3490000069141388, \"m_DefValue[2]\": 0.3409999907016754, \"m_DefValue[3]\": 1.0, \"m_DefTexture\": {\"m_DefaultName\": \"\", \"m_TexDim\": 1}}, {\"m_Name\": \"_Exposure\", \"m_Description\": \"Exposure\", \"m_Attributes\": [], \"m_Type\": 3, \"m_Flags\": 0, \"m_DefValue[0]\": 1.2999999523162842, \"m_DefValue[1]\": 0.0, \"m_DefValue[2]\": 8.0, \"m_DefValue[3]\": 0.0, \"m_DefTexture\": {\"m_DefaultName\": \"\", \"m_TexDim\": 1}}]}, \"m_SubShaders\": [{\"m_Passes\": [{\"m_NameIndices\": [[\"$Globals\", 0], [\"UnityLighting\", 1], [\"UnityPerDraw\", 2], [\"UnityPerFrame\", 3], [\"_AtmosphereThickness\", 7], [\"_Exposure\", 4], [\"_GroundColor\", 5], [\"_SkyTint\", 6], [\"_WorldSpaceLightPos0\", 8], [\"unity_MatrixVP\", 10], [\"unity_ObjectToWorld\", 9]], \"m_Type\": 0, \"m_State\": {\"m_Name\": \"\", \"rtBlend0\": {\"srcBlend\": {\"val\": 1.0, \"name\": \"<noninit>\"}, \"destBlend\": {\"val\": 0.0, \"name\": \"<noninit>\"}, \"srcBlendAlpha\": {\"val\": 1.0, \"name\": \"<noninit>\"}, \"destBlendAlpha\": {\"val\": 0.0, \"name\": \"<noninit>\"}, \"blendOp\": {\"val\": 0.0, \"name\": \"<noninit>\"}, \"blendOpAlpha\": {\"val\": 0.0, \"name\": \"<noninit>\"}, \"colMask\": {\"val\": 15.0, \"name\": \"<noninit>\"}}, \"rtBlend1\": {\"srcBlend\": {\"val\": 1.0, \"name\": \"<noninit>\"}, \"destBlend\": {\"val\": 0.0, \"name\": \"<noninit>\"}, \"srcBlendAlpha\": {\"val\": 1.0, \"name\": \"<noninit>\"}, \"destBlendAlpha\": {\"val\": 0.0, \"name\": \"<noninit>\"}, \"blendOp\": {\"val\": 0.0, \"name\": \"<noninit>\"}, \"blendOpAlpha\": {\"val\": 0.0, \"name\": \"<noninit>\"}, \"colMask\": {\"val\": 15.0, \"name\": \"<noninit>\"}}, \"rtBlend2\": {\"srcBlend\": {\""
+   }
+  },
+  {
+   "type": "Cubemap",
+   "data": {
+    "m_Name": "Default-Skybox-Cubemap",
+    "m_IsAlphaChannelOptional": false,
+    "m_Width": 128,
+    "m_Height": 128,
+    "m_CompleteImageSize": 87380,
+    "m_MipsStripped": 0,
+    "m_TextureFormat": 4,
+    "m_MipCount": 8,
+    "m_IsReadable": false,
+    "m_IsPreProcessed": false,
+    "m_IgnoreMipmapLimit": false,
+    "m_MipmapLimitGroupName": "",
+    "m_StreamingMipmaps": false,
+    "m_StreamingMipmapsPriority": 0,
+    "m_ImageCount": 6,
+    "m_TextureDimension": 4,
+    "m_TextureSettings": {
+     "m_FilterMode": 2,
+     "m_Aniso": 0,
+     "m_MipBias": 0.0,
+     "m_WrapU": 1,
+     "m_WrapV": 1,
+     "m_WrapW": 1
+    },
+    "m_LightmapFormat": 5,
+    "m_ColorSpace": 1,
+    "m_PlatformBlob": [],
+    "image data": "b''",
+    "m_StreamData": {
+     "offset": 4147200,
+     "size": 524280,
+     "path": "sharedassets0.assets.resS"
+    },
+    "m_SourceTextures": [
+     {
+      "m_FileID": 0,
+      "m_PathID": 0
+     },
+     {
+      "m_FileID": 0,
+      "m_PathID": 0
+     },
+     {
+      "m_FileID": 0,
+      "m_PathID": 0
+     },
+     {
+      "m_FileID": 0,
+      "m_PathID": 0
+     },
+     {
+      "m_FileID": 0,
+      "m_PathID": 0
+     },
+     {
+      "m_FileID": 0,
+      "m_PathID": 0
+     }
+    ]
+   }
+  }
+ ],
+ "resources": {
+  "TextAsset": [
+   {
+    "name": "RaceSpline_r2",
+    "len": 36356,
+    "head": ""
+   },
+   {
+    "name": "PerformanceTestRunSettings",
+    "len": 23,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r2",
+    "len": 64239,
+    "head": ""
+   },
+   {
+    "name": "usa_la_longbeachdocks",
+    "len": 144719,
+    "head": "{\n    \"schemaVersion\": 1,\n    \"dialect\": \"blur2-prototype\",\n    \"disc\": \"nov10\",\n    \"environmentKey\": \"usa_la_longbeachdocks\",\n    \"pickups\": [\n        {\n            \"record\": 4,\n            \"array\": 25,\n            \"element\": 0,\n            \"actorListKey\": \"0x0edc8a03\",\n            \"pickupType\": \"Nitrous\",\n            \"specialFxKey\": \"0xb8b34e65\",\n            \"position\": [\n                -95.75250244140625,\n                2.699613094329834,\n                -200.46051025390625\n            ]\n        },\n        {\n            \"record\": 4,\n            \"array\": 25,\n            \"element\": 3,\n            \"actorListKey\": \"0x0edc8a03\",\n            \"pickupType\": \"Repair\",\n            \"specialFxKey\": \"0xb9e71287\",\n            \"position\": [\n                122.0739517211914,\n                0.29759499430656433,\n                -433.3618469238281\n            ]\n        },\n        {\n            \"record\": 4,\n            \"array\": 25,\n            \"element\": 9,\n            \"actorListKey\": \"0x0edc8a03\",\n            \"pickupType\": \"Repair\",\n            \"specialFxKey\": \"0xb9e71287\",\n            \"position\": [\n                41.529441833496094,\n                -0.09839600324630737,\n                -533.916748046875\n            ]\n        },\n        {\n            \"record\": 4,\n            \"array\": 25,\n            \"element\": 25,\n            \"actorListKey\": \"0x0edc8a03\",\n            \"pickupType\": \"Nitrous\",\n            \"specialFxKey\": \"0xb8b34e65\",\n            \"position\": [\n                21.67246437"
+   },
+   {
+    "name": "dubai",
+    "len": 812467,
+    "head": "{\r\n \"schemaVersion\": 4,\r\n \"sceneKey\": \"dubai\",\r\n \"source\": \"gamedata/levels/dubai/actorpack.xt\",\r\n \"dialect\": \"blur2-prototype SimpleEffectSpawner/FXDefinition\",\r\n \"spawners\": [\r\n  {\r\n   \"actorId\": \"0x7e0a2518\",\r\n   \"name\": \"FX_Rolling_Dust_1\",\r\n   \"worldMatrix\": [\r\n    0.7654460072517395,\r\n    0.0,\r\n    0.6434999704360962,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    -0.6434999704360962,\r\n    0.0,\r\n    0.7654460072517395,\r\n    -874.3981323242188,\r\n    31.811494827270508,\r\n    -560.5719604492188\r\n   ],\r\n   \"localMatrix\": [\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0\r\n   ],\r\n   \"startActive\": true,\r\n   \"activeRange\": 120.0,\r\n   \"life\": {\r\n    \"life\": 0.0,\r\n    \"fade\": 0.0\r\n   },\r\n   \"activationPriority\": 0,\r\n   \"tintColour\": {\r\n    \"r\": 1.0,\r\n    \"g\": 1.0,\r\n    \"b\": 1.0,\r\n    \"a\": 1.0\r\n   },\r\n   \"definitionKey\": \"0x0a262c11\",\r\n   \"definitionName\": \"Rolling_Dust\",\r\n   \"events\": [\r\n    \"0x513f8ec7\"\r\n   ],\r\n   \"components\": [\r\n    {\r\n     \"type\": \"FXParticleEvent\",\r\n     \"values\": {\r\n      \"ActivationTime\": 0.0,\r\n      \"IsLowLod\": false,\r\n      \"IsLitByStaticLighting\": false,\r\n      \"viewFlags\": {\r\n       \"main\": true,\r\n       \"bumperCam\": true,\r\n       \"reflection\": true,\r\n       \"mirror\": true,\r\n       \"cubemap\": true\r\n      }\r\n     },\r\n     \"parameters\": [\r\n      {\r\n       \"type\": \"NamedParamM\",\r\n       \"values\": {\r\n        \"name\": \"matrix\"\r\n       },\r\n       \"property\": \"matrix\"\r\n      },\r\n      {\r\n       \"type\""
+   },
+   {
+    "name": "RaceSpline_r1",
+    "len": 64306,
+    "head": ""
+   },
+   {
+    "name": "wheel_audio",
+    "len": 382727,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r1",
+    "len": 28616,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r4",
+    "len": 42848,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r2",
+    "len": 40045,
+    "head": ""
+   },
+   {
+    "name": "astra_manifest",
+    "len": 96968,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r1",
+    "len": 87010,
+    "head": ""
+   },
+   {
+    "name": "spa_barcelona_oval",
+    "len": 117029,
+    "head": "{\n    \"schemaVersion\": 1,\n    \"dialect\": \"blur2-prototype\",\n    \"disc\": \"nov10\",\n    \"environmentKey\": \"spa_barcelona_oval\",\n    \"pickups\": [\n        {\n            \"record\": 0,\n            \"array\": 2,\n            \"element\": 0,\n            \"actorListKey\": \"0x02ac04cf\",\n            \"pickupType\": \"Blindfire\",\n            \"specialFxKey\": \"0xbafa2eb9\",\n            \"position\": [\n                -705.8538208007813,\n                20.17287254333496,\n                -214.25128173828125\n            ]\n        },\n        {\n            \"record\": 0,\n            \"array\": 2,\n            \"element\": 1,\n            \"actorListKey\": \"0x02ac04cf\",\n            \"pickupType\": \"Shunt\",\n            \"specialFxKey\": \"0xd4d6c9eb\",\n            \"position\": [\n                -70.69552612304688,\n                2.9276390075683594,\n                83.00985717773438\n            ]\n        },\n        {\n            \"record\": 0,\n            \"array\": 2,\n            \"element\": 2,\n            \"actorListKey\": \"0x02ac04cf\",\n            \"pickupType\": \"Shield\",\n            \"specialFxKey\": \"0xcf0cd595\",\n            \"position\": [\n                56.60192108154297,\n                2.3098719120025635,\n                -351.1853942871094\n            ]\n        },\n        {\n            \"record\": 0,\n            \"array\": 2,\n            \"element\": 3,\n            \"actorListKey\": \"0x02ac04cf\",\n            \"pickupType\": \"Shunt\",\n            \"specialFxKey\": \"0xd4d6c9eb\",\n            \"position\": [\n                314.6971130371094,\n    "
+   },
+   {
+    "name": "RaceSpline_r1",
+    "len": 42999,
+    "head": ""
+   },
+   {
+    "name": "hong_kong",
+    "len": 23053,
+    "head": "{\n    \"schemaVersion\": 1,\n    \"dialect\": \"blur2-prototype\",\n    \"disc\": \"nov10\",\n    \"environmentKey\": \"hong_kong\",\n    \"pickups\": [\n        {\n            \"record\": 6,\n            \"array\": 41,\n            \"element\": 0,\n            \"actorListKey\": \"0x37742144\",\n            \"pickupType\": \"Shield\",\n            \"specialFxKey\": \"0xcf0cd595\",\n            \"position\": [\n                -668.6204223632813,\n                0.699999988079071,\n                -1277.966552734375\n            ]\n        },\n        {\n            \"record\": 6,\n            \"array\": 41,\n            \"element\": 1,\n            \"actorListKey\": \"0x37742144\",\n            \"pickupType\": \"Blindfire\",\n            \"specialFxKey\": \"0xbafa2eb9\",\n            \"position\": [\n                -657.898193359375,\n                0.699999988079071,\n                -1277.7293701171875\n            ]\n        },\n        {\n            \"record\": 6,\n            \"array\": 41,\n            \"element\": 2,\n            \"actorListKey\": \"0x37742144\",\n            \"pickupType\": \"Shunt\",\n            \"specialFxKey\": \"0xd4d6c9eb\",\n            \"position\": [\n                -689.2818603515625,\n                0.699999988079071,\n                -1278.423828125\n            ]\n        },\n        {\n            \"record\": 6,\n            \"array\": 41,\n            \"element\": 3,\n            \"actorListKey\": \"0x37742144\",\n            \"pickupType\": \"Shield\",\n            \"specialFxKey\": \"0xcf0cd595\",\n            \"position\": [\n                -678.826904296875,\n            "
+   },
+   {
+    "name": "spa_barcelona_bowl_multiplayer",
+    "len": 16958,
+    "head": "{\n    \"schemaVersion\": 1,\n    \"dialect\": \"blur2-prototype\",\n    \"disc\": \"nov10\",\n    \"environmentKey\": \"spa_barcelona_bowl_multiplayer\",\n    \"pickups\": [\n        {\n            \"record\": 3,\n            \"array\": 17,\n            \"element\": 0,\n            \"actorListKey\": \"0xc607dc15\",\n            \"pickupType\": \"Shield\",\n            \"specialFxKey\": \"0xcf0cd595\",\n            \"position\": [\n                131.35696411132813,\n                -11.328256607055664,\n                -406.5362854003906\n            ]\n        },\n        {\n            \"record\": 3,\n            \"array\": 17,\n            \"element\": 1,\n            \"actorListKey\": \"0xc607dc15\",\n            \"pickupType\": \"Repair\",\n            \"specialFxKey\": \"0xb9e71287\",\n            \"position\": [\n                -162.5550079345703,\n                -1.851693034172058,\n                -406.6322021484375\n            ]\n        },\n        {\n            \"record\": 3,\n            \"array\": 17,\n            \"element\": 2,\n            \"actorListKey\": \"0xc607dc15\",\n            \"pickupType\": \"Shunt\",\n            \"specialFxKey\": \"0xd4d6c9eb\",\n            \"position\": [\n                163.92459106445313,\n                -13.416341781616211,\n                -406.6706848144531\n            ]\n        },\n        {\n            \"record\": 3,\n            \"array\": 17,\n            \"element\": 3,\n            \"actorListKey\": \"0xc607dc15\",\n            \"pickupType\": \"Blindfire\",\n            \"specialFxKey\": \"0xbafa2eb9\",\n            \"position\": [\n                18"
+   },
+   {
+    "name": "RaceSpline_r2",
+    "len": 48335,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r2",
+    "len": 47069,
+    "head": ""
+   },
+   {
+    "name": "uk_brighton_storm",
+    "len": 631547,
+    "head": ""
+   },
+   {
+    "name": "dubai_lights",
+    "len": 4926,
+    "head": "x,y,z,r,g,b,intensity,range\r\n-1039.9765625,22.587228775024414,-99.20317840576172,1.0,0.890342652797699,0.6209999918937683,5.0,22.360679626464844\r\n-1039.9765625,22.12257957458496,-99.20317840576172,1.0,0.8379012942314148,0.6439999938011169,15.0,38.72983169555664\r\n-1041.7564697265625,21.03108787536621,-98.92337036132812,1.0,0.8379012942314148,0.6439999938011169,5.0,22.360679626464844\r\n-1038.1962890625,21.03108787536621,-99.502685546875,1.0,0.8379012942314148,0.6439999938011169,5.0,22.360679626464844\r\n41.981746673583984,17.96785545349121,950.4208374023438,1.0,0.9499750137329102,0.8849999904632568,35.0,59.160797119140625\r\n10.103483200073242,17.96785545349121,974.6005859375,1.0,0.9499750137329102,0.8849999904632568,35.0,59.160797119140625\r\n-16.131967544555664,17.96785545349121,995.2408447265625,1.0,0.9499750137329102,0.8849999904632568,35.0,59.160797119140625\r\n-48.12206268310547,17.96785545349121,1009.7313842773438,1.0,0.9499750137329102,0.8849999904632568,35.0,59.160797119140625\r\n-87.39702606201172,17.96785545349121,1000.6253051757812,1.0,0.9499750137329102,0.8849999904632568,35.0,59.160797119140625\r\n-132.21482849121094,17.96785545349121,980.6710815429688,1.0,0.9499750137329102,0.8849999904632568,35.0,59.160797119140625\r\n-181.62677001953125,17.96785545349121,957.9209594726562,1.0,0.9499750137329102,0.8849999904632568,35.0,59.160797119140625\r\n-233.04806518554688,17.96785545349121,924.6213989257812,1.0,0.9499750137329102,0.8849999904632568,35.0,59.160797119140625\r\n-242.685150146484"
+   },
+   {
+    "name": "RaceSpline_r1",
+    "len": 60262,
+    "head": ""
+   },
+   {
+    "name": "world_impact_audio",
+    "len": 19753,
+    "head": ""
+   },
+   {
+    "name": "car_impact_audio",
+    "len": 8157,
+    "head": ""
+   },
+   {
+    "name": "surface_grip",
+    "len": 103534,
+    "head": "{\r\n \"schemaVersion\": 1,\r\n \"source\": \"C:\\\\Program Files (x86)\\\\Activision\\\\Blur(TM)\\\\cache\\\\gamedata.pak\",\r\n \"database\": \"\\\\gamedata\\\\xt\\\\racingphysics.bin\",\r\n \"lists\": [\r\n  {\r\n   \"surfaceTypes\": [\r\n    {\r\n     \"name\": \"Tarmac\",\r\n     \"hasDepth\": false\r\n    },\r\n    {\r\n     \"name\": \"Water\",\r\n     \"hasDepth\": false\r\n    },\r\n    {\r\n     \"name\": \"Dirt\",\r\n     \"hasDepth\": false\r\n    },\r\n    {\r\n     \"name\": \"Gravel\",\r\n     \"hasDepth\": false\r\n    },\r\n    {\r\n     \"name\": \"Metal\",\r\n     \"hasDepth\": false\r\n    },\r\n    {\r\n     \"name\": \"Grass\",\r\n     \"hasDepth\": false\r\n    },\r\n    {\r\n     \"name\": \"TrainTracks\",\r\n     \"hasDepth\": false\r\n    },\r\n    {\r\n     \"name\": \"WetSand\",\r\n     \"hasDepth\": false\r\n    },\r\n    {\r\n     \"name\": \"DirtLightRough\",\r\n     \"hasDepth\": false\r\n    },\r\n    {\r\n     \"name\": \"DirtHeavyRough\",\r\n     \"hasDepth\": false\r\n    },\r\n    {\r\n     \"name\": \"WaterDeep\",\r\n     \"hasDepth\": true\r\n    },\r\n    {\r\n     \"name\": \"WackyMagic\",\r\n     \"hasDepth\": true\r\n    },\r\n    {\r\n     \"name\": \"PavingStone\",\r\n     \"hasDepth\": false\r\n    }\r\n   ],\r\n   \"wheelTypes\": [\r\n    \"Car Wheel\"\r\n   ],\r\n   \"mappings\": [\r\n    {\r\n     \"effectMaterial\": \"Default\",\r\n     \"dynamicsSurface\": \"Tarmac\"\r\n    },\r\n    {\r\n     \"effectMaterial\": \"Tarmac\",\r\n     \"dynamicsSurface\": \"Tarmac\"\r\n    },\r\n    {\r\n     \"effectMaterial\": \"Concrete\",\r\n     \"dynamicsSurface\": \"Tarmac\"\r\n    },\r\n    {\r\n     \"effectMaterial\": \"Rock\",\r\n     \"dynamicsSurface\": \"Tarmac\"\r\n    },\r\n    {\r\n     \"effectMaterial\": \"Dirt\",\r\n     \"dynamicsSu"
+   },
+   {
+    "name": "detroit",
+    "len": 31477,
+    "head": "{\n    \"schemaVersion\": 1,\n    \"dialect\": \"blur2-prototype\",\n    \"disc\": \"nov10\",\n    \"environmentKey\": \"detroit\",\n    \"pickups\": [\n        {\n            \"record\": 4,\n            \"array\": 18,\n            \"element\": 0,\n            \"actorListKey\": \"0xb626137d\",\n            \"pickupType\": \"Barge\",\n            \"specialFxKey\": \"0xcdf25d18\",\n            \"position\": [\n                266.26202392578125,\n                1.8375780582427979,\n                66.74321746826172\n            ]\n        },\n        {\n            \"record\": 4,\n            \"array\": 18,\n            \"element\": 1,\n            \"actorListKey\": \"0xb626137d\",\n            \"pickupType\": \"Blindfire\",\n            \"specialFxKey\": \"0xbafa2eb9\",\n            \"position\": [\n                265.40692138671875,\n                1.8375780582427979,\n                62.00082015991211\n            ]\n        },\n        {\n            \"record\": 4,\n            \"array\": 18,\n            \"element\": 2,\n            \"actorListKey\": \"0xb626137d\",\n            \"pickupType\": \"Blindfire\",\n            \"specialFxKey\": \"0xbafa2eb9\",\n            \"position\": [\n                264.0461730957031,\n                1.8375780582427979,\n                54.45426559448242\n            ]\n        },\n        {\n            \"record\": 4,\n            \"array\": 18,\n            \"element\": 3,\n            \"actorListKey\": \"0xb626137d\",\n            \"pickupType\": \"Bomb\",\n            \"specialFxKey\": \"0x98b5d069\",\n            \"position\": [\n                565.174560546875,\n            "
+   },
+   {
+    "name": "cars",
+    "len": 10234,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r3",
+    "len": 84133,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r2",
+    "len": 45260,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r3",
+    "len": 49407,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r3",
+    "len": 56501,
+    "head": ""
+   },
+   {
+    "name": "PerformanceTestRunInfo",
+    "len": 3008,
+    "head": "{\"TestSuite\":\"\",\"Date\":0,\"Player\":{\"Development\":false,\"ScreenWidth\":0,\"ScreenHeight\":0,\"ScreenRefreshRate\":0,\"Fullscreen\":false,\"Vsync\":0,\"AntiAliasing\":0,\"Batchmode\":false,\"RenderThreadingMode\":\"Split\",\"MtRendering\":false,\"GraphicsJobs\":false,\"UnityGraphicsKernel\":false,\"GpuSkinning\":true,\"Platform\":\"\",\"ColorSpace\":\"\",\"AnisotropicFiltering\":\"\",\"BlendWeights\":\"\",\"GraphicsApi\":\"\",\"ScriptingBackend\":\"Mono2x\",\"AndroidTargetSdkVersion\":\"AndroidApiLevelAuto\",\"AndroidBuildSystem\":\"Gradle\",\"BuildTarget\":\"StandaloneWindows64\",\"StereoRenderingPath\":\"MultiPass\"},\"Hardware\":{\"OperatingSystem\":\"\",\"DeviceModel\":\"\",\"DeviceName\":\"\",\"ProcessorType\":\"\",\"ProcessorCount\":0,\"GraphicsDeviceName\":\"\",\"SystemMemorySizeMB\":0},\"Editor\":{\"Version\":\"6000.6.0f1\",\"Branch\":\"6000.6/respin/6000.6.0f1-fa21a270ab12\",\"Changeset\":\"f7f8ed4d1e24\",\"Date\":1787963162},\"Dependencies\":[\"com.unity.burst@2.0.0\",\"com.unity.cinemachine@6.6.0\",\"com.unity.collections@6.6.0\",\"com.unity.editorcoroutines@6.6.0\",\"com.unity.ext.nunit@2.1.0\",\"com.unity.graph-authoring@1.0.0\",\"com.unity.inputsystem@1.20.0\",\"com.unity.learn.iet-framework@6.0.7\",\"com.unity.mathematics@1.4.0\",\"com.unity.modules.accessibility@1.0.0\",\"com.unity.modules.adaptiveperformance@1.0.0\",\"com.unity.modules.ai@1.0.0\",\"com.unity.modules.androidjni@1.0.0\",\"com.unity.modules.animation@1.0.0\",\"com.unity.modules.assetbundle@1.0.0\",\"com.unity.modules.audio@1.0.0\",\"com.unity.modules.cloth@1.0.0\",\"com.unity.modules.director@1.0.0\",\"com.unity.modules.hierarchycore@1.0.0\""
+   },
+   {
+    "name": "vehicle_effects",
+    "len": 2235702,
+    "head": "{\r\n \"schemaVersion\": 6,\r\n \"source\": \"C:\\\\AIProjects\\\\Blur2Test\\\\raw_gamedata\\\\gamedata\\\\xt\",\r\n \"effectMaterials\": [\r\n  \"Default\",\r\n  \"Tarmac\",\r\n  \"Concrete\",\r\n  \"Rock\",\r\n  \"Dirt\",\r\n  \"Mud\",\r\n  \"Grass\",\r\n  \"Gravel\",\r\n  \"Sand\",\r\n  \"WetSand\",\r\n  \"Water\",\r\n  \"Brick\",\r\n  \"Vegetation\",\r\n  \"Wood\",\r\n  \"Metal\",\r\n  \"Plastic\",\r\n  \"Glass\",\r\n  \"Rubber\",\r\n  \"Upholstery\",\r\n  \"Cardboard\",\r\n  \"Flesh\",\r\n  \"TrainTracks\",\r\n  \"WaterDeep\",\r\n  \"ConcreteFenceChain\",\r\n  \"ConcreteFencePlastic\",\r\n  \"MetalHollow\",\r\n  \"MetalArmco\",\r\n  \"MetalSheet\",\r\n  \"MetalFenceChain\",\r\n  \"MetalFenceSolid\",\r\n  \"MetalFenceSlatted\",\r\n  \"MetalSolidPost\",\r\n  \"DirtLightRough\",\r\n  \"DirtHeavyRough\",\r\n  \"WetTarmac\",\r\n  \"WackyMagic\",\r\n  \"PavingStone\",\r\n  \"Ice\",\r\n  \"HardSnow\",\r\n  \"SoftSnow\",\r\n  \"Vehicle\"\r\n ],\r\n \"surfaceModifiers\": [\r\n  \"Dry\",\r\n  \"Wet\",\r\n  \"VeryWet\",\r\n  \"ShallowPuddle\",\r\n  \"DeepPuddle\",\r\n  \"Ice\",\r\n  \"Snow\"\r\n ],\r\n \"wheelTriggers\": [\r\n  \"Speed\",\r\n  \"SlideFactor\",\r\n  \"WheelSpin\",\r\n  \"Contact\"\r\n ],\r\n \"miscTypes\": [\r\n  \"ExhaustSmoke\",\r\n  \"ExhaustBang\",\r\n  \"ExhaustPop\",\r\n  \"BrakeLightTrail\",\r\n  \"RearLightTrail\",\r\n  \"WheelSparks\",\r\n  \"BurstTyre\",\r\n  \"EngineSmoke\",\r\n  \"EngineFire\",\r\n  \"GlassCrack\",\r\n  \"GlassSmash\",\r\n  \"ScrapeStatic\",\r\n  \"ScrapeDynamic\",\r\n  \"LandingSparks\",\r\n  \"LandingDust\",\r\n  \"WaterBigSplash\",\r\n  \"WaterBobbing\",\r\n  \"LicensePlate\"\r\n ],\r\n \"wheelSurfaceSets\": [\r\n  {\r\n   \"key\": \"0x069967f4\",\r\n   \"modifier\": \"Wet\",\r\n   \"surfaces\": [\r\n    {\r\n     \"surface\": \"Default\",\r\n     \"rimLightEnable\": false,\r\n     \"rimL"
+   },
+   {
+    "name": "PerformanceTestRunSettings",
+    "len": 23,
+    "head": ""
+   },
+   {
+    "name": "perk_colours",
+    "len": 7311,
+    "head": "{\r\n  \"schemaVersion\": 1,\r\n  \"dialect\": \"blur2-prototype\",\r\n  \"disc\": \"nov10\",\r\n  \"uiSource\": \"C:\\\\AIProjects\\\\Blur2Test\\\\raw_gamedata\\\\gamedata\\\\xt\\\\ui.bin\",\r\n  \"uiSha256\": \"eed2a3ae7494fb9e2dad6fbb9d88ea16bcbeb796fcfe7ee34ebcc051c3c0834e\",\r\n  \"ipfSource\": \"C:\\\\AIProjects\\\\Blur2Test\\\\_work\\\\disc_cache\\\\nov10\\\\root\\\\ipf\\\\record_1347_perk_icons.ipf\",\r\n  \"ipfSha256\": \"52a045442a7e9ba25c4b7452f223a760ad4f50777b0378e2bce769e150fcc744\",\r\n  \"unselectedGlyphStyle\": \"Main_Black\",\r\n  \"unselectedGlyph\": [\r\n    0.186052,\r\n    0.127998,\r\n    0.285595,\r\n    1.0\r\n  ],\r\n  \"perks\": [\r\n    {\r\n      \"pickupType\": \"Nitrous\",\r\n      \"member\": \"nitrous\",\r\n      \"textureIndex\": 4,\r\n      \"glyph\": \"perk_nitro\",\r\n      \"fillStyle\": \"Nitro_Icon\",\r\n      \"glowStyle\": \"Nitro_Glow\",\r\n      \"fill\": [\r\n        0.4,\r\n        1.0,\r\n        0.5,\r\n        1.0\r\n      ],\r\n      \"glow\": [\r\n        0.3,\r\n        1.0,\r\n        0.41,\r\n        1.0\r\n      ],\r\n      \"badge\": {\r\n        \"logicalName\": \"icon_nitro_01\",\r\n        \"sha256\": \"9d068651ccb905e0a957cd857b593290fdb226beec175b982ad1fcc7227b4b5c\",\r\n        \"assetPath\": \"Assets/Blur 2 loose objects/decoded_materials/textures/mdl_9d068651ccb9_icon_nitro_01_raw.dds\"\r\n      }\r\n    },\r\n    {\r\n      \"pickupType\": \"Shock\",\r\n      \"member\": \"shock\",\r\n      \"textureIndex\": 3,\r\n      \"glyph\": \"perk_shock\",\r\n      \"fillStyle\": \"Shock_Icon\",\r\n      \"glowStyle\": \"Shock_Glow\",\r\n      \"fill\": [\r\n        0.5,\r\n        0.83,\r\n        1.0,\r\n        1.0\r\n      ],\r\n      \"glow\": [\r\n "
+   },
+   {
+    "name": "user_nigel_m",
+    "len": 4265,
+    "head": "{\r\n \"schemaVersion\": 4,\r\n \"sceneKey\": \"user_nigel_m\",\r\n \"source\": \"gamedata/levels/user_nigel_m/actorpack.xt\",\r\n \"dialect\": \"blur2-prototype SimpleEffectSpawner/FXDefinition\",\r\n \"spawners\": [\r\n  {\r\n   \"actorId\": \"0xf36d6e4b\",\r\n   \"name\": \"NewSimpleEffectSpawner\",\r\n   \"worldMatrix\": [\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    1.852180004119873,\r\n    1.9999999949504854e-06,\r\n    2.4529929161071777\r\n   ],\r\n   \"localMatrix\": [\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0\r\n   ],\r\n   \"startActive\": true,\r\n   \"activeRange\": 1000.0,\r\n   \"life\": {\r\n    \"life\": 0.0,\r\n    \"fade\": 0.0\r\n   },\r\n   \"activationPriority\": 0,\r\n   \"tintColour\": {\r\n    \"r\": 1.0,\r\n    \"g\": 1.0,\r\n    \"b\": 1.0,\r\n    \"a\": 1.0\r\n   },\r\n   \"definitionKey\": \"0x93febe1b\",\r\n   \"definitionName\": \"ParticleComponentTest\",\r\n   \"events\": [],\r\n   \"components\": [\r\n    {\r\n     \"type\": \"FXParticleEvent\",\r\n     \"values\": {\r\n      \"ActivationTime\": 0.0,\r\n      \"IsLowLod\": false,\r\n      \"IsLitByStaticLighting\": false,\r\n      \"viewFlags\": {\r\n       \"main\": false,\r\n       \"bumperCam\": false,\r\n       \"reflection\": false,\r\n       \"mirror\": false,\r\n       \"cubemap\": false\r\n      }\r\n     },\r\n     \"parameters\": [\r\n      {\r\n       \"type\": \"NamedParamM\",\r\n       \"values\": {\r\n        \"name\": \"matrix\"\r\n       },\r\n       \"property\": \"matrix\"\r\n      },\r\n      {\r\n       \"type\": \"NamedParamF\",\r\n       \"values\": {\r\n        \""
+   },
+   {
+    "name": "PerformanceTestRunInfo",
+    "len": 3063,
+    "head": "{\"TestSuite\":\"\",\"Date\":0,\"Player\":{\"Development\":false,\"ScreenWidth\":0,\"ScreenHeight\":0,\"ScreenRefreshRate\":0,\"Fullscreen\":false,\"Vsync\":0,\"AntiAliasing\":0,\"Batchmode\":false,\"RenderThreadingMode\":\"MultiThreaded\",\"GpuSkinning\":true,\"Platform\":\"\",\"ColorSpace\":\"\",\"AnisotropicFiltering\":\"\",\"BlendWeights\":\"\",\"GraphicsApi\":\"\",\"ScriptingBackend\":\"Mono2x\",\"AndroidTargetSdkVersion\":\"AndroidApiLevelAuto\",\"AndroidBuildSystem\":\"Gradle\",\"BuildTarget\":\"StandaloneOSX\",\"StereoRenderingPath\":\"MultiPass\"},\"Hardware\":{\"OperatingSystem\":\"\",\"DeviceModel\":\"\",\"DeviceName\":\"\",\"ProcessorType\":\"\",\"ProcessorCount\":0,\"GraphicsDeviceName\":\"\",\"SystemMemorySizeMB\":0},\"Editor\":{\"Version\":\"6000.0.23f1\",\"Branch\":\"6000.0/staging\",\"Changeset\":\"1c4764c07fb4\",\"Date\":1728681814},\"Dependencies\":[\"com.unity.2d.sprite@1.0.0\",\"com.unity.ai.navigation@2.0.4\",\"com.unity.cinemachine@3.1.2\",\"com.unity.collab-proxy@2.5.2\",\"com.unity.connect.share@4.2.3\",\"com.unity.ide.rider@3.0.34\",\"com.unity.ide.visualstudio@2.0.22\",\"com.unity.inputsystem@1.11.2\",\"com.unity.learn.iet-framework@4.1.0\",\"com.unity.learn.iet-framework.authoring@1.2.2\",\"com.unity.multiplayer.center@1.0.0\",\"com.unity.render-pipelines.universal@17.0.3\",\"com.unity.test-framework@1.4.5\",\"com.unity.timeline@1.8.7\",\"com.unity.visualscripting@1.9.4\",\"com.unity.modules.accessibility@1.0.0\",\"com.unity.modules.ai@1.0.0\",\"com.unity.modules.androidjni@1.0.0\",\"com.unity.modules.animation@1.0.0\",\"com.unity.modules.assetbundle@1.0.0\",\"com.unity.modules.audio@1.0.0\",\"com.unit"
+   },
+   {
+    "name": "particle_meshes",
+    "len": 198991,
+    "head": ""
+   },
+   {
+    "name": "friction_settings",
+    "len": 3482,
+    "head": ""
+   },
+   {
+    "name": "vehicle_exhaust_emitters",
+    "len": 2033,
+    "head": "{\r\n \"schemaVersion\": 1,\r\n \"source\": {\r\n  \"dialect\": \"blur2-prototype\",\r\n  \"policy\": \"newest-first\",\r\n  \"discOrder\": [\r\n   \"nov10\",\r\n   \"nov09\",\r\n   \"nov04\",\r\n   \"aug31\"\r\n  ]\r\n },\r\n \"resolution\": [\r\n  {\r\n   \"key\": \"opel_astraextreme_stock\",\r\n   \"selectedDisc\": \"aug31\",\r\n   \"attempts\": [\r\n    {\r\n     \"disc\": \"nov10\",\r\n     \"status\": \"declined\",\r\n     \"reason\": \"disc carries no AmaxVehicle by that name\"\r\n    },\r\n    {\r\n     \"disc\": \"nov09\",\r\n     \"status\": \"declined\",\r\n     \"reason\": \"disc carries no AmaxVehicle by that name\"\r\n    },\r\n    {\r\n     \"disc\": \"nov04\",\r\n     \"status\": \"declined\",\r\n     \"reason\": \"disc carries no AmaxVehicle by that name\"\r\n    },\r\n    {\r\n     \"disc\": \"aug31\",\r\n     \"status\": \"selected\"\r\n    }\r\n   ]\r\n  }\r\n ],\r\n \"exhaustSlots\": [\r\n  \"Left1\",\r\n  \"Left2\",\r\n  \"Right1\",\r\n  \"Right2\"\r\n ],\r\n \"cars\": [\r\n  {\r\n   \"key\": \"opel_astraextreme_stock\",\r\n   \"emitters\": [\r\n    {\r\n     \"exhaust\": \"Left1\",\r\n     \"slotIndex\": 0,\r\n     \"position\": {\r\n      \"x\": -0.4129999876022339,\r\n      \"y\": -0.05700000002980232,\r\n      \"z\": -2.111999988555908\r\n     },\r\n     \"direction\": {\r\n      \"x\": 0.0,\r\n      \"y\": 0.0,\r\n      \"z\": 0.0\r\n     }\r\n    },\r\n    {\r\n     \"exhaust\": \"Left2\",\r\n     \"slotIndex\": 1,\r\n     \"position\": {\r\n      \"x\": -0.3330000042915344,\r\n      \"y\": -0.05700000002980232,\r\n      \"z\": -2.111999988555908\r\n     },\r\n     \"direction\": {\r\n      \"x\": 0.0,\r\n      \"y\": 0.0,\r\n      \"z\": 0.0\r\n     }\r\n    },\r\n    {\r\n     \"exhaust\": \"Right1\",\r\n     \"slotIndex\": 2,\r\n     \"position\":"
+   },
+   {
+    "name": "RaceSpline_r1",
+    "len": 80410,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r4",
+    "len": 59695,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r1",
+    "len": 40002,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r2",
+    "len": 55132,
+    "head": ""
+   },
+   {
+    "name": "powerup_audio",
+    "len": 47404,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r1",
+    "len": 206206,
+    "head": ""
+   },
+   {
+    "name": "vehicle_output_audio",
+    "len": 2329,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r2",
+    "len": 73600,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r3",
+    "len": 98185,
+    "head": ""
+   },
+   {
+    "name": "manifest",
+    "len": 1556,
+    "head": "{\r\n \"schemaVersion\": 4,\r\n \"source\": \"raw_gamedata\",\r\n \"excludedDefinitionGraph\": \"gamedata/xt/singleplayer.bin\",\r\n \"tracks\": [\r\n  {\r\n   \"sceneKey\": \"_test_effects\",\r\n   \"spawners\": 12,\r\n   \"boneEmitters\": 0,\r\n   \"lights\": 2,\r\n   \"sourceInertComponents\": 0,\r\n   \"playableSpawners\": 0,\r\n   \"events\": 0,\r\n   \"effects\": 0,\r\n   \"textures\": 0,\r\n   \"unsupported\": 11\r\n  },\r\n  {\r\n   \"sceneKey\": \"_test_events\",\r\n   \"spawners\": 1,\r\n   \"boneEmitters\": 0,\r\n   \"lights\": 0,\r\n   \"sourceInertComponents\": 0,\r\n   \"playableSpawners\": 1,\r\n   \"events\": 1,\r\n   \"effects\": 1,\r\n   \"textures\": 1,\r\n   \"unsupported\": 0\r\n  },\r\n  {\r\n   \"sceneKey\": \"dubai\",\r\n   \"spawners\": 24,\r\n   \"boneEmitters\": 44,\r\n   \"lights\": 4,\r\n   \"sourceInertComponents\": 1,\r\n   \"playableSpawners\": 22,\r\n   \"events\": 11,\r\n   \"effects\": 18,\r\n   \"textures\": 5,\r\n   \"unsupported\": 0\r\n  },\r\n  {\r\n   \"sceneKey\": \"ski_resort\",\r\n   \"spawners\": 81,\r\n   \"boneEmitters\": 20,\r\n   \"lights\": 0,\r\n   \"sourceInertComponents\": 0,\r\n   \"playableSpawners\": 52,\r\n   \"events\": 8,\r\n   \"effects\": 17,\r\n   \"textures\": 9,\r\n   \"unsupported\": 28\r\n  },\r\n  {\r\n   \"sceneKey\": \"user_feargal_p\",\r\n   \"spawners\": 6,\r\n   \"boneEmitters\": 0,\r\n   \"lights\": 0,\r\n   \"sourceInertComponents\": 0,\r\n   \"playableSpawners\": 5,\r\n   \"events\": 1,\r\n   \"effects\": 6,\r\n   \"textures\": 5,\r\n   \"unsupported\": 1\r\n  },\r\n  {\r\n   \"sceneKey\": \"user_nigel_m\",\r\n   \"spawners\": 2,\r\n   \"boneEmitters\": 0,\r\n   \"lights\": 0,\r\n   \"sourceInertComponents\": 0,\r\n   \"playableSpawners\": 0,\r\n   \"events\": 0,\r\n   \"effects\": "
+   },
+   {
+    "name": "RaceSpline_r6",
+    "len": 60376,
+    "head": ""
+   },
+   {
+    "name": "shield_audio",
+    "len": 762,
+    "head": ""
+   },
+   {
+    "name": "usa_amboy",
+    "len": 201593,
+    "head": "{\n    \"schemaVersion\": 1,\n    \"dialect\": \"blur2-prototype\",\n    \"disc\": \"nov10\",\n    \"environmentKey\": \"usa_amboy\",\n    \"pickups\": [\n        {\n            \"record\": 1,\n            \"array\": 11,\n            \"element\": 0,\n            \"actorListKey\": \"0x00bee615\",\n            \"pickupType\": \"Repair\",\n            \"specialFxKey\": \"0xb9e71287\",\n            \"position\": [\n                -432.5557861328125,\n                11.123128890991211,\n                -1173.0478515625\n            ]\n        },\n        {\n            \"record\": 1,\n            \"array\": 11,\n            \"element\": 1,\n            \"actorListKey\": \"0x00bee615\",\n            \"pickupType\": \"Bomb\",\n            \"specialFxKey\": \"0x98b5d069\",\n            \"position\": [\n                -490.1556396484375,\n                -1.3043489456176758,\n                -459.2611999511719\n            ]\n        },\n        {\n            \"record\": 1,\n            \"array\": 11,\n            \"element\": 2,\n            \"actorListKey\": \"0x00bee615\",\n            \"pickupType\": \"Blindfire\",\n            \"specialFxKey\": \"0xbafa2eb9\",\n            \"position\": [\n                -458.53277587890625,\n                -3.9393270015716553,\n                -555.602783203125\n            ]\n        },\n        {\n            \"record\": 1,\n            \"array\": 11,\n            \"element\": 3,\n            \"actorListKey\": \"0x00bee615\",\n            \"pickupType\": \"Repair\",\n            \"specialFxKey\": \"0xb9e71287\",\n            \"position\": [\n                150.49095153808594,\n      "
+   },
+   {
+    "name": "hollywood_camera_params",
+    "len": 371423,
+    "head": ""
+   },
+   {
+    "name": "user_feargal_p",
+    "len": 35070,
+    "head": "{\r\n \"schemaVersion\": 4,\r\n \"sceneKey\": \"user_feargal_p\",\r\n \"source\": \"gamedata/levels/user_feargal_p/actorpack.xt\",\r\n \"dialect\": \"blur2-prototype SimpleEffectSpawner/FXDefinition\",\r\n \"spawners\": [\r\n  {\r\n   \"actorId\": \"0xbe64c2f8\",\r\n   \"name\": \"NewSimpleEffectSpawner\",\r\n   \"worldMatrix\": [\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    9.181761741638184,\r\n    0.0,\r\n    -0.08626600354909897\r\n   ],\r\n   \"localMatrix\": [\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0\r\n   ],\r\n   \"startActive\": false,\r\n   \"activeRange\": 120.0,\r\n   \"life\": {\r\n    \"life\": 0.0,\r\n    \"fade\": 0.0\r\n   },\r\n   \"activationPriority\": 0,\r\n   \"tintColour\": {\r\n    \"r\": 1.0,\r\n    \"g\": 1.0,\r\n    \"b\": 1.0,\r\n    \"a\": 1.0\r\n   },\r\n   \"definitionKey\": \"0x4e97295b\",\r\n   \"definitionName\": \"GlassImpactBrake\",\r\n   \"events\": [\r\n    \"0x3ed54a70\"\r\n   ],\r\n   \"components\": [\r\n    {\r\n     \"type\": \"FXParticleEvent\",\r\n     \"values\": {\r\n      \"ActivationTime\": 0.0,\r\n      \"IsLowLod\": false,\r\n      \"IsLitByStaticLighting\": false,\r\n      \"viewFlags\": {\r\n       \"main\": true,\r\n       \"bumperCam\": true,\r\n       \"reflection\": true,\r\n       \"mirror\": true,\r\n       \"cubemap\": true\r\n      }\r\n     },\r\n     \"parameters\": [\r\n      {\r\n       \"type\": \"NamedParamM\",\r\n       \"values\": {\r\n        \"name\": \"matrix\"\r\n       },\r\n       \"property\": \"matrix\"\r\n      },\r\n      {\r\n       \"type\": \"NamedParamF\",\r\n       \"values\": {\r\n        \""
+   },
+   {
+    "name": "RaceSpline_r6",
+    "len": 45104,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r2",
+    "len": 88919,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r1",
+    "len": 40252,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r3",
+    "len": 49148,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r2",
+    "len": 86318,
+    "head": ""
+   },
+   {
+    "name": "LineBreaking Leading Characters",
+    "len": 38,
+    "head": ""
+   },
+   {
+    "name": "collision",
+    "len": 15345,
+    "head": ""
+   },
+   {
+    "name": "pickup_carousel",
+    "len": 211,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r4",
+    "len": 49174,
+    "head": ""
+   },
+   {
+    "name": "_test_events",
+    "len": 6943,
+    "head": "{\r\n \"schemaVersion\": 4,\r\n \"sceneKey\": \"_test_events\",\r\n \"source\": \"gamedata/levels/_test_events/actorpack.xt\",\r\n \"dialect\": \"blur2-prototype SimpleEffectSpawner/FXDefinition\",\r\n \"spawners\": [\r\n  {\r\n   \"actorId\": \"0x57682ac8\",\r\n   \"name\": \"NewSimpleEffectSpawner\",\r\n   \"worldMatrix\": [\r\n    -1.0,\r\n    -9.999999974752427e-07,\r\n    0.0,\r\n    -9.999999974752427e-07,\r\n    1.0,\r\n    -9.999999974752427e-07,\r\n    0.0,\r\n    -9.999999974752427e-07,\r\n    -1.0,\r\n    -181.95498657226562,\r\n    15.758981704711914,\r\n    130.9299774169922\r\n   ],\r\n   \"localMatrix\": [\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0\r\n   ],\r\n   \"startActive\": false,\r\n   \"activeRange\": 120.0,\r\n   \"life\": {\r\n    \"life\": 0.0,\r\n    \"fade\": 0.0\r\n   },\r\n   \"activationPriority\": 0,\r\n   \"tintColour\": {\r\n    \"r\": 1.0,\r\n    \"g\": 1.0,\r\n    \"b\": 1.0,\r\n    \"a\": 1.0\r\n   },\r\n   \"definitionKey\": \"0x50864dea\",\r\n   \"definitionName\": \"Building_Smoke\",\r\n   \"events\": [\r\n    \"0xa4d56768\"\r\n   ],\r\n   \"components\": [\r\n    {\r\n     \"type\": \"FXParticleEvent\",\r\n     \"values\": {\r\n      \"ActivationTime\": 0.0,\r\n      \"IsLowLod\": false,\r\n      \"IsLitByStaticLighting\": false,\r\n      \"viewFlags\": {\r\n       \"main\": true,\r\n       \"bumperCam\": false,\r\n       \"reflection\": true,\r\n       \"mirror\": true,\r\n       \"cubemap\": false\r\n      }\r\n     },\r\n     \"parameters\": [\r\n      {\r\n       \"type\": \"NamedParamM\",\r\n       \"values\": {\r\n        \"name\": \"matrix\"\r\n       },\r\n       \"property\": \""
+   },
+   {
+    "name": "dubai",
+    "len": 36457,
+    "head": "{\n    \"schemaVersion\": 1,\n    \"dialect\": \"blur2-prototype\",\n    \"disc\": \"nov10\",\n    \"environmentKey\": \"dubai\",\n    \"pickups\": [\n        {\n            \"record\": 4,\n            \"array\": 12,\n            \"element\": 0,\n            \"actorListKey\": \"0x351dd5a5\",\n            \"pickupType\": \"Shunt\",\n            \"specialFxKey\": \"0xd4d6c9eb\",\n            \"position\": [\n                562.9295043945313,\n                6.563272953033447,\n                -385.22344970703125\n            ]\n        },\n        {\n            \"record\": 4,\n            \"array\": 12,\n            \"element\": 1,\n            \"actorListKey\": \"0x351dd5a5\",\n            \"pickupType\": \"Nitrous\",\n            \"specialFxKey\": \"0xb8b34e65\",\n            \"position\": [\n                560.33447265625,\n                6.563272953033447,\n                -389.9014587402344\n            ]\n        },\n        {\n            \"record\": 4,\n            \"array\": 12,\n            \"element\": 2,\n            \"actorListKey\": \"0x351dd5a5\",\n            \"pickupType\": \"Repair\",\n            \"specialFxKey\": \"0xb9e71287\",\n            \"position\": [\n                557.8295288085938,\n                6.558855056762695,\n                -394.6852111816406\n            ]\n        },\n        {\n            \"record\": 4,\n            \"array\": 12,\n            \"element\": 3,\n            \"actorListKey\": \"0x351dd5a5\",\n            \"pickupType\": \"Barge\",\n            \"specialFxKey\": \"0xcdf25d18\",\n            \"position\": [\n                566.4824829101563,\n                6.56"
+   },
+   {
+    "name": "RaceSpline_r4",
+    "len": 7796,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r1",
+    "len": 51905,
+    "head": ""
+   },
+   {
+    "name": "ski_resort",
+    "len": 1123987,
+    "head": "{\r\n \"schemaVersion\": 4,\r\n \"sceneKey\": \"ski_resort\",\r\n \"source\": \"gamedata/levels/ski_resort/actorpack.xt\",\r\n \"dialect\": \"blur2-prototype SimpleEffectSpawner/FXDefinition\",\r\n \"spawners\": [\r\n  {\r\n   \"actorId\": \"0x0e40e867\",\r\n   \"name\": \"FAR_cloud\",\r\n   \"worldMatrix\": [\r\n    0.7261499762535095,\r\n    0.0,\r\n    -0.6875360012054443,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.6875360012054443,\r\n    0.0,\r\n    0.7261499762535095,\r\n    1170.581787109375,\r\n    928.144287109375,\r\n    -2195.310546875\r\n   ],\r\n   \"localMatrix\": [\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0\r\n   ],\r\n   \"startActive\": false,\r\n   \"activeRange\": 10000.0,\r\n   \"life\": {\r\n    \"life\": 0.0,\r\n    \"fade\": 0.0\r\n   },\r\n   \"activationPriority\": 0,\r\n   \"tintColour\": {\r\n    \"r\": 1.0,\r\n    \"g\": 1.0,\r\n    \"b\": 1.0,\r\n    \"a\": 1.0\r\n   },\r\n   \"definitionKey\": \"0xc601e3cf\",\r\n   \"definitionName\": \"Clouds\",\r\n   \"events\": [\r\n    \"0x0c275722\"\r\n   ],\r\n   \"components\": [\r\n    {\r\n     \"type\": \"FXParticleEvent\",\r\n     \"values\": {\r\n      \"ActivationTime\": 0.0,\r\n      \"IsLowLod\": false,\r\n      \"IsLitByStaticLighting\": false,\r\n      \"viewFlags\": {\r\n       \"main\": true,\r\n       \"bumperCam\": true,\r\n       \"reflection\": false,\r\n       \"mirror\": true,\r\n       \"cubemap\": true\r\n      }\r\n     },\r\n     \"parameters\": [\r\n      {\r\n       \"type\": \"NamedParamM\",\r\n       \"values\": {\r\n        \"name\": \"matrix\"\r\n       },\r\n       \"property\": \"matrix\"\r\n      },\r\n      {\r\n       \"type\": \"Nam"
+   },
+   {
+    "name": "car_dynamics",
+    "len": 560675,
+    "head": "{\r\n \"cars\": [\r\n  {\r\n   \"key\": \"acschnitzer_acs1coupe_legend_i\",\r\n   \"dynamicsKey\": \"0xcf7f5b31\",\r\n   \"name\": \"ACSchnitzer_ACS1Coupe_Stock\",\r\n   \"mass\": {\r\n    \"mass\": 1480.0,\r\n    \"MIScaleX\": 2.0,\r\n    \"MIScaleY\": 2.6579999923706055,\r\n    \"MIScaleZ\": 1.7000000476837158,\r\n    \"cofGOffsetY\": 0.05000000074505806,\r\n    \"cofGOffsetZ\": 0.0,\r\n    \"frontWheelMI\": 6.0,\r\n    \"rearWheelMI\": 8.0,\r\n    \"physicsCofMassOffsetY\": 0.05000000074505806,\r\n    \"physicsCofMassOffsetZ\": 0.0,\r\n    \"interiaTensorScaleX\": 5.010000228881836,\r\n    \"interiaTensorScaleY\": 9.25,\r\n    \"interiaTensorScaleZ\": 4.239999771118164\r\n   },\r\n   \"geometry\": {\r\n    \"wheelBase\": 2.565000057220459,\r\n    \"trackWidthFront\": 1.3569999933242798,\r\n    \"trackWidthRear\": 1.4049999713897705\r\n   },\r\n   \"suspension\": {\r\n    \"front\": {\r\n     \"casterAngle\": 0.09000000357627869,\r\n     \"camberAngle\": 0.0,\r\n     \"toeAngle\": 0.0,\r\n     \"movementDown\": 0.14000000059604645,\r\n     \"movementUp\": 0.14000000059604645,\r\n     \"springStiffness\": 1.2000000476837158,\r\n     \"springProgression\": 0.0,\r\n     \"springDampingCompress\": 1.5,\r\n     \"springDampingRelease\": 1.75,\r\n     \"rollStiffness\": 1.0\r\n    },\r\n    \"rear\": {\r\n     \"casterAngle\": 0.0,\r\n     \"camberAngle\": 0.0,\r\n     \"toeAngle\": 0.0,\r\n     \"movementDown\": 0.14000000059604645,\r\n     \"movementUp\": 0.14000000059604645,\r\n     \"springStiffness\": 1.100000023841858,\r\n     \"springProgression\": 0.0,\r\n     \"springDampingCompress\": 1.5,\r\n     \"springDampingRelease\": 1.75,\r\n     \"rollStiffness\": 1.09"
+   },
+   {
+    "name": "scrape_audio",
+    "len": 3641,
+    "head": "{\r\n  \"schemaVersion\": 1,\r\n  \"entity\": \"CollisionScrape\",\r\n  \"jboaPath\": \"\\\\audio\\\\dat\\\\CollisionScrape.dat\",\r\n  \"mixer\": \"ScrapeMonoMixer\",\r\n  \"curveInterpolation\": \"decoded-piecewise-power-exponent-one\",\r\n  \"envelope\": {\r\n    \"inputNodeRef\": 13,\r\n    \"attackSeconds\": 0.10000000149011612,\r\n    \"attackHold\": 0.0,\r\n    \"releaseSeconds\": 0.30000001192092896,\r\n    \"releaseHold\": 0.0,\r\n    \"sampleClockHz\": 24000,\r\n    \"blockSamples\": 128,\r\n    \"minimumTime\": 0.0001,\r\n    \"presentation\": \"decoded-opcode52\"\r\n  },\r\n  \"scrapePitch\": {\r\n    \"inputNodeRef\": 3,\r\n    \"mode\": 0,\r\n    \"points\": [\r\n      {\r\n        \"x\": 1.0,\r\n        \"y\": 0.3499999940395355\r\n      },\r\n      {\r\n        \"x\": 5.0,\r\n        \"y\": 0.44999998807907104\r\n      },\r\n      {\r\n        \"x\": 20.0,\r\n        \"y\": 0.6000000238418579\r\n      },\r\n      {\r\n        \"x\": 80.0,\r\n        \"y\": 1.0\r\n      }\r\n    ]\r\n  },\r\n  \"scrapeSpeedModifier\": {\r\n    \"inputNodeRef\": 3,\r\n    \"mode\": 0,\r\n    \"points\": [\r\n      {\r\n        \"x\": 3.0,\r\n        \"y\": 0.0\r\n      },\r\n      {\r\n        \"x\": 9.0,\r\n        \"y\": 0.5\r\n      },\r\n      {\r\n        \"x\": 28.0,\r\n        \"y\": 1.399999976158142\r\n      }\r\n    ]\r\n  },\r\n  \"scrapeUpModifier\": {\r\n    \"inputNodeRef\": 20,\r\n    \"mode\": 0,\r\n    \"points\": [\r\n      {\r\n        \"x\": 1.2000000476837158,\r\n        \"y\": 0.0\r\n      },\r\n      {\r\n        \"x\": 1.7000000476837158,\r\n        \"y\": 1.0\r\n      }\r\n    ]\r\n  },\r\n  \"roofScrapeUpModifier\": {\r\n    \"inputNodeRef\": 20,\r\n    \"mode\": 0,\r\n    \"points\": [\r\n      {\r\n        \"x\": "
+   },
+   {
+    "name": "RaceSpline_r3",
+    "len": 60302,
+    "head": ""
+   },
+   {
+    "name": "_test_effects",
+    "len": 33519,
+    "head": "{\r\n \"schemaVersion\": 4,\r\n \"sceneKey\": \"_test_effects\",\r\n \"source\": \"gamedata/levels/_test_effects/actorpack.xt\",\r\n \"dialect\": \"blur2-prototype SimpleEffectSpawner/FXDefinition\",\r\n \"spawners\": [\r\n  {\r\n   \"actorId\": \"0x27fbd9e6\",\r\n   \"name\": \"Particle\",\r\n   \"worldMatrix\": [\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    -15.367523193359375,\r\n    0.1864520013332367,\r\n    -5.064998149871826\r\n   ],\r\n   \"localMatrix\": [\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0,\r\n    1.0,\r\n    0.0,\r\n    0.0,\r\n    0.0\r\n   ],\r\n   \"startActive\": true,\r\n   \"activeRange\": 120.0,\r\n   \"life\": {\r\n    \"life\": 0.0,\r\n    \"fade\": 0.0\r\n   },\r\n   \"activationPriority\": 0,\r\n   \"tintColour\": {\r\n    \"r\": 1.0,\r\n    \"g\": 1.0,\r\n    \"b\": 1.0,\r\n    \"a\": 1.0\r\n   },\r\n   \"definitionKey\": \"0x93febe1b\",\r\n   \"definitionName\": \"ParticleComponentTest\",\r\n   \"events\": [],\r\n   \"components\": [\r\n    {\r\n     \"type\": \"FXParticleEvent\",\r\n     \"values\": {\r\n      \"ActivationTime\": 0.0,\r\n      \"IsLowLod\": false,\r\n      \"IsLitByStaticLighting\": false,\r\n      \"viewFlags\": {\r\n       \"main\": false,\r\n       \"bumperCam\": false,\r\n       \"reflection\": false,\r\n       \"mirror\": false,\r\n       \"cubemap\": false\r\n      }\r\n     },\r\n     \"parameters\": [\r\n      {\r\n       \"type\": \"NamedParamM\",\r\n       \"values\": {\r\n        \"name\": \"matrix\"\r\n       },\r\n       \"property\": \"matrix\"\r\n      },\r\n      {\r\n       \"type\": \"NamedParamF\",\r\n       \"values\": {\r\n        \"name\": \"intensi"
+   },
+   {
+    "name": "RaceSpline_r5",
+    "len": 58771,
+    "head": ""
+   },
+   {
+    "name": "race_spline_sources",
+    "len": 673,
+    "head": ""
+   },
+   {
+    "name": "RaceSpline_r1",
+    "len": 54735,
+    "head": ""
+   },
+   {
+    "name": "LineBreaking Following Characters",
+    "len": 98,
+    "head": ""
+   },
+   {
+    "name": "engine_audio",
+    "len": 92187,
+    "head": "{\r\n  \"schemaVersion\": 12,\r\n  \"vehicle\": \"opel_astraextreme_stock\",\r\n  \"audioRpmLimit\": 1.0,\r\n  \"engineObject\": \"Race_V8_engine.dat\",\r\n  \"exhaustObject\": \"Race_V8_exhaust.dat\",\r\n  \"engineJboaPath\": \"\\\\audio\\\\dat\\\\Race_V8_engine.dat\",\r\n  \"exhaustJboaPath\": \"\\\\audio\\\\dat\\\\Race_V8_exhaust.dat\",\r\n  \"controllerObject\": \"Race_V8_controller.dat\",\r\n  \"controllerJboaPath\": \"\\\\audio\\\\dat\\\\Race_V8_controller.dat\",\r\n  \"commonObject\": \"Car_common_race.dat\",\r\n  \"commonJboaPath\": \"\\\\audio\\\\dat\\\\Car_common_race.dat\",\r\n  \"reflectionObject\": \"Reflection.dat\",\r\n  \"exhaustControls\": {\r\n    \"accelerationNodeRef\": 22,\r\n    \"accelerationNode\": \"ExhaustGroupVolume\",\r\n    \"decelerationNodeRef\": 25,\r\n    \"decelerationNode\": \"ExhaustDecelGroupVolume\",\r\n    \"groupNodeRefs\": [\r\n      120,\r\n      121,\r\n      122,\r\n      123\r\n    ],\r\n    \"bus\": {\r\n      \"node\": \"ExhaustMixer\",\r\n      \"groupNodes\": [\r\n        \"ExhaustHPFilter\",\r\n        \"ExhaustCompressor\",\r\n        \"ExhaustSaturator\",\r\n        \"ExhaustDecelFilter\"\r\n      ],\r\n      \"highPass\": {\r\n        \"node\": \"ExhaustHPFilter\",\r\n        \"frequencyHz\": 120.0\r\n      },\r\n      \"compressor\": {\r\n        \"node\": \"ExhaustCompressor\",\r\n        \"attackSeconds\": 0.009999999776482582,\r\n        \"releaseSeconds\": 0.10000000149011612,\r\n        \"threshold\": 0.12589254117941673,\r\n        \"ratio\": 10.0,\r\n        \"makeup\": 2.2387211385683394,\r\n        \"detectorSeconds\": 0.1,\r\n        \"blockSamples\": 128\r\n      },\r\n      \"saturatorUndecoded\": {\r\n        \"node\": \"ExhaustSatu"
+   }
+  ],
+  "Texture2D": [
+   [
+    "spain06",
+    256,
+    64,
+    "12"
+   ],
+   [
+    "mdl_edd24b69e731_mine_pulse_04_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "tyretred",
+    128,
+    32,
+    "10"
+   ],
+   [
+    "mdl_fa7c179350b5_uv_distort_raw",
+    512,
+    512,
+    "12"
+   ],
+   [
+    "mdl_046d2d8cbe5a_mine_pulse_01_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "glassshards",
+    256,
+    256,
+    "12"
+   ],
+   [
+    "mdl_a2c8ac635c3c_lightning_bolts_08_raw",
+    512,
+    128,
+    "10"
+   ],
+   [
+    "badge_Blindfire",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "badge_Shock",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "mdl_1aaf6d675bb3_light_paint_07_raw",
+    512,
+    64,
+    "10"
+   ],
+   [
+    "badge_Nitrous",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "mdl_9c72fa5d2562_mine_pulse_06_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "underside_small",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "smokeatlas_05",
+    512,
+    512,
+    "12"
+   ],
+   [
+    "tyrewall_nrm",
+    32,
+    32,
+    "12"
+   ],
+   [
+    "badge_Javelin",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "badge_Bomb",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "litter02",
+    256,
+    64,
+    "12"
+   ],
+   [
+    "glassdebris",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "splash01",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "waterrefract",
+    128,
+    128,
+    "10"
+   ],
+   [
+    "stone",
+    64,
+    64,
+    "12"
+   ],
+   [
+    "mdl_fabf54f77c4e_DefaultColour_raw",
+    4,
+    4,
+    "10"
+   ],
+   [
+    "breakdisc",
+    128,
+    128,
+    "10"
+   ],
+   [
+    "mdl_be91f3ebaa7c_light_lines_15_raw",
+    64,
+    64,
+    "10"
+   ],
+   [
+    "glow",
+    128,
+    128,
+    "10"
+   ],
+   [
+    "mdl_1f5d4a8cbcfd_light_lines_13_raw",
+    256,
+    64,
+    "10"
+   ],
+   [
+    "skid_mark_sand_multiply",
+    128,
+    128,
+    "10"
+   ],
+   [
+    "opelastraextreme_descriptor_15",
+    512,
+    512,
+    "12"
+   ],
+   [
+    "mdl_525cae62dd20_lightning_01_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "tyretred_bump_nrm",
+    128,
+    32,
+    "12"
+   ],
+   [
+    "badge_Shield",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "flare02",
+    128,
+    128,
+    "10"
+   ],
+   [
+    "splash01",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "mdl_2af8364c912d_light_lines_14_raw",
+    256,
+    64,
+    "10"
+   ],
+   [
+    "livery_stock_handmade",
+    1024,
+    1024,
+    "10"
+   ],
+   [
+    "directional01",
+    256,
+    256,
+    "12"
+   ],
+   [
+    "smokeatlas_01b",
+    256,
+    256,
+    "12"
+   ],
+   [
+    "dirt",
+    256,
+    1024,
+    "12"
+   ],
+   [
+    "badge_Barge",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "opelastraextreme_1",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "flakes_add_01",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "debrisglass",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "mdl_63c665b52b75_light_paint_05_raw",
+    512,
+    128,
+    "10"
+   ],
+   [
+    "mdl_1a0dcdff0b80_DefaultColour_raw",
+    4,
+    4,
+    "10"
+   ],
+   [
+    "smokevolume",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "mdl_30c9eb440213_lightning_03_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "gravel",
+    64,
+    64,
+    "12"
+   ],
+   [
+    "smoke",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "helicopter_dust2",
+    256,
+    256,
+    "12"
+   ],
+   [
+    "mdl_6d933a3d1214_light_paint_02_raw",
+    512,
+    64,
+    "10"
+   ],
+   [
+    "spark_pop_01",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "badge_Icewall",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "smoke_new_01",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "mdl_d35ea4e716bc_shunt_pulse_01_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "badge_Shunt",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "mdl_db99a15ecb60_DefaultColour_raw",
+    4,
+    4,
+    "10"
+   ],
+   [
+    "water",
+    128,
+    512,
+    "12"
+   ],
+   [
+    "litter01",
+    256,
+    64,
+    "12"
+   ],
+   [
+    "opelastraextreme_2",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "mdl_ad7facb2586f_DefaultColour_raw",
+    4,
+    4,
+    "10"
+   ],
+   [
+    "mdl_6dd6c1c978d6_lightning_04_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "glassshards01",
+    64,
+    64,
+    "12"
+   ],
+   [
+    "mdl_f730f3753823_lightning_bolts_06_raw",
+    256,
+    1024,
+    "10"
+   ],
+   [
+    "waterspray",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "stone_chunks",
+    256,
+    256,
+    "12"
+   ],
+   [
+    "mdl_b19ed15193bb_light_lines_11_raw",
+    512,
+    64,
+    "10"
+   ],
+   [
+    "skid_mark",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "letters01",
+    128,
+    64,
+    "10"
+   ],
+   [
+    "flare",
+    128,
+    128,
+    "10"
+   ],
+   [
+    "tyrewall",
+    512,
+    32,
+    "10"
+   ],
+   [
+    "mdl_2660e012e8f6_light_lines_03_raw",
+    512,
+    64,
+    "10"
+   ],
+   [
+    "mdl_18113b57a624_DefaultColour_raw",
+    4,
+    4,
+    "10"
+   ],
+   [
+    "mdl_1d32e2798c55_light_lines_02_raw",
+    512,
+    64,
+    "10"
+   ],
+   [
+    "smashedglass",
+    1024,
+    1024,
+    "10"
+   ],
+   [
+    "mdl_d3e3133705e3_lightning_02_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "mdl_d34c75bbf8ff_light_paint_interfere_03_raw",
+    256,
+    64,
+    "10"
+   ],
+   [
+    "opelastraextreme_alpha",
+    512,
+    512,
+    "12"
+   ],
+   [
+    "smoke",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "mdl_1cfbadf93eeb_light_lines_04_raw",
+    512,
+    64,
+    "10"
+   ],
+   [
+    "mdl_e2bcd6b42f63_light_lines_08_raw",
+    1024,
+    64,
+    "10"
+   ],
+   [
+    "mdl_06b126a6b7fd_lightning_bolts_04_raw",
+    512,
+    2048,
+    "10"
+   ],
+   [
+    "snowmist",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "mdl_5eda2a89abea_lightning_05_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "snow",
+    128,
+    512,
+    "12"
+   ],
+   [
+    "opelastraextreme_scratch",
+    1024,
+    1024,
+    "10"
+   ],
+   [
+    "mdl_e755c5bf3820_cloud_04_raw",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "carbonfibre",
+    64,
+    32,
+    "10"
+   ],
+   [
+    "underside_small_nrm",
+    256,
+    256,
+    "12"
+   ],
+   [
+    "mdl_e38f64fa469e_revolvingbeam_raw",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "leaves01",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "mdl_18e1be18ee65_uv_distort_04_raw",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "mdl_90f6a458f5b8_mine_pulse_02_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "mdl_9f356d5b06ec_lightning_bolts_02_raw",
+    512,
+    2048,
+    "10"
+   ],
+   [
+    "smashedglass_nrm",
+    1024,
+    1024,
+    "10"
+   ],
+   [
+    "paintdent",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "opelastraextreme_wheel",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "watersplash",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "flame",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "newspaper02",
+    64,
+    64,
+    "10"
+   ],
+   [
+    "mud",
+    256,
+    1024,
+    "12"
+   ],
+   [
+    "glassshards_4sprites",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "Font Texture",
+    0,
+    0,
+    "4"
+   ],
+   [
+    "mdl_dfadb83b6f7b_lightning_grid_01_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "mdl_22ba8be7860b_cloud_03_raw",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "mdl_fb3e728beeca_light_lines_06_raw",
+    1024,
+    64,
+    "10"
+   ],
+   [
+    "mdl_e7a1f5d294a1_mine_pulse_03_raw",
+    512,
+    512,
+    "10"
+   ],
+   [
+    "vehicle_paint_palette",
+    512,
+    1,
+    "4"
+   ],
+   [
+    "bigflare",
+    64,
+    64,
+    "10"
+   ],
+   [
+    "plate",
+    64,
+    32,
+    "12"
+   ],
+   [
+    "damage_parts_02",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "leaves01",
+    128,
+    128,
+    "12"
+   ],
+   [
+    "badge_Repair",
+    256,
+    256,
+    "10"
+   ],
+   [
+    "LiberationSans SDF Atlas",
+    0,
+    0,
+    "1"
+   ],
+   [
+    "LiberationSans SDF Atlas",
+    1024,
+    1024,
+    "1"
+   ]
+  ],
+  "MonoBehaviour": [],
+  "Material": []
+ }
+}
