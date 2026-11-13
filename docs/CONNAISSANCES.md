@@ -1587,6 +1587,17 @@ Demande de la communauté : afficher le titre quand la musique change. Deux ques
   quand du code exécuté par le Lua du jeu (hook, wrapper) y ajoute une clé, il ne reconnaît pas ce nœud et écrit
   dedans : violation d'accès. **Règle** : créer les tables qui seront remplies dans un hook, jamais au chargement
   (`musicctl` le faisait déjà pour `seen`).
+- **Sonde 4 corrigée, en jeu 2026-11-13 (LAN, Blur_test) : Confirmé, aucun plantage, tous les appels `ok`.**
+  - Globale `HUD` = `{ViewportId, ViewportId3d, GetScreenScale, SetupPlayerViewports}` ; `ViewportId[1]` = 511,
+    `ViewportId3d[1]` = 767 (index de 1 à 4) : parents utilisables directement.
+  - La `GUI` du HUD se capture en enveloppant les 46 fonctions globales `HUD_*` (vue dans `HUD_UpdateCombo`) ; elle
+    contient `inter_3d_ids`, `safe_2d_ids`, `mp_rank_up_ids`… **La popup de montée de rang existe en LAN**
+    (`mp_rank_up_ids` = table, root 39935, info 40959) : la conclusion « absente en LAN » de la sonde 1 était fausse
+    (mauvaise table `GUI`).
+  - `UIButtons.CloneXtGadgetByName("hud_objects", gabarit)` + `SetParent` + `ChangeText(id, hash)` + `SetActive` :
+    acceptés pour `Points_Title`, `Position_Title`, `Checkpoint_Title` (ids de clone croissants ; la sonde en crée un
+    par appui : la version finale doit réutiliser un seul élément). Ce qui s'affiche à l'écran : voir le retour de
+    l'utilisateur.
 - **Repli simple** : afficher le titre seulement après un appui sur « suivant »… impossible aussi sans savoir lequel
   le graphe a tiré. Tout dépend donc du test `music_type`.
 - Essai proposé (Blur_test) : graphe sonde où `MusicType` = 2 et 3 jouent deux morceaux précis, plugin qui écrit 2 ou
