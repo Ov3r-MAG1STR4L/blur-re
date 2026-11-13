@@ -85,8 +85,9 @@ local function banner_build()
 		if c then UIButtons.SetActive(c, false) end
 	end
 	b.mid = UIButtons.FindChildByName(b.bg, "Pos_BackingMiddle")
-	UIButtons.SetParent(b.bg, parent, UIEnums.Justify.TopLeft)
-	UIButtons.SetParent(b.txt, parent, UIEnums.Justify.TopLeft)
+	-- BottomLeft: the anchor the player's placement (-4.5, 8) was tuned with in music_probe (TopLeft put it at the top)
+	UIButtons.SetParent(b.bg, parent, UIEnums.Justify.BottomLeft)
+	UIButtons.SetParent(b.txt, parent, UIEnums.Justify.BottomLeft)
 	UIButtons.ChangeScale(b.txt, TEXT_SCALE, TEXT_SCALE, 1.0)
 	local _, h = UIButtons.GetSize(b.bg)
 	local _, _, z = UIButtons.GetPosition(b.bg)
