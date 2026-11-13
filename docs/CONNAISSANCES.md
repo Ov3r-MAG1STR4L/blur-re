@@ -1608,6 +1608,22 @@ Demande de la communauté : afficher le titre quand la musique change. Deux ques
 - Essai proposé (Blur_test) : graphe sonde où `MusicType` = 2 et 3 jouent deux morceaux précis, plugin qui écrit 2 ou
   3 sur une touche, et `ChangeText` d'une clé `.loc` ajoutée + d'une clé absente sur un clone de `ProgressMessage`.
 
+## Bandeau « morceau en cours » intégré (musicctl 0.3, 2026-11-13, projet L)
+- **Placement (Confirmé en jeu, sondes 6-7)** : parent `HUD.ViewportId3d[1]` (celui du vrai « Position » ; sous
+  `HUD.ViewportId` rien de nôtre ne s'affichait), unités du HUD (`GetSize` du parent = 74 x 40,8 ; x ≈ 17,75 px d'une
+  capture de 1552 px), origine au panneau Position ; **garder le z** de l'élément dans `ChangePosition` (z = 0 masquait
+  tout) ; un élément déplacé apparaît une image à sa place par défaut. Position retenue par le joueur avec les touches :
+  (-4,5 ; 8) = bas gauche. Fond = `Pos_Backing` + son enfant `Pos_BackingMiddle` (deux morceaux du dégradé
+  `hud_grad`, à élargir ensemble) ; mode `IntensityAsAlpha` : `SetAlphaIntensity(id, a, a)` pour le faire clignoter.
+- **Chaîne** : `make_music.build` lit les titres par `ffprobe` (« interprète - titre », le titre seul s'il contient
+  déjà « - », sinon le nom du fichier), écrit `hud.loc` (hash 0x0B1E1000 + position) et génère `musicctl.lua`
+  (`local TRACKS = { {hash, secondes}, ... }` dans l'ordre du mélange) ; `position_start` ajoute à `RaceStartScript`
+  « si MusicType = p + 2 : démarré = 1, index = p, lecture » (vérifié par `position_check`). Le plugin tire p au
+  début de course (1 → p + 2 sans franchir la porte), suit les fins de morceau par minuterie (`os.time`), passe au
+  suivant (double L3, ç / à : 0 puis p + 2) et rend l'option Musique en fin de course et dans les menus.
+- **À vérifier en jeu** : moment du premier morceau (`FIRST_START` = 4 s estimé), dérive de la minuterie, pause,
+  épave, accents dans la police. Pack : `gamedata.pak` désormais mis de côté aussi (non retesté hors jeu).
+
 ## Prototype « Blur 2 » Xbox 360 du 31/08/2010 (2026-11-09, liste de l'archive, rien d'extrait sauf un en-tête)
 - Archive `Downloads\Blur 2 (Aug 31, 2010 prototype).rar` : RAR5 de 6,2 Go (7,0 Go décompressé), 979 fichiers. Le
   `tar` de Windows refuse (dictionnaire trop grand), il faut 7-Zip. Dossier `KanzenDev\` (nom de code « Kanzen »),
