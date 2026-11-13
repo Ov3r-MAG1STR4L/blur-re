@@ -49,8 +49,6 @@ end
 local made = {}
 -- probe 3: the plugin's GUI is not the HUD's (inter_3d_ids empty in probe 2): each screen script probably runs in
 -- its own environment. Functions the HUD script defines keep it: getfenv(HUD_xxx).GUI = the HUD's GUI.
-local HUD_FUNCS = { "HUD_SpUpdate", "HUD_SpTimerUpdate", "HUD_SpStateUpdate", "HUD_MpRankUp", "HUD_UpdateCombo",
-	"HUD_SsUpdateTimers", "HUD_MpNextRankOrChallenge", "SyncLastGaspHudToVars", "RefreshLastGaspVars" }
 local function keys(t, n)
 	local out, k = {}, 0
 	for key, v in pairs(t) do
@@ -60,29 +58,56 @@ local function keys(t, n)
 	end
 	return table.concat(out, " ")
 end
-local function hud_gui()
-	if type(GUI) == "table" and GUI.inter_3d_ids then return GUI, "global GUI" end
-	for _, name in ipairs(HUD_FUNCS) do
-		local f = rawget(_G, name)
-		if type(f) == "function" then
-			local env = getfenv(f)
-			log("  " .. name .. ": env " .. (env == _G and "_G" or tostring(env)) .. ", env.GUI " .. tostring(env and env.GUI))
-			if env and type(env.GUI) == "table" and env.GUI.inter_3d_ids then return env.GUI, "getfenv(" .. name .. ")" end
-		else
-			log("  " .. name .. ": " .. type(f))
+-- probe 4: probe 3 found GUI nil and the HUD_* functions in _G: the game sets the global GUI only while the HUD's own
+-- code runs. (a) the global table HUD holds the viewport roots (HUD.ViewportId3d[vp], parent of the fan messages);
+-- (b) fallback: wrap every global HUD_* function and keep the GUI it sees while it runs.
+local captured_gui, wrapped_hud, logged_hud = nil, false, false
+local function wrap_hud()
+	if wrapped_hud then return end
+	wrapped_hud = true
+	local n = 0
+	for name, f in pairs(_G) do
+		if type(f) == "function" and type(name) == "string" and string.sub(name, 1, 4) == "HUD_" then
+			n = n + 1
+			_G[name] = function(...)
+				local g = rawget(_G, "GUI")
+				if captured_gui == nil and type(g) == "table" and g.inter_3d_ids then
+					captured_gui = g
+					log("GUI captured in " .. name .. ": keys " .. keys(g, 20))
+				end
+				return f(...)
+			end
 		end
 	end
-	return nil, "not found"
+	log("wrapped " .. n .. " HUD_ functions")
+end
+local function hud_gui()
+	if type(GUI) == "table" and GUI.inter_3d_ids then return GUI, "global GUI" end
+	return captured_gui, captured_gui and "captured" or "not captured yet"
+end
+
+local function first(t)
+	if type(t) ~= "table" then return nil end
+	return t[1] or t[0]                                  -- viewport loop: 1-based or 0-based, not known
 end
 
 local function show(template, child, parent_table)
-	log("global GUI " .. type(GUI) .. (type(GUI) == "table" and (" keys " .. keys(GUI, 25)) or "") .. " | HUD " .. type(rawget(_G, "HUD")))
+	wrap_hud()
+	local hud = rawget(_G, "HUD")
+	if not logged_hud and type(hud) == "table" then
+		logged_hud = true
+		log("HUD keys " .. keys(hud, 40))
+		log("HUD.ViewportId3d " .. (type(hud.ViewportId3d) == "table" and keys(hud.ViewportId3d, 6) or tostring(hud.ViewportId3d))
+			.. " | HUD.ViewportId " .. (type(hud.ViewportId) == "table" and keys(hud.ViewportId, 6) or tostring(hud.ViewportId)))
+	end
 	local gui, how = hud_gui()
-	log("HUD GUI: " .. how)
-	local roots = gui and gui[parent_table]
-	local parent = roots and (roots[1] or roots[0])      -- viewport loop: 1-based or 0-based, not known
-	log(template .. ": GUI." .. parent_table .. " [0] " .. tostring(roots and roots[0]) .. " [1] " .. tostring(roots and roots[1])
-		.. (roots and (" keys " .. keys(roots, 6)) or ""))
+	local parent, from = nil, ""
+	if parent_table == "ViewportId3d" or parent_table == "ViewportId" then
+		parent, from = type(hud) == "table" and first(hud[parent_table]), "HUD." .. parent_table
+	else
+		parent, from = gui and first(gui[parent_table]), "GUI." .. parent_table .. " (" .. how .. ")"
+	end
+	log(template .. ": parent " .. from .. " = " .. tostring(parent))
 	if parent == nil then return end
 	local ok, err = pcall(function()
 		local id = UIButtons.CloneXtGadgetByName("hud_objects", template)
@@ -107,11 +132,11 @@ local function hide_all()
 end
 
 local STEPS = {
-	function() show("Points_Title", "Points_Amount", "inter_3d_ids") end,       -- 1
-	function() show("Position_Title", "Position_Amount", "inter_3d_ids") end,   -- 2
-	function() show("Points_Title", "Points_Amount", "safe_2d_ids") end,        -- 3: other root
-	function() show("FanDemand_Title", nil, "inter_3d_ids") end,                -- 4
-	function() show("Checkpoint_Title", nil, "inter_3d_ids") end,               -- 5
+	function() show("Points_Title", "Points_Amount", "ViewportId3d") end,       -- 1: HUD global table
+	function() show("Position_Title", "Position_Amount", "ViewportId") end,     -- 2
+	function() show("Points_Title", "Points_Amount", "inter_3d_ids") end,       -- 3: captured GUI
+	function() show("Position_Title", "Position_Amount", "safe_2d_ids") end,    -- 4
+	function() show("Checkpoint_Title", nil, "ViewportId3d") end,               -- 5
 	function()                                                                  -- 6: rank-up popup, HUD's GUI
 		local gui = hud_gui()
 		local ids = gui and gui.mp_rank_up_ids
