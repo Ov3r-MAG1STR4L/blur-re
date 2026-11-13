@@ -52,7 +52,8 @@ end
 -- behind "Position", texture hud_grad) and Position_Title (the blue "Position" label, style Secondary, Main_1), its
 -- number children hidden. Bottom-left; lights up like a failing lamp, holds HOLD s, slides left while fading out.
 -- Units: the HUD's panel units (Position_Title row = 1.5 high). Tuning knobs below; everything is logged.
-local POS_X, POS_Y = 1.0, -9.0          -- banner top-left from the screen's bottom-left corner
+local POS_X, BOTTOM = 1.0, 7.0          -- banner top-left: POS_X from the left edge, BOTTOM above the screen's bottom
+                                        -- (probe 7: the parent's origin is its top-left, y goes down, whatever the justify)
 local TEXT_DX, TEXT_DY = 1.0, -0.5      -- text inside the banner (as Position_Title vs Pos_Backing in the HUD)
 local TEXT_SCALE = 1.25                 -- a bit bigger than "Position"
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0   -- backing width = text length * K * scale + pad
@@ -76,14 +77,17 @@ local function banner_build()
 	UIButtons.ChangeScale(b.txt, TEXT_SCALE, TEXT_SCALE, 1.0)
 	local w, h = UIButtons.GetSize(b.bg)
 	b.h = h
+	local vw, vh = UIButtons.GetSize(parent)
+	b.y = (vh or 40) - BOTTOM
+	log("viewport size " .. tostring(vw) .. " x " .. tostring(vh) .. ", banner y " .. tostring(b.y))
 	log("banner built: bg " .. tostring(b.bg) .. " size " .. tostring(w) .. " x " .. tostring(h) .. ", txt " .. tostring(b.txt)
 		.. ", 'Position' length " .. tostring(UIButtons.GetStaticTextLength(b.txt)))
 	return b
 end
 
 local function banner_place(dx, alpha)
-	UIButtons.ChangePosition(banner.bg, POS_X + dx, POS_Y, 0.0)
-	UIButtons.ChangePosition(banner.txt, POS_X + dx + TEXT_DX, POS_Y + TEXT_DY, 0.0)
+	UIButtons.ChangePosition(banner.bg, POS_X + dx, banner.y, 0.0)
+	UIButtons.ChangePosition(banner.txt, POS_X + dx + TEXT_DX, banner.y + TEXT_DY, 0.0)
 	UIButtons.ChangeAlpha(banner.bg, alpha)
 	UIButtons.ChangeAlpha(banner.txt, alpha)
 end
