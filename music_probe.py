@@ -47,10 +47,42 @@ end
 -- probe 2 (display): clone a HUD template, hang it on a viewport root the HUD fills in every race (GUI.*_ids[1]),
 -- write our hud.loc text (by hash) in it and in its text child, show it. Probe 1 (music_type 2 / 3) worked in game.
 local made = {}
+-- probe 3: the plugin's GUI is not the HUD's (inter_3d_ids empty in probe 2): each screen script probably runs in
+-- its own environment. Functions the HUD script defines keep it: getfenv(HUD_xxx).GUI = the HUD's GUI.
+local HUD_FUNCS = { "HUD_SpUpdate", "HUD_SpTimerUpdate", "HUD_SpStateUpdate", "HUD_MpRankUp", "HUD_UpdateCombo",
+	"HUD_SsUpdateTimers", "HUD_MpNextRankOrChallenge", "SyncLastGaspHudToVars", "RefreshLastGaspVars" }
+local function keys(t, n)
+	local out, k = {}, 0
+	for key, v in pairs(t) do
+		k = k + 1
+		if k > n then break end
+		out[#out + 1] = tostring(key) .. ":" .. type(v)
+	end
+	return table.concat(out, " ")
+end
+local function hud_gui()
+	if type(GUI) == "table" and GUI.inter_3d_ids then return GUI, "global GUI" end
+	for _, name in ipairs(HUD_FUNCS) do
+		local f = rawget(_G, name)
+		if type(f) == "function" then
+			local env = getfenv(f)
+			log("  " .. name .. ": env " .. (env == _G and "_G" or tostring(env)) .. ", env.GUI " .. tostring(env and env.GUI))
+			if env and type(env.GUI) == "table" and env.GUI.inter_3d_ids then return env.GUI, "getfenv(" .. name .. ")" end
+		else
+			log("  " .. name .. ": " .. type(f))
+		end
+	end
+	return nil, "not found"
+end
+
 local function show(template, child, parent_table)
-	local roots = GUI and GUI[parent_table]
+	log("global GUI " .. type(GUI) .. (type(GUI) == "table" and (" keys " .. keys(GUI, 25)) or "") .. " | HUD " .. type(rawget(_G, "HUD")))
+	local gui, how = hud_gui()
+	log("HUD GUI: " .. how)
+	local roots = gui and gui[parent_table]
 	local parent = roots and (roots[1] or roots[0])      -- viewport loop: 1-based or 0-based, not known
-	log(template .. ": GUI." .. parent_table .. " [0] " .. tostring(roots and roots[0]) .. " [1] " .. tostring(roots and roots[1]))
+	log(template .. ": GUI." .. parent_table .. " [0] " .. tostring(roots and roots[0]) .. " [1] " .. tostring(roots and roots[1])
+		.. (roots and (" keys " .. keys(roots, 6)) or ""))
 	if parent == nil then return end
 	local ok, err = pcall(function()
 		local id = UIButtons.CloneXtGadgetByName("hud_objects", template)
@@ -80,7 +112,20 @@ local STEPS = {
 	function() show("Points_Title", "Points_Amount", "safe_2d_ids") end,        -- 3: other root
 	function() show("FanDemand_Title", nil, "inter_3d_ids") end,                -- 4
 	function() show("Checkpoint_Title", nil, "inter_3d_ids") end,               -- 5
-	function() hide_all() end,                                                  -- 6
+	function()                                                                  -- 6: rank-up popup, HUD's GUI
+		local gui = hud_gui()
+		local ids = gui and gui.mp_rank_up_ids
+		log("rank-up ids " .. tostring(ids) .. " root " .. tostring(ids and ids.root) .. " info " .. tostring(ids and ids.rank_info))
+		if ids and ids.root and ids.rank_info then
+			local ok, err = pcall(function()
+				UIButtons.ChangeText(ids.rank_info, TEXT_HASH)
+				UIButtons.SetActive(ids.root, true)
+				UIButtons.TimeLineActive("mp_rank_up", true, 0.0)
+			end)
+			log("  rank-up popup " .. (ok and "ok" or ("FAILED " .. tostring(err))))
+		end
+	end,
+	function() hide_all() end,                                                  -- 7
 }
 
 local function next_step()
