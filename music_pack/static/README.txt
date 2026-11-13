@@ -20,7 +20,7 @@ REQUIREMENTS
 ------------
   - Blur for PC. The next-track key needs AMAX (amax folder in the game folder).
   - About 3 GB of free disk space (the game's audio is unpacked once, see "How it works").
-  - Python 3 with numpy, and ffmpeg (used to convert your music to the game's format).
+  - Python 3 with numpy and numba, and ffmpeg (used to convert your music to the game's format).
     "Choose music.bat" offers to install them for you (with winget, Windows 10/11).
 
 

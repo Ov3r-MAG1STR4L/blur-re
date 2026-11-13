@@ -15,9 +15,9 @@ where py >nul 2>&1 || (
     winget install -e --id Python.Python.3.12 --accept-package-agreements --accept-source-agreements || goto :missing
     echo.& echo Python installed. Close this window and run "Choose music.bat" again.& pause & exit /b 0
 )
-%PY% -c "import numpy" >nul 2>&1 || (
-    echo Installing numpy for Python...
-    %PY% -m pip install --disable-pip-version-check numpy || goto :missing
+%PY% -c "import numpy, numba" >nul 2>&1 || (
+    echo Installing numpy and numba for Python...
+    %PY% -m pip install --disable-pip-version-check numpy numba || goto :missing
 )
 where ffmpeg >nul 2>&1 || (
     echo ffmpeg is not installed. It is needed to convert your music.
@@ -34,6 +34,6 @@ exit /b 0
 
 :missing
 echo.
-echo Could not continue: Python 3 (with numpy) and ffmpeg are required. See README.txt.
+echo Could not continue: Python 3 (with numpy and numba) and ffmpeg are required. See README.txt.
 pause
 exit /b 1
