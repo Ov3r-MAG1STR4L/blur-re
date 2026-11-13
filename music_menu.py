@@ -18,6 +18,9 @@ def main():
     if "--remelanger" in sys.argv:
         if not os.path.exists(LAST):
             return                                            # music never chosen: nothing to shuffle
+        if os.path.exists(os.path.join(make_music.E, "music_probe_backup", "ACTIVE")):
+            print("Sonde musique (music_probe.py) installée : pas de remélange. Retirer : music_probe.py --undo")
+            return
         last = json.load(open(LAST, encoding="utf-8"))
         effects = make_music.normalize_effects(last["effets"])
         print("Nouvel ordre aléatoire pour la musique...")
