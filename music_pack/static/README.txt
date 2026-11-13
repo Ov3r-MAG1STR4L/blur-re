@@ -93,3 +93,8 @@ TROUBLESHOOTING
   "cache\root.pak not found: cannot install": the game archive is missing; repair or reinstall Blur.
   No music in race: check the in-game audio options (Music must not be off).
   The skip key does nothing: AMAX must be installed; skips are limited to one every 2 seconds.
+
+
+CREDITS
+-------
+  "Now playing" banner: idea by Gongas, thanks!
