@@ -38,8 +38,8 @@ local INFO_SCALE, INFO_LINES, LINE_DY = 0.85, 2, 1.6   -- info lines under the t
 -- texture light_paint_02, green Support_0), cloned, recoloured to the blue of "Position" (Main_1 = 12 125 253) and
 -- played with its own timeline (fan_demand_win_on: texture scroll 0.5-3 s, fade in and out) when the banner shows
 local SWIRL, SWIRL_COLOUR, SWIRL_TL = true, "!255 12 125 253", "fan_demand_win_on"
-local SW_X, SW_Y, SW_SCALE = 0.0, 0.0, 1.0       -- streak offset from its default place, scale (tuned live: keys 1-6)
-local TUNE_SWIRL = true                         -- keys 1/2 up/down, 3/4 left/right, 5/6 smaller/bigger, logged
+local SW_X, SW_Y, SW_SCALE = -44.0, 124.0, 1.2   -- streak offset from its default place and scale: placed by the player
+                                                -- with live keys (2026-11-13): along the banner, bottom-left
 local MID_MIN = 0.2                             -- backing middle piece height with no info line (HUD units)
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0
 local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
@@ -290,13 +290,6 @@ local function tick()
 		if key ~= last_key then                           -- a held key keeps its value: new keys only
 			last_key = key
 			if key == NEXT_KEY1 or key == NEXT_KEY2 then next_track() end
-			local move = TUNE_SWIRL and ({ CMN_1 = { 0, -1, 0 }, CMN_2 = { 0, 1, 0 }, CMN_3 = { -1, 0, 0 }, CMN_4 = { 1, 0, 0 },
-				CMN_5 = { 0, 0, -0.1 }, CMN_6 = { 0, 0, 0.1 } })[key]
-			if move then
-				SW_X, SW_Y, SW_SCALE = SW_X + move[1], SW_Y + move[2], math.max(0.1, SW_SCALE + move[3])
-				log(string.format("tune swirl SW_X %.0f SW_Y %.0f SW_SCALE %.1f", SW_X, SW_Y, SW_SCALE))
-				banner_show(pos)
-			end
 		end
 	end
 end
