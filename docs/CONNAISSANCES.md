@@ -1596,8 +1596,13 @@ Demande de la communauté : afficher le titre quand la musique change. Deux ques
     (mauvaise table `GUI`).
   - `UIButtons.CloneXtGadgetByName("hud_objects", gabarit)` + `SetParent` + `ChangeText(id, hash)` + `SetActive` :
     acceptés pour `Points_Title`, `Position_Title`, `Checkpoint_Title` (ids de clone croissants ; la sonde en crée un
-    par appui : la version finale doit réutiliser un seul élément). Ce qui s'affiche à l'écran : voir le retour de
-    l'utilisateur.
+    par appui : la version finale doit réutiliser un seul élément).
+  - **Confirmé à l'écran (captures de l'utilisateur)** : le texte ajouté à `hud.loc` sous un hash choisi
+    (0x0B1E0001) **s'affiche** via `ChangeText(id, hash)`. Titres clonés (`Points_Title`…) : énormes (police des
+    chiffres), en haut à gauche, chevauchent le HUD : à écarter. **Popup de montée de rang** : centrée, animée par le
+    jeu (`TimeLineActive("mp_rank_up", true, 0)`), grand titre bleu « Rank Up » + `rank_info` en petit dessous
+    (notre texte) ; défauts : le titre « Rank Up » et l'icône de rang vide (carré noir). **Candidat retenu** pour le
+    popup « morceau en cours » (changer le titre, masquer l'icône).
 - **Repli simple** : afficher le titre seulement après un appui sur « suivant »… impossible aussi sans savoir lequel
   le graphe a tiré. Tout dépend donc du test `music_type`.
 - Essai proposé (Blur_test) : graphe sonde où `MusicType` = 2 et 3 jouent deux morceaux précis, plugin qui écrit 2 ou
