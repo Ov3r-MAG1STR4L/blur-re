@@ -290,7 +290,7 @@ local function tick()
 		if key ~= last_key then                           -- a held key keeps its value: new keys only
 			last_key = key
 			if key == NEXT_KEY1 or key == NEXT_KEY2 then next_track() end
-			local move = TUNE_SWIRL and ({ CMN_1 = { 0, -20, 0 }, CMN_2 = { 0, 20, 0 }, CMN_3 = { -20, 0, 0 }, CMN_4 = { 20, 0, 0 },
+			local move = TUNE_SWIRL and ({ CMN_1 = { 0, -1, 0 }, CMN_2 = { 0, 1, 0 }, CMN_3 = { -1, 0, 0 }, CMN_4 = { 1, 0, 0 },
 				CMN_5 = { 0, 0, -0.1 }, CMN_6 = { 0, 0, 0.1 } })[key]
 			if move then
 				SW_X, SW_Y, SW_SCALE = SW_X + move[1], SW_Y + move[2], math.max(0.1, SW_SCALE + move[3])
