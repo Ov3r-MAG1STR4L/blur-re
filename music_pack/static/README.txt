@@ -53,7 +53,15 @@ UNINSTALL
 ---------
   Close Blur and double-click "Uninstall.bat": every file the pack added is removed, every file it
   replaced is put back, and the game is exactly as before. Then you can delete the Blur_Music folder.
-  Do NOT delete the "backup" folder while the pack is installed.
+  Do NOT delete the "Blur_Music_backup" folder (in the Blur folder) while the pack is installed:
+  Uninstall.bat needs it.
+
+
+UPDATING THE PACK
+-----------------
+  Close Blur, then replace the Blur_Music folder with the new one (keep your "Music" folder).
+  Your installation stays in "Blur_Music_backup", next to it: no need to uninstall first.
+  Run "Choose music.bat" again.
 
 
 HOW IT WORKS (for the curious)
@@ -71,6 +79,17 @@ TROUBLESHOOTING
   "Blur is running": close the game (check the task manager), then try again.
   "A previous installation was interrupted": run "Uninstall.bat", then "Choose music.bat".
   "cache\root.pak not found": another mod already unpacked the game; this pack cannot be combined
-      with it. Uninstall the other mod first.
+      with it. Uninstall the other mod first. If it was an older Blur Music install, see below.
+
+  Recovering from an interrupted install (older versions of this pack kept their backup inside the
+  Blur_Music folder, so replacing that folder lost it):
+    - if you still have the old Blur_Music folder (Recycle Bin...), put it back and run its
+      "Uninstall.bat", then install the new version;
+    - otherwise, in the Blur folder, go to "cache" and rename
+          root.pak.off            ->  root.pak
+          root_streaming.pak.off  ->  root_streaming.pak
+          root.sig.off            ->  root.sig            (and root_streaming.sig.off, if present)
+      The game is then playable again. The unpacked files left in the Blur folder are ignored by the
+      game; you can now run "Choose music.bat".
   No music in race: check the in-game audio options (Music must not be off).
   The skip key does nothing: AMAX must be installed; skips are limited to one every 2 seconds.

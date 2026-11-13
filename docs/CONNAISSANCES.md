@@ -1530,7 +1530,7 @@ oot.pak` → racine du
   jeu et `root_streaming.pak` → `audio\`, extraits **depuis les paks du joueur** (fichiers en clair déjà présents
   gardés), puis paks (et `.sig`) renommés `.off` ; originaux utiles gardés dans `tools\data` (variable
   d'environnement `BLUR_MUSIC_E` lue par `make_music`) ; son de la touche (`make_music.music_key_sounds`, déplacé de
-  `make_reverse`) ; plugin `musicctl` + `require` ajouté au `plugins.lua` du joueur. Tout est noté dans `backup\`
+  `make_reverse`) ; plugin `musicctl` + `require` ajouté au `plugins.lua` du joueur. Tout est noté dans `<jeu>\Blur_Music_backup\` (hors du dossier du pack depuis le 2026-11-13 : un testeur a remplacé `Blur_Music` par une nouvelle version et perdu la sauvegarde de l'installation interrompue ; récupération manuelle décrite dans le README)
   (fichiers ajoutés, paks renommés, fichiers remplacés sauvegardés) : `Uninstall.bat` remet le jeu à l'identique.
 - Python 3 + numpy + ffmpeg requis : `Choose music.bat` propose de les installer (winget). Pas de lanceur : les joueurs
   démarrent Blur par d'autres outils (TextMod…). **Départ aléatoire dans le jeu (2026-11-13, simulé, à confirmer en
