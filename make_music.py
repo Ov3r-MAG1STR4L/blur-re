@@ -26,6 +26,9 @@ MUSIC_DIR = _env("MUSIC_DIR", os.path.join(HERE, "..", "Blur_musiques"))   # one
 CACHE = _env("CACHE", os.path.join(E, "music_cache"))           # encoded tracks, reused between builds
 OUT = _env("OUT", os.path.join(E, "mods", "music", "files"))
 TEST = _env("TEST", os.path.join(HERE, "..", "Blur_test"))      # where install() copies the files
+HUD_LOC = _env("HUD_LOC", os.path.join(E, "gamedata", "gamedata", "xt", "loc", "hud.loc"))   # original, track titles added
+PLUGIN_TEMPLATE = _env("PLUGIN", os.path.join(HERE, "mod_static", "amax", "plugins", "musicctl", "musicctl.lua"))
+TITLE_HASH0 = 0x0B1E1000                                       # hud.loc hashes of the track titles (ours)
 AUDIO_EXT = (".mp3", ".wav", ".flac", ".ogg", ".m4a")
 FF = 0xFFFF
 F1 = 0x3F800000                                                 # 1.0f
@@ -269,6 +272,7 @@ def random_start(j, var, sel, play, n):
     started = j.count
     j.w += [20, j.name("MusicShuffleStarted"), 0]
     j.count += 1
+    j.shuffle_ids = (var, started, play)                 # for position_start
     # [started == 1 -> CALL] [started = 1] [draw] [m cases] [end]  [m bodies: index = start, call play]  CALL: call play
     head = [0x1317, started << 16, F1, 0x1101, None, 0x1004, F1, 0x1002, started << 16, 0x1000, sel << 16, 0]
     body0 = len(head) + 5 * m + 1
@@ -566,6 +570,58 @@ def wave_name(path, used):
     return name
 
 
+def track_title(path):
+    """Banner text (player's rule, 2026-11-13): "artist - title" from the tags, the title alone when it already holds
+    " - " (downloaded files often have the uploader as artist), else the file name without its extension."""
+    try:
+        r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format_tags=title,artist", "-of", "json", path],
+                           capture_output=True, encoding="utf-8", errors="replace")
+        tags = {k.lower(): v.strip() for k, v in json.loads(r.stdout or "{}").get("format", {}).get("tags", {}).items()}
+    except (OSError, ValueError):
+        tags = {}
+    title, artist = tags.get("title", ""), tags.get("artist", "")
+    if title and artist and " - " not in title:
+        return f"{artist} - {title}"
+    return title or os.path.splitext(os.path.basename(path))[0]
+
+
+def position_start(j, n):
+    """RaceStartScript: if MusicType == p + 2 (set by the musicctl plugin), the shuffle starts at position p: started = 1,
+    index = p, call play (it plays order[p] and stores p + 1, so the graph then goes on in order by itself and the plugin
+    knows which track plays). MusicType 0 / 1 (the option's own values) keep the normal behaviour.
+    Proven in game by music_probe (MusicType 2 / 3 played two chosen tracks, 2026-11-13)."""
+    mt = obj_index(j, "MusicType")
+    var, started, play = j.shuffle_ids
+    s, rs = j.code("RaceStartScript")
+    calls = [p for p, op in script_ops(rs) if op == 0x1200]
+    assert len(calls) == 1, calls
+    ins = calls[0]
+    new = list(rs)
+    for p, op in script_ops(rs):                          # jumps past the insertion point move with it
+        if op == 0x1101 and rs[p + 1] >= ins:
+            new[p + 1] = rs[p + 1] + 5 * n
+    body0 = len(rs) + 5 * n
+    new[ins:ins] = sum(([0x1317, mt << 16, f32(p + 2), 0x1101, body0 + 11 * p] for p in range(n)), [])
+    new += sum(([0x1004, F1, 0x1002, started << 16, 0x1004, f32(p), 0x1002, var << 16, 0x1200, play << 16, 0x1202]
+                for p in range(n)), [])
+    j.set_code(s, rs, new)
+
+
+def position_check(j, n):
+    """Simulation of the RaceStartScript chain for every MusicType p + 2: the shuffle index each sets (check)."""
+    mt = obj_index(j, "MusicType")
+    var, started, play = j.shuffle_ids
+    _, rs = j.code("RaceStartScript")
+    fl = lambda w: struct.unpack("<f", struct.pack("<I", w))[0]
+    out = []
+    for p in range(n):
+        q = next(q for q, op in script_ops(rs) if rs[q:q + 3] == [0x1317, mt << 16, f32(p + 2)])
+        b = rs[rs[q + 4]:rs[q + 4] + 11]
+        assert b[2:4] == [0x1002, started << 16] and b[6:10] == [0x1002, var << 16, 0x1200, play << 16] and b[10] == 0x1202, b
+        out.append(fl(b[5]))
+    return out
+
+
 def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     """Bank + controller + final mix for the chosen playlist folders. Returns a summary.
     shuffle: Spotify-like looping shuffle (new order at each build), else independent random picks.
@@ -578,6 +634,13 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     originals = original_tracks(j)
     used = {w["name"].lower() for w in blurbaf.parse(bank)["waves"]}
     objs, files, seen = [], [], set()
+    info = {}                                             # sound object -> (banner title, seconds)
+    waves = {w["name"]: w for w in blurbaf.parse(bank)["waves"]}
+    names = bytes(j.names).split(b"\0")
+    for o in originals:                                   # original object i is named names[i + 1]
+        w = j.w[j.find(60, names[o + 1].decode()) + 3]
+        wave = bytes(j.names[w:j.names.index(b"\0", w)]).decode()
+        info[o] = (wave, waves[wave]["samples"] / waves[wave]["rate"] if wave in waves else 180.0)
     for d in folders:
         audio = sorted(f for f in os.listdir(d) if f.lower().endswith(AUDIO_EXT))
         if not audio and "original" in os.path.basename(d).lower():
@@ -597,17 +660,22 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         else:
             bank = blurbaf.add_wave(bank, name, None, 48000, data=data, samples=samples)
         objs.append(add_track(j, "%02d" % (23 + k), name))
+        info[objs[-1]] = (track_title(path), samples / 48000)
     if not objs:
         raise SystemExit("empty playlist: no track chosen")
     if shuffle:
         order = shuffle_loop(j, objs)
         assert shuffle_sequence(j, 2 * len(objs)) == order * 2, "simulation de l'ordre aléatoire"
         mode = "looping shuffle, new order at each build"
+        position_start(j, len(order))
+        assert position_check(j, len(order)) == [float(p) for p in range(len(order))], "simulation du départ par position"
+        tracks = [info[o] for o in order]
     else:
         sizes = playlist(j, objs)
         reached = play_targets(j)
         assert reached == set(objs), ("simulation", sorted(set(objs) - reached), sorted(reached - set(objs)))
         mode = f"random draw, groups {' + '.join(map(str, sizes))}"
+        tracks = []                                       # no known order: no banner
     fs = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalsubmix.dat"), "rb").read())
     fps = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalperksubmix.dat"), "rb").read())
     if effects == "oui":
@@ -629,7 +697,29 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
     open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
     open(os.path.join(out, "audio", "dat", "finalperksubmix.dat"), "wb").write(fps.build())
+    write_titles(tracks, out)
     return f"{len(objs)} race tracks ({mode}); game effects on the sound: {effects}; quality: {'high (uncompressed)' if pcm16 else 'normal'}"
+
+
+def write_titles(tracks, out):
+    """The banner's data, for tracks = [(title, seconds)] in shuffle order (position p = order[p]): hud.loc with one
+    text per position (hash TITLE_HASH0 + p; the plugin shows it with ChangeText(id, hash), shown in game 2026-11-13)
+    and musicctl.lua from its template, its line "local TRACKS = {}" filled with {hash, seconds} per position."""
+    import blurloc
+    d = blurloc.parse_raw(open(HUD_LOC, "rb").read())
+    for p, (title, _) in enumerate(tracks):
+        blurloc.add_text(d, f"BLURMUSIC_TRACK_{p}", TITLE_HASH0 + p, {"en": title})
+    os.makedirs(os.path.join(out, "gamedata", "xt", "loc"), exist_ok=True)
+    open(os.path.join(out, "gamedata", "xt", "loc", "hud.loc"), "wb").write(blurloc.build(d))
+    lua = open(PLUGIN_TEMPLATE, encoding="utf-8").read()
+    line = "local TRACKS = {}"
+    assert lua.count(line) == 1, "musicctl.lua: no 'local TRACKS = {}' line"
+    lua = lua.replace(line, "local TRACKS = { " + ", ".join(f"{{ {TITLE_HASH0 + p}, {sec:.1f} }}"
+                                                      for p, (_, sec) in enumerate(tracks)) + " }")
+    os.makedirs(os.path.join(out, "amax", "plugins", "musicctl"), exist_ok=True)
+    open(os.path.join(out, "amax", "plugins", "musicctl", "musicctl.lua"), "w", encoding="utf-8", newline="\n").write(lua)
+    for p, (title, sec) in enumerate(tracks):
+        print(f"  position {p}: {title} ({sec:.0f} s)")
 
 
 def install(out=OUT, test=TEST):
@@ -637,7 +727,7 @@ def install(out=OUT, test=TEST):
     if b"Blur.exe" in subprocess.run(["tasklist", "/fi", "imagename eq Blur.exe"], capture_output=True).stdout:
         raise SystemExit("Blur is running: close it and try again.")
     for rel in ("audio/ingamemusic.baf", "audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat",
-                "audio/dat/finalperksubmix.dat"):
+                "audio/dat/finalperksubmix.dat", "gamedata/xt/loc/hud.loc", "amax/plugins/musicctl/musicctl.lua"):
         src, dst = os.path.join(out, rel), os.path.join(test, rel)
         if not os.path.exists(dst) or open(src, "rb").read() != open(dst, "rb").read():
             shutil.copyfile(src, dst)

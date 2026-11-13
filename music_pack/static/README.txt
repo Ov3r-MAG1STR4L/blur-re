@@ -72,11 +72,12 @@ UPDATING THE PACK
 
 HOW IT WORKS (for the curious)
 ------------------------------
-  Blur reads its files from signed archives (cache\root.pak, cache\root_streaming.pak) and only
-  looks at loose files that are NOT in an archive. So on the first run the pack unpacks these two
-  archives from YOUR game into the game folder and renames them to .pak.off. Then it rebuilds the
-  race music bank (audio\ingamemusic.baf), the music controller and the two final mix graphs
-  (audio\dat\*.dat). The next-track key is an AMAX Lua plugin (amax\plugins\musicctl).
+  Blur reads its files from signed archives (cache\root.pak, root_streaming.pak, gamedata.pak) and
+  only looks at loose files that are NOT in an archive. So on the first run the pack unpacks these
+  three archives from YOUR game into the game folder and renames them to .pak.off. Then it rebuilds
+  the race music bank (audio\ingamemusic.baf), the music controller and the two final mix graphs
+  (audio\dat\*.dat), and adds the track titles to gamedata\xt\loc\hud.loc. The next-track key and
+  the "now playing" banner are an AMAX Lua plugin (amax\plugins\musicctl).
   No file from the game is included in this pack.
 
 

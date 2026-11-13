@@ -26,11 +26,12 @@ os.environ.update({"BLUR_MUSIC_E": DATA, "BLUR_MUSIC_MUSIC_DIR": MUSIC, "BLUR_MU
 sys.path.insert(0, TOOLS)
 import blurpak, make_music  # noqa: E402  (after the environment above)
 
-PAKS = (("root", ""), ("root_streaming", "audio"))
+PAKS = (("root", ""), ("root_streaming", "audio"), ("gamedata", ""))   # gamedata: hud.loc (track titles of the banner)
 NEEDED = {"root": ["audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat", "audio/dat/finalperksubmix.dat",
                    "audio/ingameui.baf", "audio/menumusic_ns.baf"],
-          "root_streaming": ["ingamemusic.baf"]}
-WRITTEN = ["audio/ingamemusic.baf", "audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat",
+          "root_streaming": ["ingamemusic.baf"],
+          "gamedata": ["gamedata/xt/loc/hud.loc"]}
+WRITTEN = ["gamedata/xt/loc/hud.loc", "audio/ingamemusic.baf", "audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat",
            "audio/dat/finalperksubmix.dat", "audio/ingameui.baf", "amax/plugins/plugins.lua",
            "amax/plugins/musicctl/musicctl.lua"]
 REQUIRE = 'require("musicctl.musicctl"),'
