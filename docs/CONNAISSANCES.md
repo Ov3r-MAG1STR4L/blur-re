@@ -1532,7 +1532,7 @@ oot.pak` → racine du
   d'environnement `BLUR_MUSIC_E` lue par `make_music`) ; son de la touche (`make_music.music_key_sounds`, déplacé de
   `make_reverse`) ; plugin `musicctl` + `require` ajouté au `plugins.lua` du joueur. Tout est noté dans `<jeu>\Blur_Music_backup\` (hors du dossier du pack depuis le 2026-11-13 : un testeur a remplacé `Blur_Music` par une nouvelle version et perdu la sauvegarde de l'installation interrompue ; récupération manuelle décrite dans le README)
   (fichiers ajoutés, paks renommés, fichiers remplacés sauvegardés) : `Uninstall.bat` remet le jeu à l'identique.
-- Python 3 + numpy + ffmpeg requis : `Choose music.bat` propose de les installer (winget). Pas de lanceur : les joueurs
+- Python 3 + ffmpeg à installer par le joueur (liens dans le README) ; numpy + numba installés par pip depuis `Choose music.bat`. **Version « douce » (2026-11-13)** : l'antivirus d'un testeur a bloqué le pack (« virus detected », fausse alerte : Defender ne détecte rien) ; les `.bat` ne se relancent plus en administrateur et n'installent plus rien par winget ; `pack.py` teste l'écriture dans le dossier du jeu et demande « Exécuter en tant qu'administrateur » si besoin. Pas de lanceur : les joueurs
   démarrent Blur par d'autres outils (TextMod…). **Départ aléatoire dans le jeu (2026-11-13, simulé, à confirmer en
   jeu)** : l'index du mélange repartait de 0 à chaque lancement (même ordre à chaque session sans reconstruction).
   `make_music.random_start` : script `MusicShuffleStartScript` ; si `MusicShuffleStarted` (type 20) vaut 0, il le met
