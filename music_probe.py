@@ -61,7 +61,9 @@ end
 -- Measured on screen (grid + banner, 2026-11-13, parent HUD.ViewportId3d): x = 1 unit ~ 17.75 px of a 1552 px wide
 -- screenshot, origin at the Position panel (~122 px); y = 36 drew the banner at ~178 px. Start: bottom-left (player's
 -- red circle), y scale estimated; keys 1/2 (y -/+10), 5/6 (y -/+2), 3/4 (x -/+1) move it live, values logged.
-local POS_X, POS_Y = -6.5, 205.0
+-- y = 205 was off-screen: GetSize(HUD.ViewportId3d[1]) = 74 x 40.8 units (2026-11-13). Back to y = 36 (seen at ~178 px),
+-- to be walked down with keys 2 / 6 to the place the player wants.
+local POS_X, POS_Y = -6.5, 36.0
 local TEXT_DX, TEXT_DY = 1.0, -0.5      -- text inside the banner (as Position_Title vs Pos_Backing in the HUD)
 local TEXT_SCALE = 1.25                 -- a bit bigger than "Position"
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0   -- backing width = text length * K * scale + pad
