@@ -34,9 +34,10 @@ local POS_X, POS_Y = -4.5, 8.0
 local TEXT_DX, TEXT_DY = 1.0, -0.5
 local TEXT_SCALE = 1.25
 local INFO_SCALE, INFO_LINES, LINE_DY = 0.85, 2, 1.6   -- info lines under the title (artist, album)
--- animated overlay (player, 2026-11-13): the game's own scrolling clouds of the rank-up popup (mp_rank_up_clouds,
--- texture text_clouds, a 10 s looping u scroll that starts by itself), laid on the backing
-local CLOUDS, CLOUDS_ALPHA, CLOUDS_W, CLOUDS_H = true, 0.5, 1.0, 1.0   -- size factors vs the backing
+-- light streak across the screen (player's pick, 2026-11-13): the fan-demand win swirl (shp_FanSwirlWin, 854 x 482,
+-- texture light_paint_02, green Support_0), cloned, recoloured to the blue of "Position" (Main_1 = 12 125 253) and
+-- played with its own timeline (fan_demand_win_on: texture scroll 0.5-3 s, fade in and out) when the banner shows
+local SWIRL, SWIRL_COLOUR, SWIRL_TL = true, "!255 12 125 253", "fan_demand_win_on"
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0
 local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
 local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0.6, 0.40, 0.0, 0.48, 1.0, 0.53, 0.3, 0.60, 1.0 }
@@ -105,16 +106,16 @@ local function banner_build()
 	local _, h = UIButtons.GetSize(b.bg)
 	local _, _, z = UIButtons.GetPosition(b.bg)
 	b.h, b.z, b.lines = h, z or 0.0, 0
-	if CLOUDS then
-		local ok, c = pcall(UIButtons.CloneXtGadgetByName, "hud_objects", "mp_rank_up_clouds")
-		if ok and c then
-			UIButtons.SetParent(c, parent, UIEnums.Justify.BottomLeft)
-			local cw, ch = UIButtons.GetSize(c)
-			log("clouds " .. tostring(c) .. " size " .. tostring(cw) .. " x " .. tostring(ch))
-			b.clouds = c
-		else
-			log("clouds: no clone (" .. tostring(c) .. ")")
+	log("banner built: backing body " .. tostring(b.mid))
+	local vp = type(HUD.ViewportId) == "table" and (HUD.ViewportId[1] or HUD.ViewportId[0])
+	if SWIRL and vp then
+		local ok, sw = pcall(UIButtons.CloneXtGadgetByName, "hud_objects", "shp_FanSwirlWin")
+		if ok and sw then
+			UIButtons.SetParent(sw, vp, UIEnums.Justify.MiddleCentre)
+			pcall(UIButtons.ChangeColour, sw, SWIRL_COLOUR)
+			b.swirl = sw
 		end
+		log("swirl " .. tostring(ok) .. " " .. tostring(sw))
 	end
 	return b
 end
@@ -128,18 +129,13 @@ local function banner_place(dx, alpha)
 		UIButtons.ChangeAlpha(banner.info[i], alpha)
 	end
 	UIButtons.ChangeAlpha(banner.bg, alpha)
-	if banner.clouds then
-		UIButtons.ChangePosition(banner.clouds, POS_X + dx, POS_Y, banner.z)
-		UIButtons.ChangeAlpha(banner.clouds, alpha * CLOUDS_ALPHA)
-		pcall(UIButtons.SetAlphaIntensity, banner.clouds, alpha * CLOUDS_ALPHA, alpha * CLOUDS_ALPHA)
-	end
 	pcall(UIButtons.SetAlphaIntensity, banner.bg, alpha, alpha)   -- the backing draws its intensity as alpha
 end
 
 local function banner_hide()
 	if banner and banner.t0 then
 		pcall(UIButtons.SetActive, banner.bg, false)
-		if banner.clouds then pcall(UIButtons.SetActive, banner.clouds, false) end
+		if banner.swirl then pcall(UIButtons.SetActive, banner.swirl, false) end
 		pcall(UIButtons.SetActive, banner.txt, false)
 		for i = 1, INFO_LINES do pcall(UIButtons.SetActive, banner.info[i], false) end
 		banner.t0 = nil
@@ -166,12 +162,14 @@ local function banner_show(p)
 		end
 		w = math.max(WIDTH_MIN, w * WIDTH_K + WIDTH_PAD)
 		UIButtons.ChangeSize(banner.bg, w, banner.h + LINE_DY * banner.lines)
-		if banner.clouds then UIButtons.ChangeSize(banner.clouds, w * CLOUDS_W, (banner.h + LINE_DY * banner.lines) * CLOUDS_H) end
 		banner.t0 = clock
 		banner_place(0, 0.0)
 		UIButtons.SetActive(banner.bg, true)
 		if banner.mid then UIButtons.SetActive(banner.mid, false) end   -- the parent's SetActive turned the body on
-		if banner.clouds then UIButtons.SetActive(banner.clouds, true) end
+		if banner.swirl then                                -- the game's own streak animation, in blue
+			UIButtons.SetActive(banner.swirl, true)
+			pcall(UIButtons.TimeLineActive, SWIRL_TL, true, 0.0)
+		end
 		UIButtons.SetActive(banner.txt, true)
 	end)
 	if not ok then log("banner failed: " .. tostring(err)) end
@@ -221,8 +219,19 @@ local function race_start()
 	local t = options()
 	on_value = t and t.music_type or nil
 	if on_value ~= nil and on_value >= 2 then on_value = 1 end   -- a value of ours left by a crash
-	track_start, shown = nil, false
+	shown = false                                        -- the title in play is shown once the HUD is up
 	if not music_on() then log("race, music off or no track list") return end
+	if track_start then
+		-- the game lets the previous race's track go on into the next race (its RaceStartScript ends at once when a
+		-- track plays: player, 2026-11-13): keep following it, catching up with the tracks that ended meanwhile
+		while now() - track_start >= TRACKS[pos + 1][2] do
+			track_start = track_start + TRACKS[pos + 1][2]
+			pos = (pos + 1) % #TRACKS
+		end
+		set_music(pos + 2)                               -- if the game restarts the music after all: the same track
+		log("race, music goes on at position " .. pos)
+		return
+	end
 	math.randomseed(now())
 	pos = math.random(0, #TRACKS - 1)
 	set_music(pos + 2)                                   -- 1 -> p + 2 does not cross the gate: read by RaceStartScript
@@ -234,8 +243,7 @@ local function race_end()
 	pending = nil
 	banner_hide()
 	if on_value ~= nil then set_music(on_value) end      -- p + 2 -> 1: no gate crossing, the music goes on
-	track_start = nil
-	log("race over")
+	log("race over (position " .. pos .. " goes on)")    -- track_start kept: the track plays on into the next race
 end
 
 local function tick()
