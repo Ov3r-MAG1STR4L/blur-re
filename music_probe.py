@@ -8,6 +8,7 @@ Builds the saved music selection (make_music) into Blur_test, then:
   - hud.loc: a text under a hash of our own (TEXT_HASH); the plugin shows it with ChangeText(id, number) in the game's
     MP rank-up popup (GUI.mp_rank_up_ids, TimeLineActive "mp_rank_up"), then an absent string key.
   - amax plugin musicprobe (R3, or the 8 key: next step, in a race); log in memory: read_luamarks.py MPROBE.
+probe 2 (2026-11-13): the plugin steps now try displays (HUD templates cloned on GUI.*_ids roots).
 usage: music_probe.py [--undo]   (Blur closed. --undo: hud.loc and plugins.lua back, plugin removed; the music is put
                                  back to normal by "Choisir la musique.bat")"""
 import json, os, shutil, sys
@@ -43,24 +44,43 @@ local function set_music(v)
 	log("music_type = " .. tostring(v) .. (ok2 and "" or (" FAILED " .. tostring(err))))
 end
 
-local function popup(text)
-	local ids = GUI and GUI.mp_rank_up_ids
-	log("mp_rank_up_ids " .. tostring(ids) .. " root " .. tostring(ids and ids.root) .. " info " .. tostring(ids and ids.rank_info))
-	if not (ids and ids.rank_info and ids.root) then return end
+-- probe 2 (display): clone a HUD template, hang it on a viewport root the HUD fills in every race (GUI.*_ids[1]),
+-- write our hud.loc text (by hash) in it and in its text child, show it. Probe 1 (music_type 2 / 3) worked in game.
+local made = {}
+local function show(template, child, parent_table)
+	local roots = GUI and GUI[parent_table]
+	local parent = roots and (roots[1] or roots[0])      -- viewport loop: 1-based or 0-based, not known
+	log(template .. ": GUI." .. parent_table .. " [0] " .. tostring(roots and roots[0]) .. " [1] " .. tostring(roots and roots[1]))
+	if parent == nil then return end
 	local ok, err = pcall(function()
-		UIButtons.ChangeText(ids.rank_info, text)
-		UIButtons.SetActive(ids.root, true)
-		UIButtons.TimeLineActive("mp_rank_up", true, 0.0)
+		local id = UIButtons.CloneXtGadgetByName("hud_objects", template)
+		log("  clone " .. tostring(id))
+		made[#made + 1] = id
+		UIButtons.SetParent(id, parent, UIEnums.Justify.TopLeft)
+		pcall(UIButtons.ChangeText, id, TEXT_HASH)
+		if child then
+			local c = UIButtons.FindChildByName(id, child)
+			log("  child " .. child .. " " .. tostring(c))
+			if c then UIButtons.ChangeText(c, TEXT_HASH) end
+		end
+		UIButtons.SetActive(id, true)
 	end)
-	log("popup " .. tostring(text) .. (ok and " ok" or (" FAILED " .. tostring(err))))
+	log("  " .. (ok and "ok" or ("FAILED " .. tostring(err))))
+end
+
+local function hide_all()
+	for _, id in ipairs(made) do pcall(UIButtons.SetActive, id, false) end
+	log("hidden " .. #made)
+	made = {}
 end
 
 local STEPS = {
-	function() popup(TEXT_HASH) end,                                -- 1: our hud.loc text, by hash
-	function() popup("BLURMUSIC_ABSENT_KEY") end,                   -- 2: a string key absent from every .loc
-	function() set_music(0) pending = { 45, 2 } end,                -- 3: expect track A
-	function() set_music(0) pending = { 45, 3 } end,                -- 4: expect track B
-	function() set_music(0) pending = { 45, orig_type or 1 } end,   -- 5: back to normal (random track)
+	function() show("Points_Title", "Points_Amount", "inter_3d_ids") end,       -- 1
+	function() show("Position_Title", "Position_Amount", "inter_3d_ids") end,   -- 2
+	function() show("Points_Title", "Points_Amount", "safe_2d_ids") end,        -- 3: other root
+	function() show("FanDemand_Title", nil, "inter_3d_ids") end,                -- 4
+	function() show("Checkpoint_Title", nil, "inter_3d_ids") end,               -- 5
+	function() hide_all() end,                                                  -- 6
 }
 
 local function next_step()
@@ -113,7 +133,8 @@ function M.GoScreen(screen, _opts)
 		log("race, music_type " .. tostring(orig_type) .. ", UIText.HUD_POS " .. tostring(UIText and UIText.HUD_POS)
 			.. " (" .. type(UIText and UIText.HUD_POS) .. "), tracks A " .. TRACK_A .. " B " .. TRACK_B)
 	end
-	if not race and in_race and orig_type ~= nil then pending = nil set_music(orig_type) end   -- left mid-test
+	if not race and in_race then hide_all() end
+	if not race and in_race and orig_type ~= nil and pending then pending = nil set_music(orig_type) end   -- left mid-test
 	in_race = race
 end
 M.PushScreen = M.GoScreen
