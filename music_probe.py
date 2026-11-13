@@ -316,7 +316,9 @@ function M.GoScreen(screen, _opts)
 	local s = string.lower(tostring(screen))
 	local race = s == "ingame\\hud.lua" or s == "ingame\\paused.lua"
 	if race and not in_race then
-		banner, grid, grid_auto, diag = nil, nil, true, nil   -- the HUD reloads each race: new gadgets; grid shown at once
+		if grid then grid_toggle() end                    -- hide what the previous HUD screen got first: forgotten, it stayed
+		banner_hide()                                     -- on screen for good (another screen in a race, e.g. wrecked)
+		banner, grid, grid_auto, diag = nil, nil, true, nil   -- new gadgets; grid shown at once
 		local ok, t = pcall(Amax.Options)
 		orig_type = ok and type(t) == "table" and t.music_type or nil
 		log("race, music_type " .. tostring(orig_type) .. ", UIText.HUD_POS " .. tostring(UIText and UIText.HUD_POS)
