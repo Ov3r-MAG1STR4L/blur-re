@@ -8,15 +8,14 @@ Builds the saved music selection (make_music) into Blur_test, then:
   - hud.loc: a text under a hash of our own (TEXT_HASH); the plugin shows it with ChangeText(id, number) in the game's
     MP rank-up popup (GUI.mp_rank_up_ids, TimeLineActive "mp_rank_up"), then an absent string key.
   - amax plugin musicprobe (R3, or the 8 key: next step, in a race); log in memory: read_luamarks.py MPROBE.
-probe 2 (2026-11-13): the plugin steps now try displays (HUD templates cloned on GUI.*_ids roots).
+probe 5 (2026-11-13): R3 / 8 = track A + "Now playing" popup (game rank-up popup), track B, back to normal.
 usage: music_probe.py [--undo]   (Blur closed. --undo: hud.loc and plugins.lua back, plugin removed; the music is put
                                  back to normal by "Choisir la musique.bat")"""
-import json, os, shutil, sys
+import hashlib, json, os, shutil, sys
 import blurloc, make_music as mm
 
-TEXT_HASH = 0x0B1E0001
-TEXT_KEY = "BLURMUSIC_PROBE_TEXT"
-TEXTS = {"en": "Blur Music probe: hash text OK", "fr": "Sonde Blur Music : texte par hash OK"}
+TEXT_HASH = 0x0B1E0001                                  # probes 1-4: "Blur Music probe: hash text OK" (shown in game)
+TITLE_HASH, TRACK_A_HASH, TRACK_B_HASH = 0x0B1E0002, 0x0B1E0003, 0x0B1E0004
 HUD_LOC = os.path.join(mm.TEST, "gamedata", "xt", "loc", "hud.loc")
 PLUGINS = os.path.join(mm.TEST, "amax", "plugins", "plugins.lua")
 PLUGIN_DIR = os.path.join(mm.TEST, "amax", "plugins", "musicprobe")
@@ -24,7 +23,7 @@ BACKUP = os.path.join(mm.E, "music_probe_backup")
 REQUIRE = 'require("musicprobe.musicprobe"),'
 PLUGIN = r'''-- musicprobe: projet L probe (Blur_test only). R3 (or the 8 key) = next step, in a race.
 local M = { info = { name = "MusicProbe", description = "Projet L probe", version = 0.1 } }
-local TEXT_HASH = @HASH@
+local TITLE_HASH, TRACK_A_HASH, TRACK_B_HASH = @TITLE@, @HA@, @HB@
 local TRACK_A, TRACK_B = "@A@", "@B@"
 local n_log, in_race, step, clock, pending, last_key = 0, false, 0, 0, nil, ""
 local wrapped_frame, wrapped_msg = false, false
@@ -46,8 +45,8 @@ end
 
 -- probe 2 (display): clone a HUD template, hang it on a viewport root the HUD fills in every race (GUI.*_ids[1]),
 -- write our hud.loc text (by hash) in it and in its text child, show it. Probe 1 (music_type 2 / 3) worked in game.
-local made = nil      -- created in a hook, never at load time: a table AMAX's lua5.1.dll creates empty and the
-                      -- game's own Lua (Blur.exe) fills crashes the game (two Lua copies, probe 4 crash 2026-11-13)
+-- never create at load time a table a hook fills: AMAX's lua5.1.dll and the game's own Lua (Blur.exe) are two Lua
+-- copies, an empty table of the first filled by the second crashes the game (probe 4 crash, 2026-11-13)
 -- probe 3: the plugin's GUI is not the HUD's (inter_3d_ids empty in probe 2): each screen script probably runs in
 -- its own environment. Functions the HUD script defines keep it: getfenv(HUD_xxx).GUI = the HUD's GUI.
 local function keys(t, n)
@@ -87,72 +86,48 @@ local function hud_gui()
 	return captured_gui, captured_gui and "captured" or "not captured yet"
 end
 
-local function first(t)
-	if type(t) ~= "table" then return nil end
-	return t[1] or t[0]                                  -- viewport loop: 1-based or 0-based, not known
+-- probe 5: the rank-up popup (centred, animated by the game) as "now playing": its title becomes our hud.loc text,
+-- its rank icon is hidden, rank_info = the track name (hud.loc, our hashes); the track starts through music_type.
+-- Popup layout (ui.json, hud_objects): mp_rank_up_dummy > mp_rank_up_rank (icon) > mp_rank_up_rank_num,
+-- mp_rank_up_rank_title ("Rank Up", MP_RANK_UP), mp_rank_up_rank_info, mp_rank_up_clouds.
+local function popup_ids()
+	local gui = hud_gui()
+	return gui and gui.mp_rank_up_ids
 end
 
-local function show(template, child, parent_table)
-	wrap_hud()
-	local hud = rawget(_G, "HUD")
-	if not logged_hud and type(hud) == "table" then
-		logged_hud = true
-		log("HUD keys " .. keys(hud, 40))
-		log("HUD.ViewportId3d " .. (type(hud.ViewportId3d) == "table" and keys(hud.ViewportId3d, 6) or tostring(hud.ViewportId3d))
-			.. " | HUD.ViewportId " .. (type(hud.ViewportId) == "table" and keys(hud.ViewportId, 6) or tostring(hud.ViewportId)))
+local function now_playing(info_hash)
+	local ids = popup_ids()
+	if not (ids and ids.root and ids.rank_info) then
+		log("no rank-up popup (GUI captured: " .. tostring(captured_gui ~= nil) .. ")")
+		return
 	end
-	local gui, how = hud_gui()
-	local parent, from = nil, ""
-	if parent_table == "ViewportId3d" or parent_table == "ViewportId" then
-		parent, from = type(hud) == "table" and first(hud[parent_table]), "HUD." .. parent_table
-	else
-		parent, from = gui and first(gui[parent_table]), "GUI." .. parent_table .. " (" .. how .. ")"
-	end
-	log(template .. ": parent " .. from .. " = " .. tostring(parent))
-	if parent == nil then return end
 	local ok, err = pcall(function()
-		local id = UIButtons.CloneXtGadgetByName("hud_objects", template)
-		log("  clone " .. tostring(id))
-		made = made or {}
-		made[#made + 1] = id
-		UIButtons.SetParent(id, parent, UIEnums.Justify.TopLeft)
-		pcall(UIButtons.ChangeText, id, TEXT_HASH)
-		if child then
-			local c = UIButtons.FindChildByName(id, child)
-			log("  child " .. child .. " " .. tostring(c))
-			if c then UIButtons.ChangeText(c, TEXT_HASH) end
-		end
-		UIButtons.SetActive(id, true)
+		local title = UIButtons.FindChildByName(ids.root, "mp_rank_up_rank_title")
+		log("  title " .. tostring(title) .. " icon " .. tostring(ids.rank) .. " MP_RANK_UP " .. tostring(UIText.MP_RANK_UP))
+		if title then UIButtons.ChangeText(title, TITLE_HASH) end
+		if ids.rank then UIButtons.SetActive(ids.rank, false) end
+		UIButtons.ChangeText(ids.rank_info, info_hash)
+		UIButtons.SetActive(ids.root, true)
+		UIButtons.TimeLineActive("mp_rank_up", true, 0.0)
 	end)
-	log("  " .. (ok and "ok" or ("FAILED " .. tostring(err))))
+	log("  now playing " .. (ok and "ok" or ("FAILED " .. tostring(err))))
 end
 
-local function hide_all()
-	for _, id in ipairs(made or {}) do pcall(UIButtons.SetActive, id, false) end
-	log("hidden " .. #(made or {}))
-	made = {}
+local function restore_popup()                          -- a real rank-up shows "Rank Up" and its icon again
+	local ids = popup_ids()
+	if not (ids and ids.root) then return end
+	local ok, err = pcall(function()
+		local title = UIButtons.FindChildByName(ids.root, "mp_rank_up_rank_title")
+		if title then UIButtons.ChangeText(title, UIText.MP_RANK_UP) end
+		if ids.rank then UIButtons.SetActive(ids.rank, true) end
+	end)
+	log("  popup restored " .. (ok and "ok" or ("FAILED " .. tostring(err))))
 end
 
 local STEPS = {
-	function() show("Points_Title", "Points_Amount", "ViewportId3d") end,       -- 1: HUD global table
-	function() show("Position_Title", "Position_Amount", "ViewportId") end,     -- 2
-	function() show("Points_Title", "Points_Amount", "inter_3d_ids") end,       -- 3: captured GUI
-	function() show("Position_Title", "Position_Amount", "safe_2d_ids") end,    -- 4
-	function() show("Checkpoint_Title", nil, "ViewportId3d") end,               -- 5
-	function()                                                                  -- 6: rank-up popup, HUD's GUI
-		local gui = hud_gui()
-		local ids = gui and gui.mp_rank_up_ids
-		log("rank-up ids " .. tostring(ids) .. " root " .. tostring(ids and ids.root) .. " info " .. tostring(ids and ids.rank_info))
-		if ids and ids.root and ids.rank_info then
-			local ok, err = pcall(function()
-				UIButtons.ChangeText(ids.rank_info, TEXT_HASH)
-				UIButtons.SetActive(ids.root, true)
-				UIButtons.TimeLineActive("mp_rank_up", true, 0.0)
-			end)
-			log("  rank-up popup " .. (ok and "ok" or ("FAILED " .. tostring(err))))
-		end
-	end,
-	function() hide_all() end,                                                  -- 7
+	function() set_music(0) pending = { 45, 2 } now_playing(TRACK_A_HASH) end,               -- 1: track A
+	function() set_music(0) pending = { 45, 3 } now_playing(TRACK_B_HASH) end,               -- 2: track B
+	function() restore_popup() set_music(0) pending = { 45, orig_type or 1 } end,            -- 3: back to normal
 }
 
 local function next_step()
@@ -166,6 +141,7 @@ end
 local function tick()
 	clock = clock + 1 / 60
 	if not in_race then return end
+	if not wrapped_hud and rawget(_G, "HUD_UpdateCombo") then wrap_hud() end   -- before the first key press
 	if pending then
 		pending[1] = pending[1] - 1
 		if pending[1] <= 0 then local v = pending[2] pending = nil set_music(v) end
@@ -200,12 +176,12 @@ function M.GoScreen(screen, _opts)
 	local s = string.lower(tostring(screen))
 	local race = s == "ingame\\hud.lua" or s == "ingame\\paused.lua"
 	if race and not in_race then
+		wrapped_hud, captured_gui = false, nil           -- the HUD script reloads each race: new HUD_* functions and GUI
 		local ok, t = pcall(Amax.Options)
 		orig_type = ok and type(t) == "table" and t.music_type or nil
 		log("race, music_type " .. tostring(orig_type) .. ", UIText.HUD_POS " .. tostring(UIText and UIText.HUD_POS)
 			.. " (" .. type(UIText and UIText.HUD_POS) .. "), tracks A " .. TRACK_A .. " B " .. TRACK_B)
 	end
-	if not race and in_race then hide_all() end
 	if not race and in_race and orig_type ~= nil and pending then pending = nil set_music(orig_type) end   -- left mid-test
 	in_race = race
 end
@@ -273,6 +249,8 @@ def main():
     except IndexError:                                   # original tracks only
         objs, ks = track_objects(j, (0, 1)), (0, 1)
     names = [wave_of(j, k) for k in ks]
+    files = chosen_files(last["dossiers"])               # display names: the added tracks' file names, in build order
+    titles = [os.path.splitext(files[k - 23])[0] if k >= 23 else names[i] for i, k in enumerate(ks)]
     mt = probe_music_type(j, *objs)
     open(path, "wb").write(j.build())
     print(f"sonde graphe : MusicType (objet {mt}) = 2 -> {names[0]} ; = 3 -> {names[1]}")
@@ -282,11 +260,14 @@ def main():
         if not os.path.exists(os.path.join(BACKUP, name)):
             shutil.copy2(src, os.path.join(BACKUP, name))
     d = blurloc.parse_raw(open(os.path.join(BACKUP, "hud.loc"), "rb").read())
-    blurloc.add_text(d, TEXT_KEY, TEXT_HASH, TEXTS)
+    blurloc.add_text(d, "BLURMUSIC_NOW_PLAYING", TITLE_HASH, {"en": "Now playing", "fr": "En écoute"})
+    blurloc.add_text(d, "BLURMUSIC_TRACK_A", TRACK_A_HASH, {"en": titles[0]})
+    blurloc.add_text(d, "BLURMUSIC_TRACK_B", TRACK_B_HASH, {"en": titles[1]})
     os.chmod(HUD_LOC, 0o666)
     open(HUD_LOC, "wb").write(blurloc.build(d))
     os.makedirs(PLUGIN_DIR, exist_ok=True)
-    lua = PLUGIN.replace("@HASH@", str(TEXT_HASH)).replace("@A@", names[0]).replace("@B@", names[1])
+    lua = (PLUGIN.replace("@TITLE@", str(TITLE_HASH)).replace("@HA@", str(TRACK_A_HASH)).replace("@HB@", str(TRACK_B_HASH))
+           .replace("@A@", names[0]).replace("@B@", names[1]))
     open(os.path.join(PLUGIN_DIR, "musicprobe.lua"), "w", encoding="utf-8", newline="\n").write(lua)
     lst = open(PLUGINS, encoding="utf-8").read()
     if REQUIRE.rstrip(",") not in lst:
@@ -294,7 +275,19 @@ def main():
         os.chmod(PLUGINS, 0o666)
         open(PLUGINS, "w", encoding="utf-8", newline="\n").write(lst[:k].rstrip() + "\n\t" + REQUIRE + "\n}\n")
     open(os.path.join(BACKUP, "ACTIVE"), "w").write("music_probe\n")   # music_menu --remelanger keeps the probe
-    print("installé dans", mm.TEST, ": hud.loc (clé", TEXT_KEY, hex(TEXT_HASH) + "), plugin musicprobe")
+    print("installé dans", mm.TEST, ": hud.loc (Now playing + 2 titres :", titles, "), plugin musicprobe")
+
+
+def chosen_files(folders):
+    """File names of the added tracks, in make_music.build's order (sorted per folder, same content counted once)."""
+    files, seen = [], set()
+    for d in folders:
+        for f in sorted(x for x in os.listdir(d) if x.lower().endswith(mm.AUDIO_EXT)):
+            key = hashlib.sha1(open(os.path.join(d, f), "rb").read()).hexdigest()
+            if key not in seen:
+                seen.add(key)
+                files.append(f)
+    return files
 
 
 if __name__ == "__main__":
