@@ -46,7 +46,8 @@ end
 
 -- probe 2 (display): clone a HUD template, hang it on a viewport root the HUD fills in every race (GUI.*_ids[1]),
 -- write our hud.loc text (by hash) in it and in its text child, show it. Probe 1 (music_type 2 / 3) worked in game.
-local made = {}
+local made = nil      -- created in a hook, never at load time: a table AMAX's lua5.1.dll creates empty and the
+                      -- game's own Lua (Blur.exe) fills crashes the game (two Lua copies, probe 4 crash 2026-11-13)
 -- probe 3: the plugin's GUI is not the HUD's (inter_3d_ids empty in probe 2): each screen script probably runs in
 -- its own environment. Functions the HUD script defines keep it: getfenv(HUD_xxx).GUI = the HUD's GUI.
 local function keys(t, n)
@@ -112,6 +113,7 @@ local function show(template, child, parent_table)
 	local ok, err = pcall(function()
 		local id = UIButtons.CloneXtGadgetByName("hud_objects", template)
 		log("  clone " .. tostring(id))
+		made = made or {}
 		made[#made + 1] = id
 		UIButtons.SetParent(id, parent, UIEnums.Justify.TopLeft)
 		pcall(UIButtons.ChangeText, id, TEXT_HASH)
@@ -126,8 +128,8 @@ local function show(template, child, parent_table)
 end
 
 local function hide_all()
-	for _, id in ipairs(made) do pcall(UIButtons.SetActive, id, false) end
-	log("hidden " .. #made)
+	for _, id in ipairs(made or {}) do pcall(UIButtons.SetActive, id, false) end
+	log("hidden " .. #(made or {}))
 	made = {}
 end
 

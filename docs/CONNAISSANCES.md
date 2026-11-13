@@ -1578,6 +1578,15 @@ Demande de la communauté : afficher le titre quand la musique change. Deux ques
     probablement aussi absente en carrière). Il faut une autre méthode d'affichage (sonde 2 : élément cloné d'un
     gabarit du HUD présent dans toutes les courses).
   - Touches : `UIButtons.GetKeyInput()` donne `CMN_8` pour la touche 8, `CMN_1` pour 1.
+- **Sondes 2 et 3 (2026-11-13)** : la globale `GUI` vaut nil quand le plugin réagit (le jeu ne la remplit que pendant
+  le code du HUD) ; les fonctions `HUD_*` sont dans `_G` (`getfenv` = `_G`) ; une **globale `HUD`** existe
+  (`HUD.ViewportId3d[vp]` = parent des messages de fans dans le code du HUD).
+- **Piège AMAX, Confirmé par un plantage (sonde 4, 2026-11-13, dump `Blur.exe+0x6E8519`, écriture dans
+  `lua5.1.dll+0x3DA78`)** : deux copies de Lua dans le processus (celle de `Blur.exe` et le `lua5.1.dll` d'AMAX). Une
+  table créée **vide au chargement du plugin** (par `lua5.1.dll`) pointe sur le nœud vide statique de `lua5.1.dll` ;
+  quand du code exécuté par le Lua du jeu (hook, wrapper) y ajoute une clé, il ne reconnaît pas ce nœud et écrit
+  dedans : violation d'accès. **Règle** : créer les tables qui seront remplies dans un hook, jamais au chargement
+  (`musicctl` le faisait déjà pour `seen`).
 - **Repli simple** : afficher le titre seulement après un appui sur « suivant »… impossible aussi sans savoir lequel
   le graphe a tiré. Tout dépend donc du test `music_type`.
 - Essai proposé (Blur_test) : graphe sonde où `MusicType` = 2 et 3 jouent deux morceaux précis, plugin qui écrit 2 ou
