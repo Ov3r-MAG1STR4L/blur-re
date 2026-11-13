@@ -58,7 +58,10 @@ end
 -- 1.0, -0.25 under HUD.ViewportId3d; 'Position' = 4.94 units long, about 18 px of a 1552 px wide screenshot). Origin
 -- = the HUD's top-left (where the Position panel starts), y down; the screen is about 85 x 47 units there. A moved
 -- gadget shows one frame at its default place first (the "flash").
-local POS_X, POS_Y = 0.0, 36.0          -- banner top-left (HUD units; estimate: bottom-left, tune with the grid)
+-- Measured on screen (grid + banner, 2026-11-13, parent HUD.ViewportId3d): x = 1 unit ~ 17.75 px of a 1552 px wide
+-- screenshot, origin at the Position panel (~122 px); y = 36 drew the banner at ~178 px. Start: bottom-left (player's
+-- red circle), y scale estimated; keys 1/2 (y -/+10), 5/6 (y -/+2), 3/4 (x -/+1) move it live, values logged.
+local POS_X, POS_Y = -6.5, 205.0
 local TEXT_DX, TEXT_DY = 1.0, -0.5      -- text inside the banner (as Position_Title vs Pos_Backing in the HUD)
 local TEXT_SCALE = 1.25                 -- a bit bigger than "Position"
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0   -- backing width = text length * K * scale + pad
@@ -96,9 +99,10 @@ local function banner_build()
 end
 
 local function banner_place(dx, alpha)
-	UIButtons.ChangePosition(banner.bg, POS_X + dx, banner.y, banner.z)
-	UIButtons.ChangePosition(banner.txt, POS_X + dx + TEXT_DX, banner.y + TEXT_DY, banner.z)
+	UIButtons.ChangePosition(banner.bg, POS_X + dx, POS_Y, banner.z)
+	UIButtons.ChangePosition(banner.txt, POS_X + dx + TEXT_DX, POS_Y + TEXT_DY, banner.z)
 	UIButtons.ChangeAlpha(banner.bg, alpha)
+	pcall(UIButtons.SetAlphaIntensity, banner.bg, alpha, alpha)   -- backing: IntensityAsAlpha, ChangeAlpha alone did nothing
 	UIButtons.ChangeAlpha(banner.txt, alpha)
 end
 
@@ -111,6 +115,7 @@ local function now_playing(info_hash)
 		local w = math.max(WIDTH_MIN, len * WIDTH_K * TEXT_SCALE + WIDTH_PAD)
 		UIButtons.ChangeSize(banner.bg, w, banner.h)
 		banner.t0 = clock
+		banner.hash = info_hash
 		banner_place(0, 0.0)
 		UIButtons.SetActive(banner.bg, true)
 		UIButtons.SetActive(banner.txt, true)
@@ -281,6 +286,12 @@ local function tick()
 		last_key = key
 		if key ~= "" then log("key " .. key) end
 		if key == "CMN_8" then next_step() end
+		local move = ({ CMN_1 = { 0, -10 }, CMN_2 = { 0, 10 }, CMN_5 = { 0, -2 }, CMN_6 = { 0, 2 }, CMN_3 = { -1, 0 }, CMN_4 = { 1, 0 } })[key]
+		if move then
+			POS_X, POS_Y = POS_X + move[1], POS_Y + move[2]
+			log(string.format("tune POS_X %.1f POS_Y %.1f", POS_X, POS_Y))
+			now_playing((banner and banner.hash) or TRACK_A_HASH)
+		end
 	end
 end
 
