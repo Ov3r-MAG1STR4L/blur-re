@@ -1546,6 +1546,32 @@ oot.pak` → racine du
   identiques à ceux validés en jeu dans `Blur_test`. **Pas testés** : les `.bat` (élévation, winget), une vraie
   installation de Blur, et le jeu **en ligne** avec les paks `root` / `root_streaming` en clair.
 
+## Étude : popup « morceau en cours » en course (2026-11-13, lecture des 144 scripts BZUI, rien testé en jeu)
+Demande de la communauté : afficher le titre quand la musique change. Deux questions.
+- **Afficher un texte en course : Probable.** Le HUD (`Screens\Ingame\HUD.lua`) crée ses éléments avec
+  `UIButtons.CloneXtGadgetByName(contexte, gabarit)` puis `FindChildByName`, `SetActive`, `ChangePosition`, et le texte
+  avec `ChangeText(id, texte)` (UIButtons ou Amax). Gabarits texte candidats : `ProgressMessage`, `FanMsg_Main_RB`,
+  `Points_Title`. `UIScreen.AddMessageNow(UIEnums.GameMessage.X)` envoie des messages au moteur, pas du texte.
+  **Le texte passé à `ChangeText` est une clé** : nombre = `UIText.X` (entrée `.loc`), chaîne = clé aussi
+  (`'HUD_' .. n .. '_POS_NUM'` dans `hud.loc` ; `'PROFILE_PAD' .. n .. '_NAME'` absente des `.loc` : valeur fournie par
+  le moteur). Les popups (`Popups\TheCustomPopup`, `SCUI_Popup`) distinguent `text_id` (nombre) et `text_string`
+  (chaîne). Pas de fonction « texte libre » trouvée. `SetXtVar` règle des propriétés graphiques (`render_state…`),
+  pas du texte. **Voie la plus sûre** : le pack écrit les titres dans un `.loc` (`blurloc.py`, déjà utilisé pour les
+  routes inversées ; imposerait de sortir aussi `gamedata.pak`) et le plugin appelle `ChangeText(id, "CLE_DU_MORCEAU")`.
+  À tester aussi : une clé absente des `.loc` est-elle affichée telle quelle ?
+- **Savoir quel morceau joue : Impossible directement (Fort).** Aucune fonction Lua ne lit le graphe audio : le Lua n'a
+  que les options (`Amax.Options`, `UpdateAudioOptions`), `Start/StopIngameMusic`, `UISystem.PlaySound`. Le choix se
+  fait dans `music_controller.dat` (départ aléatoire compris). **Piste** : inverser le sens, le Lua choisit le morceau.
+  Le seul canal Lua → graphe connu est l'option `music_type` (entrée `MusicType`, porte à 0,5) ; dans le menu ce n'est
+  que l'index du choix (`GetSelection(MusicModeId)`). **Hypothèse à tester** : le moteur transmet-il une valeur
+  quelconque (2, 3…) au graphe ? Si oui : le graphe joue le morceau n° `MusicType - 2`, le plugin connaît l'ordre
+  (fichier Lua écrit par le pack) et affiche le titre. Fin naturelle d'un morceau : le plugin devrait la prévoir par
+  les durées (pauses, recommencement : fragile) ou le graphe enchaîner seul (le plugin ne saurait plus).
+- **Repli simple** : afficher le titre seulement après un appui sur « suivant »… impossible aussi sans savoir lequel
+  le graphe a tiré. Tout dépend donc du test `music_type`.
+- Essai proposé (Blur_test) : graphe sonde où `MusicType` = 2 et 3 jouent deux morceaux précis, plugin qui écrit 2 ou
+  3 sur une touche, et `ChangeText` d'une clé `.loc` ajoutée + d'une clé absente sur un clone de `ProgressMessage`.
+
 ## Prototype « Blur 2 » Xbox 360 du 31/08/2010 (2026-11-09, liste de l'archive, rien d'extrait sauf un en-tête)
 - Archive `Downloads\Blur 2 (Aug 31, 2010 prototype).rar` : RAR5 de 6,2 Go (7,0 Go décompressé), 979 fichiers. Le
   `tar` de Windows refuse (dictionnaire trop grand), il faut 7-Zip. Dossier `KanzenDev\` (nom de code « Kanzen »),

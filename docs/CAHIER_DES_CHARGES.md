@@ -286,6 +286,15 @@ ligne et ne tester que dans `Blur_test`. Solution et faisabilité à discuter av
 parmi les sons jamais utilisés par le jeu (78 sur 2 732, voir CONNAISSANCES) : `FE_Left` / `FE_Right` / `FE_Move`
 (bips de menu, `frontendui.baf`), `HUD_PerksCountdown` (`ingameui.baf`).
 
+## Projet L : popup « morceau en cours » — étude faite, essai en jeu à faire
+
+**Demande (communauté, 2026-11-13)** : afficher le titre du morceau quand la musique change en course.
+**Étude (voir CONNAISSANCES, « Étude : popup »)** : l'affichage est probable (cloner un élément texte du HUD,
+`ChangeText` avec une clé `.loc` écrite par le pack) ; le Lua ne peut pas savoir quel morceau joue. Piste : le Lua
+choisit le morceau via l'option `music_type` si le moteur transmet n'importe quelle valeur au graphe.
+Étapes : 1. sonde en jeu (`music_type` 2/3, texte `.loc` et clé absente) ; 2. selon le résultat, conception
+(qui enchaîne les morceaux, gestion des pauses) ; 3. intégration au pack. Rien à promettre avant l'étape 1.
+
 ## Projet J : circuits d'autres jeux dans Blur — à étudier (session à part)
 
 **Idée de l'utilisateur (2026-10-26)** : importer des circuits d'autres jeux de course à structure proche (NFS Hot
@@ -493,3 +502,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-13 | Audit A, environnements et éclairage de Blur 2 (lecture seule, pas d'essai en jeu) : réglages déplacés dans `environmentalsettings.bin` (lien `tracks.bin`), `LightingSettings` de même structure que Blur 1 (188 o) ; ciel, cubemap et échantillons séparés ; 31 août = format Blur 1 (`CubePt2`, `LSData` 24 o), novembre = `CubePt3` + 16 o ; seule ambiance propre à Dubaï en août (`HFD_HemiClouds16`, `Dubai_Sunny_LUT_01`, 73 357 échantillons) ; 3 pistes de portage ; rapport `docs/blur2/audit_environnements/` |
 | 2026-11-13 | Pack musique, alerte antivirus identifiée : `Trojan:Script/Wacatac.B!ml` (verdict cloud de Defender) au téléchargement depuis Discord, même sur la version douce ; non reproductible en scan local : faux positif de réputation. À faire : déclarer à Microsoft, choisir un autre hébergement |
 | 2026-11-13 | Pack musique publié : dépôt public GitHub `Ov3r-MAG1STR4L/blur-music-pack`, release `v1.0` (zip identique au local, aucune menace au scan Defender après téléchargement) ; reste à vérifier un téléchargement par navigateur chez un testeur |
+| 2026-11-13 | Projet L (popup du morceau en cours) : étude sur les 144 scripts BZUI ; affichage probable via clé `.loc`, morceau en cours illisible par le Lua ; tout dépend d'un essai `music_type` en jeu |
