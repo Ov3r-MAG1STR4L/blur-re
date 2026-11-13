@@ -8,7 +8,7 @@ First run (menu): a pak wins over loose files, so cache\\root.pak and cache\\roo
 PLAYER'S OWN paks (root -> <game>\\, root_streaming -> <game>\\audio\\, existing loose files kept) and set aside as
 .off; the few originals the music build needs are kept in its data\\ folder. Everything is recorded in <game>\\Blur_Music_backup\\ (added
 files, renamed paks, files saved before being replaced) so uninstall puts the game back as it was."""
-import json, os, re, shutil, subprocess, sys
+import hashlib, json, os, re, shutil, subprocess, sys
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 PACK = os.path.dirname(TOOLS)
@@ -107,7 +107,7 @@ def prepare():
                     # (player, 2026-11-13)
                     same.add(rel)
                 if new or rel in same:
-                    added.write(rel + "\n")
+                    added.write(f"{rel}\t{hashlib.sha1(data).hexdigest()}\n")   # uninstall: only if unchanged
                     added.flush()
                 if k % 500 == 0 or k == len(p.files):
                     print(f"  {pak}.pak: {k} / {len(p.files)}")
@@ -175,10 +175,19 @@ def uninstall():
     blur_closed()
     if not os.path.exists(STATE):
         stop("The pack is not installed.")
-    added = [l for l in open(ADDED, encoding="utf-8").read().splitlines() if l] if os.path.exists(ADDED) else []
-    for rel in added:
-        if os.path.exists(game_path(rel)):
-            os.remove(game_path(rel))
+    lines = [l.split("\t") for l in open(ADDED, encoding="utf-8").read().splitlines() if l] if os.path.exists(ADDED) else []
+    added, kept = [l[0] for l in lines], []
+    print("Removing the files the pack added (checking each one, a few minutes)...")
+    for rel, *sha in lines:
+        p = game_path(rel)
+        if not os.path.exists(p):
+            continue
+        # changed since the pack wrote it (another mod...): not ours any more. The audio files the pack rebuilds
+        # (WRITTEN) are always its own; lines of older versions have no hash.
+        if sha and rel not in WRITTEN and hashlib.sha1(open(p, "rb").read()).hexdigest() != sha[0]:
+            kept.append(rel)
+            continue
+        os.remove(p)
     for rel in (open(RENAMED, encoding="utf-8").read().splitlines() if os.path.exists(RENAMED) else []):
         if rel and os.path.exists(game_path(rel) + ".off"):
             os.replace(game_path(rel) + ".off", game_path(rel))
@@ -214,6 +223,13 @@ def uninstall():
         if os.path.exists(f):
             os.remove(f)
     print("Uninstalled: the game is back as it was (your converted tracks stay in tools\\cache).")
+    if kept:
+        print(f"\n{len(kept)} file(s) unpacked by the pack were changed since (by another mod?) and were left in place:")
+        for rel in kept[:20]:
+            print("  " + rel.replace("/", "\\"))
+        if len(kept) > 20:
+            print(f"  ... and {len(kept) - 20} more")
+        print("The game reads its archives first: these files are only used if another mod set the archives aside.")
 
 
 ADMIN = ("Windows does not let this window write in the Blur folder (it is protected, e.g. in Program Files).\n"
