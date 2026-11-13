@@ -101,7 +101,10 @@ def prepare():
                 if new:
                     os.makedirs(os.path.dirname(game_path(rel)), exist_ok=True)
                     open(game_path(rel), "wb").write(data)
-                elif open(game_path(rel), "rb").read() == data:  # same as the pak (an older run's leftover): ours
+                elif aside and open(game_path(rel), "rb").read() == data:
+                    # recovery only (player answered Y): an older run's leftover, same as the pak. In a normal install
+                    # an existing loose file is the player's (their own old extraction...): never taken, never deleted
+                    # (player, 2026-11-13)
                     same.add(rel)
                 if new or rel in same:
                     added.write(rel + "\n")
