@@ -186,6 +186,63 @@ local function grid_toggle()
 	log("grid on: " .. #grid .. " labels")
 end
 
+-- position diagnostic (2026-11-13): the grid and the banner flash then vanish. Hypothesis: ChangePosition starts a
+-- move (tween) instead of placing; the HUD sometimes passes a 5th argument true. At each race start, two test labels
+-- are moved by (+60, +40): A plain, B with true; their positions are logged every 6 frames for 3 s, with the HUD's own
+-- "Position" label for reference (screen spot known from screenshots). Nothing to look at: read the log.
+local diag = nil
+
+local function pos(id)
+	local ok, x, y, z = pcall(UIButtons.GetPosition, id)
+	if not ok then return "?" end
+	return string.format("%.1f,%.1f,%.2f", x or -1, y or -1, z or -1)
+end
+
+local function diag_start()
+	local vp = HUD.ViewportId[1] or HUD.ViewportId[0]
+	local ok, err = pcall(function()
+		local w, h = UIButtons.GetSize(vp)
+		log("diag: viewport " .. tostring(vp) .. " size " .. tostring(w) .. " x " .. tostring(h) .. " pos " .. pos(vp))
+		for _, root in ipairs({ vp, HUD.ViewportId3d[1] or HUD.ViewportId3d[0] }) do
+			local p = UIButtons.FindChildByName(root, "Position_Title")
+			log("diag: HUD Position_Title under " .. tostring(root) .. " = " .. tostring(p) .. (p and (" pos " .. pos(p)) or ""))
+		end
+		local d = { t0 = clock, n = 0 }
+		for k, flag in ipairs({ false, true }) do
+			local id = UIButtons.CloneXtGadgetByName("hud_objects", "Position_Title")
+			for _, child in ipairs({ "Position_Amount", "Position_AmountOf" }) do
+				local c = UIButtons.FindChildByName(id, child)
+				if c then UIButtons.SetActive(c, false) end
+			end
+			UIButtons.SetParent(id, vp, UIEnums.Justify.TopLeft)
+			UIButtons.ChangeText(id, TRACK_B_HASH)
+			UIButtons.SetActive(id, true)
+			local x0, y0, z0 = UIButtons.GetPosition(id)
+			log("diag: label " .. k .. " default " .. pos(id))
+			if flag then
+				UIButtons.ChangePosition(id, x0 + 60, y0 + 40 * k, z0, true)
+			else
+				UIButtons.ChangePosition(id, x0 + 60, y0 + 40 * k, z0)
+			end
+			d[k] = id
+		end
+		diag = d
+	end)
+	if not ok then log("diag FAILED " .. tostring(err)) end
+end
+
+local function diag_tick()
+	if not diag then return end
+	diag.n = diag.n + 1
+	if diag.n % 6 == 0 then
+		log(string.format("diag t+%.2f A %s B %s", clock - diag.t0, pos(diag[1]), pos(diag[2])))
+	end
+	if clock - diag.t0 > 3.0 then
+		log("diag done")
+		diag = nil
+	end
+end
+
 local STEPS = {
 	function() grid_toggle() end,                                                -- 1: calibration grid on
 	function() grid_toggle() end,                                                -- 2: grid off
@@ -206,7 +263,8 @@ local function tick()
 	clock = clock + 1 / 60
 	if not in_race then return end
 	banner_tick()
-	if grid_auto and type(HUD) == "table" and type(HUD.ViewportId) == "table" then grid_auto = false grid_toggle() end
+	if grid_auto and type(HUD) == "table" and type(HUD.ViewportId) == "table" then grid_auto = false diag_start() end
+	diag_tick()
 	if pending then
 		pending[1] = pending[1] - 1
 		if pending[1] <= 0 then local v = pending[2] pending = nil set_music(v) end
@@ -241,7 +299,7 @@ function M.GoScreen(screen, _opts)
 	local s = string.lower(tostring(screen))
 	local race = s == "ingame\\hud.lua" or s == "ingame\\paused.lua"
 	if race and not in_race then
-		banner, grid, grid_auto = nil, nil, true          -- the HUD reloads each race: new gadgets; grid shown at once
+		banner, grid, grid_auto, diag = nil, nil, true, nil   -- the HUD reloads each race: new gadgets; diagnostic at once
 		local ok, t = pcall(Amax.Options)
 		orig_type = ok and type(t) == "table" and t.music_type or nil
 		log("race, music_type " .. tostring(orig_type) .. ", UIText.HUD_POS " .. tostring(UIText and UIText.HUD_POS)
