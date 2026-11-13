@@ -131,6 +131,7 @@ local function banner_place(dx, alpha)
 	if banner.clouds then
 		UIButtons.ChangePosition(banner.clouds, POS_X + dx, POS_Y, banner.z)
 		UIButtons.ChangeAlpha(banner.clouds, alpha * CLOUDS_ALPHA)
+		pcall(UIButtons.SetAlphaIntensity, banner.clouds, alpha * CLOUDS_ALPHA, alpha * CLOUDS_ALPHA)
 	end
 	pcall(UIButtons.SetAlphaIntensity, banner.bg, alpha, alpha)   -- the backing draws its intensity as alpha
 end
