@@ -16,8 +16,8 @@ import blurloc, make_music as mm
 
 TEXT_HASH = 0x0B1E0001                                  # probes 1-4: "Blur Music probe: hash text OK" (shown in game)
 TITLE_HASH, TRACK_A_HASH, TRACK_B_HASH = 0x0B1E0002, 0x0B1E0003, 0x0B1E0004
-GRID = [(x, y, 0x0B1E0100 + k) for k, (x, y) in enumerate((x, y) for y in (-180, -90, 0, 90, 180)
-                                                       for x in (-320, -160, 0, 160, 320))]
+GRID = [(x, y, 0x0B1E0100 + k) for k, (x, y) in enumerate((x, y) for y in (0, 10, 20, 30, 40)   # HUD units (diag)
+                                                       for x in (0, 20, 40, 60, 80))]
 HUD_LOC = os.path.join(mm.TEST, "gamedata", "xt", "loc", "hud.loc")
 PLUGINS = os.path.join(mm.TEST, "amax", "plugins", "plugins.lua")
 PLUGIN_DIR = os.path.join(mm.TEST, "amax", "plugins", "musicprobe")
@@ -54,13 +54,15 @@ end
 -- behind "Position", texture hud_grad) and Position_Title (the blue "Position" label, style Secondary, Main_1), its
 -- number children hidden. Bottom-left; lights up like a failing lamp, holds HOLD s, slides left while fading out.
 -- Units: the HUD's panel units (Position_Title row = 1.5 high). Tuning knobs below; everything is logged.
--- ChangePosition works in the viewport's own units (GetSize(HUD.ViewportId[1]) = about 725-740 x 408, origin top-left,
--- y down, whatever the justify), sizes in panel units (1 unit = about 8.7 of those: 'Position' = 4.94 units long).
-local POS_X, BOTTOM = 20.0, 80.0        -- banner top-left: POS_X from the left edge, BOTTOM above the screen's bottom
-local TEXT_DX, TEXT_DY = 9.0, -2.0      -- text inside the banner (Position_Title vs Pos_Backing: 1.0, -0.25 units)
+-- ChangePosition works in HUD units, as sizes (position diagnostic 2026-11-13: the HUD's own "Position" label is at
+-- 1.0, -0.25 under HUD.ViewportId3d; 'Position' = 4.94 units long, about 18 px of a 1552 px wide screenshot). Origin
+-- = the HUD's top-left (where the Position panel starts), y down; the screen is about 85 x 47 units there. A moved
+-- gadget shows one frame at its default place first (the "flash").
+local POS_X, POS_Y = 0.0, 36.0          -- banner top-left (HUD units; estimate: bottom-left, tune with the grid)
+local TEXT_DX, TEXT_DY = 1.0, -0.5      -- text inside the banner (as Position_Title vs Pos_Backing in the HUD)
 local TEXT_SCALE = 1.25                 -- a bit bigger than "Position"
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0   -- backing width = text length * K * scale + pad
-local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 160.0
+local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
 local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0.6, 0.40, 0.0, 0.48, 1.0, 0.53, 0.3, 0.60, 1.0 }
 
 local banner = nil                      -- created in a hook (never at load time)
@@ -84,7 +86,7 @@ local function banner_build()
 	local dx0, dy0, dz0 = UIButtons.GetPosition(b.bg)
 	b.z = dz0 or 0.0                                  -- keep z: forcing 0 hid everything (grid, 2026-11-13)
 	log("banner default position " .. tostring(dx0) .. ", " .. tostring(dy0) .. ", z " .. tostring(dz0))
-	b.y = (vh or 40) - BOTTOM
+	b.y = POS_Y
 	log("viewport size " .. tostring(vw) .. " x " .. tostring(vh) .. ", banner y " .. tostring(b.y))
 	log("banner built: bg " .. tostring(b.bg) .. " size " .. tostring(w) .. " x " .. tostring(h) .. ", txt " .. tostring(b.txt)
 		.. ", 'Position' length " .. tostring(UIButtons.GetStaticTextLength(b.txt)))
@@ -263,7 +265,7 @@ local function tick()
 	clock = clock + 1 / 60
 	if not in_race then return end
 	banner_tick()
-	if grid_auto and type(HUD) == "table" and type(HUD.ViewportId) == "table" then grid_auto = false diag_start() end
+	if grid_auto and type(HUD) == "table" and type(HUD.ViewportId) == "table" then grid_auto = false grid_toggle() end
 	diag_tick()
 	if pending then
 		pending[1] = pending[1] - 1
@@ -299,7 +301,7 @@ function M.GoScreen(screen, _opts)
 	local s = string.lower(tostring(screen))
 	local race = s == "ingame\\hud.lua" or s == "ingame\\paused.lua"
 	if race and not in_race then
-		banner, grid, grid_auto, diag = nil, nil, true, nil   -- the HUD reloads each race: new gadgets; diagnostic at once
+		banner, grid, grid_auto, diag = nil, nil, true, nil   -- the HUD reloads each race: new gadgets; grid shown at once
 		local ok, t = pcall(Amax.Options)
 		orig_type = ok and type(t) == "table" and t.music_type or nil
 		log("race, music_type " .. tostring(orig_type) .. ", UIText.HUD_POS " .. tostring(UIText and UIText.HUD_POS)
