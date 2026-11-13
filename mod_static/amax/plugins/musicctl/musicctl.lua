@@ -44,6 +44,7 @@ local pending = nil                       -- { frames, music_type } (created in 
 local last_action, last_l3, last_key = -100, -100, ""
 local pos, track_start, shown = 0, nil, false   -- shuffle position playing, its start (now()), its banner shown
 local banner = nil
+local hud_ready = false                   -- the race HUD screen is up (gadgets made under the intro sit elsewhere)
 local n_log = 0
 local wrapped_frame, wrapped_msg = false, false
 
@@ -112,7 +113,7 @@ end
 
 local function banner_show(p)
 	local track = TRACKS[p + 1]
-	if not track then return end
+	if not track or not hud_ready then return end
 	local ok, err = pcall(function()
 		banner = banner or banner_build()
 		if not banner then return end
@@ -205,7 +206,7 @@ local function tick()
 		end
 	end
 	if track_start and music_on() and now() >= track_start then
-		if not shown then                                 -- the first track of the race has just started
+		if not shown and hud_ready then                   -- the first track has started and the HUD is up
 			shown = true
 			banner_show(pos)
 		end
@@ -273,12 +274,17 @@ function M.GoScreen(screen, _opts)
 	local start = s == "ingame\\introrace.lua" or s == "ingame\\hud.lua"
 	if start and not in_race then
 		banner_hide()
-		banner = nil                                      -- new HUD, new gadgets
-		in_race = true
+		banner = nil
+		in_race, hud_ready = true, false
 		race_start()                                      -- at the intro if possible: before RaceStartScript runs
 	elseif not ingame and in_race then
-		in_race = false
+		in_race, hud_ready = false, false
 		race_end()
+	end
+	if s == "ingame\\hud.lua" and in_race and not hud_ready then
+		banner_hide()
+		banner = nil                                      -- built under the race HUD only: under the intro's view it
+		hud_ready = true                                  -- sat top-left, off-screen (2026-11-13)
 	elseif not ingame then
 		local t = options()                               -- menus: never leave a value of ours in the options
 		if t and t.music_type ~= nil and t.music_type >= 2 then set_music(1) end
