@@ -63,7 +63,7 @@ end
 -- red circle), y scale estimated; keys 1/2 (y -/+10), 5/6 (y -/+2), 3/4 (x -/+1) move it live, values logged.
 -- y = 205 was off-screen: GetSize(HUD.ViewportId3d[1]) = 74 x 40.8 units (2026-11-13). Back to y = 36 (seen at ~178 px),
 -- to be walked down with keys 2 / 6 to the place the player wants.
-local POS_X, POS_Y = -6.5, 36.0
+local POS_X, POS_Y = -4.5, 8.0           -- placed by the player with the live keys (2026-11-13): bottom-left
 local TEXT_DX, TEXT_DY = 1.0, -0.5      -- text inside the banner (as Position_Title vs Pos_Backing in the HUD)
 local TEXT_SCALE = 1.25                 -- a bit bigger than "Position"
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0   -- backing width = text length * K * scale + pad
@@ -105,6 +105,7 @@ local function banner_place(dx, alpha)
 	UIButtons.ChangePosition(banner.txt, POS_X + dx + TEXT_DX, POS_Y + TEXT_DY, banner.z)
 	UIButtons.ChangeAlpha(banner.bg, alpha)
 	pcall(UIButtons.SetAlphaIntensity, banner.bg, alpha, alpha)   -- backing: IntensityAsAlpha, ChangeAlpha alone did nothing
+	if banner.mid then pcall(UIButtons.SetAlphaIntensity, banner.mid, alpha, alpha) end
 	UIButtons.ChangeAlpha(banner.txt, alpha)
 end
 
@@ -116,6 +117,12 @@ local function now_playing(info_hash)
 		local len = UIButtons.GetStaticTextLength(banner.txt) or 0
 		local w = math.max(WIDTH_MIN, len * WIDTH_K * TEXT_SCALE + WIDTH_PAD)
 		UIButtons.ChangeSize(banner.bg, w, banner.h)
+		-- the backing is two gradient pieces: Pos_Backing (title strip) and its child Pos_BackingMiddle (body): same width
+		banner.mid = banner.mid or UIButtons.FindChildByName(banner.bg, "Pos_BackingMiddle")
+		if banner.mid then
+			local _, mh = UIButtons.GetSize(banner.mid)
+			UIButtons.ChangeSize(banner.mid, w, mh)
+		end
 		banner.t0 = clock
 		banner.hash = info_hash
 		banner_place(0, 0.0)
