@@ -8,7 +8,7 @@ Builds the saved music selection (make_music) into Blur_test, then:
   - hud.loc: a text under a hash of our own (TEXT_HASH); the plugin shows it with ChangeText(id, number) in the game's
     MP rank-up popup (GUI.mp_rank_up_ids, TimeLineActive "mp_rank_up"), then an absent string key.
   - amax plugin musicprobe (R3, or the 8 key: next step, in a race); log in memory: read_luamarks.py MPROBE.
-probe 6 (2026-11-13): R3 / 8 = track + "Now playing" popup shown still 4 s (no game animation), 3 places, then back to normal.
+probe 7 (2026-11-13): R3 / 8 = track A / B + our banner (bottom-left, flickers on, 3.5 s, slides left), then back to normal.
 usage: music_probe.py [--undo]   (Blur closed. --undo: hud.loc and plugins.lua back, plugin removed; the music is put
                                  back to normal by "Choisir la musique.bat")"""
 import hashlib, json, os, shutil, sys
@@ -43,125 +43,103 @@ local function set_music(v)
 	log("music_type = " .. tostring(v) .. (ok2 and "" or (" FAILED " .. tostring(err))))
 end
 
--- probe 2 (display): clone a HUD template, hang it on a viewport root the HUD fills in every race (GUI.*_ids[1]),
--- write our hud.loc text (by hash) in it and in its text child, show it. Probe 1 (music_type 2 / 3) worked in game.
 -- never create at load time a table a hook fills: AMAX's lua5.1.dll and the game's own Lua (Blur.exe) are two Lua
--- copies, an empty table of the first filled by the second crashes the game (probe 4 crash, 2026-11-13)
--- probe 3: the plugin's GUI is not the HUD's (inter_3d_ids empty in probe 2): each screen script probably runs in
--- its own environment. Functions the HUD script defines keep it: getfenv(HUD_xxx).GUI = the HUD's GUI.
-local function keys(t, n)
-	local out, k = {}, 0
-	for key, v in pairs(t) do
-		k = k + 1
-		if k > n then break end
-		out[#out + 1] = tostring(key) .. ":" .. type(v)
+-- copies, an empty table of the first filled by the second crashes the game (probe 4 crash, 2026-11-13).
+-- Probes 2-6 (CONNAISSANCES, projet L): GUI is only set while the HUD's code runs; the global HUD table holds the
+-- viewport roots (HUD.ViewportId[1]); the rank-up popup works but its game animation is hard to read in a race.
+
+-- probe 7: our own banner (player's design, 2026-11-13), made of two HUD templates: Pos_Backing (the black gradient
+-- behind "Position", texture hud_grad) and Position_Title (the blue "Position" label, style Secondary, Main_1), its
+-- number children hidden. Bottom-left; lights up like a failing lamp, holds HOLD s, slides left while fading out.
+-- Units: the HUD's panel units (Position_Title row = 1.5 high). Tuning knobs below; everything is logged.
+local POS_X, POS_Y = 1.0, -9.0          -- banner top-left from the screen's bottom-left corner
+local TEXT_DX, TEXT_DY = 1.0, -0.5      -- text inside the banner (as Position_Title vs Pos_Backing in the HUD)
+local TEXT_SCALE = 1.25                 -- a bit bigger than "Position"
+local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0   -- backing width = text length * K * scale + pad
+local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
+local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0.6, 0.40, 0.0, 0.48, 1.0, 0.53, 0.3, 0.60, 1.0 }
+
+local banner = nil                      -- created in a hook (never at load time)
+
+local function banner_build()
+	local parent = type(HUD) == "table" and type(HUD.ViewportId) == "table" and (HUD.ViewportId[1] or HUD.ViewportId[0])
+	if not parent then log("banner: no HUD.ViewportId") return nil end
+	local b = {}
+	b.bg = UIButtons.CloneXtGadgetByName("hud_objects", "Pos_Backing")
+	b.txt = UIButtons.CloneXtGadgetByName("hud_objects", "Position_Title")
+	for _, child in ipairs({ "Position_Amount", "Position_AmountOf" }) do
+		local c = UIButtons.FindChildByName(b.txt, child)
+		if c then UIButtons.SetActive(c, false) end
 	end
-	return table.concat(out, " ")
+	UIButtons.SetParent(b.bg, parent, UIEnums.Justify.BottomLeft)
+	UIButtons.SetParent(b.txt, parent, UIEnums.Justify.BottomLeft)
+	UIButtons.ChangeScale(b.txt, TEXT_SCALE, TEXT_SCALE, 1.0)
+	local w, h = UIButtons.GetSize(b.bg)
+	b.h = h
+	log("banner built: bg " .. tostring(b.bg) .. " size " .. tostring(w) .. " x " .. tostring(h) .. ", txt " .. tostring(b.txt)
+		.. ", 'Position' length " .. tostring(UIButtons.GetStaticTextLength(b.txt)))
+	return b
 end
--- probe 4: probe 3 found GUI nil and the HUD_* functions in _G: the game sets the global GUI only while the HUD's own
--- code runs. (a) the global table HUD holds the viewport roots (HUD.ViewportId3d[vp], parent of the fan messages);
--- (b) fallback: wrap every global HUD_* function and keep the GUI it sees while it runs.
-local captured_gui, wrapped_hud, logged_hud = nil, false, false
-local function wrap_hud()
-	if wrapped_hud then return end
-	wrapped_hud = true
-	local n = 0
-	for name, f in pairs(_G) do
-		if type(f) == "function" and type(name) == "string" and string.sub(name, 1, 4) == "HUD_" then
-			n = n + 1
-			_G[name] = function(...)
-				local g = rawget(_G, "GUI")
-				if captured_gui == nil and type(g) == "table" and g.inter_3d_ids then
-					captured_gui = g
-					log("GUI captured in " .. name .. ": keys " .. keys(g, 20))
-				end
-				return f(...)
+
+local function banner_place(dx, alpha)
+	UIButtons.ChangePosition(banner.bg, POS_X + dx, POS_Y, 0.0)
+	UIButtons.ChangePosition(banner.txt, POS_X + dx + TEXT_DX, POS_Y + TEXT_DY, 0.0)
+	UIButtons.ChangeAlpha(banner.bg, alpha)
+	UIButtons.ChangeAlpha(banner.txt, alpha)
+end
+
+local function now_playing(info_hash)
+	local ok, err = pcall(function()
+		banner = banner or banner_build()
+		if not banner then return end
+		UIButtons.ChangeText(banner.txt, info_hash)
+		local len = UIButtons.GetStaticTextLength(banner.txt) or 0
+		local w = math.max(WIDTH_MIN, len * WIDTH_K * TEXT_SCALE + WIDTH_PAD)
+		UIButtons.ChangeSize(banner.bg, w, banner.h)
+		banner.t0 = clock
+		banner_place(0, 0.0)
+		UIButtons.SetActive(banner.bg, true)
+		UIButtons.SetActive(banner.txt, true)
+		log("  banner: text length " .. tostring(len) .. ", backing width " .. tostring(w))
+	end)
+	if not ok then log("  banner FAILED " .. tostring(err)) end
+end
+
+local function banner_hide()
+	if banner and banner.t0 then
+		pcall(UIButtons.SetActive, banner.bg, false)
+		pcall(UIButtons.SetActive, banner.txt, false)
+		banner.t0 = nil
+	end
+end
+
+local function banner_tick()                              -- called every frame
+	if not (banner and banner.t0) then return end
+	local t = clock - banner.t0
+	local on = FLICKER[#FLICKER - 1]
+	local ok = pcall(function()
+		if t < on then                                    -- failing lamp: last key at or before t
+			local a = 0.0
+			for i = 1, #FLICKER - 1, 2 do
+				if FLICKER[i] <= t then a = FLICKER[i + 1] end
 			end
+			banner_place(0, a)
+		elseif t < on + HOLD then
+			banner_place(0, 1.0)
+		elseif t < on + HOLD + SLIDE then
+			local p = (t - on - HOLD) / SLIDE
+			banner_place(-SLIDE_DIST * p * p, 1.0 - p)    -- accelerates to the left, fades out
+		else
+			banner_hide()
 		end
-	end
-	log("wrapped " .. n .. " HUD_ functions")
-end
-local function hud_gui()
-	if type(GUI) == "table" and GUI.inter_3d_ids then return GUI, "global GUI" end
-	return captured_gui, captured_gui and "captured" or "not captured yet"
-end
-
--- probe 5: the rank-up popup (centred, animated by the game) as "now playing": its title becomes our hud.loc text,
--- its rank icon is hidden, rank_info = the track name (hud.loc, our hashes); the track starts through music_type.
--- Popup layout (ui.json, hud_objects): mp_rank_up_dummy > mp_rank_up_rank (icon) > mp_rank_up_rank_num,
--- mp_rank_up_rank_title ("Rank Up", MP_RANK_UP), mp_rank_up_rank_info, mp_rank_up_clouds.
-local function popup_ids()
-	local gui = hud_gui()
-	return gui and gui.mp_rank_up_ids
-end
-
--- probe 6: the game's animation (timeline "mp_rank_up": 2 s, title zoom x10 in / x5 out in 0.25 s, track name
--- sliding 300 up, scrolling clouds) is hard to read in a race. No timeline here: the popup is shown still for
--- SHOW_TIME s (our timer), title smaller, track name bigger, clouds hidden, moved by dy. restore_popup undoes it all.
-local SHOW_TIME, TITLE_SCALE, INFO_SCALE = 4.0, 0.6, 1.4
-local hide_at, home = nil, nil                          -- home: original popup position (never a load-time table)
-
-local function popup_parts(ids)
-	return UIButtons.FindChildByName(ids.root, "mp_rank_up_rank_title"), UIButtons.FindChildByName(ids.root, "mp_rank_up_clouds")
-end
-
-local function now_playing(info_hash, dy)
-	local ids = popup_ids()
-	if not (ids and ids.root and ids.rank_info) then
-		log("no rank-up popup (GUI captured: " .. tostring(captured_gui ~= nil) .. ")")
-		return
-	end
-	local ok, err = pcall(function()
-		local title, clouds = popup_parts(ids)
-		if home == nil then
-			local x, y, z = UIButtons.GetPosition(ids.root)
-			home = { x, y, z }
-			log("  popup home " .. tostring(x) .. " " .. tostring(y) .. " " .. tostring(z))
-		end
-		UIButtons.ChangePosition(ids.root, home[1], home[2] + dy, home[3])
-		if title then
-			UIButtons.ChangeText(title, TITLE_HASH)
-			UIButtons.ChangeScale(title, TITLE_SCALE, TITLE_SCALE, 1.0)
-		end
-		if clouds then UIButtons.SetActive(clouds, false) end
-		if ids.rank then UIButtons.SetActive(ids.rank, false) end
-		UIButtons.ChangeText(ids.rank_info, info_hash)
-		UIButtons.ChangeScale(ids.rank_info, INFO_SCALE, INFO_SCALE, 1.0)
-		UIButtons.SetActive(ids.root, true)
-		hide_at = clock + SHOW_TIME
 	end)
-	log("  now playing dy " .. dy .. " " .. (ok and "ok" or ("FAILED " .. tostring(err))))
-end
-
-local function hide_popup()
-	hide_at = nil
-	local ids = popup_ids()
-	if ids and ids.root then pcall(UIButtons.SetActive, ids.root, false) end
-end
-
-local function restore_popup()                          -- a real rank-up looks as the game made it
-	hide_popup()
-	local ids = popup_ids()
-	if not (ids and ids.root) then return end
-	local ok, err = pcall(function()
-		local title, clouds = popup_parts(ids)
-		if title then
-			UIButtons.ChangeText(title, UIText.MP_RANK_UP)
-			UIButtons.ChangeScale(title, 1.0, 1.0, 1.0)
-		end
-		if clouds then UIButtons.SetActive(clouds, true) end
-		if ids.rank then UIButtons.SetActive(ids.rank, true) end
-		UIButtons.ChangeScale(ids.rank_info, 1.0, 1.0, 1.0)
-		if home then UIButtons.ChangePosition(ids.root, home[1], home[2], home[3]) end
-	end)
-	log("  popup restored " .. (ok and "ok" or ("FAILED " .. tostring(err))))
+	if not ok then banner_hide() end
 end
 
 local STEPS = {
-	function() set_music(0) pending = { 45, 2 } now_playing(TRACK_A_HASH, 0) end,        -- 1: same place, still
-	function() set_music(0) pending = { 45, 3 } now_playing(TRACK_B_HASH, 330) end,      -- 2: lower
-	function() set_music(0) pending = { 45, 2 } now_playing(TRACK_A_HASH, -70) end,      -- 3: higher
-	function() restore_popup() set_music(0) pending = { 45, orig_type or 1 } end,         -- 4: back to normal
+	function() set_music(0) pending = { 45, 2 } now_playing(TRACK_A_HASH) end,   -- 1: track A
+	function() set_music(0) pending = { 45, 3 } now_playing(TRACK_B_HASH) end,   -- 2: track B
+	function() banner_hide() set_music(0) pending = { 45, orig_type or 1 } end,  -- 3: back to normal
 }
 
 local function next_step()
@@ -175,8 +153,7 @@ end
 local function tick()
 	clock = clock + 1 / 60
 	if not in_race then return end
-	if not wrapped_hud and rawget(_G, "HUD_UpdateCombo") then wrap_hud() end   -- before the first key press
-	if hide_at and clock >= hide_at then hide_popup() end
+	banner_tick()
 	if pending then
 		pending[1] = pending[1] - 1
 		if pending[1] <= 0 then local v = pending[2] pending = nil set_music(v) end
@@ -211,7 +188,7 @@ function M.GoScreen(screen, _opts)
 	local s = string.lower(tostring(screen))
 	local race = s == "ingame\\hud.lua" or s == "ingame\\paused.lua"
 	if race and not in_race then
-		wrapped_hud, captured_gui, home, hide_at = false, nil, nil, nil   -- the HUD reloads each race: new functions, GUI, popup
+		banner = nil                                      -- the HUD reloads each race: new gadgets
 		local ok, t = pcall(Amax.Options)
 		orig_type = ok and type(t) == "table" and t.music_type or nil
 		log("race, music_type " .. tostring(orig_type) .. ", UIText.HUD_POS " .. tostring(UIText and UIText.HUD_POS)
