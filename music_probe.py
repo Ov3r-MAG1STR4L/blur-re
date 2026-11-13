@@ -81,6 +81,9 @@ local function banner_build()
 	local w, h = UIButtons.GetSize(b.bg)
 	b.h = h
 	local vw, vh = UIButtons.GetSize(parent)
+	local dx0, dy0, dz0 = UIButtons.GetPosition(b.bg)
+	b.z = dz0 or 0.0                                  -- keep z: forcing 0 hid everything (grid, 2026-11-13)
+	log("banner default position " .. tostring(dx0) .. ", " .. tostring(dy0) .. ", z " .. tostring(dz0))
 	b.y = (vh or 40) - BOTTOM
 	log("viewport size " .. tostring(vw) .. " x " .. tostring(vh) .. ", banner y " .. tostring(b.y))
 	log("banner built: bg " .. tostring(b.bg) .. " size " .. tostring(w) .. " x " .. tostring(h) .. ", txt " .. tostring(b.txt)
@@ -89,8 +92,8 @@ local function banner_build()
 end
 
 local function banner_place(dx, alpha)
-	UIButtons.ChangePosition(banner.bg, POS_X + dx, banner.y, 0.0)
-	UIButtons.ChangePosition(banner.txt, POS_X + dx + TEXT_DX, banner.y + TEXT_DY, 0.0)
+	UIButtons.ChangePosition(banner.bg, POS_X + dx, banner.y, banner.z)
+	UIButtons.ChangePosition(banner.txt, POS_X + dx + TEXT_DX, banner.y + TEXT_DY, banner.z)
 	UIButtons.ChangeAlpha(banner.bg, alpha)
 	UIButtons.ChangeAlpha(banner.txt, alpha)
 end
@@ -147,7 +150,7 @@ end
 -- so the ChangePosition origin is not known. GRID labels, each showing its own "x,y", are placed with ChangePosition
 -- under HUD.ViewportId[1] (justify TopLeft); a screenshot gives the mapping. The default position is logged too.
 local GRID = { @GRID@ }
-local grid = nil                                         -- created in a hook
+local grid, grid_auto = nil, false                       -- grid created in a hook; shown at each race start
 
 local function grid_toggle()
 	if grid then
@@ -167,11 +170,13 @@ local function grid_toggle()
 				if c then UIButtons.SetActive(c, false) end
 			end
 			UIButtons.SetParent(id, parent, UIEnums.Justify.TopLeft)
+			local x0, y0, z0 = UIButtons.GetPosition(id)
 			if i == 1 then
-				local x, y = UIButtons.GetPosition(id)
+				local x, y = x0, y0
 				log("grid: default position after SetParent " .. tostring(x) .. ", " .. tostring(y))
 			end
-			UIButtons.ChangePosition(id, GRID[i], GRID[i + 1], 0.0)
+			if i == 1 then log("grid: default z " .. tostring(z0) .. " (label 1 stays at the default position)")
+			else UIButtons.ChangePosition(id, (x0 or 0) + GRID[i], (y0 or 0) + GRID[i + 1], z0 or 0) end
 			UIButtons.ChangeText(id, GRID[i + 2])
 			UIButtons.SetActive(id, true)
 			grid[#grid + 1] = id
@@ -201,6 +206,7 @@ local function tick()
 	clock = clock + 1 / 60
 	if not in_race then return end
 	banner_tick()
+	if grid_auto and type(HUD) == "table" and type(HUD.ViewportId) == "table" then grid_auto = false grid_toggle() end
 	if pending then
 		pending[1] = pending[1] - 1
 		if pending[1] <= 0 then local v = pending[2] pending = nil set_music(v) end
@@ -235,7 +241,7 @@ function M.GoScreen(screen, _opts)
 	local s = string.lower(tostring(screen))
 	local race = s == "ingame\\hud.lua" or s == "ingame\\paused.lua"
 	if race and not in_race then
-		banner = nil                                      -- the HUD reloads each race: new gadgets
+		banner, grid, grid_auto = nil, nil, true          -- the HUD reloads each race: new gadgets; grid shown at once
 		local ok, t = pcall(Amax.Options)
 		orig_type = ok and type(t) == "table" and t.music_type or nil
 		log("race, music_type " .. tostring(orig_type) .. ", UIText.HUD_POS " .. tostring(UIText and UIText.HUD_POS)
