@@ -7,7 +7,7 @@ import os, sys, zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-TOOLS = [os.path.join(HERE, "pack.py")] + [os.path.join(REPO, f) for f in ("make_music.py", "blurbaf.py", "blurpak.py")] \
+TOOLS = [os.path.join(HERE, "pack.py")] + [os.path.join(REPO, f) for f in ("make_music.py", "blurbaf.py", "blurpak.py", "blurloc.py")] \
     + [os.path.join(REPO, "mod_static", "amax", "plugins", "musicctl", "musicctl.lua")]
 MUSIC = {"Music/1 - Blur original/About this folder.txt":
          "This folder stands for the game's own 23 race tracks. Leave it empty (no music file in it).\r\n",

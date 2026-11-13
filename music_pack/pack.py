@@ -22,6 +22,7 @@ DATA = os.path.join(STATE, "data")
 MUSIC = os.path.join(PACK, "Music")
 LAST = os.path.join(MUSIC, "last_selection.json")
 os.environ.update({"BLUR_MUSIC_E": DATA, "BLUR_MUSIC_MUSIC_DIR": MUSIC, "BLUR_MUSIC_TEST": GAME,
+                   "BLUR_MUSIC_PLUGIN": os.path.join(TOOLS, "musicctl.lua"),   # the plugin template, shipped in tools
                    "BLUR_MUSIC_CACHE": os.path.join(TOOLS, "cache"), "BLUR_MUSIC_OUT": os.path.join(TOOLS, "build")})
 sys.path.insert(0, TOOLS)
 import blurpak, make_music  # noqa: E402  (after the environment above)
