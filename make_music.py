@@ -15,7 +15,7 @@ Then playlist() rebuilds the race-music choice from the chosen sound objects: gr
 draws in NextTrackScript and RaceStartScript. finalsubmix.dat: muffled mix while wrecked (wreck_muffle).
 Layouts measured 2026-10-20/21 (docs/CONNAISSANCES.md, "Audio et musique").
 """
-import hashlib, json, os, shutil, struct, subprocess, sys, tempfile, wave
+import hashlib, json, os, re, shutil, struct, subprocess, sys, tempfile, wave
 import numpy as np
 import blurbaf
 
@@ -570,6 +570,15 @@ def wave_name(path, used):
     return name
 
 
+def original_title(wave):
+    """Readable banner title of an original race track from its wave name (the bank holds no artist): CamelCase
+    split ("DemNaLikeMe" -> "Dem Na Like Me"), BLUR_trackN -> "Blur - Track N"."""
+    m = re.fullmatch(r"BLUR_track(\d+)", wave)
+    if m:
+        return f"Blur - Track {m.group(1)}"
+    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", " ", wave)
+
+
 def track_tags(path):
     """title / artist / album tags of an audio file (ffprobe; empty when missing or no ffprobe)."""
     try:
@@ -659,7 +668,7 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     for o in originals:                                   # original object i is named names[i + 1]
         w = j.w[j.find(60, names[o + 1].decode()) + 3]
         wave = bytes(j.names[w:j.names.index(b"\0", w)]).decode()
-        info[o] = ([wave], waves[wave]["samples"] / waves[wave]["rate"] if wave in waves else 180.0)
+        info[o] = ([original_title(wave)], waves[wave]["samples"] / waves[wave]["rate"] if wave in waves else 180.0)
     for d in folders:
         audio = sorted(f for f in os.listdir(d) if f.lower().endswith(AUDIO_EXT))
         if not audio and "original" in os.path.basename(d).lower():
