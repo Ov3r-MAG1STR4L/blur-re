@@ -114,16 +114,21 @@ local function banner_build()
 	b.h, b.z, b.lines = h, z or 0.0, 0
 	log("banner built: backing body " .. tostring(b.mid))
 	local vp = type(HUD.ViewportId) == "table" and (HUD.ViewportId[1] or HUD.ViewportId[0])
+	-- two twin streaks played in turn (player, 2026-11-14): a timeline starts by its label for every gadget that has it,
+	-- so a second start of the same one would restart the streak still crossing; the fan-demand fail swirl is the
+	-- same picture and animation under another label (fan_demand_fail_on). Skips 2 s apart, 3.2 s long: two suffice.
+	b.swirls = {}
 	if SWIRL and vp then
-		local ok, sw = pcall(UIButtons.CloneXtGadgetByName, "hud_objects", "shp_FanSwirlWin")
-		if ok and sw then
-			UIButtons.SetParent(sw, vp, UIEnums.Justify.MiddleCentre)
-			local sx, sy, sz = UIButtons.GetPosition(sw)
-			b.sw_home = { sx or 0, sy or 0, sz or 0 }
-			pcall(UIButtons.ChangeColour, sw, SWIRL_COLOUR)
-			b.swirl = sw
+		for _, t in ipairs({ { "shp_FanSwirlWin", SWIRL_TL }, { "shp_FanSwirlFail", "fan_demand_fail_on" } }) do
+			local ok, sw = pcall(UIButtons.CloneXtGadgetByName, "hud_objects", t[1])
+			if ok and sw then
+				UIButtons.SetParent(sw, vp, UIEnums.Justify.MiddleCentre)
+				local sx, sy, sz = UIButtons.GetPosition(sw)
+				pcall(UIButtons.ChangeColour, sw, SWIRL_COLOUR)
+				b.swirls[#b.swirls + 1] = { id = sw, label = t[2], home = { sx or 0, sy or 0, sz or 0 } }
+			end
+			log("swirl " .. t[1] .. " " .. tostring(ok) .. " " .. tostring(sw))
 		end
-		log("swirl " .. tostring(ok) .. " " .. tostring(sw))
 	end
 	return b
 end
@@ -144,7 +149,8 @@ end
 
 local function banner_drop()                            -- hide every piece and forget them (a new set is built later)
 	if banner then
-		for _, k in ipairs({ "bg", "txt", "swirl" }) do
+		for _, sw in ipairs(banner.swirls or {}) do pcall(UIButtons.SetActive, sw.id, false) end
+		for _, k in ipairs({ "bg", "txt" }) do
 			if banner[k] then pcall(UIButtons.SetActive, banner[k], false) end
 		end
 		for i = 1, INFO_LINES do
@@ -157,7 +163,10 @@ end
 local function banner_hide()
 	if banner and banner.t0 then
 		pcall(UIButtons.SetActive, banner.bg, false)
-		if banner.swirl then pcall(UIButtons.SetActive, banner.swirl, false) end
+		for _, sw in ipairs(banner.swirls or {}) do               -- both done by then (3.2 s < the banner's 4.7 s)
+			pcall(UIButtons.SetActive, sw.id, false)
+			sw.t0 = nil
+		end
 		pcall(UIButtons.SetActive, banner.txt, false)
 		for i = 1, INFO_LINES do pcall(UIButtons.SetActive, banner.info[i], false) end
 		banner.t0 = nil
@@ -189,14 +198,14 @@ local function banner_show(p)
 		banner.t0 = clock
 		banner_place(0, 0.0)
 		UIButtons.SetActive(banner.bg, true)
-		if banner.swirl then                                -- the game's own streak animation, in blue
-			UIButtons.SetActive(banner.swirl, true)
-			local home = banner.sw_home
-			if home then pcall(UIButtons.ChangePosition, banner.swirl, home[1] + SW_X, home[2] + SW_Y, home[3]) end
-			pcall(UIButtons.ChangeScale, banner.swirl, SW_SCALE, SW_SCALE, 1.0)
-			if not banner.sw_t0 or clock - banner.sw_t0 > SWIRL_LEN then   -- a streak still crossing ends first
-				banner.sw_t0 = clock                       -- (a skip every 2 s cut it short: player, 2026-11-14)
-				pcall(UIButtons.TimeLineActive, SWIRL_TL, true, 0.0)
+		for _, sw in ipairs(banner.swirls) do               -- the game's own streak animation, in blue: a free one
+			if not sw.t0 or clock - sw.t0 > SWIRL_LEN then  -- (the other may still be crossing: it ends on its own)
+				sw.t0 = clock
+				UIButtons.SetActive(sw.id, true)
+				pcall(UIButtons.ChangePosition, sw.id, sw.home[1] + SW_X, sw.home[2] + SW_Y, sw.home[3])
+				pcall(UIButtons.ChangeScale, sw.id, SW_SCALE, SW_SCALE, 1.0)
+				pcall(UIButtons.TimeLineActive, sw.label, true, 0.0)
+				break
 			end
 		end
 		UIButtons.SetActive(banner.txt, true)
