@@ -38,6 +38,7 @@ local INFO_SCALE, INFO_LINES, LINE_DY = 0.85, 2, 1.6   -- info lines under the t
 -- texture light_paint_02, green Support_0), cloned, recoloured to the blue of "Position" (Main_1 = 12 125 253) and
 -- played with its own timeline (fan_demand_win_on: texture scroll 0.5-3 s, fade in and out) when the banner shows
 local SWIRL, SWIRL_COLOUR, SWIRL_TL = true, "!255 12 125 253", "fan_demand_win_on"
+local SWIRL_LEN = 3.2                            -- s: the swirl timeline (fade out ends at 3.125 s)
 local SW_X, SW_Y, SW_SCALE = -44.0, 124.0, 1.2   -- streak offset from its default place and scale: placed by the player
                                                 -- with live keys (2026-11-13): along the banner, bottom-left
 local MID_MIN = 0.2                             -- backing middle piece height with no info line (HUD units)
@@ -193,7 +194,10 @@ local function banner_show(p)
 			local home = banner.sw_home
 			if home then pcall(UIButtons.ChangePosition, banner.swirl, home[1] + SW_X, home[2] + SW_Y, home[3]) end
 			pcall(UIButtons.ChangeScale, banner.swirl, SW_SCALE, SW_SCALE, 1.0)
-			pcall(UIButtons.TimeLineActive, SWIRL_TL, true, 0.0)
+			if not banner.sw_t0 or clock - banner.sw_t0 > SWIRL_LEN then   -- a streak still crossing ends first
+				banner.sw_t0 = clock                       -- (a skip every 2 s cut it short: player, 2026-11-14)
+				pcall(UIButtons.TimeLineActive, SWIRL_TL, true, 0.0)
+			end
 		end
 		UIButtons.SetActive(banner.txt, true)
 	end)
