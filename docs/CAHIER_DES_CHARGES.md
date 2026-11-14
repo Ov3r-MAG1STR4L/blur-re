@@ -509,3 +509,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-13 | Projet L intégré (musicctl 0.3) : bandeau bas gauche placé par le joueur, titres depuis les tags, le plugin choisit et suit les morceaux (début de course, fin de morceau, double L3 / ç / à) ; installé dans Blur_test, à tester en jeu ; pack adapté (gamedata.pak) |
 | 2026-11-13 | Bandeau finalisé (fond en 3 morceaux, traînée bleue shp_FanSwirlWin placée par le joueur, suivi entre courses, correctif pause) ; pack testé hors jeu avec gamedata.pak (blurloc et modèle du plugin manquaient, corrigés) ; **release GitHub v1.1** publiée |
 | 2026-11-13 | Correctif pause du bandeau confirmé en jeu ; crédit à Gongas (idée du bandeau) sur GitHub (README, notes v1.1) et dans le README du pack |
+| 2026-11-14 | **Release v1.1.1** : traînées en alternance, titres des morceaux d'origine, pack tolérant (Blur_Music à côté du jeu, ffmpeg dans tools\ffmpeg ou winget, Python hors PATH) après les retours de joueurs |
