@@ -260,6 +260,27 @@ def writable():
         stop(ADMIN)
 
 
+VERSION = "1.1.1"                                     # this pack's release tag (update it with each GitHub release)
+RELEASES = "https://github.com/Ov3r-MAG1STR4L/blur-music-pack/releases/latest"
+
+
+def check_update():
+    """Tell the player when GitHub has a newer release (notice only, nothing downloaded; silent when offline)."""
+    import urllib.request
+    try:
+        req = urllib.request.Request("https://api.github.com/repos/Ov3r-MAG1STR4L/blur-music-pack/releases/latest",
+                                     headers={"User-Agent": "BlurMusicPack", "Accept": "application/vnd.github+json"})
+        tag = json.load(urllib.request.urlopen(req, timeout=3)).get("tag_name", "")
+        ver = lambda t: tuple(int(x) for x in t.lstrip("vV").split(".") if x.isdigit())
+        if ver(tag) > ver(VERSION):
+            print(f"A new version of Blur Music is available: {tag} (you have {VERSION}).")
+            print(f"Download it here: {RELEASES}")
+            print("(keep your Music folder when you replace Blur_Music)
+")
+    except Exception:
+        pass
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "menu"
     writable()
@@ -272,6 +293,7 @@ def main():
         stop("Python module numba not found: see \"REQUIREMENTS\" in README.txt.")
     if not shutil.which("ffmpeg"):
         stop("ffmpeg not found: see \"REQUIREMENTS\" in README.txt.")
+    check_update()
     prepare()
     menu()
 
