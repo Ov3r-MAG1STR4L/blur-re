@@ -511,3 +511,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-13 | Correctif pause du bandeau confirmé en jeu ; crédit à Gongas (idée du bandeau) sur GitHub (README, notes v1.1) et dans le README du pack |
 | 2026-11-14 | **Release v1.1.1** : traînées en alternance, titres des morceaux d'origine, pack tolérant (Blur_Music à côté du jeu, ffmpeg dans tools\ffmpeg ou winget, Python hors PATH) après les retours de joueurs |
 | 2026-11-14 | **Avis de mise à jour** : `pack.py` interroge GitHub (releases/latest, 3 s max) au lancement de « Choose music.bat » et affiche le lien si une version plus récente existe ; rien n'est téléchargé, silencieux hors ligne. Penser à monter `VERSION` à chaque release |
+| 2026-11-14 | **Release v1.2.0** (avis de mise à jour) publiée sur blur-music-pack ; README public complété |
