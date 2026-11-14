@@ -67,7 +67,7 @@ def game_path(rel):
 def prepare():
     """First run only: loose paks, originals, key sound, plugin. An interrupted run must be uninstalled first."""
     if os.path.exists(DONE):
-        return
+        return upgrade()
     if os.path.exists(STATE):
         stop("A previous installation was interrupted: run \"Uninstall.bat\" first, then try again.")
     if not os.path.exists(os.path.join(GAME, "Blur.exe")):
@@ -92,14 +92,51 @@ def prepare():
     print(f"Blur folder: {GAME}")
     print("First run: unpacking the game's audio and data files (a few minutes, about 1.7 GB)...")
     os.makedirs(SAVED)
-    for rel in WRITTEN:                                   # the player's own versions, put back by uninstall
+    unpack(PAKS, WRITTEN, aside)
+    make_music.music_key_sounds(make_music.OUT)           # next-track sound, in ingameui.baf
+    shutil.copyfile(os.path.join(make_music.OUT, "audio", "ingameui.baf"), game_path("audio/ingameui.baf"))
+    lst = game_path("amax/plugins/plugins.lua")
+    if os.path.exists(lst):
+        plugin = game_path("amax/plugins/musicctl/musicctl.lua")
+        os.makedirs(os.path.dirname(plugin), exist_ok=True)
+        shutil.copyfile(os.path.join(TOOLS, "musicctl.lua"), plugin)
+        lua = open(lst, encoding="utf-8").read()
+        if REQUIRE.rstrip(",") not in lua:
+            k = lua.rstrip().rfind("}")
+            os.chmod(lst, 0o666)                          # the original plugins.lua is read-only
+            open(lst, "w", encoding="utf-8", newline="\n").write(lua[:k].rstrip() + "\n\t" + REQUIRE + "\n}\n")
+    else:
+        print("AMAX not found (amax\\plugins\\plugins.lua): the next-track key will not work.")
+    open(DONE, "w").write("ok\n")
+
+
+def upgrade():
+    """An install made by an older pack lacks the archives added since (gamedata.pak, v1.1: hud.loc for the banner;
+    player crash, 2026-11-14): unpack only those, the way a first run does."""
+    missing = [(pak, dest) for pak, dest in PAKS
+               if not all(os.path.exists(os.path.join(DATA, pak, n.replace("/", os.sep))) for n in NEEDED[pak])]
+    if not missing:
+        return
+    for pak, _ in missing:
+        if not os.path.exists(os.path.join(GAME, "cache", pak + ".pak")):
+            stop(f"cache\\{pak}.pak not found: run \"Uninstall.bat\", then \"Choose music.bat\" again.")
+    print("Updating an installation made by an older Blur Music version...")
+    # only the files these archives provide: the others in the game folder are already this pack's own versions
+    rels = [f"{dest}/{n}" if dest else n for pak, dest in missing for n in NEEDED[pak]]
+    unpack(missing, [r for r in WRITTEN if r in rels and not os.path.exists(os.path.join(SAVED, r.replace("/", os.sep)))], [])
+
+
+def unpack(paks, backup, aside):
+    """Unpack paks into the game folder (loose files win once the pak is set aside), keeping NEEDED originals in DATA.
+    backup: WRITTEN files to save first (the player's own versions, put back by uninstall)."""
+    for rel in backup:
         if os.path.exists(game_path(rel)):
             dst = os.path.join(SAVED, rel.replace("/", os.sep))
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy2(game_path(rel), dst)
     same = set()
     with open(ADDED, "a", encoding="utf-8") as added:     # written as we go: an interrupted run can be undone
-        for pak, dest in PAKS:
+        for pak, dest in paks:
             p = blurpak.Pak(os.path.join(GAME, "cache", pak + ".pak"))
             want = set(NEEDED[pak])
             for k, e in enumerate(p.files, 1):
@@ -128,30 +165,15 @@ def prepare():
             p.f.close()
             if want:
                 stop(f"Files missing from {pak}.pak: {sorted(want)}")
-    for rel in same & set(WRITTEN):                       # not the player's version: no backup to put back
+    for rel in same & set(backup):                        # not the player's version: no backup to put back
         os.remove(os.path.join(SAVED, rel.replace("/", os.sep)))
-    for pak, _ in PAKS:                                   # a pak wins over loose files: set it aside
+    for pak, _ in paks:                                   # a pak wins over loose files: set it aside
         for ext in (".pak", ".sig"):
             src = os.path.join(GAME, "cache", pak + ext)
             if os.path.exists(src):
                 os.replace(src, src + ".off")
                 with open(RENAMED, "a", encoding="utf-8") as f:
                     f.write(f"cache/{pak}{ext}\n")
-    make_music.music_key_sounds(make_music.OUT)           # next-track sound, in ingameui.baf
-    shutil.copyfile(os.path.join(make_music.OUT, "audio", "ingameui.baf"), game_path("audio/ingameui.baf"))
-    lst = game_path("amax/plugins/plugins.lua")
-    if os.path.exists(lst):
-        plugin = game_path("amax/plugins/musicctl/musicctl.lua")
-        os.makedirs(os.path.dirname(plugin), exist_ok=True)
-        shutil.copyfile(os.path.join(TOOLS, "musicctl.lua"), plugin)
-        lua = open(lst, encoding="utf-8").read()
-        if REQUIRE.rstrip(",") not in lua:
-            k = lua.rstrip().rfind("}")
-            os.chmod(lst, 0o666)                          # the original plugins.lua is read-only
-            open(lst, "w", encoding="utf-8", newline="\n").write(lua[:k].rstrip() + "\n\t" + REQUIRE + "\n}\n")
-    else:
-        print("AMAX not found (amax\\plugins\\plugins.lua): the next-track key will not work.")
-    open(DONE, "w").write("ok\n")
 
 
 def build(folders, effects):
@@ -260,7 +282,7 @@ def writable():
         stop(ADMIN)
 
 
-VERSION = "1.2.0"                                     # this pack's release tag (update it with each GitHub release)
+VERSION = "1.2.1"                                     # this pack's release tag (update it with each GitHub release)
 RELEASES = "https://github.com/Ov3r-MAG1STR4L/blur-music-pack/releases/latest"
 
 
