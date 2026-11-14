@@ -13,7 +13,10 @@ MUSIC = {"Music/1 - Blur original/About this folder.txt":
          "This folder stands for the game's own 23 race tracks. Leave it empty (no music file in it).\r\n",
          "Music/2 - My playlist/Put your music here.txt":
          "Put your music files here (mp3, wav, flac, ogg, m4a), then run \"Choose music.bat\".\r\n"
-         "Create more folders next to this one for more playlists.\r\n"}
+         "Create more folders next to this one for more playlists.\r\n",
+         "tools/ffmpeg/Put ffmpeg.exe and ffprobe.exe here.txt":
+         "Optional: copy ffmpeg.exe and ffprobe.exe (from the bin folder of an ffmpeg download) into this folder.\r\n"
+         "Choose music.bat then finds them without any PATH setting.\r\n"}
 
 
 def main(out):
