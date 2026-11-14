@@ -275,8 +275,8 @@ def check_update():
         if ver(tag) > ver(VERSION):
             print(f"A new version of Blur Music is available: {tag} (you have {VERSION}).")
             print(f"Download it here: {RELEASES}")
-            print("(keep your Music folder when you replace Blur_Music)
-")
+            print("(keep your Music folder when you replace Blur_Music)")
+            print()
     except Exception:
         pass
 
