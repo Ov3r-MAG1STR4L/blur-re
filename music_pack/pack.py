@@ -260,7 +260,7 @@ def writable():
         stop(ADMIN)
 
 
-VERSION = "1.1.1"                                     # this pack's release tag (update it with each GitHub release)
+VERSION = "1.2.0"                                     # this pack's release tag (update it with each GitHub release)
 RELEASES = "https://github.com/Ov3r-MAG1STR4L/blur-music-pack/releases/latest"
 
 
