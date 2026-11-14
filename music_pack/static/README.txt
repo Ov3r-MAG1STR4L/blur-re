@@ -23,8 +23,11 @@ REQUIREMENTS
   - Python 3 and ffmpeg (used to convert your music to the game's format). Install them once:
       Python 3: https://www.python.org/downloads/  (tick "Add python.exe to PATH" in the installer)
       ffmpeg:   in a command prompt, type   winget install Gyan.FFmpeg
-                (or download it from https://www.gyan.dev/ffmpeg/builds/ and add its "bin" folder
-                to PATH)
+                EASIEST otherwise: download it from https://www.gyan.dev/ffmpeg/builds/ and copy
+                ffmpeg.exe and ffprobe.exe (in its "bin" folder) into Blur_Music\tools\ffmpeg.
+                No PATH setting needed then.
+    If you edit PATH by hand: ADD a new line, never replace an existing one (replacing the Python
+    line makes Python "not installed" again). Python is also found where its installer puts it.
     Then close and reopen any open command prompt. The Python modules numpy and numba are installed
     by "Choose music.bat" itself (with pip, Python's own installer).
 
