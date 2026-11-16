@@ -16,6 +16,7 @@ PLUGIN = r'''-- artprobe: album-art probe (Blur_test only). 8 = next texture var
 local M = { info = { name = "ArtProbe", description = "Album art probe", version = 0.1 } }
 local ART_X, ART_Y, ART_W, ART_H = -3.5, 11.0, 6.0, 6.0     -- HUD units, parent HUD.ViewportId3d, BottomLeft (y goes up)
 local CYCLE, OPEN, CLOSE_AT = 4.0, 0.19, 3.6
+local STEP = 0.1
 local VARIANTS = {
 	{ "hud_main full", { filename = "hud_main", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } },
 	{ "hud_main fan combo", { filename = "hud_main", pos = { u = 0.3125, v = 0.125 }, size = { u = 0.0625, v = 0.125 } } },
@@ -37,7 +38,11 @@ end
 local function apply()
 	local v = VARIANTS[variant]
 	local ok, err = pcall(UIButtons.ChangeTexture, v[2], 0.0, art.id)
-	log("variant " .. variant .. " (" .. v[1] .. "): ChangeTexture " .. tostring(ok) .. " " .. tostring(err))
+	-- the game always follows ChangeTexture with ChangeEffectIndex (SpGuiBank icons: MultiTexture); without it the
+	-- square stayed a white glow (probe 2, 2026-11-16)
+	local ok2, err2 = pcall(UIButtons.ChangeEffectIndex, art.id, UIEnums.EffectIndex.MultiTexture)
+	log("variant " .. variant .. " (" .. v[1] .. "): ChangeTexture " .. tostring(ok) .. " " .. tostring(err)
+		.. ", ChangeEffectIndex " .. tostring(ok2) .. " " .. tostring(err2))
 end
 
 local function build()
@@ -77,6 +82,17 @@ local function tick()
 			pcall(UIButtons.SetActive, art.id, false)
 			template = template % #TEMPLATES + 1
 			art = nil
+			return
+		end
+		-- live placement (player wants to tune it finely): 1 / 2 = x, 3 / 4 = y, 5 / 6 = size; 0.1 unit ~ 2.6 px at 1080p
+		local d = ({ CMN_1 = { -STEP, 0, 0 }, CMN_2 = { STEP, 0, 0 }, CMN_3 = { 0, -STEP, 0 }, CMN_4 = { 0, STEP, 0 },
+			CMN_5 = { 0, 0, -STEP }, CMN_6 = { 0, 0, STEP } })[key]
+		if d then
+			ART_X, ART_Y, ART_W = ART_X + d[1], ART_Y + d[2], math.max(0.5, ART_W + d[3])
+			ART_H = ART_W
+			UIButtons.ChangeSize(art.id, ART_W, ART_H)
+			UIButtons.ChangePosition(art.id, ART_X, ART_Y, art.z)
+			log(string.format("place x %.2f y %.2f size %.2f", ART_X, ART_Y, ART_W))
 		end
 	end
 end
