@@ -3,7 +3,8 @@
 Installs the plugin artprobe: in a race, a square (clone of gfx_FanBlobSingleC, the fan-message backing) above the
 music banner, opening from its centre and closing on itself like fan_message (scale.x keys), in a 4 s loop. Its
 texture is set with UIButtons.ChangeTexture({filename, pos={u,v}, size={u,v}}, 0.0, id) (form used by HUD.luac);
-the 8 key (CMN_8) goes to the next texture variant. Log in memory: read_luamarks.py APROBE.
+the 8 key (CMN_8) goes to the next texture variant, the 7 key to the next gadget template
+(probe 1: gfx_FanBlobSingleC lives in another unit space: 6 x 6 = a dot, top-left). Log in memory: read_luamarks.py APROBE.
 usage: artprobe.py [--undo]   (Blur closed)"""
 import os, shutil, sys
 import make_music as mm
@@ -22,6 +23,8 @@ local VARIANTS = {
 	{ "light_paint_02 full", { filename = "light_paint_02", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } },
 	{ "unknown name", { filename = "blur_music_art", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } },
 }
+local TEMPLATES = { "Position_Team_Icon", "Pos_BackingBottom", "Fans_Icon", "gfx_FanBlobSingleC" }   -- 7 = next
+local template = 1
 local ready, art, variant, t0, clock, last_key, n_log = false, nil, 1, 0, 0, "", 0
 local wrapped = false
 
@@ -40,7 +43,7 @@ end
 local function build()
 	local parent = type(HUD) == "table" and type(HUD.ViewportId3d) == "table" and (HUD.ViewportId3d[1] or HUD.ViewportId3d[0])
 	if not parent then return end
-	local id = UIButtons.CloneXtGadgetByName("hud_objects", "gfx_FanBlobSingleC")
+	local id = UIButtons.CloneXtGadgetByName("hud_objects", TEMPLATES[template])
 	UIButtons.SetParent(id, parent, UIEnums.Justify.BottomLeft)
 	local w0, h0 = UIButtons.GetSize(id)
 	local _, _, z = UIButtons.GetPosition(id)
@@ -52,7 +55,7 @@ local function build()
 	pcall(UIButtons.SetAlphaIntensity, id, 1.0, 1.0)
 	UIButtons.SetActive(id, true)
 	local w1, h1 = UIButtons.GetSize(id)
-	log("built " .. tostring(id) .. " size " .. tostring(w0) .. "x" .. tostring(h0) .. " -> " .. tostring(w1) .. "x" .. tostring(h1))
+	log("built " .. TEMPLATES[template] .. " " .. tostring(id) .. " size " .. tostring(w0) .. "x" .. tostring(h0) .. " -> " .. tostring(w1) .. "x" .. tostring(h1))
 	apply()
 	t0 = clock
 end
@@ -70,6 +73,11 @@ local function tick()
 	if key ~= last_key then
 		last_key = key
 		if key == "CMN_8" then variant = variant % #VARIANTS + 1 apply() end
+		if key == "CMN_7" then
+			pcall(UIButtons.SetActive, art.id, false)
+			template = template % #TEMPLATES + 1
+			art = nil
+		end
 	end
 end
 
