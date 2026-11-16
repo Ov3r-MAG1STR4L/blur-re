@@ -11,8 +11,10 @@ Replaces the mixed mode (b2bake pages + flat b2decor atlases). Only pieces alrea
 - tiling kept: a triangle spanning several repeats of its texture is cut on the integer UV lines (up to
   MAX_CELLS pieces), each piece maps into one atlas cell; also gives the ground vertices to carry the light;
 - lit triangles longer than MAX_EDGE are cut in 4 (up to 3 times): shadows need vertices (POC2: error 0.21 -> 0.04);
-- models of free size (G3b), single-sided with Unity's winding kept (G5: game = (-x, y, -z) is a rotation);
-  textures with cut-out alpha stay double-sided.
+- models of free size (G3b), every face doubled (single-sided lost mirrored objects and one-plane barriers seen
+  from behind, game 2026-11-16); cut-out textures (_AlphaTest) in models of their own, colour texture DXT5 (the
+  shader writes colour x alpha: with DXT1 1-bit alpha the holes came out black); material map from Blur 2's
+  _MaterialTex for reflective materials (R reflection, B Fresnel).
 """
 import collections, os, sys
 import numpy as np
@@ -31,6 +33,7 @@ MAX_EDGE = 12.0       # m: lit triangles longer than this cut once in 4 (4 m x 3
                       # for 122 slots; 12 m x 1: 1.85 M, measured on a 5 % sample 2026-11-16)
 NOLM = (1.25, 0.32)   # Blur 2 fallback without lightmap: 1.25 N.L + 0.32 (calibration knob)
 MAUVE = np.array((0.86, 0.71, 1.0))   # empty texels of the lightmap pages
+REFLECT_DEFAULT = (100, 0, 128)   # reflective material without a material map (calibration knob)
 DETAIL = 0.005        # small far triangles dropped: area < DETAIL * distance (as b2decor)
 
 
@@ -123,7 +126,7 @@ def colours(data, tris):
     """vertex colours (n, 3, 3) uint8 for the triangles of triangles()"""
     N = np.array([np.cross(t[2][1] - t[2][0], t[2][2] - t[2][0]) for t in tris])
     N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-9)
-    sun = np.clip(N @ b2bake.SUN, 0, 1)
+    sun = np.abs(N @ b2bake.SUN)                             # faces doubled: either side faces the sun
     L = np.repeat(np.repeat((NOLM[0] * sun + NOLM[1])[:, None, None], 3, 1), 3, 2)
     bypage = collections.defaultdict(list)
     for i, t in enumerate(tris):
@@ -158,45 +161,58 @@ def jobs(data, laps, count):
     zones = collections.defaultdict(list)
     for t, c in zip(tris, C):
         m = t[2].mean(0)
-        zones[int(m[0] // ZONE), int(m[2] // ZONE)].append((t, c))
+        zones[int(m[0] // ZONE), int(m[2] // ZONE), cut[t[0]]].append((t, c))   # cut-out models apart (DXT5)
     out = []
-    for zt in zones.values():
+    for zk, zt in zones.items():
         zt.sort(key=lambda x: (x[0][0], x[0][5]))             # by texture: few cells per model
         cur, keys, texs, nidx = [], set(), {}, 0
         for t, c in zt:
             u = np.round(inset + t[3] * (1 - 2 * inset), 4)
             kk = {(tuple(np.round(p, 3)), tuple(q), tuple(cc)) for p, q, cc in zip(t[2], u, c)}
-            ni = 6 if cut[t[0]] else 3
+            ni = 6                                    # double-sided (single: mirrored objects lost)
             if cur and (len(keys) + len(kk - keys) > MAX_VERTS or nidx + ni > MAX_INDICES
                         or (t[0] not in texs and len(texs) == per * per)):
-                out.append((min(x[0][5] for x in cur), texs, cur))
+                out.append((min(x[0][5] for x in cur), texs, cur, zk[2]))
                 cur, keys, texs, nidx = [], set(), {}, 0
             texs.setdefault(t[0], len(texs))
             cur.append((t, c, u))
             keys |= kk
             nidx += ni
         if cur:
-            out.append((min(x[0][5] for x in cur), texs, cur))
+            out.append((min(x[0][5] for x in cur), texs, cur, zk[2]))
     out.sort(key=lambda j: j[0])
     print(len(out), "models possible,", min(count, len(out)), "kept, nearest left out:",
           round(out[count][0]) if len(out) > count else None, "m")
     res = []
-    for _, texs, cur in out[:count]:
+    for _, texs, cur, is_cut in out[:count]:
         img = Image.new("RGBA", (ATLAS, ATLAS))
+        mat = Image.new("RGB", (ATLAS, ATLAS))
         for k, i in texs.items():
             img.paste(data["tex"][k].resize((CELL, CELL), Image.LANCZOS), ((i % per) * CELL, (i // per) * CELL))
+            mat.paste(material_cell(data.get("mat", {}).get(k)), ((i % per) * CELL, (i // per) * CELL))
         mt = []
         for t, c, u in cur:
             i = texs[t[0]]
             cu = ((i % per) + u[:, 0]) / per
             cv = 1 - ((i // per) + (1 - u[:, 1])) / per          # Unity v up; atlas rows top-down; writer stores 1 - v
-            mt.append(([tuple(p) for p in t[2]], list(zip(cu, cv)), [tuple(int(x) for x in cc) for cc in c],
-                       cut[t[0]]))
-        res.append((img, mt))
+            mt.append(([tuple(p) for p in t[2]], list(zip(cu, cv)), [tuple(int(x) for x in cc) for cc in c], True))
+        res.append((img, mt, mat, is_cut))
     return res
 
 
-def write(tris, matrix, path, img, salt, ground):
+def material_cell(m):
+    """Blur 1 material cell (R specular: cubemap reflection x R, G emissive = 0, B Fresnel / gloss) from Blur 2's
+    _MaterialTex (R reflection mask, B Fresnel base) of a material with _EnvironmentCube; True: cube, no map"""
+    from PIL import Image
+    if m is None:
+        return Image.new("RGB", (CELL, CELL))
+    if m is True:
+        return Image.new("RGB", (CELL, CELL), REFLECT_DEFAULT)
+    r, _, b = m.resize((CELL, CELL)).split()
+    return Image.merge("RGB", (r, Image.new("L", (CELL, CELL)), b))
+
+
+def write(tris, matrix, path, img, salt, ground, mat=None, cut=False):
     """zone triangles -> .model in the slot's local axes (world = x ax + y ay + z az + aw), y shifted by 1 - ground
     (Map Builder floor). Returns (vertices, indices)."""
     import blurmodel_write as W
@@ -217,7 +233,8 @@ def write(tris, matrix, path, img, salt, ground):
             ids.append(seen[key])
         idx += ids + ids[::-1] if two else ids
     assert len(verts) <= 0xFFFF
-    d = W.build(_template(), verts, idx, img.tobytes(), *img.size, glow=0, salt=salt, colours=cols)
+    d = W.build(_template(), verts, idx, img.tobytes(), *img.size, glow=0, salt=salt, colours=cols,
+                material=mat.tobytes() if mat is not None else None, dxt5=cut)
     open(path, "wb").write(d)
     return len(verts), len(idx)
 

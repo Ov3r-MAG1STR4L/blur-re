@@ -33,7 +33,7 @@ def extract(data_dir, laps, route, radius=300.0):
     import b2collision
     tree = cKDTree(b2decor.lap_points(laps))
     env = UnityPy.load(data_dir)
-    tex, lm, tris = {}, {}, []
+    tex, lm, tris, mat = {}, {}, [], {}
     for o in env.objects:
         if o.type.name != "MeshRenderer":
             continue
@@ -70,8 +70,14 @@ def extract(data_dir, laps, route, radius=300.0):
                 t = te.m_Texture.read()
                 tex[k] = None if t.m_Name.startswith("mdl_") else t.image.convert("RGBA")
                 ec = envs.get("_EnvironmentCube")
-                if tex[k] is not None and ec is not None and ec.m_Texture.path_id:
-                    tex[k].putalpha(255)
+                env = ec is not None and ec.m_Texture.path_id
+                props = mp.read().m_SavedProperties
+                floats = dict(props.m_Floats) if hasattr(props, "m_Floats") else {}
+                if tex[k] is not None and (env or floats.get("_AlphaTest", 0) < 0.5):
+                    tex[k].putalpha(255)        # alpha = reflection mask or unused: only _AlphaTest cuts (2026-11-16)
+                mt = envs.get("_MaterialTex")   # Blur 2 material map: R reflection mask, G gloss, B Fresnel base
+                mat[k] = (mt.m_Texture.read().image.convert("RGB") if mt is not None and mt.m_Texture.path_id
+                          else True) if env and tex[k] is not None else None
             if tex[k] is None:
                 continue
             a, b = envs.get("_Lightmap0Tex"), envs.get("_Lightmap1Tex")
@@ -85,7 +91,7 @@ def extract(data_dir, laps, route, radius=300.0):
             for t in np.array(sub, int).reshape(-1, 3):
                 if d[t].min() <= radius:
                     tris.append((k, page, P[t], uv[t] * sc + of, uv1[t] if page else None))
-    return {"tex": tex, "lm": lm, "tris": tris}
+    return {"tex": tex, "lm": lm, "tris": tris, "mat": mat}
 
 
 def bake_page(data, page, size=1024):

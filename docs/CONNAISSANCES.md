@@ -2962,3 +2962,31 @@ But : rouler sur les passages en paroi de Marina (virage sud-ouest jusqu'à 77 m
 - **Non vérifié** : que l'acteur `esi` d'`Update` est bien l'objet de la liste des véhicules (même pointeur : si
   non, la DLL ne change rien, visible dans le journal) ; tenue réelle sur le mur (vitesse, adhérence, caméra) ;
   effets des zones au ras du sol (voiture inclinée après un choc) ; IA.
+- **Retour en jeu de la 1re DLL (2026-11-16, utilisateur)** : la voiture monte sur la paroi mais reste « forcée à
+  plat », sur deux roues. **Cause (Fort, code source + binaire)** : deux physiques. En l'air, `Car::EndFrame` fait
+  intégrer le corps Gravity (qui applique `m_GravityConstants` : notre gravité marchait) ; au sol,
+  `RacingPhysics::Car::EvaluateDerivative` (**`0x7D1FE4`**, `esi` = voiture + 0xC8) retire la gravité du corps
+  (`ClearBodyFlags(E_Type_Apply_Gravity)`) et applique la sienne : `force += m_dd.externalForce`
+  (**voiture + 0x1474**), `force.y -= masse (voiture + 0x1D4) × 9,81`, puis un appui constant
+  `C = [voiture+0x740] × 9,81 × [[voiture+0x167C]+0x26C]` selon la verticale du monde vue en travers du cap.
+  Voiture = `[acteur + 0x238]` (`m_pVehiclePhysics`). `externalForce` n'est réécrite qu'en l'air
+  (`CopyFromGravity`). **2e DLL** : dans une zone, écrit `externalForce = m·g·(Y − haut) + C·(cd − haut)` (annule la
+  gravité et l'appui du monde, les remet sous la voiture) ; remise à 0 à la sortie de zone. Journal ouvert en
+  partage (`_fsopen`, lisible pendant la partie). À essayer.
+- **Blur 2 a ce système (Fort, chaînes des `.xex` X360 du 31 août, 4 et 10 nov)** : type de surface `GravityBend`
+  et `Vehicle.CeilingRidingControl.*` (« conduite au plafond ») : `MinSpeedThresholdMph`, `MaxSpeedThresholdMph`,
+  `RaycastDistance`, `GravityBendScale`, `AngleExponent`, `GravityAccelerationMagnitude`,
+  `ExtraArtificialGravityScale` (+ `UpsideDownDotProductThreshold`, données de voiture). L'outil d'uKER en reprend
+  les noms (`GravityBendBit`, `rayHitGravityBend`…). Valeurs par défaut lues dans le code PowerPC du 10 nov
+  (initialiseurs des variables, 3 flottants chargés : plage puis défaut, **lecture Probable**) : vitesse mini
+  **40 mph**, maxi **70 mph**, `RaycastDistance` 1 (0..10), `ExtraArtificialGravityScale` 1 (0..10),
+  `GravityBendScale` 1, `AngleExponent` 1 (..4). Pas de code source de Blur 2 (la fuite n'a de Kanzen que caméra et
+  utilitaires) ; formule exacte à lire dans la fonction PowerPC qui utilise ces variables.
+- **Lot 2 du décor (2026-11-16, en construction)** : faces doubles partout (les faces simples perdaient les objets
+  en miroir et les barrières d'un seul plan vues de dos : barrière manquante, trous noirs au sol) ; textures à
+  découpe (`_AlphaTest` du matériau Unity) dans des modèles à part, texture couleur en **DXT5** (`to_dxt5`, couleur
+  étendue sous les trous) : le shader écrit couleur × alpha en passe opaque, d'où les trous noirs en DXT1 1 bit ;
+  l'alpha des autres textures (masque de reflet des vitres) est ignoré ; **carte matériau** par modèle
+  (`blurmodel_write.build(material=)`) : R / B de la `_MaterialTex` Blur 2 pour les matériaux à `_EnvironmentCube`
+  (`REFLECT_DEFAULT` sans carte), G = 0 ; éclairage sans lightmap symétrique (|N·L|). `build()` par défaut inchangé
+  octet pour octet (vérifié contre la version commitée).

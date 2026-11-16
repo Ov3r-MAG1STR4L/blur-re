@@ -264,8 +264,8 @@ def decor(files, models, nfs):
             print("slot", fname, "skipped:", e)
             skipped.append(fname)
     slots = mats
-    for k, ((mat, fname), (img, tris)) in enumerate(zip(slots, models)):
-        nv, ni = b2lit.write(tris, mat, os.path.join(flat, fname), img, 0x42324400 + k, J.HP_GROUND)
+    for k, ((mat, fname), (img, tris, mmap, cut)) in enumerate(zip(slots, models)):
+        nv, ni = b2lit.write(tris, mat, os.path.join(flat, fname), img, 0x42324400 + k, J.HP_GROUND, mmap, cut)
         print(fname, nv, "vertices", ni, "indices")
     from PIL import Image
     blank = Image.new("RGBA", (4, 4), (0, 0, 0, 255))        # free sizes: 3-vertex hidden models (G3b)
@@ -309,7 +309,7 @@ def extra_actors(files, models, k0, salt0):
     taken = have | {h for h, _, _ in KSLF(ap).index}
     c = 0xB2DE0000                                        # any free uids: rows inserted at their sorted place
     items, defs = [], {}
-    for j, (img, tris) in enumerate(models):
+    for j, (img, tris, mmap, cut) in enumerate(models):
         uids = []
         while len(uids) < 2:
             if c not in taken:
@@ -333,7 +333,7 @@ def extra_actors(files, models, k0, salt0):
         def def_patch(data, pool, blocks, gm_ref=gm_ref):
             struct.pack_into("<I", data, blocks[0], gm_ref)           # Model; the rest as tower_nfs000
         _, amax = neon.kslf_write.clone_object_any(obj[J.NFS_UID + 1], None, du, def_patch, data_in=amax)
-        nv, ni = b2lit.write(tris, mat, os.path.join(flat, fname), img, 0x42324400 + salt0 + j, J.HP_GROUND)
+        nv, ni = b2lit.write(tris, mat, os.path.join(flat, fname), img, 0x42324400 + salt0 + j, J.HP_GROUND, mmap, cut)
         print(fname, nv, "vertices", ni, "indices (new actor)")
         items.append((j, mat))
         defs[j] = du
@@ -418,8 +418,8 @@ def main():
         data = b2bake.extract(UNITY, laps, a.route, radius=200)          # vertex colours (mixed mode replaced)
         models = b2lit.jobs(data, laps, DECOR_TOTAL)
         del data
-        b2decor.sheet(models, os.path.join(a.out, "atlas.png"))
-        json.dump([make_nfs_map.zone_centre([(t[0], None) for t in m]) for _, m in models[:make_nfs_map.DECOR_MAX]],
+        b2decor.sheet([m[:2] for m in models], os.path.join(a.out, "atlas.png"))
+        json.dump([make_nfs_map.zone_centre([(t[0], None) for t in m[1]]) for m in models[:make_nfs_map.DECOR_MAX]],
                   open(spots, "w"))
     nfs = min(len(models), make_nfs_map.DECOR_MAX)
     env = dict(os.environ, BMB_GAME=config.BMB_GAME, BMB_INSTALLED="1", NFS_COUNT=str(nfs), NFS_SPOTS=spots,

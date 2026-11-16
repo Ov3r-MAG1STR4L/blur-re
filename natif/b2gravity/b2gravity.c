@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
+#include <share.h>
 
 #define SITE      0x453BEF
 #define SITE_LEN  35
@@ -39,7 +40,7 @@ static int nzones = 0;
 static float min_speed = 13.9f;                          /* 50 km/h, as Blur2DubaiTest */
 static char dir[MAX_PATH];
 static FILE *logfile = NULL;
-static int in_zone_last[32];
+static int in_zone_last[32], applied[32];
 
 static void say(const char *fmt, ...)
 {
@@ -77,6 +78,39 @@ static int vehicle_index(unsigned self)
     return -1;
 }
 
+/* On the ground the racing physics (RacingPhysics::Car::EvaluateDerivative, Blur.exe 0x7D1FE4) ignores the body's
+   gravity: it adds m_dd.externalForce (car + 0x1474: [esi+0x13AC], esi = car + 0xC8), then its own gravity
+   force.y -= mass * 9.81 (mass: car + 0x1D4) and a constant downforce C along the world vertical seen across the
+   heading (cd = Y without its part along the heading), C = [car+0x740] * 9.81 * [[car+0x167C]+0x26C].
+   car = [vehicle actor + 0x238] (m_pVehiclePhysics). externalForce is only rewritten in the air (CopyFromGravity),
+   so on the ground the value written here stays for every physics step of the frame. */
+#define CAR_EXT_FORCE 0x1474
+#define CAR_MASS      0x1D4
+
+static float *ground_force(char *self)
+{
+    unsigned car = rd((unsigned)self + 0x238);
+    if (!car || !readable((void *)(car + CAR_EXT_FORCE), 12) || !readable((void *)(car + 0x740), 4)) return NULL;
+    return (float *)(car + CAR_EXT_FORCE);
+}
+
+static void wall_force(char *self, float *ext, const float *up, float len, float g)
+{
+    unsigned car = rd((unsigned)self + 0x238), dyn = rd(car + 0x167C);
+    float m = *(float *)(car + CAR_MASS), G = -g;                     /* G = 9.8 */
+    float c = (dyn && readable((void *)(dyn + 0x26C), 4)) ? *(float *)(car + 0x740) * 9.81f * *(float *)(dyn + 0x26C) : 0.f;
+    const float *h = (const float *)(self + 0xE4);                    /* heading (AZ row) */
+    float u[3] = {up[0] / len, up[1] / len, up[2] / len};
+    float cd[3] = {-h[1] * h[0], 1.f - h[1] * h[1], -h[1] * h[2]};    /* Y - (Y.h) h */
+    float n = sqrtf(cd[0] * cd[0] + cd[1] * cd[1] + cd[2] * cd[2]);
+    int i;
+    if (m <= 0.f || m > 1e5f || !(c >= 0.f && c < 1e7f)) return;
+    if (n > 1e-3f) { cd[0] /= n; cd[1] /= n; cd[2] /= n; }
+    /* cancel the world gravity and the world-vertical downforce, push the same amounts along -up */
+    for (i = 0; i < 3; i++)
+        ext[i] = m * G * ((i == 1 ? 1.f : 0.f) - u[i]) + c * (cd[i] - u[i]);
+}
+
 static void __stdcall gravity(char *self)
 {
     float g = *(float *)G_DEBUG;
@@ -92,10 +126,16 @@ static void __stdcall gravity(char *self)
         for (z = 0; z < nzones && !inside; z++)
             inside = p[0] >= zones[z][0] && p[1] >= zones[z][1] && p[2] >= zones[z][2]
                   && p[0] <= zones[z][3] && p[1] <= zones[z][4] && p[2] <= zones[z][5];
-        if (inside && speed > min_speed && len > 0.9f && len < 1.1f) {
+        int on = inside && speed > min_speed && len > 0.9f && len < 1.1f;
+        float *ext = ground_force(self);
+        if (on) {
             float s = g / len;                               /* g < 0: along -up, |g| long */
             gx = up[0] * s; gy = up[1] * s; gz = up[2] * s;
+            if (ext) wall_force(self, ext, up, len, g);
+        } else if (ext && k < 32 && applied[k]) {
+            ext[0] = ext[1] = ext[2] = 0.f;                 /* back to the game's own forces */
         }
+        if (k < 32) applied[k] = on && ext;
         if (k < 32 && inside != in_zone_last[k]) {
             in_zone_last[k] = inside;
             say("vehicle %d %s zone at (%.0f, %.0f, %.0f), %.0f km/h, up (%.2f, %.2f, %.2f)", k,
@@ -185,7 +225,7 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         slash = strrchr(dir, '\\');
         if (slash) slash[1] = 0;
         sprintf_s(path, sizeof path, "%sb2gravity.log", dir);
-        fopen_s(&logfile, path, "w");
+        logfile = _fsopen(path, "w", _SH_DENYNO);          /* readable while the game runs */
         say("b2gravity loaded");
         load_zones();
         patch();

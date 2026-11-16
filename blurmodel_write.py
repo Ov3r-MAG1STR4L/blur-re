@@ -145,7 +145,7 @@ def _assemble(d, rep):
 
 
 def build(template, verts, indices, rgb, w, h, glow=160, salt=None, pad_verts=None, pad_indices=None,
-          colours=None):
+          colours=None, material=None, dxt5=False):
     """verts = [(x, y, z, nx, ny, nz, u, v)], indices = triangles (u16), rgb = octets RGB (ou RGBA : transparence
     1 bit du DXT1) w x h -> .model
     salt : nouveaux identifiants de texture (le jeu garde une texture par identifiant ; Map Builder fait pareil) ;
@@ -184,8 +184,16 @@ def build(template, verts, indices, rgb, w, h, glow=160, salt=None, pad_verts=No
     rep.append((toff, j - 16 + old_len, tex))
     # texture matériau : même taille, couleur unie (VERT = lumière : le niveau Map Builder n'éclaire pas les objets)
     moff, mw, mh, mm = P["textures"][MAT]
-    mat = cpmodel.encode_mips(cpmodel.solid(mw, mh, (0, glow, 0)), mw, mh, mm)
-    rep.append((moff, moff + len(mat), mat))
+    if material is None:
+        mat = cpmodel.encode_mips(cpmodel.solid(mw, mh, (0, glow, 0)), mw, mh, mm)
+        rep.append((moff, moff + len(mat), mat))
+    else:                          # own material map (R specular / reflection, G emissive, B Fresnel), w x h RGB
+        jm = moff - 12
+        assert d[jm:jm + 4] == b"DXT1"
+        mat = cpmodel.encode_mips(material, w, h, mips)
+        rep.append((jm - 20, jm - 8, struct.pack("<3I", 0x1C + len(mat), w, h)))
+        rep.append((jm - 4, jm, struct.pack("<I", mips)))
+        rep.append((moff, jm - 16 + struct.unpack_from("<I", d, jm - 20)[0], mat))
 
     # sommets
     vc = _find1(d, struct.pack("<I", 68) + b"RA\0\0" + struct.pack("<2I", 68 * stride, 16))
@@ -215,7 +223,55 @@ def build(template, verts, indices, rgb, w, h, glow=160, salt=None, pad_verts=No
     out = _assemble(d, rep)
     xs, ys, zs = zip(*((v[0], v[1], v[2]) for v in verts))
     cpmodel.write_bbox(out, cpmodel.parse(bytes(out)), (min(xs), min(ys), min(zs), max(xs), max(ys), max(zs)))
-    return cpmodel.new_texture_ids(bytes(out), salt) if salt else bytes(out)
+    out = cpmodel.new_texture_ids(bytes(out), salt) if salt else bytes(out)
+    if dxt5:                       # last: cpmodel.parse only finds "DXT1" textures (ids, boxes done above)
+        out = to_dxt5(out, rgb, w, h, mips)
+    return out
+
+
+def _dxt5_alpha_blocks(a, w, h):
+    """cut-out alpha (>= 128 shown) of a w x h mip -> DXT5 alpha blocks: a0 = 255, a1 = 0, index 0 / 1"""
+    import numpy as np
+    bw, bh = max(4, -(-w // 4) * 4), max(4, -(-h // 4) * 4)
+    a = np.pad(a, ((0, bh - h), (0, bw - w)), mode="edge")
+    b = (a < 128).reshape(bh // 4, 4, bw // 4, 4).transpose(0, 2, 1, 3).reshape(-1, 16).astype(np.uint64)
+    bits = (b << (3 * np.arange(16, dtype=np.uint64))).sum(1)
+    out = np.zeros((len(b), 8), np.uint8)
+    out[:, 0], out[:, 1] = 255, 0
+    for k in range(6):
+        out[:, 2 + k] = (bits >> np.uint64(8 * k)) & np.uint64(0xFF)
+    return out
+
+
+def to_dxt5(d, rgba, w, h, mips):
+    """the colour texture (DXT1) of a built model -> DXT5 with the cut-out alpha of rgba; RGB under the holes
+    filled with the nearest shown texel first (no dark fringe from the black transparent texels of Unity)"""
+    import numpy as np
+    from scipy import ndimage
+    px = np.frombuffer(bytes(rgba), np.uint8).reshape(h, w, 4)
+    hole = px[:, :, 3] < 128
+    rgb = px[:, :, :3]
+    if hole.any() and (~hole).any():
+        iy, ix = ndimage.distance_transform_edt(hole, return_distances=False, return_indices=True)
+        rgb = rgb[iy, ix]
+    colour = cpmodel.encode_mips(np.ascontiguousarray(rgb).tobytes(), w, h, mips)
+    alpha, a, cw, ch = [], px[:, :, 3].astype(np.float32), w, h
+    for i in range(mips):
+        if i:
+            nw, nh = max(cw // 2, 1), max(ch // 2, 1)
+            a = a[:nh * 2, :nw * 2].reshape(nh, 2, nw, 2).mean((1, 3)) if cw > 1 and ch > 1 else a[::2 if ch > 1 else 1, ::2 if cw > 1 else 1]
+            cw, ch = nw, nh
+        alpha.append(_dxt5_alpha_blocks(a, cw, ch))
+    alpha = np.concatenate(alpha)
+    colour = np.frombuffer(colour, np.uint8).reshape(-1, 8)
+    assert len(alpha) == len(colour), (len(alpha), len(colour))
+    data = np.concatenate([alpha, colour], 1).tobytes()
+    P = cpmodel.parse(d)
+    toff = P["textures"][DIFF][0]
+    j = toff - 12
+    old_len = struct.unpack_from("<I", d, j - 20)[0]
+    return bytes(_assemble(d, [(j - 20, j - 16, struct.pack("<I", 0x1C + len(data))), (j, j + 4, b"DXT5"),
+                               (toff, j - 16 + old_len, data)]))
 
 
 FX, FX_V = b"default_NB_NL_NV.fx", b"default_NB_NL.fx"
