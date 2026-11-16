@@ -2635,4 +2635,14 @@ Ce sont des résultats de lecture de données, **pas une validation fonctionnell
   Pistes : (a) une planche (atlas) de pochettes dans une texture existante, chaque pochette choisie par
   `ChangeTextureUV` ; (b) charger un fichier image à l'exécution comme le fait le mode photo. Sonde à faire : signatures
   de ces fonctions et format des photos sur le disque.
+- **Sonde artprobe (2026-11-16), confirmé en jeu (Blur_test)** : une image nommée s'affiche sur un carré du HUD.
+  - Gabarit : `Position_Team_Icon` (1,625 × 1,625, même espace d'unités que la bannière) cloné sous
+    `HUD.ViewportId3d`, BottomLeft. `gfx_FanBlobSingleC` est dans un autre espace (250 × 30) : 6 × 6 = un point en haut
+    à gauche.
+  - `UIButtons.ChangeTexture({filename=NOM, pos={u,v}, size={u,v}}, 0.0, id)` **puis**
+    `UIButtons.ChangeEffectIndex(id, UIEnums.EffectIndex.MultiTexture)` : sans le second appel, éclat blanc. Vu :
+    `light_paint_02` (la traînée) dans le carré. `ChangeTexture` ne signale pas d'erreur pour un nom inconnu.
+  - Ouverture / fermeture façon `fan_message` par `ChangeScale(id, sx, 1, 1)` : fonctionne.
+  - Placement choisi par le joueur : x −2,8, y 16,9, côté 8,2 (unités HUD ; 0,1 ≈ 2,3 px en 1080p).
+  - Prochaine étape : une texture à nous (planche de pochettes) que `filename` peut désigner.
 
