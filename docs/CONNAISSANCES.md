@@ -2668,12 +2668,23 @@ créateur d'AMAX. Code en Rust (DLL 32 bits chargées par le `d3d9.dll` d'AMAX d
 ### Ce qui change pour nous
 
 - **Code source de Blur public depuis mai 2026** (selon Aib0t, article FPS, partie « May 2026 ») : il cite
-  `amax/game/Game/GameWorld/GameWorld.cpp` et la fonction `C_GameWorld::CalcNumberOfSteps()` en entier. Nous ne l'avons
-  pas : **à chercher** (Hypothèse : diffusé sur le Discord). Le préfixe `amax/` confirme encore le nom de code.
+  `amax/game/Game/GameWorld/GameWorld.cpp` et la fonction `C_GameWorld::CalcNumberOfSteps()` en entier. **C'est la
+  fuite déjà publiée dans `github.com/uKER/BlurRebuilt`** (branche `master`, voir « Projet tiers : BlurRebuilt »).
+  **Confirmé** (arbre du dépôt lu par l'API GitHub le 2026-11-16, rien téléchargé) : 23 103 entrées, environ 80 Mo,
+  dépôt créé le 22/10/2026 ; on y trouve `code/amax/game/Game/GameWorld/GameWorld.cpp`,
+  `code/mercury/library/gamesys/advertising/source/AdvertManager.cpp` et
+  `code/mercury/library/ui/source/ui/Game/Profiles/GamerPictureManager_Pc.cpp` / `_Ps3.cpp`. Le moteur s'appelle
+  **Mercury** (`code/mercury`, `code/mercurygame`), le jeu `code/amax` ; outils de l'époque dans `code/tools`
+  (`LuaDebugger`, `ResourceBundler`, `AnalyseStaticSymbols`…).
 - **Build de certification PS3 avec symboles** (fichier DWARF d'environ 200 Mo, fuite de 2023) : noms des fonctions et
   des classes (`Advertising::AdvertManager::EnterZone_PostLoad`, `Game::C_GameWorld::Update`,
   `Game::Actors::FakeVehicleSpeedState::Update`, `AIAmax::AmaxAIR::Update`…). Les structures y sont souvent vides. Aib0t
   s'en sert pour nommer les fonctions du PC par comparaison (mêmes tests `if`, mêmes boucles).
+  **Non trouvée en ligne** (2026-11-16). À ne pas confondre avec la « PS3 Final Debug » de The Cutting Room Floor
+  (disque dur d'un kit de développement PS3 acheté en 2019 par MysteriousCube, build un mois avant la sortie :
+  9 cinématiques et 11 vidéos de voitures inutilisées dans `ui\moviesttachments`, musiques non censurées, appels
+  vocaux et `racedialogue` absents de la version finale). Lien éventuel entre les deux : **Hypothèse**. Probablement
+  partagée sur le Discord de la communauté.
 - **Notre `Blur.exe` est celui d'AMAX** : SHA-1 `dcbd312a0ea26e36ff0967d567bcc890359ee8cb`, identique au `Blur.exe` de
   `amax_emu_files/blur_12.zip` (patch 1.2, daté de 2013, avec `cache/gamedata.pak` et `.sig`). Toutes leurs adresses
   valent donc chez nous. **Confirmé** (empreinte, et les 10 adresses de fonctions ci-dessous tombent sur un prologue).
