@@ -2645,4 +2645,10 @@ Ce sont des résultats de lecture de données, **pas une validation fonctionnell
   - Ouverture / fermeture façon `fan_message` par `ChangeScale(id, sx, 1, 1)` : fonctionne.
   - Placement choisi par le joueur : x −2,8, y 16,9, côté 8,2 (unités HUD ; 0,1 ≈ 2,3 px en 1080p).
   - Prochaine étape : une texture à nous (planche de pochettes) que `filename` peut désigner.
+  - **Planche ajoutée : confirmé en jeu (2026-11-16)**. `artatlas.py` ajoute `blur_music_art` (DXT1 1024², 1 mip,
+    4 × 4 cases de 256 px) à `ui\data\ui_common.bpr` avec `blurbpr.rebuild` (63 → 64 images, originales
+    identiques) : le jeu la trouve par son nom, et `pos` / `size` en UV (0,25) choisissent la case. Les vraies
+    pochettes s'affichent. Elles sont beaucoup trop vives (lumière / bloom du HUD avec la couleur blanche) :
+    réglage de luminosité par le gris de `ChangeColour` à l'essai. Pochettes = images intégrées aux MP3 (ffmpeg).
+  - Règle demandée par le joueur : pas de pochette pour un morceau → pas de carré.
 
