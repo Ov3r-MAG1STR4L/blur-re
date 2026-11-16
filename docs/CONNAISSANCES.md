@@ -3175,3 +3175,32 @@ voitures traversés, casser un bouclier, traverser mines, Shunts et « orbes »,
 - Autres pistes : `Tracer_Effect` « Basic » (forme `BeamCapped`, texture `Tracer`, 0,1 × 10 m : un rayon, sans doute
   la visée laser du Bolt, `mLasersight` activé quand le Bolt est sélectionné) ; fumées blanches `tyre_smoke`,
   `Mine_Smoke`, `engine_smoke` (traînée qui s'efface lentement).
+
+### Effets propres au Railgun (2026-11-17, installé dans Blur_test, à essayer en jeu)
+- **Données (`railgun_fx.py`, auto-test `python railgun_fx.py`)** : un `PickupLevel` à lui (uid `0xFFFF2020`, copie
+  octet par octet du niveau Normal du Bolt) accroché au champ **`Modified` du type SuperShield** (#652, seul
+  enregistrement d'origine modifié) ; 16 enregistrements ajoutés dans `pickups.bin`, 3 dans `dynamiceffects.bin`
+  (hashes `0xFFFF2001`… au-dessus de tous, ajoutés dans l'ordre) :
+  - charge = copie de la charge du Shunt (`ShuntBuild2`, secousse caméra) avec les anneaux du Nitro arrière à la place
+    de l'effet d'écran et une lumière blanc titane ;
+  - éclair de tir = celui de l'orbe, en blanc ;
+  - projectile = spirale de l'orbe + lumière blanche ×4 + **traînée lumineuse** (copie de `RearLightTrail` : vie
+    0,15 → **2,5 s**, taille 0,5 → 1,2, une particule tous les 0,75 m, blanche ; son effet `LightTrail` copié avec des
+    courbes taille / alpha qui baissent régulièrement au lieu de tomber d'un coup, visible jusqu'à 600 m) + **fumée
+    blanche** (copie de la traînée `tyre_smoke` @eae1d391 : vie 2,5 s, taille 1,8, un nuage par mètre, sans vitesse
+    héritée : elle reste sur la trajectoire) à la place du halo `Barge_Flare` ;
+  - impact sur voiture = celui de l'orbe (Global) + **coque électrique et étincelles de la Shock** (External = vu par les
+    autres, Local = vu par la victime), 3 lumières blanches, 2,5 s (2 s pour l'orbe, 4 s pour la Shock).
+- **Code (Confirmé, désassemblage)** : `RLDatabase` en `0x1133220`, `GetPickupType(enum)` = `0x4811A0` (thiscall) ;
+  `RLPickupType` : poignées `XtHandle` de 8 octets (table, id u16, décalage u16) : Normal +0xC, DoubleTap +0x14,
+  Reversed +0x1C, ReversedDoubleTap +0x24, Mini +0x2C, **Modified +0x34**, ReverseModified +0x3C ; objet = `[table+8]` +
+  décalage si l'id de la table = celui de la poignée. `RLPickupLevel` : `mBalancingData` +0x18, `mSpecialFX` +0x1C.
+  `C_PickupBase::GetRLSubTypeLevel(sous-type)` = `0xBA8D00` (`ret 4`, charge et éclair de tir) ;
+  `C_VehicleComponent_Pickups::GetRLSubTypeLevel(type, sous-type)` = `0x474170` (`ret 8`, effets d'impact, appelée
+  pendant `Trigger` → `RegisterHitByPickup`).
+- **DLL** : 13 sites. Le Railgun reçoit `mpBlindfireSFX` (+0x570) = effets du niveau Railgun (projectile, impacts) ;
+  `GetRLSubTypeLevel` de base rend le niveau Railgun pour un Railgun ; celle des voitures le rend pour le type Bolt
+  **pendant le `Trigger` d'un Railgun seulement**. L'adresse d'un Railgun est oubliée **avant** chaque construction de
+  Bolt (mémoire recyclée). Sans niveau Railgun dans les données, les effets du Bolt restent (journal).
+- **Pas encore fait** : couleur des modèles (spirale violette, coque bleue, charge rouge, anneaux verts : seules les
+  lumières sont blanches), spirale plus grosse (copie du modèle), éclat sur les murs traversés, symbole.

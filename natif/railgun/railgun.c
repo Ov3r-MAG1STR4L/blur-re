@@ -68,6 +68,73 @@ typedef struct { char *p; int pierced; DWORD last_wall; } Rail;
 #define MAX_RAILS 32
 static Rail rails[MAX_RAILS];
 static int next_is_rail = 0;
+static int in_trigger = 0;          /* a railgun's Trigger is running: the hit effects come from its level */
+static void say(const char *fmt, ...);
+static Rail *rail_of(void *p);
+
+/* ---- 8. own effects: the railgun's PickupLevel (railgun_fx.py) hangs on the SuperShield type's Modified slot ---- */
+#define GET_PICKUP_TYPE 0x4811A0    /* RLDatabase (0x1133220)::GetPickupType(enum), thiscall */
+#define BASE_LEVEL_CONT 0xBA8D06
+#define VLC_LEVEL_CONT  0x47417A
+typedef char *(__fastcall *TypeFn)(void *db, void *edx, int type);
+
+static char *rail_level(void)       /* RLPickupLevel*, NULL if the data has none (then the Bolt's effects stay) */
+{
+    static char *level;
+    static int tried;
+    if (!tried) {
+        char *t = ((TypeFn)GET_PICKUP_TYPE)((void *)0x1133220, NULL, 10);
+        unsigned table = t ? *(unsigned *)(t + 0x34) : 0;          /* XtHandle mModified: table, id, offset */
+        tried = 1;
+        if (table && *(unsigned short *)table == *(unsigned short *)(t + 0x38) && *(unsigned *)(table + 8))
+            level = (char *)(*(unsigned *)(table + 8) + *(unsigned short *)(t + 0x3A));
+        say(level ? "railgun effects: own level found" : "railgun effects: no own level (Bolt effects)");
+    }
+    return level;
+}
+
+static char *__cdecl level_for(void *self) { return rail_of(self) ? rail_level() : NULL; }
+static char *__cdecl level_for_hit(int type) { return in_trigger && type == 3 ? rail_level() : NULL; }
+
+static __declspec(naked) void base_level_thunk(void)  /* C_PickupBase::GetRLSubTypeLevel(sub), thiscall, ret 4 */
+{
+    __asm {
+        push ecx
+        push ecx
+        call level_for
+        add esp, 4
+        pop ecx
+        test eax, eax
+        jz orig
+        ret 4
+    orig:
+        push esi
+        mov esi, ecx
+        mov eax, [esi + 8]
+        push BASE_LEVEL_CONT
+        ret
+    }
+}
+
+static __declspec(naked) void vlc_level_thunk(void)   /* C_VehicleComponent_Pickups::GetRLSubTypeLevel(type, sub), ret 8 */
+{
+    __asm {
+        push ecx
+        push dword ptr [esp + 8]
+        call level_for_hit
+        add esp, 4
+        pop ecx
+        test eax, eax
+        jz orig
+        ret 8
+    orig:
+        mov eax, [esp + 4]
+        push eax
+        mov ecx, 0x1133220
+        push VLC_LEVEL_CONT
+        ret
+    }
+}
 
 static void say(const char *fmt, ...)
 {
@@ -106,10 +173,15 @@ static int __cdecl is_human(int vehicle)
 static int __cdecl spawn_roll(void) { return rand() < (int)(spawn * RAND_MAX); }
 
 /* ---- 3. creation ---- */
-static void __cdecl after_ctor(char *self)
+static void __cdecl before_ctor(char *self)         /* pooled memory: a new Bolt may reuse a railgun's slot */
 {
     Rail *r = rail_of(self);
-    if (r) r->p = NULL;                              /* pooled memory: a normal Bolt may reuse a railgun's slot */
+    if (r) r->p = NULL;
+}
+
+static void __cdecl after_ctor(char *self)
+{
+    Rail *r;
     int rear = next_is_rail == 2;
     if (!next_is_rail) return;
     next_is_rail = 0;
@@ -120,6 +192,8 @@ static void __cdecl after_ctor(char *self)
     *(float *)(self + 0x158) = speed;
     *(float *)(self + 0x15C) = fallrate;
     *(float *)(self + 0xB0) = 1e9f;
+    if (rail_level() && *(unsigned *)(rail_level() + 0x1C))
+        *(unsigned *)(self + 0x570) = *(unsigned *)(rail_level() + 0x1C);   /* mpBlindfireSFX: projectile, impacts */
     InterlockedIncrement(&fired);
     if (sound[rear][0])                              /* only the player fires railguns (AIs get Bolts) */
         PlaySoundA(sound[rear], NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
@@ -151,6 +225,11 @@ static __declspec(naked) void super_case(void)
 static __declspec(naked) void ctor_wrap(void)       /* thiscall, 6 stack args, ret 0x18 */
 {
     __asm {
+        push ecx
+        push ecx
+        call before_ctor
+        add esp, 4
+        pop ecx
         push ecx
         push dword ptr [esp + 0x1C]
         push dword ptr [esp + 0x1C]
@@ -185,7 +264,9 @@ static void __fastcall trigger_hook(char *self, void *edx, int idx)
     old = bal ? *(int *)(bal + 0x1C) : 0;
     if (bal) *(int *)(bal + 0x1C) = (int)(base_damage * falloff[r->pierced < 2 ? r->pierced : 2] + 0.5f);
     *(unsigned char *)(self + 0xF0) = 0xFE;
+    in_trigger = 1;
     ((TriggerFn)TRIGGER)(self, NULL, idx);
+    in_trigger = 0;
     if (bal) *(int *)(bal + 0x1C) = old;
     if (*(unsigned char *)(self + 0xF0) != 0xFE) {   /* the hit was registered */
         unsigned layer = rd(APP);
@@ -332,6 +413,8 @@ static Patch patches[] = {
     {0xBECB2A, 5, "e8919ffbff", CALL, NULL, "Trigger: no KillPickup for a railgun"},
     {0xBE654B, 5, "e8c0e7ffff", CALL, NULL, "CheckCollisions: walls ignored by a railgun"},
     {0xBA8CC0, 9, "8b410850b920321301", JMP, NULL, "GetDamageToApply: railgun crushes pickups"},
+    {0xBA8D00, 6, "568bf18b4608", JMP, NULL, "C_PickupBase::GetRLSubTypeLevel: railgun level (charge, flash)"},
+    {0x474170, 10, "8b44240450b920321301", JMP, NULL, "VLC GetRLSubTypeLevel: railgun level during its hits"},
 };
 
 static void unhex(const char *s, unsigned char *out, int n)
@@ -345,7 +428,7 @@ static void apply(void)
 {
     void *to[] = {(void *)spawn_thunk, (void *)pick_thunk, (void *)super_case, (void *)ctor_wrap, (void *)ctor_wrap,
                   (void *)ctor_wrap, (void *)trigger_hook, (void *)trigger_hook, (void *)kill_thunk, (void *)wall_thunk,
-                  (void *)dmg_thunk};
+                  (void *)dmg_thunk, (void *)base_level_thunk, (void *)vlc_level_thunk};
     unsigned char want[16], put[16];
     int i, n = sizeof patches / sizeof *patches;
     DWORD old;

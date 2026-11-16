@@ -6,7 +6,8 @@ The Railgun takes the place of the cut SuperShield power-up (own enum, HUD entry
   railgun.txt holds the firing delays (forward `delay`, backward `rear_delay`), set by the dll, used for the sounds;
 - railgun_fire.wav (forward, remix FRONT) / railgun_fire_rear.wav (backward, remix REAR), charge as long as each
   delay, made from the sources in SOUNDS (else our synth);
-- pickups.bin: back to the original (v1 changed the Bolt, the first v2 the SuperShield Delay);
+- pickups.bin + dynamiceffects.bin: the original + the railgun's own effects (railgun_fx.py: a PickupLevel hung on
+  the SuperShield type's Modified slot, two particle trails); nothing else changes;
 - ui.bin: HUD colours of the SuperShield entry (UiXtConfig.PerkDisplayParameters.superShield), pink -> titanium
   white (same-length string, rewritten in the record's scrambled string zone);
 - loc\\common.loc: "SUPER SHIELD" / "SUPER BOUCLIER"... (hash 1665195695) -> NAME in every language.
@@ -20,6 +21,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import config  # noqa: E402
 import blurloc  # noqa: E402
+import railgun_fx  # noqa: E402
 from blurxt import XT, decode_names, encode_names  # noqa: E402
 
 FRONT, REAR = "A_titane", "B_lourd"           # user's choice (2026-11-16): A forward, B backward
@@ -29,7 +31,8 @@ NAME_HASH, NAME = 1665195695, "RAILGUN"
 SOUNDS = os.path.join(config.BLUR_EXTRACTED, "mods", "railgun_sounds")
 SOURCES = dict(charge="core_assets_sounds_charge_chargeCorvus.ogg", shot="ShuntFire.wav", lfe="ShuntFireLFE.wav",
                plasma="core_assets_sounds_shoot_shootBeamPlasma.ogg")
-FILES = {"pickups.bin": ("gamedata", "xt"), "ui.bin": ("gamedata", "xt"), "common.loc": ("gamedata", "xt", "loc")}
+FILES = {"pickups.bin": ("gamedata", "xt"), "dynamiceffects.bin": ("gamedata", "xt"), "ui.bin": ("gamedata", "xt"),
+         "common.loc": ("gamedata", "xt", "loc")}
 
 
 def delays():
@@ -187,6 +190,8 @@ def main(remove=False):
     work = {f: os.path.join(tmp, f) for f in FILES}
     for f in FILES:
         shutil.copyfile(os.path.join(bakdir, f), work[f])     # always from the originals: running twice is harmless
+    fx = railgun_fx.build(os.path.join(bakdir, "pickups.bin"), os.path.join(bakdir, "dynamiceffects.bin"),
+                          work["pickups.bin"], work["dynamiceffects.bin"])
     hud = recolour(work["ui.bin"])
     rename(work["common.loc"])
     for f, path in live.items():
@@ -200,7 +205,8 @@ def main(remove=False):
             shutil.copyfile(remix_sound(remix, delay=delay, out=os.path.join(SOUNDS, wav), **src), os.path.join(dlls, wav))
         else:
             make_sound(os.path.join(dlls, wav), delay)
-    print("railgun installed in", dlls, f"| delay {front} s, rear {rear} s | HUD", hud["colour_fill"], "| name", NAME)
+    print("railgun installed in", dlls, f"| delay {front} s, rear {rear} s | HUD", hud["colour_fill"], "| name", NAME,
+          "| effects level %08x" % fx["level"])
 
 
 if __name__ == "__main__":
