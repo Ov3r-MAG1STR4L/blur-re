@@ -14,7 +14,7 @@ PLUGIN_DIR = os.path.join(mm.TEST, "amax", "plugins", "artprobe")
 REQUIRE = 'require("artprobe.artprobe"),'
 PLUGIN = r'''-- artprobe: album-art probe (Blur_test only). 8 = next texture variant, in a race.
 local M = { info = { name = "ArtProbe", description = "Album art probe", version = 0.1 } }
-local ART_X, ART_Y, ART_W, ART_H = -2.2, 16.1, 7.7, 7.7     -- HUD units, parent HUD.ViewportId3d, BottomLeft (y goes up);
+local ART_X, ART_Y, ART_W, ART_H = 4.2, 12.4, 7.7, 7.7     -- HUD units, parent HUD.ViewportId3d, BottomLeft (y goes up);
                                                             -- placed by the player in probe 3 (2026-11-16)
 local CYCLE, OPEN, CLOSE_AT = 4.0, 0.19, 3.6
 local STEP = 0.1
