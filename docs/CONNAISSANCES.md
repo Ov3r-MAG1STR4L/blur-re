@@ -2931,3 +2931,34 @@ planche `atlas.png`), installée dans Blur_test (236 fichiers vérifiés, origin
   (`trackdata.cpp`) teste la hauteur (`minY` ≤ y ≤ `maxY` de chaque point) **sauf** sur les routes LOGIC, départ,
   arrivée et intermédiaires (2D). Map Builder écrit ligne IA = route -2,9 / +7,8 m, LOGIC et portes à hauteur de
   route (`gen_aid.HEIGHTS`). Le tracé Marina ne se croise pas lui-même en vue de dessus.
+
+## Gravité collée aux murs : `natif/b2gravity` (2026-11-16, installé dans Blur_test, à essayer en jeu)
+But : rouler sur les passages en paroi de Marina (virage sud-ouest jusqu'à 77 m) comme dans Blur2DubaiTest.
+- **Code source (Fort)** : chaque voiture a **sa propre gravité**, `C_VehicleActor::m_GravityConstants.m_Gravity`,
+  donnée à son corps physique par `SetExternalConstants` (`VehicleActor.cpp` l. 6911 et 5700) et **réécrite à chaque
+  image** dans `C_VehicleActor::Update()` (l. 1585) à `(0, Vehicle.Gravity, 0)` ; `Vehicle.Gravity` = variable
+  de réglage (`Debug::Float`, -9,8).
+- **Dans notre `Blur.exe` (Confirmé par désassemblage)** : objet `Vehicle.Gravity` en `0x1126CC0`, valeur en
+  **`0x1126CE4`** ; écriture dans `Update` à **`0x453BEF`** (35 octets : `movss xmm0,[0x1126CE4]` / `xorps xmm1,xmm1`
+  / `movss [esi+0x7BC],xmm1` / `[esi+0x7C0],xmm0` / `[esi+0x7C4],xmm1`), suivie de `cmp [esi+0x2C4], ebp`
+  (`m_VehicleIndex == 0`, l. 1587) : `esi` = l'acteur voiture, gravité en **+0x7BC / +0x7C0 / +0x7C4**. Autre lecture
+  de la valeur en `0x447EC8` (copie locale, non touchée).
+- **DLL** (`natif/b2gravity/b2gravity.c`, `build.bat` : Visual Studio 2026 x86, `/MT`) : chargée par le `d3d9.dll`
+  d'AMAX depuis `amax\dlls` (il charge `.dll` et `.asi`). Au chargement, vérifie les 35 octets d'origine (sinon ne
+  patche rien), les remplace par `call stub` + `nop` ; le stub garde tous les registres (généraux, drapeaux,
+  `xmm0-7`) et rend `xmm0` = g, `xmm1` = 0 comme le code remplacé. Règle (comme `GravityBend` d'uKER) : voiture
+  **dans la liste des véhicules de course**, **dans une zone** de `b2gravity.txt` et **> 13,9 m/s** (50 km/h) →
+  gravité = |g| selon **−haut de la voiture** (ligne AY de la matrice à +0xD8) ; sinon `(0, g, 0)` comme le jeu.
+  Journal `b2gravity.log` (patch, zones, entrées / sorties de zone par voiture).
+- **Zones** (`b2gravity_zones.py`) : 33 581 positions de conduite Unity (tour + journaux de la route 4) ; « sur une
+  paroi » = surface de collision la plus proche (≤ 3 m) à |normale y| < 0,6 **et** aucune surface plate à moins de
+  3 m (exclut les tours collé aux murs pour mesurer les bords) ; regroupées par cases de 10 m, boîtes + 12 m,
+  gardées si à moins de 40 m d'un tracé de Marina : **23 zones** (dont x -1 228..-951, y 6..112, z -751..-556 pour
+  le virage sud-ouest), y décalé de -1,38 comme la map.
+- **Remise sur piste** : `HandOfGodParameters.MinDotUp` (`rldatabase.bin`) = 0,45 (et -0,1 dans le 2e jeu) avec
+  `FlippedTimer` 0,3 s → une voiture inclinée de plus de ~63° était remise en piste au bout de 0,3 s, même collée
+  au mur. Mis à **0,0** dans Blur_test seulement (`b2gravity_install.py`, original gardé dans
+  `blur_extracted\mods\b2gravity_backup`).
+- **Non vérifié** : que l'acteur `esi` d'`Update` est bien l'objet de la liste des véhicules (même pointeur : si
+  non, la DLL ne change rien, visible dans le journal) ; tenue réelle sur le mur (vitesse, adhérence, caméra) ;
+  effets des zones au ras du sol (voiture inclinée après un choc) ; IA.
