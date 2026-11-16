@@ -2682,7 +2682,7 @@ créateur d'AMAX. Code en Rust (DLL 32 bits chargées par le `d3d9.dll` d'AMAX d
   s'en sert pour nommer les fonctions du PC par comparaison (mêmes tests `if`, mêmes boucles).
   **Non trouvée en ligne** (2026-11-16). À ne pas confondre avec la « PS3 Final Debug » de The Cutting Room Floor
   (disque dur d'un kit de développement PS3 acheté en 2019 par MysteriousCube, build un mois avant la sortie :
-  9 cinématiques et 11 vidéos de voitures inutilisées dans `ui\moviesttachments`, musiques non censurées, appels
+  9 cinématiques et 11 vidéos de voitures inutilisées dans `ui\movies\attachments`, musiques non censurées, appels
   vocaux et `racedialogue` absents de la version finale). Lien éventuel entre les deux : **Hypothèse**. Probablement
   partagée sur le Discord de la communauté.
 - **Notre `Blur.exe` est celui d'AMAX** : SHA-1 `dcbd312a0ea26e36ff0967d567bcc890359ee8cb`, identique au `Blur.exe` de
