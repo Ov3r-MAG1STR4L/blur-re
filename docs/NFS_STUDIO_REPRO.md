@@ -87,7 +87,7 @@ Points ouverts gardés à la validation de l'étape 0 (2026-11-02) : 1 (amax.bin
    `BMB_GAME\map_builder` (nfs_atlas, make_nfs_map). Les deux doivent rester cohérents.
 6. **three.js via CDN** : NFS Studio web ne s'affiche pas hors ligne.
 7. **Chemins en dur hors chaîne NFS** (non touchés) : `.bat` / `make_test_copy.ps1`, sondes
-   (findtexhash, hashmember, hashprobe, hashscan, listcartex, modelprobe*, xtprobe*).
+   (findtexhash, hashmember, hashprobe, listcartex, modelprobe*, xtprobe* : rangés dans `archive/` ; hashscan).
 8. **Mémoire** : une construction a échoué une fois sur `MemoryError` dans `pak.add_aliases` (Map Builder
    reconstruit le pak par concaténations de `bytes`). Relancée telle quelle, voir §6.
 9. **`BMB_GAME` lui-même n'est pas reproductible** : son contenu vient d'un premier lancement de Map Builder

@@ -63,8 +63,15 @@ def demarrer(script, env=None):
             if p.poll() is not None:
                 raise RuntimeError("%s s'est arrêté : %s" % (script, p.stderr.read().decode(errors="replace")[-800:]))
             time.sleep(0.5)
-    p.kill()
+    arreter(p)
     raise RuntimeError(script + " ne répond pas")
+
+
+def arreter(p):
+    """arrête le serveur et attend sa fin (sinon il peut survivre au test et garder le port)"""
+    p.kill()
+    p.wait(10)
+    p.stderr.close()
 
 
 def req(port, method, path, body=None, host=None, origin="page", site=None, raw=None, headers=None):
@@ -132,12 +139,12 @@ class NFS(Commun, unittest.TestCase):
                                             BLURRE_BLUR_TEST=cls.test))
         w = req(cls.port, "GET", "/api/world")[1]
         if not (isinstance(w, dict) and w["locations"][0]["name"] == "TEST_TEMPORAIRE"):
-            cls.p.kill()
+            arreter(cls.p)
             raise RuntimeError("le serveur NFS ne lit pas le dossier temporaire : tests arrêtés avant tout envoi")
 
     @classmethod
     def tearDownClass(cls):
-        cls.p.kill()
+        arreter(cls.p)
         shutil.rmtree(cls.tmp, ignore_errors=True)
 
     def journal(self, mot, delai=30):
@@ -212,7 +219,7 @@ class Reverse(Commun, unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.p.kill()
+        arreter(cls.p)
         assert empreinte(maplock.EDITS, maplock.LOCKS) == cls.avant, "edits / locks modifiés par le test !"
 
     def test_normal(self):
@@ -243,7 +250,7 @@ class Traces(Commun, unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.p.kill()
+        arreter(cls.p)
         assert empreinte(MARINA) == cls.avant, "marina_trace.json modifié par le test !"
 
     def test_normal(self):
