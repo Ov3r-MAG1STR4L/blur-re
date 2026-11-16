@@ -732,7 +732,9 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
 
 UI_COMMON = os.path.join("ui", "data", "ui_common.bpr")   # the bundle of hud_main / light_paint_02: covers go in it
 ART_NAME, ART_SIZE, ART_CELL = "blur_music_art", 1024, 256  # DXT1 atlases blur_music_art0, 1... of 4 x 4 cells
-ART_TARGET, ART_KNEE = 0.30, 0.75                         # cover levelling: mean luminance, highlight knee (see art_level)
+ART_RADIUS = 0.06                                        # corner radius, fraction of the side (HUD panels' look)
+ART_PAD_PX = 12                                          # dark band margin around the cover in a 256 px cell
+ART_TARGET, ART_KNEE = 0.30, 0.75                        # cover levelling: mean luminance, highlight knee (see art_level)
 COVER_NAMES = ("cover", "folder", "front", "album")      # picture files next to the music that serve as a cover
 
 
@@ -780,15 +782,32 @@ def write_covers(covers, out):
     per = (ART_SIZE // ART_CELL) ** 2
     cells, additions = {}, []
     order = sorted(found)
+    # rounded corners like the HUD panels (player, 2026-11-16): an alpha mask per cell, so the sheets are DXT5
+    # The dark band of the fan message ("Mine Hotshot", colour 5 8 10, alpha 220) is drawn in the cell too, rounded,
+    # with the cover inset by ART_PAD: one gadget in game, and the band follows the rounded corners.
+    from PIL import ImageDraw
+
+    def rounded(size, alpha):                             # drawn 4x larger, then reduced: smooth edges
+        m = Image.new("L", (size * 4, size * 4))
+        ImageDraw.Draw(m).rounded_rectangle((0, 0, size * 4 - 1, size * 4 - 1), int(size * 4 * ART_RADIUS), fill=alpha)
+        return m.resize((size, size), Image.LANCZOS)
+    inner = ART_CELL - 2 * ART_PAD_PX
+    band = Image.new("RGBA", (ART_CELL, ART_CELL), (5, 8, 10, 0))
+    band.putalpha(rounded(ART_CELL, 220))
+    mask = rounded(inner, 255)
     for a in range(0, len(order), per):
-        sheet = Image.new("RGB", (ART_SIZE, ART_SIZE))
+        sheet = Image.new("RGBA", (ART_SIZE, ART_SIZE), (0, 0, 0, 0))
         name = f"{ART_NAME}{a // per}"
         for k, p in enumerate(order[a:a + per]):
             x, y = (k % 4) * ART_CELL, (k // 4) * ART_CELL
-            sheet.paste(found[p], (x, y))
+            cover = found[p].resize((inner, inner), Image.LANCZOS).convert("RGBA")
+            cover.putalpha(mask)
+            cell = band.copy()
+            cell.alpha_composite(cover, (ART_PAD_PX, ART_PAD_PX))
+            sheet.paste(cell, (x, y))
             cells[p] = (name, x / ART_SIZE, y / ART_SIZE)
-        raw = blurbpr.encode(sheet, 1, 1)
-        additions.append((name, [0x1C, 0, 0, 1, len(raw), 0, 1, 1, ART_SIZE, ART_SIZE], raw))   # DXT1, 1 mip
+        raw = blurbpr.encode(sheet, 5, 1)
+        additions.append((name, [0x1C, 0, 0, 1, len(raw), 0, 5, 1, ART_SIZE, ART_SIZE], raw))   # DXT5, 1 mip
     b = blurbpr.Bpr(os.path.join(E, "root", UI_COMMON)).rebuild(additions)
     os.makedirs(os.path.join(out, "ui", "data"), exist_ok=True)
     open(os.path.join(out, UI_COMMON), "wb").write(b.b)

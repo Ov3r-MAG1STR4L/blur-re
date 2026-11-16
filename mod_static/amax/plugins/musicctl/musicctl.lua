@@ -49,9 +49,19 @@ local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
 -- the banner, a clone of Position_Team_Icon showing a cell of our atlas in ui_common.bpr (make_music.write_covers):
 -- ChangeTexture then ChangeEffectIndex MultiTexture (without it: a white glow). Opens from its centre like fan_message,
 -- closes on itself when the banner slides away. Placed by the player with live keys.
-local ART_X, ART_Y, ART_SIZE = 4.2, 12.4, 7.7
+local ART_X, ART_Y, ART_SIZE = 4.2, 12.4, 8.5   -- player's 7.7 for the picture + the band drawn around it (256 / 232)
 local ART_COLOUR = "!255 200 200 200"            -- a little below white: the HUD bloom (covers are levelled at build)
 local ART_OPEN, ART_CELL = 0.19, 0.25            -- s to open / close (fan_message keys); cell size in UV (4 x 4)
+local ART_HOLD = 4.1                             -- s the cover stays open after a track starts (then closes on itself)
+-- the dark band of the fan message ("Mine Hotshot +20": colour 5 8 10, alpha 220) and the rounded corners are drawn
+-- in the sheet cells by make_music.write_covers: the square is the cover plus its band
+-- Md's idea (2026-11-15): a track change while the cover is open does not reopen it: the picture changes under a
+-- short flicker, and the closing timer starts again
+local ART_FLICK = { 0.0, 0.25, 0.05, 1.0, 0.09, 0.35, 0.14, 1.0 }
+-- one lap of white light along the edge once the square is open, and again with the flicker of a track change (player,
+-- 2026-11-16: one lap, not a loop): a glow (ui_common box_glow_64) moved around the square, clockwise from top-left
+local LAP, LAP_SIZE, LAP_IN = 0.6, 1.2, 0.47     -- s per lap; glow size; path half-side as a fraction of ART_SIZE
+local LAP_COLOUR = "!255 255 255 255"
 local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0.6, 0.40, 0.0, 0.48, 1.0, 0.53, 0.3, 0.60, 1.0 }
 
 local in_race = false
@@ -128,10 +138,27 @@ local function banner_build()
 		UIButtons.ChangeSize(art, ART_SIZE, ART_SIZE)
 		UIButtons.ChangePosition(art, ART_X, ART_Y, az or 0.0)
 		pcall(UIButtons.ChangeColour, art, ART_COLOUR)
+		UIButtons.ChangeAlpha(art, 1.0)
+		pcall(UIButtons.SetAlphaIntensity, art, 1.0, 1.0)
 		UIButtons.SetActive(art, false)
 		b.art = art
 	end
 	log("cover square " .. tostring(okc) .. " " .. tostring(art))
+	local okl, light = pcall(UIButtons.CloneXtGadgetByName, "hud_objects", "Position_Team_Icon")   -- after: drawn over
+	if okl and light and b.art then
+		UIButtons.SetParent(light, parent, UIEnums.Justify.BottomLeft)
+		local _, _, lz = UIButtons.GetPosition(light)
+		b.light_z = lz or 0.0
+		UIButtons.ChangeSize(light, LAP_SIZE, LAP_SIZE)
+		pcall(UIButtons.ChangeTexture, { filename = "box_glow_64", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } }, 0.0, light)
+		pcall(UIButtons.ChangeEffectIndex, light, UIEnums.EffectIndex.IntensityAsAlpha)   -- black = see-through
+		pcall(UIButtons.ChangeColour, light, LAP_COLOUR)
+		UIButtons.ChangeAlpha(light, 1.0)
+		pcall(UIButtons.SetAlphaIntensity, light, 1.0, 1.0)
+		UIButtons.SetActive(light, false)
+		b.light = light
+	end
+	log("cover light " .. tostring(okl) .. " " .. tostring(light))
 	local vp = type(HUD.ViewportId) == "table" and (HUD.ViewportId[1] or HUD.ViewportId[0])
 	-- two twin streaks played in turn (player, 2026-11-14): a timeline starts by its label for every gadget that has it,
 	-- so a second start of the same one would restart the streak still crossing; the fan-demand fail swirl is the
@@ -169,7 +196,7 @@ end
 local function banner_drop()                            -- hide every piece and forget them (a new set is built later)
 	if banner then
 		for _, sw in ipairs(banner.swirls or {}) do pcall(UIButtons.SetActive, sw.id, false) end
-		for _, k in ipairs({ "bg", "txt", "art" }) do
+		for _, k in ipairs({ "bg", "txt", "art", "light" }) do
 			if banner[k] then pcall(UIButtons.SetActive, banner[k], false) end
 		end
 		for i = 1, INFO_LINES do
@@ -186,11 +213,75 @@ local function banner_hide()
 			pcall(UIButtons.SetActive, sw.id, false)
 			sw.t0 = nil
 		end
-		pcall(UIButtons.SetActive, banner.txt, false)
-		if banner.art then pcall(UIButtons.SetActive, banner.art, false) end
+		pcall(UIButtons.SetActive, banner.txt, false)      -- (the cover has its own timer: art_tick)
 		for i = 1, INFO_LINES do pcall(UIButtons.SetActive, banner.info[i], false) end
 		banner.t0 = nil
 	end
+end
+
+local function art_show(cover)                          -- cover = COVERS entry of the new track, or nil
+	local b = banner
+	if not b.art then return end
+	local open = b.art_t0 ~= nil and clock < b.art_close   -- opening or holding (not closing)
+	if not cover then                                      -- no cover for this track: no square (player, 2026-11-16)
+		if open then b.art_close = math.max(clock, b.art_t0 + ART_OPEN) end
+		return
+	end
+	UIButtons.ChangeTexture({ filename = cover[1], pos = { u = cover[2], v = cover[3] },
+		size = { u = ART_CELL, v = ART_CELL } }, 0.0, b.art)
+	UIButtons.ChangeEffectIndex(b.art, UIEnums.EffectIndex.MultiTexture)
+	if open then
+		b.art_fl = clock                                   -- Md: stays open, the new picture comes in with a flicker
+		b.lap_t0 = clock                                   -- and the light goes round once more
+	else
+		b.art_t0, b.art_fl, b.lap_t0 = clock, nil, clock + ART_OPEN   -- the lap once the square is open
+		for _, id in ipairs({ b.art }) do
+			UIButtons.ChangeScale(id, 0.0, 1.0, 1.0)
+			UIButtons.SetActive(id, true)
+		end
+	end
+	b.art_close = clock + ART_HOLD
+end
+
+local function art_tick()                               -- opens from its centre, holds, closes on itself (fan_message)
+	local b = banner
+	if not (b and b.art and b.art_t0) then return end
+	local t, sx = clock - b.art_t0, 1.0
+	if t < ART_OPEN then sx = t / ART_OPEN end
+	if clock > b.art_close then sx = math.min(sx, 1 - (clock - b.art_close) / ART_OPEN) end
+	if sx <= 0 then
+		for _, id in ipairs({ b.art }) do UIButtons.SetActive(id, false) end
+		b.art_t0 = nil
+		if b.light then UIButtons.SetActive(b.light, false) end
+		return
+	end
+	if b.light then                                       -- one lap: s = 0..4 along the 4 sides, clockwise (y goes up)
+		local q = b.lap_t0 and (clock - b.lap_t0) / LAP
+		if q and q >= 0 and q < 1 and clock <= b.art_close then
+			local h, s = ART_SIZE * LAP_IN, q * 4
+			local corners = { { -h, h }, { h, h }, { h, -h }, { -h, -h }, { -h, h } }
+			local k = math.floor(s)
+			local f, c0, c1 = s - k, corners[k + 1], corners[k + 2]
+			UIButtons.ChangePosition(b.light, ART_X + c0[1] + (c1[1] - c0[1]) * f, ART_Y + c0[2] + (c1[2] - c0[2]) * f, b.light_z)
+			UIButtons.ChangeAlpha(b.light, math.min(1, 4 * q, 4 * (1 - q)))   -- fades in and out at the ends of the lap
+			UIButtons.SetActive(b.light, true)
+		else
+			UIButtons.SetActive(b.light, false)
+		end
+	end
+	for _, id in ipairs({ b.art }) do UIButtons.ChangeScale(id, sx, 1.0, 1.0) end
+	local a = 1.0
+	if b.art_fl then
+		local f = clock - b.art_fl
+		if f < ART_FLICK[#ART_FLICK - 1] then
+			for i = 1, #ART_FLICK - 1, 2 do
+				if ART_FLICK[i] <= f then a = ART_FLICK[i + 1] end
+			end
+		else
+			b.art_fl = nil
+		end
+	end
+	UIButtons.ChangeAlpha(b.art, a)
 end
 
 local function banner_show(p)
@@ -229,17 +320,7 @@ local function banner_show(p)
 			end
 		end
 		UIButtons.SetActive(banner.txt, true)
-		local cover = COVERS[p + 1]                      -- no cover for this track: no square (player, 2026-11-16)
-		banner.has_art = cover ~= nil and banner.art ~= nil
-		if banner.art then
-			if banner.has_art then
-				UIButtons.ChangeTexture({ filename = cover[1], pos = { u = cover[2], v = cover[3] },
-					size = { u = ART_CELL, v = ART_CELL } }, 0.0, banner.art)
-				UIButtons.ChangeEffectIndex(banner.art, UIEnums.EffectIndex.MultiTexture)
-				UIButtons.ChangeScale(banner.art, 0.0, 1.0, 1.0)
-			end
-			UIButtons.SetActive(banner.art, banner.has_art)
-		end
+		art_show(COVERS[p + 1])
 	end)
 	if not ok then                                       -- dead gadgets (HUD rebuilt): drop them, rebuilt next time
 		log("banner failed: " .. tostring(err))
@@ -252,11 +333,6 @@ local function banner_tick()
 	local t = clock - banner.t0
 	local on = FLICKER[#FLICKER - 1]
 	local ok = pcall(function()
-		if banner.has_art then                            -- cover: opens from its centre, closes as the banner slides
-			local close = on + HOLD
-			local sx = t < ART_OPEN and t / ART_OPEN or (t > close and math.max(0, 1 - (t - close) / ART_OPEN) or 1.0)
-			UIButtons.ChangeScale(banner.art, sx, 1.0, 1.0)
-		end
 		if t < on then                                    -- a failing lamp: last key at or before t
 			local a = 0.0
 			for i = 1, #FLICKER - 1, 2 do
@@ -348,6 +424,7 @@ local function tick()
 		end
 	end
 	banner_tick()
+	if not pcall(art_tick) and banner then banner.art_t0 = nil end
 	if UIButtons and UIButtons.GetKeyInput then
 		local ok, key = pcall(UIButtons.GetKeyInput)
 		key = ok and tostring(key or "") or ""
