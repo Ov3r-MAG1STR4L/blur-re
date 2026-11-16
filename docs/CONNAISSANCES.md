@@ -3118,3 +3118,19 @@ voitures traversés, casser un bouclier, traverser mines, Shunts et « orbes »,
   `SpecialFX` @f6aba9fe → `AnimatedMeshSpecialFX` `models/perks/Blind_projectile_01.model`, `LightSpecialFX`
   (couleur), `FlareSpecialFX`, particules ; puis faire pointer `mpBlindfireSFX` +0x570 sur le clone) ; nouvelle icône
   (texture 104 du HUD, à localiser) ; visuel du bonus sur la piste (`PickupSpecialFX` du SuperShield).
+- **Essai en jeu du lot 2 réaligné (2026-11-16)** : **charge** ; **reflets visibles** (cartes matériau) ; vitres
+  toujours opaques (le matériau Blur 2 est un reflet, et aucun shader d'objet de Blur 1 connu ne mélange l'alpha) ;
+  feuillages toujours « noirs ». Texture DXT5 des feuillages vérifiée hors jeu (décodée : feuilles vertes, trous
+  alpha 0, couleur étendue) et éclairage des modèles découpés correct (couleurs médianes ×0,91) → les pixels
+  transparents ne sont pas rejetés par `default_NB_NL` (sortie couleur × alpha = noir) ; le témoin `fence01`
+  (`default_NB_NL_NM_NV`, même description de matériau à part le shader) découpait : le test alpha dépend du
+  shader / de la passe (`E_BlendMode_SolidAlphaTest`, `FX::RenderFlags`), pas du fichier. Essai de shaders à faire.
+- **Gravité v2 en jeu** : la DLL agit (voiture 0 reconnue dans la liste, entrées de zone à 165-236 km/h) mais
+  « deux roues sur le mur » puis blocage : l'axe haut de la voiture reste presque vertical (y 0,8-1,0), donc une
+  gravité selon −haut ne s'incline jamais. **v3** (comme le rayon de `CeilingRidingControl`) : `b2gravity.bin`
+  (`b2gravity_zones.py`) = surfaces de collision des zones, un point tous les 1,5 m avec la normale de son
+  triangle (275 k points, 6,6 Mo) ; la DLL prend le point le plus proche à moins de 4 m **du côté plancher** de la
+  voiture (sinon plafonds de tunnel ou passerelles, normale -0,98 vue hors jeu), normale tournée vers la voiture ;
+  gravité = |g| selon un mélange vertical → −normale, t = (mph − 40) / (70 − 40) (seuils Blur 2), même direction
+  pour la compensation au sol. Vérifié hors jeu sur le tour roulé : normale 0,17-0,65 sur le mur du virage
+  sud-ouest, 1,0 ailleurs, aucune normale négative.

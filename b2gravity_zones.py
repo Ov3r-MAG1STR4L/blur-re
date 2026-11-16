@@ -9,7 +9,7 @@ Output: lines "minx miny minz maxx maxy maxz" (+ "speed 13.9") for b2gravity.txt
 
 usage: b2gravity_zones.py OUT.txt [--route 4]
 """
-import argparse, csv, os, sys
+import argparse, csv, os, struct, sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -82,6 +82,43 @@ def main():
             print("zone x %.0f..%.0f  y %.0f..%.0f  z %.0f..%.0f" % (b[0], b[3], b[1], b[4], b[2], b[5]))
     inside = [(b[:3] <= wall).all(1) & (wall <= b[3:]).all(1) for b in B]
     print(len(B), "zones; steep positions covered: %.0f %%" % (100 * np.any(inside, 0).mean() if B else 0))
+    pts = surface_points(a.route, B)
+    pts[:, 1] += dy
+    binp = os.path.splitext(a.out)[0] + ".bin"
+    with open(binp, "wb") as f:
+        f.write(b"B2GV" + struct.pack("<I", len(pts)) + pts.astype("<f4").tobytes())
+    print(len(pts), "surface points ->", binp)
+
+
+SPACING = 1.5      # m between surface points (the DLL takes the nearest one, like Blur 2's raycast)
+
+
+def surface_points(route, B, margin=6.0):
+    """every collision surface (floors and walls) inside the zones, as points every SPACING m with the unit normal
+    of their triangle: rows x y z nx ny nz (game axes). The DLL turns the normal towards the car."""
+    out = []
+    lo = np.array([b[:3] for b in B]) - margin
+    hi = np.array([b[3:] for b in B]) + margin
+    for name, (v, t) in b2collision.colliders(make_b2_map.UNITY).items():
+        if name.startswith("physics_route_") and not name.startswith("physics_route_%d_" % route):
+            continue
+        T = v[t]
+        tl, th = T.min(1), T.max(1)
+        keep = ((tl[:, None, :] <= hi[None]) & (th[:, None, :] >= lo[None])).all(2).any(1)
+        for A, Bv, C in T[keep]:
+            n = np.cross(Bv - A, C - A)
+            ln = np.linalg.norm(n)
+            if ln < 1e-6:
+                continue
+            k = max(1, int(np.ceil(max(np.linalg.norm(Bv - A), np.linalg.norm(C - A), np.linalg.norm(C - Bv)) / SPACING)))
+            i, j = np.meshgrid(np.arange(k + 1), np.arange(k + 1))
+            m = i + j <= k
+            u, w = i[m] / k, j[m] / k
+            P = A + u[:, None] * (Bv - A) + w[:, None] * (C - A)
+            out.append(np.hstack([P, np.repeat((n / ln)[None], len(P), 0)]))
+    R = np.vstack(out)
+    _, first = np.unique(np.floor(R[:, :3] / SPACING).astype(np.int64), axis=0, return_index=True)
+    return R[np.sort(first)]                                # one point per SPACING-m cube (small triangles overlap)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <share.h>
@@ -94,21 +95,85 @@ static float *ground_force(char *self)
     return (float *)(car + CAR_EXT_FORCE);
 }
 
-static void wall_force(char *self, float *ext, const float *up, float len, float g)
+/* d = unit direction of the wanted gravity (into the surface) */
+static void wall_force(char *self, float *ext, const float *d, float g)
 {
     unsigned car = rd((unsigned)self + 0x238), dyn = rd(car + 0x167C);
     float m = *(float *)(car + CAR_MASS), G = -g;                     /* G = 9.8 */
     float c = (dyn && readable((void *)(dyn + 0x26C), 4)) ? *(float *)(car + 0x740) * 9.81f * *(float *)(dyn + 0x26C) : 0.f;
     const float *h = (const float *)(self + 0xE4);                    /* heading (AZ row) */
-    float u[3] = {up[0] / len, up[1] / len, up[2] / len};
     float cd[3] = {-h[1] * h[0], 1.f - h[1] * h[1], -h[1] * h[2]};    /* Y - (Y.h) h */
     float n = sqrtf(cd[0] * cd[0] + cd[1] * cd[1] + cd[2] * cd[2]);
     int i;
     if (m <= 0.f || m > 1e5f || !(c >= 0.f && c < 1e7f)) return;
     if (n > 1e-3f) { cd[0] /= n; cd[1] /= n; cd[2] /= n; }
-    /* cancel the world gravity and the world-vertical downforce, push the same amounts along -up */
+    /* cancel the world gravity and the world-vertical downforce, push the same amounts along d */
     for (i = 0; i < 3; i++)
-        ext[i] = m * G * ((i == 1 ? 1.f : 0.f) - u[i]) + c * (cd[i] - u[i]);
+        ext[i] = m * G * ((i == 1 ? 1.f : 0.f) + d[i]) + c * (cd[i] + d[i]);
+}
+
+/* Collision surfaces of the zones (b2gravity.bin from b2gravity_zones.py: "B2GV", u32 n, n x (x y z nx ny nz)),
+   in a hash grid of CELL m: the nearest point within RAY m gives the surface normal under the car, as the raycast
+   of Blur 2's CeilingRidingControl (GravityBend surfaces). */
+#define CELL 4.0f
+#define RAY 4.0f
+#define NBUCKET (1 << 18)
+static float *pts = NULL;
+static int npts = 0, *nextp = NULL, head[NBUCKET];
+static float mph_min = 40.f, mph_max = 70.f;          /* Blur 2 nov 10: MinSpeedThresholdMph / MaxSpeedThresholdMph */
+
+static unsigned bucket(int x, int y, int z)
+{
+    return ((unsigned)x * 73856093u ^ (unsigned)y * 19349663u ^ (unsigned)z * 83492791u) & (NBUCKET - 1);
+}
+
+static void load_surfaces(void)
+{
+    char path[MAX_PATH], magic[4];
+    FILE *f;
+    int i;
+    sprintf_s(path, sizeof path, "%sb2gravity.bin", dir);
+    if (fopen_s(&f, path, "rb")) { say("no b2gravity.bin: car-up rule"); return; }
+    if (fread(magic, 1, 4, f) != 4 || memcmp(magic, "B2GV", 4) || fread(&npts, 4, 1, f) != 1 || npts <= 0
+        || npts > 4000000) { say("bad b2gravity.bin"); fclose(f); npts = 0; return; }
+    pts = (float *)malloc((size_t)npts * 6 * sizeof(float));
+    nextp = (int *)malloc((size_t)npts * sizeof(int));
+    if (!pts || !nextp || fread(pts, 6 * sizeof(float), npts, f) != (size_t)npts) {
+        say("b2gravity.bin: read failed"); fclose(f); npts = 0; return;
+    }
+    fclose(f);
+    for (i = 0; i < NBUCKET; i++) head[i] = -1;
+    for (i = 0; i < npts; i++) {
+        unsigned b = bucket((int)floorf(pts[6 * i] / CELL), (int)floorf(pts[6 * i + 1] / CELL), (int)floorf(pts[6 * i + 2] / CELL));
+        nextp[i] = head[b];
+        head[b] = i;
+    }
+    say("%d surface points", npts);
+}
+
+/* normal (unit, towards the car) of the nearest surface point within RAY m on the floor side of the car
+   (Blur 2 casts its ray below the car: a tunnel ceiling or an overpass must not win); 0 if none */
+static int surface_normal(const float *p, const float *up, float *n)
+{
+    int cx = (int)floorf(p[0] / CELL), cy = (int)floorf(p[1] / CELL), cz = (int)floorf(p[2] / CELL), dx, dy, dz;
+    int best = -1;
+    float bd = RAY * RAY;
+    for (dx = -1; dx <= 1; dx++) for (dy = -1; dy <= 1; dy++) for (dz = -1; dz <= 1; dz++) {
+        int i;
+        for (i = head[bucket(cx + dx, cy + dy, cz + dz)]; i >= 0; i = nextp[i]) {
+            const float *q = pts + 6 * i;
+            float a = q[0] - p[0], b = q[1] - p[1], c = q[2] - p[2], d2 = a * a + b * b + c * c;
+            if (a * up[0] + b * up[1] + c * up[2] > 0.5f) continue;      /* above the car floor */
+            if (d2 < bd) { bd = d2; best = i; }
+        }
+    }
+    if (best < 0) return 0;
+    {
+        const float *q = pts + 6 * best;
+        float s = (p[0] - q[0]) * q[3] + (p[1] - q[1]) * q[4] + (p[2] - q[2]) * q[5] >= 0.f ? 1.f : -1.f;
+        n[0] = q[3] * s; n[1] = q[4] * s; n[2] = q[5] * s;
+    }
+    return 1;
 }
 
 static void __stdcall gravity(char *self)
@@ -126,12 +191,22 @@ static void __stdcall gravity(char *self)
         for (z = 0; z < nzones && !inside; z++)
             inside = p[0] >= zones[z][0] && p[1] >= zones[z][1] && p[2] >= zones[z][2]
                   && p[0] <= zones[z][3] && p[1] <= zones[z][4] && p[2] <= zones[z][5];
-        int on = inside && speed > min_speed && len > 0.9f && len < 1.1f;
+        float n[3], t = (speed * 2.23694f - mph_min) / (mph_max - mph_min), d[3];
+        int on = inside && t > 0.f && (npts ? surface_normal(p, up, n) : (len > 0.9f && len < 1.1f));
         float *ext = ground_force(self);
         if (on) {
-            float s = g / len;                               /* g < 0: along -up, |g| long */
-            gx = up[0] * s; gy = up[1] * s; gz = up[2] * s;
-            if (ext) wall_force(self, ext, up, len, g);
+            float l;
+            if (!npts) { n[0] = up[0] / len; n[1] = up[1] / len; n[2] = up[2] / len; }   /* old rule */
+            if (t > 1.f) t = 1.f;
+            d[0] = -n[0] * t; d[1] = -(1.f - t) - n[1] * t; d[2] = -n[2] * t;           /* down -> into the surface */
+            l = sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+            if (l < 1e-3f) { d[0] = 0.f; d[1] = -1.f; d[2] = 0.f; l = 1.f; }
+            d[0] /= l; d[1] /= l; d[2] /= l;
+            gx = -g * d[0]; gy = -g * d[1]; gz = -g * d[2];                              /* |g| along d */
+            if (ext) wall_force(self, ext, d, g);
+            if (k < 32 && !applied[k])
+                say("vehicle %d bent at (%.0f, %.0f, %.0f) %.0f km/h: surface normal (%.2f, %.2f, %.2f), t %.2f",
+                    k, p[0], p[1], p[2], speed * 3.6f, n[0], n[1], n[2], t);
         } else if (ext && k < 32 && applied[k]) {
             ext[0] = ext[1] = ext[2] = 0.f;                 /* back to the game's own forces */
         }
@@ -228,6 +303,7 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         logfile = _fsopen(path, "w", _SH_DENYNO);          /* readable while the game runs */
         say("b2gravity loaded");
         load_zones();
+        load_surfaces();
         patch();
     }
     return TRUE;

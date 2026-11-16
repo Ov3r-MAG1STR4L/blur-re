@@ -35,7 +35,7 @@ def main():
     assert "Blur.exe" not in run, "Blur is running: close it first"
     src = os.path.join(HERE, "natif", "b2gravity")
     dlls = os.path.join(game, "amax", "dlls")
-    for f in ("b2gravity.dll", "b2gravity.txt"):
+    for f in ("b2gravity.dll", "b2gravity.txt", "b2gravity.bin"):
         shutil.copyfile(os.path.join(src, f), os.path.join(dlls, f))
         assert open(os.path.join(src, f), "rb").read() == open(os.path.join(dlls, f), "rb").read()
     rl = os.path.join(game, "gamedata", "xt", "rldatabase.bin")
