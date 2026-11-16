@@ -1090,6 +1090,25 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   (`ExportGameScene.cpp` : écriture de `.level` / `.levelphysics`), `bizpak` (création et extraction de paks),
   `texture_converter`, `tex_atlas`, `maya_plugins` (`MayaToSorcery`, `CameraExportPlugin`), `LuaDebugger`. Référence
   pour les formats que le Map Builder écrit.
+- **Lecture des outils (2026-11-16), Fort (code source, rien essayé en jeu)** :
+  - `scene_converter/.../ExportGameScene.cpp` écrit trois fichiers : `Level.level` (blocs `Level` > `Header`
+    (version S32 = 0) + `MdlDat`), `Level.levelphysics` (export du moteur physique **Gravity**) et `Level.levelrender`
+    (`Render` : données de rendu, points d'échantillonnage de lumière, liste des lumières). Les blocs `NavDat` /
+    `Advert` du `.level` sont donc ajoutés par une autre étape (non trouvée).
+  - `.levelphysics` (lecteur : `mercury/library/physics/gravity/source/importer/Importer.cpp`) : `Head`, version,
+    puis une suite de formes terminée par `0x0FFFFFFF`. Numéros de type = `E_ImportShapeType`
+    (`narrowphase/Shape.h`) : 0 maillage de triangles, 1 maillage KD, **2 boîte**, 3 enveloppe convexe, 4 sphère,
+    5 capsule, **6 cylindre**, **7 composite**, 8 contrôleur de personnage, 10 maillage instancié, 11 base de maillage,
+    14 plan, 15 cône… Explique les types 0, 2, 6, 7 vus dans les niveaux et le « type 2 non géré » de
+    `bmb_levelphysics.py` (Sausalito / Tokyo) : c'est une **boîte**.
+  - **Signature des paks** (`amax/game/GameSystems.cpp`) : seul `cache/gamedata.pak` est vérifié (RSA 1024, clé
+    publique `g_amax_publicKey`, `cache/gamedata.sig`) ; `root.pak`, `models.pak`, `shaders-speed.pak` et
+    `root_streaming.pak` (sons en flux : musiques, ambiances) sont montés **sans vérification** ; `gamedata_boot.pak`
+    n'est signé que sur console. `bizpak` peut aussi produire un hachage SHA-1 de 20 octets (`.hash`).
+  - Limite d'acteurs du jeu : `kMaxNoActors = 512` (`GameActorList.cpp`) ; 6 000 pour le système d'acteurs.
+  - Attention : la branche `master` de BlurRebuilt contient déjà des retouches d'uKER (commentaires `[Blur2PC]`) ;
+    « fuite intacte » n'est donc pas tout à fait exact.
+  - Non lus en détail : `actor_studio` (110 000 lignes), `converter_shared` (16 000).
 - Skins (`PlainSkin.cs`) : Md note que « la table des numéros d'images des matériaux est inconnue » ; à chercher dans
   `mercury/library/graphics` (`fx`, `vehicle`, `TextureResource`) du code source.
 - Le remplacement de voiture (2.5) annonce « votre voiture visible en ligne » : seulement chez le joueur, avec des paks
