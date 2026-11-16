@@ -594,23 +594,45 @@ def track_lines(path):
     already hold it, the album when it differs from the title. Empty tags give no line."""
     tags = track_tags(path)
     title = track_title(path, tags)
-    artist, album = tags.get("artist", ""), tags.get("album", "")
+    artist, album = clean_text(tags.get("artist", "")), clean_text(tags.get("album", ""))
     lines = [title]
     if artist and artist.lower() not in title.lower():
         lines.append(artist)
     if album and album.lower() != tags.get("title", "").lower() and album.lower() not in title.lower():
         lines.append(album)
-    return lines
+    return [shorten(lines[0], TITLE_MAX)] + [shorten(l, INFO_MAX) for l in lines[1:3]]
+
+
+TITLE_MAX, INFO_MAX = 45, 40                              # banner text lengths (player, 2026-11-16): longer = cut "…"
+# what downloaded file names / tags add and the banner does not need (player, 2026-11-16)
+JUNK = re.compile(r"\s*[\(\[【]\s*(official\s*)?(music\s*)?(audio|video|lyrics?|lyric\s*video|visuali[sz]er|mv|m/v|hd|hq|4k)"
+                  r"\s*[\)\]】]|\s*【|】|\s+(hd|hq)\s*$", re.I)
+
+
+def clean_text(s):
+    """Banner text without download junk ("(Official Audio)", "[MV]", "【 】"...) and doubled spaces."""
+    return re.sub(r"\s{2,}", " ", JUNK.sub(" ", s)).strip(" -")
+
+
+def shorten(s, n):
+    """At most n characters: first drop a final bracket "(from ...)", then cut on a word with "..."."""
+    if len(s) <= n:
+        return s
+    t = re.sub(r"\s*[\(\[][^\(\)\[\]]*[\)\]]\s*$", "", s)
+    if len(t) <= n and t:
+        return t
+    t = t[:n - 1]
+    return (t[:t.rfind(" ")] if " " in t[n // 2:] else t).rstrip(" -,") + "..."   # ASCII: the game font may lack "…"
 
 
 def track_title(path, tags=None):
     """Banner title (player's rule, 2026-11-13): "artist - title" from the tags, the title alone when it already holds
     " - " (downloaded files often have the uploader as artist), else the file name without its extension."""
     tags = track_tags(path) if tags is None else tags
-    title, artist = tags.get("title", ""), tags.get("artist", "")
+    title, artist = clean_text(tags.get("title", "")), clean_text(tags.get("artist", ""))
     if title and artist and " - " not in title:
         return f"{artist} - {title}"
-    return title or os.path.splitext(os.path.basename(path))[0]
+    return title or clean_text(os.path.splitext(os.path.basename(path))[0])
 
 
 def position_start(j, n):
@@ -733,7 +755,6 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
 UI_COMMON = os.path.join("ui", "data", "ui_common.bpr")   # the bundle of hud_main / light_paint_02: covers go in it
 ART_NAME, ART_SIZE, ART_CELL = "blur_music_art", 1024, 256  # DXT1 atlases blur_music_art0, 1... of 4 x 4 cells
 ART_RADIUS = 0.06                                        # corner radius, fraction of the side (HUD panels' look)
-ART_PAD_PX = 12                                          # dark band margin around the cover in a 256 px cell
 ART_TARGET, ART_KNEE = 0.30, 0.75                        # cover levelling: mean luminance, highlight knee (see art_level)
 COVER_NAMES = ("cover", "folder", "front", "album")      # picture files next to the music that serve as a cover
 
@@ -783,27 +804,19 @@ def write_covers(covers, out):
     cells, additions = {}, []
     order = sorted(found)
     # rounded corners like the HUD panels (player, 2026-11-16): an alpha mask per cell, so the sheets are DXT5
-    # The dark band of the fan message ("Mine Hotshot", colour 5 8 10, alpha 220) is drawn in the cell too, rounded,
-    # with the cover inset by ART_PAD: one gadget in game, and the band follows the rounded corners.
+    # rounded corners like the HUD panels (player, 2026-11-16); the cover sits on the banner's own backing (side by side
+    # with the text, player 2026-11-16), so no band of its own: alpha mask, DXT5 sheets
     from PIL import ImageDraw
-
-    def rounded(size, alpha):                             # drawn 4x larger, then reduced: smooth edges
-        m = Image.new("L", (size * 4, size * 4))
-        ImageDraw.Draw(m).rounded_rectangle((0, 0, size * 4 - 1, size * 4 - 1), int(size * 4 * ART_RADIUS), fill=alpha)
-        return m.resize((size, size), Image.LANCZOS)
-    inner = ART_CELL - 2 * ART_PAD_PX
-    band = Image.new("RGBA", (ART_CELL, ART_CELL), (5, 8, 10, 0))
-    band.putalpha(rounded(ART_CELL, 220))
-    mask = rounded(inner, 255)
+    big = Image.new("L", (ART_CELL * 4, ART_CELL * 4))     # drawn 4x larger, then reduced: smooth edges
+    ImageDraw.Draw(big).rounded_rectangle((0, 0, ART_CELL * 4 - 1, ART_CELL * 4 - 1), int(ART_CELL * 4 * ART_RADIUS), fill=255)
+    mask = big.resize((ART_CELL, ART_CELL), Image.LANCZOS)
     for a in range(0, len(order), per):
         sheet = Image.new("RGBA", (ART_SIZE, ART_SIZE), (0, 0, 0, 0))
         name = f"{ART_NAME}{a // per}"
         for k, p in enumerate(order[a:a + per]):
             x, y = (k % 4) * ART_CELL, (k // 4) * ART_CELL
-            cover = found[p].resize((inner, inner), Image.LANCZOS).convert("RGBA")
-            cover.putalpha(mask)
-            cell = band.copy()
-            cell.alpha_composite(cover, (ART_PAD_PX, ART_PAD_PX))
+            cell = found[p].convert("RGBA")
+            cell.putalpha(mask)
             sheet.paste(cell, (x, y))
             cells[p] = (name, x / ART_SIZE, y / ART_SIZE)
         raw = blurbpr.encode(sheet, 5, 1)
