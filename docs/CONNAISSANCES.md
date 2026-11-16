@@ -3120,6 +3120,10 @@ voitures traversés, casser un bouclier, traverser mines, Shunts et « orbes »,
   Sources et résultat dans `blur_extracted\mods\railgun_sounds` (hors du dépôt : sons tiers, les `core_assets`
   viennent sans doute de Mindustry, GPL 3) ; l'installateur prend ce fichier s'il existe, sinon le son synthétisé.
   **v2 installée dans Blur_test** (Bolt d'origine, SuperShield Delay 1,5).
+  **Retouche demandée (2026-11-16, installée)** : délai **1,0 s** ; son = fin de `chargeCorvus` (1,0 s, −24 dB), puis à
+  1,00 s le tir plasma (×0,7) + le **vrai tir du Shunt** du jeu, `ShuntFire` (boom puis descente, 2,3 s) + `ShuntFireLFE`
+  (basses, 0,6 s, ×0,5), extraits de `root/audio/pickups.baf` par `blurbaf.py` (aussi `ShuntCharge`, `ShuntHitCar`,
+  `ShuntHitWorld`…) : 3,3 s, boom −11 dB de 1,0 à 1,5 s, silence à 3,3 s. `--sound CHARGE COUCHE[:gain]...`.
 - **Pas encore fait** : projectile blanc et plus gros (il faudra cloner l'arbre d'effets du Bolt :
   `SpecialFX` @f6aba9fe → `AnimatedMeshSpecialFX` `models/perks/Blind_projectile_01.model`, `LightSpecialFX`
   (couleur), `FlareSpecialFX`, particules ; puis faire pointer `mpBlindfireSFX` +0x570 sur le clone) ; nouvelle icône

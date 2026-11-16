@@ -21,7 +21,7 @@ import blurloc  # noqa: E402
 from blurxt import XT, decode_names, encode_names  # noqa: E402
 
 SUPERSHIELD_LEVEL = 0x9B08F5FA
-DELAY = 1.5
+DELAY = 1.0
 PINK = b"!255 153 153 255"
 TITANIUM = b"!232 236 242 255"          # same length: the string zone keeps its layout
 NAME_HASH, NAME = 1665195695, "RAILGUN"
@@ -86,27 +86,24 @@ def _load(path, rate):
     return np.frombuffer(raw, np.float32).reshape(-1, 2).copy()
 
 
-def mix_sound(charge, shot, impact=None, out=None, delay=DELAY, rate=44100):
-    """Railgun sound from the user's files: the end of `charge` fills the firing delay (its quiet start is cut),
-    `shot` starts exactly at the delay, `impact` (optional) = the loudest moment of another file, layered under the
-    shot for weight. Stereo 16-bit WAV in SOUNDS (outside the repo: third-party sounds)."""
+def mix_sound(charge, *layers, out=None, delay=DELAY, rate=44100):
+    """Railgun sound: the end of `charge` fills the firing delay (its start is cut), then every layer
+    ("file" or "file:gain", each normalised to its peak) starts exactly at the delay, summed. Used with the user's
+    charge / plasma shot and the game's own Shunt boom (pickups.baf: ShuntFire = boom + falling tail, ShuntFireLFE =
+    low boom, extracted with blurbaf.py). Stereo 16-bit WAV in SOUNDS (outside the repo: third-party / game sounds)."""
     import numpy as np, wave
     n = int(rate * delay)
     c = _load(charge, rate)[-n:]
     c[:int(rate * 0.05)] *= np.linspace(0, 1, int(rate * 0.05))[:, None]
-    s = _load(shot, rate)
-    s /= np.abs(s).max()                             # shootBeamPlasma peaks at 1.44: clipped as it is
-    if impact:
-        i = _load(impact, rate)
-        env = np.convolve(np.abs(i).mean(1), np.ones(441) / 441, "same")
-        k = max(0, int(np.argmax(np.diff(env, prepend=0) * (env > 0.5 * env.max()))) - int(rate * 0.01))
-        i = i[k:k + int(rate * 1.2)]
-        i *= np.linspace(1, 0, len(i))[:, None] ** 2
-        layer = np.zeros((max(len(s), len(i)), 2), np.float32)
-        layer[:len(s)] += s
-        layer[:len(i)] += 0.5 * i / np.abs(i).max()
-        s = layer
-    x = np.concatenate([c / np.abs(c).max() * 0.6, s])
+    parts = []
+    for spec in layers:
+        path, _, gain = spec.rpartition(":") if spec.rsplit(":", 1)[-1].replace(".", "").isdigit() else (spec, "", "1")
+        y = _load(path, rate)
+        parts.append(y / np.abs(y).max() * float(gain))  # shootBeamPlasma peaks at 1.44: clipped as it is
+    s = np.zeros((max(len(y) for y in parts), 2), np.float32)
+    for y in parts:
+        s[:len(y)] += y
+    x = np.concatenate([c / np.abs(c).max() * 0.5, s])
     x = np.int16(np.clip(x / np.abs(x).max() * 0.8, -1, 1) * 32767)
     out = out or os.path.join(SOUNDS, "railgun_fire.wav")
     os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -169,7 +166,7 @@ def main(remove=False):
 
 
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["--sound"]:                  # --sound CHARGE SHOT [IMPACT]: build the sound, then install
-        print("sound:", mix_sound(*sys.argv[2:5]))
+    if sys.argv[1:2] == ["--sound"]:                  # --sound CHARGE LAYER[:gain]...: build the sound, then install
+        print("sound:", mix_sound(*sys.argv[2:]))
     else:
         main("--remove" in sys.argv)
