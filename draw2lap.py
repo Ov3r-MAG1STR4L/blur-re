@@ -11,7 +11,7 @@ roof or a bridge above does not lift it). Width: --width for the whole route (th
 usage: draw2lap.py DRAWN.png CITY_map.npz OUT_lap.csv [--width 20]        then: lap2aid.py OUT_lap.csv OUT.aid
        draw2lap.py --self-test CITY_map.npz
 """
-import argparse, csv, math, sys
+import argparse, csv, math
 import numpy as np
 from PIL import Image
 

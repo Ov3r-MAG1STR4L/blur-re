@@ -8,3 +8,7 @@ ext_tex.txt
 stage_arrays.txt
 __pycache__/
 config.local.json
+
+# Aperçus et enregistrements écartés (images tirées du jeu, essais jetés)
+edits/*_preview.png
+*_discarded.json

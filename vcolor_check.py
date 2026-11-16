@@ -1,5 +1,5 @@
 """Checks of the second vertex colour test before / after install (read only on the game copy)."""
-import sys, os, struct, contextlib, io, hashlib
+import sys, os, struct, contextlib, io
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import blurmesh as bm, blurmodel_write as W, vcolor_scene as S
 sys.path[:0] = [r"C:/Users/sanqu/Jeux_WII/bmb_game/map_builder/model"]

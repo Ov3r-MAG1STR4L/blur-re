@@ -1,5 +1,5 @@
 """Test hash candidates on (name, id) pairs published on the Blur community wiki."""
-import struct, zlib, itertools
+import struct, zlib
 from hashscan import lookup2
 
 M = 0xffffffff

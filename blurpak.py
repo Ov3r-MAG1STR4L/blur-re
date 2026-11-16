@@ -12,7 +12,7 @@ Layout (little-endian, page size = 0x800):
   data  file data at startPage*0x800: u32 blocksize (0x10000) then repeated
         [u32 csize][raw deflate block] until usize bytes have been produced.
 """
-import struct, sys, os, zlib, argparse
+import struct, os, zlib, argparse
 
 KEY = b"xVXo40j3@$%\\%`"   # found in Blur_debug.exe @ 0xefab60
 PAGE = 0x800

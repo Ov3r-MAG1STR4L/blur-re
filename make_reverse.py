@@ -15,7 +15,7 @@ usage: make_reverse.py OUT_DIR [--routes-only]
 """
 import collections, json, os, struct, sys
 import numpy as np
-import addramp, aidreverse, camcycle, maplock, blurbaf, blurbpr, blurloc, bluripf, blurroute, gridreverse, thumbreverse
+import addramp, aidreverse, camcycle, maplock, blurbpr, blurloc, bluripf, blurroute, gridreverse, thumbreverse
 from blurxt import XT
 from kslfwrite import KSLF
 from make_music import music_key_sounds

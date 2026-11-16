@@ -244,7 +244,6 @@ def renders(pc, Lv, out_dir, cam=None, look=None, tag="poc", extra=None):
     """offline: Blur 2 formula per pixel (REF), Blur 1 expected (vertex colours), their difference;
     extra = (pc, Lv) of the same piece without subdivision: its expected render as one more panel"""
     from PIL import Image, ImageDraw
-    import csv
     info = dict(base=("b", 0), st=(1, 1, 0, 0), a=None, b=None, mat=None, alpha=False, cut=.5)
     T = [(pc["P"][t], pc["N"][t], pc["uv0"][t], pc["uv1"][t], info) for t in pc["tris"]]
     if cam is None:
