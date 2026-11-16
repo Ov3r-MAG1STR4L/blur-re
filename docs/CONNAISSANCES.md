@@ -3204,3 +3204,13 @@ voitures traversés, casser un bouclier, traverser mines, Shunts et « orbes »,
   Bolt (mémoire recyclée). Sans niveau Railgun dans les données, les effets du Bolt restent (journal).
 - **Pas encore fait** : couleur des modèles (spirale violette, coque bleue, charge rouge, anneaux verts : seules les
   lumières sont blanches), spirale plus grosse (copie du modèle), éclat sur les murs traversés, symbole.
+- **Sons et mode test (2026-11-17, installés)** : `railgun.txt` `test 1` = chaque orbe ramassée par le joueur devient un
+  Railgun (le tirage seul ne le donnait presque jamais avec « Random Power-ups : Off » : les emplacements gardent leur
+  type). Fil audio de la DLL (MCI `mpegvideo` : volume gauche / droite, plusieurs sons à la fois ; le jeu ne fait que
+  mettre en file) : **impacts** `railgun_hit_car.wav` (`blockExplodeElectricBig`) / `railgun_hit_wall.wav`
+  (`blockExplodeElectric`), volume selon la distance à la voiture du joueur (`impact_range` 300 m ; point d'impact
+  d'un mur = résultat du rayon fin +0x10) ; **son du projectile en vol** `railgun_loop.wav` (`beamPlasma`, avant) /
+  `railgun_loop_rear.wav` (`beamPlasmaSmall`, arrière), en boucle tant que le Railgun vit, volume selon la distance
+  (`loop_range` 400 m) et gauche / droite selon l'axe latéral de la voiture (+0xCC). Projectile (`C_PickupBase`,
+  Confirmé par `Update` 0xBE9F50) : **+0x24 tué, +0x28 actif (après le délai), +0x80 position** (`mMatrix.AW`).
+  Le craquement plasma du tir est facultatif (fichier retiré par l'utilisateur).

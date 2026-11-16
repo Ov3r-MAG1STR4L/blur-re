@@ -66,7 +66,7 @@ static char sound[2][MAX_PATH];     /* railgun_fire.wav / railgun_fire_rear.wav 
 static FILE *logfile = NULL;
 static volatile LONG passes = 0, walls = 0, shields = 0, fired = 0;
 
-typedef struct { char *p; int pierced; DWORD last_wall; } Rail;
+typedef struct { char *p; int pierced; DWORD last_wall; int rear; } Rail;
 #define MAX_RAILS 32
 static Rail rails[MAX_RAILS];
 static int next_is_rail = 0;
@@ -177,6 +177,8 @@ static int __cdecl is_human(int vehicle)
 static int test_mode = 0;           /* railgun.txt "test 1": every Bolt the player picks up becomes a railgun */
 static float impact_range = 300.f;  /* m: silent beyond, full volume at the player's car */
 static char hit_wav[2][MAX_PATH];   /* 0 car, 1 wall */
+static char loop_wav[2][MAX_PATH];  /* railgun_loop.wav / railgun_loop_rear.wav: the projectile's own sound in flight */
+static float loop_range = 400.f;    /* m */
 static volatile LONG q_head = 0, q_tail = 0;
 static int q_kind[16], q_vol[16];
 
@@ -216,13 +218,63 @@ static void impact(int kind, const float *at)  /* game thread: queue a sound if 
     q_head = h + 1;
 }
 
+static void mci(const char *fmt, ...)
+{
+    char cmd[MAX_PATH + 64];
+    va_list a;
+    va_start(a, fmt); vsprintf_s(cmd, sizeof cmd, fmt, a); va_end(a);
+    mciSendStringA(cmd, NULL, 0, NULL);
+}
+
+/* audio thread: the flying railguns' loops. Projectile (C_PickupBase): +0x24 killed, +0x28 active (after the delay),
+   +0x80 position (mMatrix.AW, copied each frame by the Bolt's Update 0xBE9F50). Volume by distance to the player's car,
+   left / right by the car's side axis (vehicle +0xCC). Read only, from this thread. */
+static void loops(void)
+{
+    static int playing[MAX_RAILS], file_of[MAX_RAILS];
+    int i;
+    for (i = 0; i < MAX_RAILS; i++) {
+        char *p = rails[i].p;
+        int alive = p && (rd((unsigned)p + 0x28) & 0xFF) && !(rd((unsigned)p + 0x24) & 0xFF) && rd((unsigned)p + 0x80 + 8);
+        int k = rails[i].rear;
+        if (alive && !playing[i] && loop_wav[k][0]) {
+            if (file_of[i] != k + 1) {
+                if (file_of[i]) mci("close rl%d", i);
+                mci("open \"%s\" type mpegvideo alias rl%d", loop_wav[k], i);
+                file_of[i] = k + 1;
+            }
+            mci("setaudio rl%d volume to 0", i);
+            mci("play rl%d from 0 repeat", i);
+            playing[i] = 1;
+        }
+        if (playing[i] && alive) {
+            const float *me = vehicle_pos(player_index()), *at = (const float *)(p + 0x80);
+            const float *side = me ? me - (0x130 - 0xCC) / 4 : NULL;      /* AX row of the car's matrix */
+            float d[3], dist, vol, pan = 0.f;
+            if (!me) continue;
+            d[0] = at[0] - me[0]; d[1] = at[1] - me[1]; d[2] = at[2] - me[2];
+            dist = sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+            vol = dist < loop_range ? 1000.f * (1.f - dist / loop_range) : 0.f;
+            if (dist > 1.f) pan = (d[0] * side[0] + d[1] * side[1] + d[2] * side[2]) / dist;   /* +1 = right */
+            mci("setaudio rl%d left volume to %d", i, (int)(vol * (pan > 0.f ? 1.f - 0.7f * pan : 1.f)));
+            mci("setaudio rl%d right volume to %d", i, (int)(vol * (pan < 0.f ? 1.f + 0.7f * pan : 1.f)));
+        }
+        if (playing[i] && !alive) {
+            mci("stop rl%d", i);
+            playing[i] = 0;
+        }
+    }
+}
+
 static DWORD WINAPI audio(LPVOID unused)
 {
     int opened[2] = {0, 0}, next[2] = {0, 0}, i;
     char cmd[MAX_PATH + 64];
     MSG msg;
+    DWORD last = 0;
     (void)unused;
     for (;;) {
+        if (GetTickCount() - last >= 30) { last = GetTickCount(); loops(); }
         while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE)) DispatchMessageA(&msg);
         while (q_tail != q_head) {
             int k = q_kind[q_tail & 15], v = q_vol[q_tail & 15];
@@ -267,7 +319,7 @@ static void __cdecl after_ctor(char *self)
     if (!next_is_rail) return;
     next_is_rail = 0;
     if (!(r = rail_of(NULL))) { say("more than %d railguns alive: this one is a plain Bolt", MAX_RAILS); return; }
-    r->p = self; r->pierced = 0; r->last_wall = 0;
+    r->p = self; r->pierced = 0; r->last_wall = 0; r->rear = rear;
     *(float *)(self + 0x150) = radius;
     *(float *)(self + 0x154) = height;
     *(float *)(self + 0x158) = speed;
@@ -561,6 +613,7 @@ static void load_settings(const char *dir)
             else if (!strcmp(key, "rear_delay")) rear_delay = v[0];
             else if (!strcmp(key, "test")) test_mode = v[0] != 0;
             else if (!strcmp(key, "impact_range")) impact_range = v[0];
+            else if (!strcmp(key, "loop_range")) loop_range = v[0];
             else if (!strcmp(key, "damage")) base_damage = v[0];
             else if (!strcmp(key, "crush")) crush = (int)v[0];
             else if (!strcmp(key, "falloff") && k == 3) memcpy(falloff, v, sizeof v);
@@ -603,9 +656,12 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         sprintf_s(sound[1], MAX_PATH, "%srailgun_fire_rear.wav", dir);
         sprintf_s(hit_wav[0], MAX_PATH, "%srailgun_hit_car.wav", dir);
         sprintf_s(hit_wav[1], MAX_PATH, "%srailgun_hit_wall.wav", dir);
+        sprintf_s(loop_wav[0], MAX_PATH, "%srailgun_loop.wav", dir);
+        sprintf_s(loop_wav[1], MAX_PATH, "%srailgun_loop_rear.wav", dir);
         for (int i = 0; i < 2; i++) {
             if (GetFileAttributesA(sound[i]) == INVALID_FILE_ATTRIBUTES) { say("no %s: no sound", sound[i]); sound[i][0] = 0; }
             if (GetFileAttributesA(hit_wav[i]) == INVALID_FILE_ATTRIBUTES) { say("no %s: no sound", hit_wav[i]); hit_wav[i][0] = 0; }
+            if (GetFileAttributesA(loop_wav[i]) == INVALID_FILE_ATTRIBUTES) { say("no %s: no sound", loop_wav[i]); loop_wav[i][0] = 0; }
         }
         if (test_mode) say("TEST MODE: every Bolt the player picks up becomes a railgun");
         t = CreateThread(NULL, 0, audio, NULL, 0, NULL);

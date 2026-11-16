@@ -11,3 +11,4 @@ crush 9999       # damage to mines, Shunts, Bolts (orbes) on its line: they are 
 spawn 0.35       # chance that a pickup draw may give a railgun (0..1)
 test 1           # TEST: every Bolt the player picks up becomes a railgun (0 = normal game)
 impact_range 300 # m: impact sounds fade out with the distance to your car, silent beyond
+loop_range 400   # m: the flying railgun is heard up to this distance from your car
