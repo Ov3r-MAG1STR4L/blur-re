@@ -366,6 +366,12 @@ sur sa ligne). Détails techniques : CONNAISSANCES, « Bonus Railgun ».
 3. tir contre un mur / dans un virage : le tir continue derrière (compteur « wall hit(s) ignored ») ;
 4. pas de plantage sur 3 courses avec IA ; noter ce qui gêne (tir qui meurt derrière les bâtiments, IA trop fortes).
 
+**v1 validée en jeu par l'utilisateur (2026-11-16)**. **v2 (construite)** : bonus à part à la place du SuperShield
+(Bolt rendu normal), délai 1,5 s, hitbox 0,8, dégâts 50 × 1,5 / 1,0 / 0,5, bouclier cassé, mines / Shunts / orbes
+détruits, HUD blanc titane, nom RAILGUN, son de charge et de tir. Validation v2 : le Railgun apparaît sur la piste et
+au HUD ; tir 1,5 s après l'appui ; journal « railgun(s) fired / vehicle hit(s) / wall(s) / shield(s) downed » ;
+moins de dégâts sur la 3e voiture traversée ; les IA ne gardent jamais de Railgun.
+
 **Suite possible** : visuel propre (SpecialFX du niveau Normal) ; Railgun rare (une partie des Bolts seulement :
 crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre joueurs).
 
@@ -544,3 +550,4 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
 | 2026-11-16 | Gravité collée aux murs : DLL `natif/b2gravity` (crochet à 0x453BEF dans `C_VehicleActor::Update`, gravité propre à chaque voiture d'après le code source), 23 zones tirées des conduites Unity, seuil « retournée » 0,45 → 0 dans Blur_test ; installée, à essayer en jeu |
 | 2026-11-16 | Railgun (Projet M) : un 12e bonus est infaisable (énumération `E_PICKUP_TYPE` partout, `GetPickupType` = premier du type) ; prototype = le Bolt modifié : DLL `natif/railgun` (1 tir : `GetNumShotsAwarded` 0x4699F0 + 3 copies ; traverse les voitures : `KillPickup` sauté en 0xBECB2A ; traverse les murs : test de mur en 0xBE654B) + `pickups.bin` #796 (600 m/s, rayon 0,4, 150 dégâts) ; installé dans Blur_test, à essayer en jeu |
 | 2026-11-16 | Marina lot 2 installé (faces doubles, transparences DXT5, cartes matériau, 263 modèles) + DLL de gravité v2 (compensation au sol) ; Blur 2 : Blindfire = Bolt, Bomb = Mine, Javelin et Icewall = vrais nouveaux bonus ; conduite au plafond de Blur 2 identifiée (`CeilingRidingControl`, 40-70 mph) ; à essayer en jeu |
+| 2026-11-16 | Railgun v2 : à la place du SuperShield (bonus coupé mais câblé : énumération, HUD, nom), Bolt rendu normal ; DLL 11 sites (tirage 0xB5B497, ramassage IA 0x47CC60, `CreatePickup` 0xBAB600, constructeur du Bolt, `Trigger` par vtable, `GetDamageToApply` 0xBA8CC0) ; dégâts dégressifs, bouclier cassé, pièces détruites ; délai 1,5 s, HUD blanc titane, nom RAILGUN, son maison ; construit, à installer (jeu ouvert) puis essayer |

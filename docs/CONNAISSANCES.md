@@ -3073,3 +3073,48 @@ Idée de l'utilisateur : un tir de précision unique, très rapide, longue port�
   0 / 211 DXT1**. Correctif `blurmodel_write.realign` (appelé par `to_dxt5`) : remplissage de chaque flux recalculé
   (`_assemble`), données identiques, modèles déjà alignés inchangés. Les 58 modèles installés réalignés en place.
   Le passage en 4 Go et les cartes matériau 256² restent (marge).
+
+### Railgun v2 : un vrai bonus à part, à la place du SuperShield (2026-11-16, construit, à installer et essayer en jeu)
+Retour de l'utilisateur sur la v1 : « ça fonctionne » (journal : murs traversés). Demandes : délai avant le tir
+≥ 1,5 s (plus que le Shunt), hitbox et visuel plus gros, dégâts dégressifs ×1,5 / ×1,0 / ×0,5 selon les murs et
+voitures traversés, casser un bouclier, traverser mines, Shunts et « orbes », visuel blanc titane, nouveau symbole, son.
+- **« Orbes » = le Bolt en français** (`common.loc`, hash 372392565 : en « BOLT », fr « ORBES » ; `hud.loc`
+  3037711001 « Touché par Orbes »). **Confirmé.**
+- **Le SuperShield est un bonus coupé mais câblé (Fort, code source + binaire)** : énumération 10, `PickupType`
+  #652 (BaseProbability 0, `PickupSpecialFX` @162a5cac), niveau Normal #553 (uid `0x9B08F5FA`, Delay 0), entrée HUD
+  `UiXtConfig.PerkDisplayParameters.superShield` (`ui.bin` #187 : texture 104, couleurs `!255 153 153 255`,
+  nom 1665195695 = « SUPER SHIELD » / « SUPER BOUCLIER »), 1 tir (`GetNumShotsAwarded`), tir par le chemin normal
+  (`FirePickup` → `CreatePickup`). Seuls obstacles : le tirage des bonus l'exclut en dur et l'IA ne connaît que les
+  types 0 à 7 (`cPerkSkillUsage`, `m_IhavePerks[8]`). **Le Railgun prend sa place ; le Bolt redevient normal.**
+- **Adresses (Confirmé, désassemblage)** :
+
+| Adresse | Rôle |
+|---|---|
+| `0xB5B492` | `PickupPositionActor::SetRandomPickupType` : `cmp ebp,9` / **`cmp ebp,0Ah` (0xB5B497)** / `cmp ebp,8` → ignorer Stopwatch, SuperShield, Fan (`mov byte [esp+0x38],1` en 0xB5B4A1) |
+| `0xBAAD50` | `C_PickupsManager::CreatePickup` ; switch sur le type en `0xBAADBA` (table `0xBAB5D8`, 11 entrées : Bolt [3] = `0xBAAF59`, SuperShield [10] = `0xBAB400`) ; switch Bolt par sous-type (table `0xBAB614`) ; pools `[ebp+0xA70]` |
+| `0xBEE5D0` | constructeur `C_PickupBlindfireProjectile` (thiscall, 6 arguments, `ret 0x18`), appelé en `0xBAAF9F`, `0xBAB083` et par le constructeur du Bolt arrière en `0xBEED50` ; champs : `mRadius` +0x150, `mHeightFromGround` +0x154, `mSpeed` +0x158, `mFallRate` +0x15C, `mpBlindfireData` +0x56C, `mpBlindfireSFX` +0x570, `mAliveTime` +0x574 ; `C_PickupBase::mHealth` +0xB0 (constructeur de base `0xBA8DF0`, en `0xBA9192`) |
+| `0xBE4E90` | constructeur `C_PickupShield` : acteur logique `mShieldTime` **+0xBC**, `mShieldHealth` **+0xC0** ; le bouclier meurt quand l'une des deux passe à 0 (`C_PickupShield::Update`) |
+| `0xBAB870` | `C_PickupBase::RegisterHit` : acteur logique = `0xB915D0` (thiscall sur `[[0x11AA04C]+0xC90]+0x50`, index) ; composant bonus `[acteur+0x4C]`, `AttemptHitByPickup` = sa vtable +0x44 |
+| `0xBA8CC0` | `C_PickupBase::GetDamageToApply` (dégâts contre mines / projectiles ; saute dans `GetDamageInflicted` du niveau Normal) |
+| `0x47CC46` | réception `PickupPickedUp` : véhicule du message octet `[edi+8]`, type `[edi+0x14]`, composant `[esi+0x2C]` = index du véhicule ; `GetNumShotsAwarded` en `0x47CC60`, puis `HitPickUp` = vtable +0x58 |
+
+- **DLL v2** (`natif/railgun/railgun.c`, réglages `railgun.txt`) : 11 sites vérifiés octet par octet (sinon rien) :
+  tirage (SuperShield autorisé avec la probabilité `spawn`, 0,35) ; ramassage par une IA → Bolt ; entrée [10] de la
+  table → drapeau « prochain Bolt = Railgun » puis cas Bolt (avant / arrière) ; constructeur du Bolt enveloppé (les 3
+  appels) : un Railgun est mémorisé (32 au plus) et reçoit vitesse 600, rayon 0,8, hauteur 0,3, FallRate 2, santé 1e9 ;
+  `Trigger` (entrée [18] des deux vtables) enveloppé : le `DamageInflicted` partagé du Bolt (`[+0x56C]+0x1C`) vaut
+  50 × 1,5 / 1,0 / 0,5 (0, 1, 2+ obstacles traversés) **pendant l'appel seulement**, un coup est reconnu à l'octet
+  +0xF0, puis bouclier cassé (`mShieldHealth` = 0 si `mShieldTime` > 0) ; `KillPickup` sauté (0xBECB2A) ; murs
+  ignorés (0xBE654B), comptés une fois par 150 ms ; `GetDamageToApply` rend 9999 (mines, Shunts, Bolts détruits).
+  **Hypothèse à vérifier en jeu** : les dégâts du véhicule sont calculés pendant `Trigger` (messages synchrones) ;
+  sinon le Railgun ferait 50 partout.
+- **Données (`railgun_install.py`)** : `pickups.bin` = Bolt d'origine, SuperShield Delay **1,5 s** (Shunt 0,5, Bolt
+  0,1) ; `ui.bin` : couleurs HUD du SuperShield → `!232 236 242 255` (blanc titane ; chaîne de même longueur réécrite
+  dans la zone chiffrée de l'enregistrement, seuls ces 2 champs changent) ; `common.loc` : « RAILGUN » (5 langues).
+- **Son** : `railgun_fire.wav` fabriqué par l'installateur (charge qui monte pendant 1,5 s, puis claquement, coup
+  sourd et résonance métallique), joué par la DLL (`PlaySound`) à la création du Railgun : pas de banque audio à
+  modifier, seul le joueur en tire. Volume indépendant du réglage du jeu.
+- **Pas encore fait** : projectile blanc et plus gros (il faudra cloner l'arbre d'effets du Bolt :
+  `SpecialFX` @f6aba9fe → `AnimatedMeshSpecialFX` `models/perks/Blind_projectile_01.model`, `LightSpecialFX`
+  (couleur), `FlareSpecialFX`, particules ; puis faire pointer `mpBlindfireSFX` +0x570 sur le clone) ; nouvelle icône
+  (texture 104 du HUD, à localiser) ; visuel du bonus sur la piste (`PickupSpecialFX` du SuperShield).
