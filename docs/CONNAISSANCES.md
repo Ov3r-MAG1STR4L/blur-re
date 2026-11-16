@@ -2267,7 +2267,8 @@ Rapport complet avec offsets : `Jeux_WII\blur2_aid\easter_eggs\rapport.md` (scri
     + spéculaire soleil × B.y²). Découpe alpha seulement si `_AlphaTest` (seuil `_Cutoff`). Normales : carte t3
     dans la branche principale et pour drapeaux / eau. `_Blend3` : 3 albédos mélangés par `_BlendMapTex` (20 mat.).
   - **Shaders d'objets de Blur 1** (1 040 modèles lus) : nom = `default_` + options **retirées** : **B** relief,
-    **L** éclairage de scène, **M** carte matériau `ipr0`, **V** couleur de sommet. `default_NB_NL_NV` (669, notre
+    **L** lightmap (lecture corrigée le 2026-11-16, voir « Shaders d'objets de Blur 1 lus dans le code source »),
+    **M** carte matériau `ipr0`, **V** couleur de sommet. `default_NB_NL_NV` (669, notre
     gabarit : sans éclairage → rendu plat), `default_NB_NL_NM_NV` (409, plantes), `default_NB_NV` (14, éclairé),
     `default_NL_NV` (2, relief), **`default_NB_NL` (3, couleur de sommet)**, + néon, flare, eau, flaque, `MeshEffect`.
     Les `_ipr0` (657 modèles) sont la même famille que les `_MaterialTex` de Blur 2 (même moteur Bizarre).
