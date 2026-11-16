@@ -14,11 +14,12 @@ local M = {
 	info = {
 		name = "MusicCtl",
 		description = "Race music: next track key (L3 x2, ç / à) and a now-playing banner",
-		version = 0.3,
+		version = 0.4,
 	},
 }
 
 local TRACKS = {}                         -- filled by make_music.write_titles: { {title hash, seconds, info hashes...}, ... }
+local COVERS = {}                         -- filled by make_music.write_titles: { [position + 1] = {atlas, u, v} } (no cover: absent)
 
 local NEXT_MSG = "LeftThumb"              -- UIEnums.Message of L3 (R3 = RightThumb; the d-pad is used by the game)
 local NEXT_KEY1, NEXT_KEY2 = "CMN_9", "CMN_0"
@@ -44,6 +45,13 @@ local SW_X, SW_Y, SW_SCALE = -44.0, 124.0, 1.2   -- streak offset from its defau
 local MID_MIN = 0.2                             -- backing middle piece height with no info line (HUD units)
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0
 local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
+-- album cover (idea: Лагман; opening of the fan message "Mine Hotshot", idea: Md; artprobe, 2026-11-16): a square above
+-- the banner, a clone of Position_Team_Icon showing a cell of our atlas in ui_common.bpr (make_music.write_covers):
+-- ChangeTexture then ChangeEffectIndex MultiTexture (without it: a white glow). Opens from its centre like fan_message,
+-- closes on itself when the banner slides away. Placed by the player with live keys.
+local ART_X, ART_Y, ART_SIZE = 4.2, 12.4, 7.7
+local ART_COLOUR = "!255 200 200 200"            -- a little below white: the HUD bloom (covers are levelled at build)
+local ART_OPEN, ART_CELL = 0.19, 0.25            -- s to open / close (fan_message keys); cell size in UV (4 x 4)
 local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0.6, 0.40, 0.0, 0.48, 1.0, 0.53, 0.3, 0.60, 1.0 }
 
 local in_race = false
@@ -113,6 +121,17 @@ local function banner_build()
 	local _, _, z = UIButtons.GetPosition(b.bg)
 	b.h, b.z, b.lines = h, z or 0.0, 0
 	log("banner built: backing body " .. tostring(b.mid))
+	local okc, art = pcall(UIButtons.CloneXtGadgetByName, "hud_objects", "Position_Team_Icon")
+	if okc and art then
+		UIButtons.SetParent(art, parent, UIEnums.Justify.BottomLeft)
+		local _, _, az = UIButtons.GetPosition(art)
+		UIButtons.ChangeSize(art, ART_SIZE, ART_SIZE)
+		UIButtons.ChangePosition(art, ART_X, ART_Y, az or 0.0)
+		pcall(UIButtons.ChangeColour, art, ART_COLOUR)
+		UIButtons.SetActive(art, false)
+		b.art = art
+	end
+	log("cover square " .. tostring(okc) .. " " .. tostring(art))
 	local vp = type(HUD.ViewportId) == "table" and (HUD.ViewportId[1] or HUD.ViewportId[0])
 	-- two twin streaks played in turn (player, 2026-11-14): a timeline starts by its label for every gadget that has it,
 	-- so a second start of the same one would restart the streak still crossing; the fan-demand fail swirl is the
@@ -150,7 +169,7 @@ end
 local function banner_drop()                            -- hide every piece and forget them (a new set is built later)
 	if banner then
 		for _, sw in ipairs(banner.swirls or {}) do pcall(UIButtons.SetActive, sw.id, false) end
-		for _, k in ipairs({ "bg", "txt" }) do
+		for _, k in ipairs({ "bg", "txt", "art" }) do
 			if banner[k] then pcall(UIButtons.SetActive, banner[k], false) end
 		end
 		for i = 1, INFO_LINES do
@@ -168,6 +187,7 @@ local function banner_hide()
 			sw.t0 = nil
 		end
 		pcall(UIButtons.SetActive, banner.txt, false)
+		if banner.art then pcall(UIButtons.SetActive, banner.art, false) end
 		for i = 1, INFO_LINES do pcall(UIButtons.SetActive, banner.info[i], false) end
 		banner.t0 = nil
 	end
@@ -209,6 +229,17 @@ local function banner_show(p)
 			end
 		end
 		UIButtons.SetActive(banner.txt, true)
+		local cover = COVERS[p + 1]                      -- no cover for this track: no square (player, 2026-11-16)
+		banner.has_art = cover ~= nil and banner.art ~= nil
+		if banner.art then
+			if banner.has_art then
+				UIButtons.ChangeTexture({ filename = cover[1], pos = { u = cover[2], v = cover[3] },
+					size = { u = ART_CELL, v = ART_CELL } }, 0.0, banner.art)
+				UIButtons.ChangeEffectIndex(banner.art, UIEnums.EffectIndex.MultiTexture)
+				UIButtons.ChangeScale(banner.art, 0.0, 1.0, 1.0)
+			end
+			UIButtons.SetActive(banner.art, banner.has_art)
+		end
 	end)
 	if not ok then                                       -- dead gadgets (HUD rebuilt): drop them, rebuilt next time
 		log("banner failed: " .. tostring(err))
@@ -221,6 +252,11 @@ local function banner_tick()
 	local t = clock - banner.t0
 	local on = FLICKER[#FLICKER - 1]
 	local ok = pcall(function()
+		if banner.has_art then                            -- cover: opens from its centre, closes as the banner slides
+			local close = on + HOLD
+			local sx = t < ART_OPEN and t / ART_OPEN or (t > close and math.max(0, 1 - (t - close) / ART_OPEN) or 1.0)
+			UIButtons.ChangeScale(banner.art, sx, 1.0, 1.0)
+		end
 		if t < on then                                    -- a failing lamp: last key at or before t
 			local a = 0.0
 			for i = 1, #FLICKER - 1, 2 do

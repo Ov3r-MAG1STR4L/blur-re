@@ -8,6 +8,9 @@ Play YOUR OWN music during races in Blur (PC), and:
       (2 seconds minimum between two skips; a short sound confirms the skip)
   - shuffle: every track plays once in a random order, then the order repeats; each game session
     starts at a random point of that order;
+  - album cover: a square above the "now playing" banner, opening and closing with it, for each track that has
+    one: the picture inside the music file (its tags), or a picture with the same name as the file
+    (song.mp3 + song.jpg / .png), or cover.jpg / folder.jpg in its folder. No picture = no square;
   - choose how the game's effects change the sound (power-ups, crashes, wrecked, low health):
       on      = as in the original game
       partial = softer effects
@@ -28,7 +31,7 @@ REQUIREMENTS
                 No PATH setting needed then.
     If you edit PATH by hand: ADD a new line, never replace an existing one (replacing the Python
     line makes Python "not installed" again). Python is also found where its installer puts it.
-    Then close and reopen any open command prompt. The Python modules numpy and numba are installed
+    Then close and reopen any open command prompt. The Python modules numpy, numba and Pillow are installed
     by "Choose music.bat" itself (with pip, Python's own installer).
 
 

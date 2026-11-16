@@ -668,7 +668,7 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     for o in originals:                                   # original object i is named names[i + 1]
         w = j.w[j.find(60, names[o + 1].decode()) + 3]
         wave = bytes(j.names[w:j.names.index(b"\0", w)]).decode()
-        info[o] = ([original_title(wave)], waves[wave]["samples"] / waves[wave]["rate"] if wave in waves else 180.0)
+        info[o] = ([original_title(wave)], waves[wave]["samples"] / waves[wave]["rate"] if wave in waves else 180.0, None)
     for d in folders:
         audio = sorted(f for f in os.listdir(d) if f.lower().endswith(AUDIO_EXT))
         if not audio and "original" in os.path.basename(d).lower():
@@ -688,7 +688,7 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         else:
             bank = blurbaf.add_wave(bank, name, None, 48000, data=data, samples=samples)
         objs.append(add_track(j, "%02d" % (23 + k), name))
-        info[objs[-1]] = (track_lines(path), samples / 48000)
+        info[objs[-1]] = (track_lines(path), samples / 48000, path)
     if not objs:
         raise SystemExit("empty playlist: no track chosen")
     if shuffle:
@@ -697,13 +697,14 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         mode = "looping shuffle, new order at each build"
         position_start(j, len(order))
         assert position_check(j, len(order)) == [float(p) for p in range(len(order))], "simulation du départ par position"
-        tracks = [info[o] for o in order]
+        tracks = [info[o][:2] for o in order]
+        covers = [info[o][2] for o in order]
     else:
         sizes = playlist(j, objs)
         reached = play_targets(j)
         assert reached == set(objs), ("simulation", sorted(set(objs) - reached), sorted(reached - set(objs)))
         mode = f"random draw, groups {' + '.join(map(str, sizes))}"
-        tracks = []                                       # no known order: no banner
+        tracks, covers = [], []                           # no known order: no banner
     fs = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalsubmix.dat"), "rb").read())
     fps = Jboa(open(os.path.join(E, "root", "audio", "dat", "finalperksubmix.dat"), "rb").read())
     if effects == "oui":
@@ -725,11 +726,77 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     open(os.path.join(out, "audio", "dat", "music_controller.dat"), "wb").write(j.build())
     open(os.path.join(out, "audio", "dat", "finalsubmix.dat"), "wb").write(fs.build())
     open(os.path.join(out, "audio", "dat", "finalperksubmix.dat"), "wb").write(fps.build())
-    write_titles(tracks, out)
+    write_titles(tracks, out, write_covers(covers, out))
     return f"{len(objs)} race tracks ({mode}); game effects on the sound: {effects}; quality: {'high (uncompressed)' if pcm16 else 'normal'}"
 
 
-def write_titles(tracks, out):
+UI_COMMON = os.path.join("ui", "data", "ui_common.bpr")   # the bundle of hud_main / light_paint_02: covers go in it
+ART_NAME, ART_SIZE, ART_CELL = "blur_music_art", 1024, 256  # DXT1 atlases blur_music_art0, 1... of 4 x 4 cells
+ART_TARGET, ART_KNEE = 0.30, 0.75                         # cover levelling: mean luminance, highlight knee (see art_level)
+COVER_NAMES = ("cover", "folder", "front", "album")      # picture files next to the music that serve as a cover
+
+
+def cover_image(path):
+    """The cover of an audio file, as a square ART_CELL RGB image, or None: a picture with the same name as the file,
+    else its embedded picture (tags, ffmpeg), else cover / folder / front / album .jpg / .png in its folder."""
+    from PIL import Image
+    base, d = os.path.splitext(path)[0], os.path.dirname(path)
+    pics = [base + e for e in (".jpg", ".jpeg", ".png")]
+    side = [os.path.join(d, n + e) for n in COVER_NAMES for e in (".jpg", ".jpeg", ".png")]
+    vf = f"scale={ART_CELL}:{ART_CELL}:force_original_aspect_ratio=increase,crop={ART_CELL}:{ART_CELL}"
+    with tempfile.TemporaryDirectory() as tmp:
+        out = os.path.join(tmp, "c.png")
+        for src in [p for p in pics if os.path.exists(p)] + [path] + [p for p in side if os.path.exists(p)]:
+            r = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-an", "-frames:v", "1", "-vf", vf, out],
+                               capture_output=True)
+            if r.returncode == 0 and os.path.exists(out):
+                return Image.open(out).convert("RGB")
+    return None
+
+
+def art_level(img):
+    """Per-cover brightness (the HUD's bloom burnt bright covers; one fixed brightness did not suit every cover, player
+    2026-11-16): scale to ART_TARGET mean luminance (at most x1.3), then a soft knee on the highlights."""
+    from PIL import Image
+    a = np.asarray(img, dtype=np.float32) / 255.0
+    lum = float((a @ np.array([0.2126, 0.7152, 0.0722], np.float32)).mean())
+    a *= min(1.3, ART_TARGET / max(lum, 1e-3))
+    hi = a > ART_KNEE
+    a[hi] = ART_KNEE + (1 - ART_KNEE) * (1 - np.exp(-(a[hi] - ART_KNEE) / (1 - ART_KNEE)))
+    return Image.fromarray((np.clip(a, 0, 1) * 255 + 0.5).astype("uint8"))
+
+
+def write_covers(covers, out):
+    """covers = audio path (or None) per shuffle position. Writes out/ui/data/ui_common.bpr = the original + one atlas
+    per 16 covers (confirmed in game 2026-11-16: an added texture is found by name, pos / size pick the cell).
+    Returns {position: (atlas name, u, v)}; a track without a cover has no entry (no square in game)."""
+    from PIL import Image
+    import blurbpr
+    found = {}
+    for p, path in enumerate(covers):
+        img = cover_image(path) if path else None
+        if img is not None:
+            found[p] = art_level(img)
+    per = (ART_SIZE // ART_CELL) ** 2
+    cells, additions = {}, []
+    order = sorted(found)
+    for a in range(0, len(order), per):
+        sheet = Image.new("RGB", (ART_SIZE, ART_SIZE))
+        name = f"{ART_NAME}{a // per}"
+        for k, p in enumerate(order[a:a + per]):
+            x, y = (k % 4) * ART_CELL, (k // 4) * ART_CELL
+            sheet.paste(found[p], (x, y))
+            cells[p] = (name, x / ART_SIZE, y / ART_SIZE)
+        raw = blurbpr.encode(sheet, 1, 1)
+        additions.append((name, [0x1C, 0, 0, 1, len(raw), 0, 1, 1, ART_SIZE, ART_SIZE], raw))   # DXT1, 1 mip
+    b = blurbpr.Bpr(os.path.join(E, "root", UI_COMMON)).rebuild(additions)
+    os.makedirs(os.path.join(out, "ui", "data"), exist_ok=True)
+    open(os.path.join(out, UI_COMMON), "wb").write(b.b)
+    print(f"  covers: {len(found)} of {len(covers)} tracks ({len(additions)} picture sheet(s))")
+    return cells
+
+
+def write_titles(tracks, out, covers=None):
     """The banner's data, for tracks = [(title, seconds)] in shuffle order (position p = order[p]): hud.loc with one
     text per position (hash TITLE_HASH0 + p; the plugin shows it with ChangeText(id, hash), shown in game 2026-11-13)
     and musicctl.lua from its template, its line "local TRACKS = {}" filled with {hash, seconds} per position."""
@@ -747,6 +814,10 @@ def write_titles(tracks, out):
     lua = lua.replace(line, "local TRACKS = { " + ", ".join(
         "{ " + ", ".join([str(TITLE_HASH0 + p), f"{sec:.1f}"] + [str(TITLE_HASH0 + 0x800 + 4 * p + i) for i in range(1, min(len(lines), 4))]) + " }"
         for p, (lines, sec) in enumerate(tracks)) + " }")
+    line = "local COVERS = {}"                                # {[position + 1] = {atlas, u, v}}: the cover square
+    assert lua.count(line) == 1, "musicctl.lua: no 'local COVERS = {}' line"
+    lua = lua.replace(line, "local COVERS = { " + ", ".join(
+        f'[{p + 1}] = {{ "{n}", {u:g}, {v:g} }}' for p, (n, u, v) in sorted((covers or {}).items())) + " }")
     os.makedirs(os.path.join(out, "amax", "plugins", "musicctl"), exist_ok=True)
     open(os.path.join(out, "amax", "plugins", "musicctl", "musicctl.lua"), "w", encoding="utf-8", newline="\n").write(lua)
     for p, (lines, sec) in enumerate(tracks):
@@ -758,7 +829,8 @@ def install(out=OUT, test=TEST):
     if b"Blur.exe" in subprocess.run(["tasklist", "/fi", "imagename eq Blur.exe"], capture_output=True).stdout:
         raise SystemExit("Blur is running: close it and try again.")
     for rel in ("audio/ingamemusic.baf", "audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat",
-                "audio/dat/finalperksubmix.dat", "gamedata/xt/loc/hud.loc", "amax/plugins/musicctl/musicctl.lua"):
+                "audio/dat/finalperksubmix.dat", "gamedata/xt/loc/hud.loc", "amax/plugins/musicctl/musicctl.lua",
+                "ui/data/ui_common.bpr"):
         src, dst = os.path.join(out, rel), os.path.join(test, rel)
         if not os.path.exists(dst) or open(src, "rb").read() != open(dst, "rb").read():
             shutil.copyfile(src, dst)

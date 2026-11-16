@@ -39,12 +39,12 @@ import blurpak, make_music  # noqa: E402  (after the environment above)
 
 PAKS = (("root", ""), ("root_streaming", "audio"), ("gamedata", ""))   # gamedata: hud.loc (track titles of the banner)
 NEEDED = {"root": ["audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat", "audio/dat/finalperksubmix.dat",
-                   "audio/ingameui.baf", "audio/menumusic_ns.baf"],
+                   "audio/ingameui.baf", "audio/menumusic_ns.baf", "ui/data/ui_common.bpr"],   # album covers (v1.3)
           "root_streaming": ["ingamemusic.baf"],
           "gamedata": ["gamedata/xt/loc/hud.loc"]}
 WRITTEN = ["gamedata/xt/loc/hud.loc", "audio/ingamemusic.baf", "audio/dat/music_controller.dat", "audio/dat/finalsubmix.dat",
            "audio/dat/finalperksubmix.dat", "audio/ingameui.baf", "amax/plugins/plugins.lua",
-           "amax/plugins/musicctl/musicctl.lua"]
+           "amax/plugins/musicctl/musicctl.lua", "ui/data/ui_common.bpr"]
 REQUIRE = 'require("musicctl.musicctl"),'
 EFFECTS = {"1": "oui", "2": "partiel", "3": "non"}
 EFFECT_NAMES = {"oui": "on", "partiel": "partial", "non": "off"}
@@ -115,6 +115,24 @@ def upgrade():
     player crash, 2026-11-14): unpack only those, the way a first run does."""
     missing = [(pak, dest) for pak, dest in PAKS
                if not all(os.path.exists(os.path.join(DATA, pak, n.replace("/", os.sep))) for n in NEEDED[pak])]
+    if not missing:
+        return
+    for pak, _ in [m for m in missing if not os.path.exists(os.path.join(GAME, "cache", m[0] + ".pak"))]:
+        # already unpacked and set aside (.pak.off) by this install: only a new NEEDED original is missing (v1.3:
+        # ui_common.bpr for the album covers). Its loose copy is already in the game folder (added.txt): just keep
+        # the original from the archive, nothing to unpack
+        off = os.path.join(GAME, "cache", pak + ".pak.off")
+        if not os.path.exists(off):
+            stop(f"cache\\{pak}.pak not found: run \"Uninstall.bat\", then \"Choose music.bat\" again.")
+        p = blurpak.Pak(off)
+        for e in p.files:
+            path = e.path.lstrip("\\/").replace("\\", "/")
+            if path.lower() in NEEDED[pak]:
+                keep = os.path.join(DATA, pak, path.replace("/", os.sep))
+                os.makedirs(os.path.dirname(keep), exist_ok=True)
+                open(keep, "wb").write(p.read(e))
+        p.f.close()
+        missing.remove((pak, _))
     if not missing:
         return
     for pak, _ in missing:
