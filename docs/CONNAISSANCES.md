@@ -2984,7 +2984,7 @@ But : rouler sur les passages en paroi de Marina (virage sud-ouest jusqu'à 77 m
   **40 mph**, maxi **70 mph**, `RaycastDistance` 1 (0..10), `ExtraArtificialGravityScale` 1 (0..10),
   `GravityBendScale` 1, `AngleExponent` 1 (..4). Pas de code source de Blur 2 (la fuite n'a de Kanzen que caméra et
   utilitaires) ; formule exacte à lire dans la fonction PowerPC qui utilise ces variables.
-- **Lot 2 du décor (2026-11-16, en construction)** : faces doubles partout (les faces simples perdaient les objets
+- **Lot 2 du décor (2026-11-16, installé dans Blur_test, à essayer en jeu : 263 modèles = 142 places Map Builder + 121 acteurs ajoutés, 58 modèles découpés DXT5, ~516 Mo de fichiers ; sortie `b2_dubai_marina_lot2`)** : faces doubles partout (les faces simples perdaient les objets
   en miroir et les barrières d'un seul plan vues de dos : barrière manquante, trous noirs au sol) ; textures à
   découpe (`_AlphaTest` du matériau Unity) dans des modèles à part, texture couleur en **DXT5** (`to_dxt5`, couleur
   étendue sous les trous) : le shader écrit couleur × alpha en passe opaque, d'où les trous noirs en DXT1 1 bit ;
@@ -3043,3 +3043,13 @@ Idée de l'utilisateur : un tir de précision unique, très rapide, longue port�
   un toit ou ne rien trouver (mort « hors du monde ») ; une seconde voiture dans le même pas de 10 m que la
   première n'est vue qu'au pas suivant (le rayon s'arrête au premier obstacle) ; les IA tirent aussi des Railguns ;
   le HUD affiche peut-être encore 3 crans ; la capacité de boss « tirs du Bolt en plus » ne donne plus rien.
+- **Bonus de Blur 2 (2026-11-16, textes `.loc` et `.xex` du prototype, Fort)** : les types de `dubai.json`
+  **Blindfire = Bolt** (« Bolt - Shoots three energy rounds… », `MP_BETA_SPLASHSCREEN_BLINDFIRE`) et **Bomb = Mine**
+  (`CMN_BOMB` « mine ») sont les noms internes de Blur 1 (`BlindfireBalancingData`, `BombBalancingData` dans notre
+  `Blur.exe`) ; Nitrous = Nitro. **Javelin** et **Icewall** sont nouveaux (absents de Blur 1 ;
+  `kanzen\game\Game_Core\Pickups\Normal\PickupJavelin.cpp` / `PickupIcewall.cpp`) : Javelin vise une voiture
+  (« Impaled », `ValidationDistAhead`, `TargetWidthMin/Max`, version arrière) ; Icewall crée un corps physique
+  (`GracePeriod`, `LocalityRadius`, `IcewallEmpowerment`), modèles `icewall_thorn`, `icewall_init_burst`, texture
+  `icewall_impact` dans le `root.pak` du 10 nov. Aucune icône ni son trouvés. Souvenir de l'utilisateur (non
+  vérifié) : Icewall représenté par une étoile. Dans `pickups.bin` de Blur 1, `PickupType.Type` choisit le
+  comportement codé (Bolt `0x4CF8489B` = 3).
