@@ -1060,6 +1060,29 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   voix), ambiances `amb_Shutoko_*_intro` (20 s), `amb_Amboy_*_air`, flaques `puddle_01..06`, alarmes de voiture,
   portes en bois, 19 impacts (`car_collisions`), quelques sons moteur ; `BLUR_menu` (402 s) dans `ingamemusic`.
 
+### Map Builder 2.5.0 (scan du 2026-11-16, lecture seule, rien exécuté)
+
+- Depuis la 2.0.0 (31/10/2026), réécrit en **C#** (`csharp/src` : `Bmb.Core`, `Bmb.App`, `Bmb.Cli`, ~40 000 lignes) ;
+  une release tous les 2 à 4 jours (2.1 skins, 2.2 skins sur peinture unie, 2.3 paysage, 2.4 aperçu de l'éclairage et
+  sons moteur, 2.5 murs et remplacement de voiture). Le README dit encore « plain Python » (partie développeurs).
+- `Blur REBORN.exe` : 7 changements (`Setup.cs`) : signature des paks coupée (`0x8B667A`), `gamedata.pak`, `root.pak`
+  **et `gamedata_boot.pak`** lus dans `rebrn\`, plus `0x72D54A` `74 12` → `EB 12` (rôle non commenté). Empreinte
+  SHA-256 attendue = celle de notre `Blur.exe` (`dba0264b…`) : l'outil marche sur notre version.
+- **`.aid`, drapeaux de route d'après le code source** (`mercury/library/ai/air/include/trackdata/trackdata.h`,
+  `AITrackDataRoutes::ROUTE_FLAGS`) : 1 bouclé, 2 départ, 4 arrivée, 8 / 16 intermédiaires, 32 zone logique,
+  64 embranchement, **128 embranchement dynamique**, **256 réapparition permise**, **512 nitro permis**,
+  **1024 priorité de largage**. `GenAid.cs` n'écrit que 2, 4, 8, 16 et 64. Lecture du fichier : `amax/game/AI/AI_Amax.cpp`
+  (vers les lignes 1680-1990) : après les noms de route d'entrée et de sortie et les drapeaux, si le bit 128 est mis,
+  un numéro de règle (1 à 9) suivi de ses valeurs. Règles (`JunctionRule1..9`, appliquées dans
+  `racedirector/cracedirector.cpp`) : ouvert / fermé fixe (1), selon une autre route (2, 3, 4, avec position `t`),
+  alternance dans le temps (5), selon le tour du joueur (6 : tour égal, 7 : jusqu'au tour N, 8 : trois tours), après
+  N voitures puis remise à zéro (9). **Pour Md et pour le projet G** (choix des chemins par les IA) : c'est ainsi que
+  les circuits d'origine ouvrent ou ferment les raccourcis. **Fort** (code source), pas essayé en jeu.
+- Skins (`PlainSkin.cs`) : Md note que « la table des numéros d'images des matériaux est inconnue » ; à chercher dans
+  `mercury/library/graphics` (`fx`, `vehicle`, `TextureResource`) du code source.
+- Le remplacement de voiture (2.5) annonce « votre voiture visible en ligne » : seulement chez le joueur, avec des paks
+  modifiés ; compatibilité avec AMAX à faire confirmer par Md.
+
 
 ## Projet J : circuit de NFS Hot Pursuit Wii vers Blur (2026-10-26, premier test hors jeu)
 
