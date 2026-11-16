@@ -2643,7 +2643,7 @@ Ce sont des résultats de lecture de données, **pas une validation fonctionnell
     `UIButtons.ChangeEffectIndex(id, UIEnums.EffectIndex.MultiTexture)` : sans le second appel, éclat blanc. Vu :
     `light_paint_02` (la traînée) dans le carré. `ChangeTexture` ne signale pas d'erreur pour un nom inconnu.
   - Ouverture / fermeture façon `fan_message` par `ChangeScale(id, sx, 1, 1)` : fonctionne.
-  - Placement choisi par le joueur : x −2,8, y 16,9, côté 8,2 (unités HUD ; 0,1 ≈ 2,3 px en 1080p).
+  - Placement choisi par le joueur (final, 2026-11-16) : x 4,2, y 12,4, côté 7,7 (essais : x −2,8, y 16,9, côté 8,2) (unités HUD ; 0,1 ≈ 2,3 px en 1080p).
   - Prochaine étape : une texture à nous (planche de pochettes) que `filename` peut désigner.
   - **Planche ajoutée : confirmé en jeu (2026-11-16)**. `artatlas.py` ajoute `blur_music_art` (DXT1 1024², 1 mip,
     4 × 4 cases de 256 px) à `ui\data\ui_common.bpr` avec `blurbpr.rebuild` (63 → 64 images, originales
