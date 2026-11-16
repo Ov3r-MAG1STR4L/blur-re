@@ -272,8 +272,33 @@ def to_dxt5(d, rgba, w, h, mips):
     toff = P["textures"][DIFF][0]
     j = toff - 12
     old_len = struct.unpack_from("<I", d, j - 20)[0]
-    return bytes(_assemble(d, [(j - 20, j - 16, struct.pack("<I", 0x1C + len(data))), (j, j + 4, b"DXT5"),
-                               (toff, j - 16 + old_len, data)]))
+    out = bytes(_assemble(d, [(j - 20, j - 16, struct.pack("<I", 0x1C + len(data))), (j, j + 4, b"DXT5"),
+                              (toff, j - 16 + old_len, data)]))
+    return realign(out)
+
+
+STREAM_HEADER_END = struct.pack("<I", 16)
+
+
+def realign(d):
+    """stream data back on 16 from the Scene section after a size change in front of them (DXT5 doubles the
+    texture: 699 064 o for 1 024 x 1 024 x 11 mips in DXT1, not a multiple of 16 -> every later stream 8 bytes off
+    and the game read vertex colours as a count: crash Blur.exe+0x2D9EC5, 2026-11-16). The zero padding after each
+    stream header (ending with u32 16) is rewritten by _assemble's rule."""
+    import blurmesh
+    m = blurmesh.read(d)
+    rep = []
+    for s in m["vertex_streams"] + m["face_streams"]:
+        p = s["start"]
+        while d[p - 1] == 0:
+            p -= 1
+        assert d[p - 1:p + 3] == STREAM_HEADER_END, "stream header not found"
+        rep.append((p + 3, s["start"], b"", b""))      # header end .. data start: padding recomputed
+    out = bytes(_assemble(d, rep))
+    sc = scene_start(out)
+    m2 = blurmesh.read(out)
+    assert all((s["start"] - sc) % 16 == 0 for s in m2["vertex_streams"] + m2["face_streams"])
+    return out
 
 
 FX, FX_V = b"default_NB_NL_NV.fx", b"default_NB_NL.fx"

@@ -3064,3 +3064,12 @@ Idée de l'utilisateur : un tir de précision unique, très rapide, longue port�
   original, SHA-1 `dcbd312a…` = celui d'AMAX, gardé dans `blur_extracted\mods\laa_backup\Blur.exe` ; le jeu installé
   n'est pas touché ; le fichier est en lecture seule, attribut remis). Le code n'est pas modifié : les adresses des
   DLL restent valables.
+- **Vraie cause du crash du lot 2 (2026-11-16, Confirmé par mesure, corrige « manque de mémoire »)** : 2e crash
+  **identique registre pour registre** avec `LARGE_ADDRESS_AWARE` (4 Go) → pas la mémoire. Le compteur `0xFF595959`
+  = octets `59 59 59 FF` = une **couleur de sommet** (89, 89, 89, 255 : éclairage sans lightmap) lue comme un nombre.
+  `to_dxt5` remplace la texture DXT1 par une DXT5 deux fois plus grande **après** l'assemblage : 1 024² × 11 mips en
+  DXT1 = 699 064 o, **pas un multiple de 16** → tous les flux qui suivent décalés de 8 → données non alignées sur 16
+  depuis `Scene` (même règle que le crash du 11/11). Mesure sur les modèles installés : **58 / 58 DXT5 désalignés,
+  0 / 211 DXT1**. Correctif `blurmodel_write.realign` (appelé par `to_dxt5`) : remplissage de chaque flux recalculé
+  (`_assemble`), données identiques, modèles déjà alignés inchangés. Les 58 modèles installés réalignés en place.
+  Le passage en 4 Go et les cartes matériau 256² restent (marge).
