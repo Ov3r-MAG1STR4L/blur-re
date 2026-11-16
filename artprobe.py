@@ -18,7 +18,6 @@ local ART_X, ART_Y, ART_W, ART_H = -2.2, 16.1, 7.7, 7.7     -- HUD units, parent
                                                             -- placed by the player in probe 3 (2026-11-16)
 local CYCLE, OPEN, CLOSE_AT = 4.0, 0.19, 3.6
 local STEP = 0.1
-local PAD = 0.4                                             -- dark band margin around the cover (HUD units)
 local VARIANTS = {                                          -- probe 4: the cells of our atlas (artatlas.py), 4 x 4
 	{ "atlas full", { filename = "blur_music_art", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } },
 }
@@ -52,23 +51,11 @@ end
 local function build()
 	local parent = type(HUD) == "table" and type(HUD.ViewportId3d) == "table" and (HUD.ViewportId3d[1] or HUD.ViewportId3d[0])
 	if not parent then return end
-	-- dark band behind the cover, made like the fan message ("Mine Hotshot +20", gfx_FanBlobSingleC in ui.json):
-	-- hud_grad slice u 0.5 / width 0, IntensityAsAlpha, colour !220 5 8 10; cloned first so it draws under the cover
-	local bg = UIButtons.CloneXtGadgetByName("hud_objects", TEMPLATES[template])
-	UIButtons.SetParent(bg, parent, UIEnums.Justify.BottomLeft)
-	local _, _, bz = UIButtons.GetPosition(bg)
-	UIButtons.ChangeSize(bg, ART_W + 2 * PAD, ART_H + 2 * PAD)
-	UIButtons.ChangePosition(bg, ART_X, ART_Y, bz or 0.0)
-	pcall(UIButtons.ChangeTexture, { filename = "hud_grad", pos = { u = 0.5, v = 0.0 }, size = { u = 0.0, v = 1.0 } }, 0.0, bg)
-	local okb, errb = pcall(UIButtons.ChangeEffectIndex, bg, UIEnums.EffectIndex.IntensityAsAlpha)
-	pcall(UIButtons.ChangeColour, bg, "!220 5 8 10")
-	UIButtons.SetActive(bg, true)
-	log("band " .. tostring(bg) .. " effect " .. tostring(okb) .. " " .. tostring(errb))
 	local id = UIButtons.CloneXtGadgetByName("hud_objects", TEMPLATES[template])
 	UIButtons.SetParent(id, parent, UIEnums.Justify.BottomLeft)
 	local w0, h0 = UIButtons.GetSize(id)
 	local _, _, z = UIButtons.GetPosition(id)
-	art = { id = id, z = z or 0.0, bg = bg, bz = bz or 0.0 }
+	art = { id = id, z = z or 0.0 }
 	UIButtons.ChangeSize(id, ART_W, ART_H)
 	UIButtons.ChangePosition(id, ART_X, ART_Y, art.z)
 	local g = GREYS[grey]
@@ -90,7 +77,6 @@ local function tick()
 	local sx = 1.0
 	if t < OPEN then sx = t / OPEN elseif t > CLOSE_AT then sx = math.max(0, 1 - (t - CLOSE_AT) / OPEN) end
 	UIButtons.ChangeScale(art.id, sx, 1.0, 1.0)
-	UIButtons.ChangeScale(art.bg, sx, 1.0, 1.0)
 	local ok, key = pcall(UIButtons.GetKeyInput)
 	key = ok and tostring(key or "") or ""
 	if key ~= last_key then
@@ -111,8 +97,6 @@ local function tick()
 			ART_H = ART_W
 			UIButtons.ChangeSize(art.id, ART_W, ART_H)
 			UIButtons.ChangePosition(art.id, ART_X, ART_Y, art.z)
-			UIButtons.ChangeSize(art.bg, ART_W + 2 * PAD, ART_H + 2 * PAD)
-			UIButtons.ChangePosition(art.bg, ART_X, ART_Y, art.bz)
 			log(string.format("place x %.2f y %.2f size %.2f", ART_X, ART_Y, ART_W))
 		end
 	end
