@@ -1078,6 +1078,18 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
   alternance dans le temps (5), selon le tour du joueur (6 : tour égal, 7 : jusqu'au tour N, 8 : trois tours), après
   N voitures puis remise à zéro (9). **Pour Md et pour le projet G** (choix des chemins par les IA) : c'est ainsi que
   les circuits d'origine ouvrent ou ferment les raccourcis. **Fort** (code source), pas essayé en jeu.
+- **Lecteur `.aid` d'origine** : `AmaxAIR::LoadVersionSix` (`AI_Amax.cpp`, version float 6.0). Par route : nom,
+  route d'entrée, route de sortie (chaînes avec longueur), drapeaux, règle si bit 128 ; puis `noSamples` points :
+  `x, y, z, width, tangentX, tangentZ, tangentXYZ (3), minY, maxY` (= nos 11 f32) ; puis `noLines` lignes par point :
+  `curvature, distance, pointFlags, height, offset, surfaceFlags, yangle` ; enfin un cache de données (index + noms de
+  route). Le jeu force un pas de 4 m (`SetStepSize(4.0f)`, comme Md), recalcule une partie de la courbure (« les données
+  exportées ne sont pas exactes »), et **désactive les routes à embranchement dynamique au chargement** (une règle doit
+  les ouvrir). **Fort** (code source).
+- **Outils internes de Bizarre Creations dans la fuite** (`code/tools`, `code/amax/tools`) : `actor_studio` (éditeur de
+  niveaux, export `XtBuildLevelPack.cpp`), `ai_converter` (enveloppe de Nexus), `scene_converter` / `model_converter`
+  (`ExportGameScene.cpp` : écriture de `.level` / `.levelphysics`), `bizpak` (création et extraction de paks),
+  `texture_converter`, `tex_atlas`, `maya_plugins` (`MayaToSorcery`, `CameraExportPlugin`), `LuaDebugger`. Référence
+  pour les formats que le Map Builder écrit.
 - Skins (`PlainSkin.cs`) : Md note que « la table des numéros d'images des matériaux est inconnue » ; à chercher dans
   `mercury/library/graphics` (`fx`, `vehicle`, `TextureResource`) du code source.
 - Le remplacement de voiture (2.5) annonce « votre voiture visible en ligne » : seulement chez le joueur, avec des paks
