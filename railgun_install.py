@@ -79,11 +79,73 @@ def make_sound(path, delay=DELAY, rate=44100):
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate); w.writeframes(x.tobytes())
 
 
-def _load(path, rate):
+def _load(path, rate, af=None):
+    """Decode to float stereo at `rate`, through an optional ffmpeg filter chain (af)."""
     import numpy as np
-    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-f", "f32le", "-ac", "2", "-ar", str(rate), "-"],
-                         capture_output=True, check=True).stdout
+    cmd = ["ffmpeg", "-v", "error", "-i", path] + (["-af", af] if af else [])
+    raw = subprocess.run(cmd + ["-f", "f32le", "-ac", "2", "-ar", str(rate), "-"], capture_output=True, check=True).stdout
     return np.frombuffer(raw, np.float32).reshape(-1, 2).copy()
+
+
+def _pitch(semitones, rate=44100):
+    """Tape-style pitch shift (length changes with it), as an ffmpeg filter."""
+    return f"asetrate={rate}*{2 ** (semitones / 12):.5f},aresample={rate}"
+
+
+# Remixes of the charge (chargeCorvus) and of the game's Shunt shot (ShuntFire + ShuntFireLFE) so that the
+# railgun stops sounding like them; same shape: charge of DELAY s, then the shot (boom + falling tail).
+# charge / shot / lfe: ffmpeg filters; ring: (start Hz, end Hz, mix) ring modulation of the charge; trem: (start Hz,
+# end Hz) tremolo; swell: gain of a reversed, pitched-up Shunt tail rising into the shot; drive: tanh saturation of
+# the shot; haas: right channel delay (ms) for width; plasma: gain of the user's plasma crack.
+REMIXES = {
+    "A_titane": dict(charge=_pitch(4) + ",highpass=f=250", ring=(300, 900, 0.35), trem=(8, 40), swell=0.5,
+                     shot=_pitch(-3) + ",flanger=delay=2:depth=4:speed=0.3", drive=2.0, lfe=_pitch(-2), lfe_gain=0.5,
+                     plasma=0.6, haas=12),
+    "B_lourd": dict(charge=_pitch(-3) + ",lowpass=f=3000", ring=(60, 120, 0.2), trem=(4, 18), swell=0.35,
+                    shot=_pitch(-6) + ",aecho=0.8:0.7:60|140:0.4|0.25", drive=3.0, lfe=_pitch(-4), lfe_gain=0.8,
+                    plasma=0.4, haas=18),
+    "C_electrique": dict(charge=_pitch(2) + ",aphaser=speed=2:decay=0.6", ring=(800, 1600, 0.5), trem=(12, 60),
+                         swell=0.45, shot=_pitch(2) + ",aphaser=speed=0.7:decay=0.5", drive=1.5, lfe=None,
+                         lfe_gain=0.4, plasma=0.8, haas=8),
+}
+
+
+def remix_sound(name, charge, shot, lfe, plasma, delay=DELAY, rate=44100):
+    """One REMIXES variant -> SOUNDS/railgun_<name>.wav (stereo 16-bit)."""
+    import numpy as np, wave
+    p = REMIXES[name]
+    n = int(rate * delay)
+    t = np.arange(n) / rate
+    c = _load(charge, rate, p["charge"])[-n:]
+    c /= np.abs(c).max()
+    f0, f1, mix = p["ring"]
+    car = np.sin(2 * np.pi * np.cumsum(f0 + (f1 - f0) * t / delay) / rate)[:, None]
+    c = c * (1 - mix) + c * car * mix
+    a0, a1 = p["trem"]
+    c *= (0.75 + 0.25 * np.sin(2 * np.pi * np.cumsum(a0 + (a1 - a0) * (t / delay) ** 2) / rate))[:, None]
+    c *= (0.5 + 0.5 * (t / delay) ** 1.5)[:, None]                  # rises towards the shot
+    tail = _load(shot, rate, _pitch(7))[::-1]                         # reversed Shunt tail: swell into the shot
+    k = min(len(tail), int(rate * 0.6))
+    sw = tail[-k:] / np.abs(tail[-k:]).max() * np.linspace(0, 1, k)[:, None] ** 2
+    c[-k:] += p["swell"] * sw
+    c[:int(rate * 0.03)] *= np.linspace(0, 1, int(rate * 0.03))[:, None]
+    s = _load(shot, rate, p["shot"])
+    s = np.tanh(p["drive"] * s / np.abs(s).max()) / np.tanh(p["drive"])
+    for path, af, g in ((lfe, p["lfe"], p["lfe_gain"]), (plasma, None, p["plasma"])):
+        y = _load(path, rate, af)
+        y = y / np.abs(y).max() * g
+        if len(y) > len(s):
+            s = np.vstack([s, np.zeros((len(y) - len(s), 2), np.float32)])
+        s[:len(y)] += y
+    d = int(rate * p["haas"] / 1000)
+    s[d:, 1] = s[:-d, 1].copy()
+    s[-int(rate * 0.05):] *= np.linspace(1, 0, int(rate * 0.05))[:, None]
+    x = np.concatenate([c * 0.85, s])
+    x = np.int16(np.clip(x / np.abs(x).max() * 0.8, -1, 1) * 32767)
+    out = os.path.join(SOUNDS, f"railgun_{name}.wav")
+    with wave.open(out, "wb") as w:
+        w.setnchannels(2); w.setsampwidth(2); w.setframerate(rate); w.writeframes(x.tobytes())
+    return out
 
 
 def mix_sound(charge, *layers, out=None, delay=DELAY, rate=44100):
@@ -166,7 +228,16 @@ def main(remove=False):
 
 
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["--sound"]:                  # --sound CHARGE LAYER[:gain]...: build the sound, then install
+    if sys.argv[1:2] == ["--remix"]:                  # --remix [NAME]: make every variant, NAME becomes the sound
+        src = {k: os.path.join(SOUNDS, f) for k, f in (("charge", "core_assets_sounds_charge_chargeCorvus.ogg"),
+               ("shot", "ShuntFire.wav"), ("lfe", "ShuntFireLFE.wav"),
+               ("plasma", "core_assets_sounds_shoot_shootBeamPlasma.ogg"))}
+        for k in REMIXES:
+            print(remix_sound(k, **src))
+        if sys.argv[2:3]:
+            shutil.copyfile(os.path.join(SOUNDS, f"railgun_{sys.argv[2]}.wav"), os.path.join(SOUNDS, "railgun_fire.wav"))
+            print("sound:", sys.argv[2])
+    elif sys.argv[1:2] == ["--sound"]:                  # --sound CHARGE LAYER[:gain]...: build the sound, then install
         print("sound:", mix_sound(*sys.argv[2:]))
     else:
         main("--remove" in sys.argv)

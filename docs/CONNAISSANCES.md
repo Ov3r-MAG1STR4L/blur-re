@@ -3124,6 +3124,12 @@ voitures traversés, casser un bouclier, traverser mines, Shunts et « orbes »,
   1,00 s le tir plasma (×0,7) + le **vrai tir du Shunt** du jeu, `ShuntFire` (boom puis descente, 2,3 s) + `ShuntFireLFE`
   (basses, 0,6 s, ×0,5), extraits de `root/audio/pickups.baf` par `blurbaf.py` (aussi `ShuntCharge`, `ShuntHitCar`,
   `ShuntHitWorld`…) : 3,3 s, boom −11 dB de 1,0 à 1,5 s, silence à 3,3 s. `--sound CHARGE COUCHE[:gain]...`.
+  **Remix pour s'éloigner des originaux (2026-11-16, demandé)** : `--remix [NOM]` fabrique 3 variantes
+  (`REMIXES`) : charge transposée (+4 / −3 / +2 demi-tons, façon bande), filtrée, modulée en anneau (porteuse qui
+  monte), trémolo qui accélère, et fin « aspirée » par la queue du Shunt inversée et montée d'une quinte ; tir =
+  `ShuntFire` transposé (−3 / −6 / +2), saturé (tanh), avec flanger / écho / phaser, `ShuntFireLFE` transposé, crépitement
+  plasma, élargi en stéréo (retard Haas). **A_titane** installée ; B_lourd (plus grave, écho long, 4,6 s) et
+  C_electrique (plus aigu, phaser, 3,2 s) à comparer.
 - **Pas encore fait** : projectile blanc et plus gros (il faudra cloner l'arbre d'effets du Bolt :
   `SpecialFX` @f6aba9fe → `AnimatedMeshSpecialFX` `models/perks/Blind_projectile_01.model`, `LightSpecialFX`
   (couleur), `FlareSpecialFX`, particules ; puis faire pointer `mpBlindfireSFX` +0x570 sur le clone) ; nouvelle icône
