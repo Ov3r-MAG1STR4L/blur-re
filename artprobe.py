@@ -14,16 +14,18 @@ PLUGIN_DIR = os.path.join(mm.TEST, "amax", "plugins", "artprobe")
 REQUIRE = 'require("artprobe.artprobe"),'
 PLUGIN = r'''-- artprobe: album-art probe (Blur_test only). 8 = next texture variant, in a race.
 local M = { info = { name = "ArtProbe", description = "Album art probe", version = 0.1 } }
-local ART_X, ART_Y, ART_W, ART_H = -3.5, 11.0, 6.0, 6.0     -- HUD units, parent HUD.ViewportId3d, BottomLeft (y goes up)
+local ART_X, ART_Y, ART_W, ART_H = -2.2, 16.1, 7.7, 7.7     -- HUD units, parent HUD.ViewportId3d, BottomLeft (y goes up);
+                                                            -- placed by the player in probe 3 (2026-11-16)
 local CYCLE, OPEN, CLOSE_AT = 4.0, 0.19, 3.6
 local STEP = 0.1
-local VARIANTS = {
-	{ "hud_main full", { filename = "hud_main", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } },
-	{ "hud_main fan combo", { filename = "hud_main", pos = { u = 0.3125, v = 0.125 }, size = { u = 0.0625, v = 0.125 } } },
-	{ "hud_grad full", { filename = "hud_grad", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } },
-	{ "light_paint_02 full", { filename = "light_paint_02", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } },
-	{ "unknown name", { filename = "blur_music_art", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } },
+local VARIANTS = {                                          -- probe 4: the cells of our atlas (artatlas.py), 4 x 4
+	{ "atlas full", { filename = "blur_music_art", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } },
 }
+for k = 0, 15 do
+	VARIANTS[#VARIANTS + 1] = { "atlas cell " .. k,
+		{ filename = "blur_music_art", pos = { u = (k % 4) * 0.25, v = math.floor(k / 4) * 0.25 }, size = { u = 0.25, v = 0.25 } } }
+end
+VARIANTS[#VARIANTS + 1] = { "light_paint_02 full", { filename = "light_paint_02", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } }
 local TEMPLATES = { "Position_Team_Icon", "Pos_BackingBottom", "Fans_Icon", "gfx_FanBlobSingleC" }   -- 7 = next
 local template = 1
 local ready, art, variant, t0, clock, last_key, n_log = false, nil, 1, 0, 0, "", 0
