@@ -2608,3 +2608,19 @@ Ce sont des résultats de lecture de données, **pas une validation fonctionnell
   que ce soit, originaux gardés une fois (+ `_absents.json`), restes des constructions précédentes déplacés dans
   `perimes\`, délais Map Builder, verrou NFS sans course, erreurs JSON. Détail, tests (37) et limites :
   `docs/SECURITE_STUDIOS.md`. Port et navigateur réglables : `BLURRE_PORT`, `BLURRE_NO_BROWSER`.
+
+### Animation « message de fans » (popup qui s'ouvre au centre et se referme) — 2026-11-16, **confirmé (ui.json)**
+
+- Popup des fans gagnés (percuter, détruire une voiture…) : `bra_FanRoot` (TopCentre, y −35) → `dmy_FanDummy` →
+  `bra_FanBlobSingle` (une ligne) / `bra_FanBlobDouble` (deux lignes) → fond `gfx_FanBlobSingleC` 250 × 30
+  (`gfx_FanBlobDoubleC` 250 × 44), couleur `!220 5 8 10`, MiddleCentre, **échelle x de départ 0**. Texte
+  `txt_FanMessage` (Main_1, alpha de départ 0, MiddleLeft) et `txt_FanMessageName` / `txt_FansAdded`.
+- Timeline `fan_message`, 2,5 s, type Stop. Clés en fraction de la durée :
+  - fond, `scale.x` : 0 jusqu'à 0,05 → 1 à 0,125 (ouverture depuis le centre en ≈ 0,19 s) → 1 jusqu'à 0,875 →
+    0 à 0,95 (fermeture sur lui-même en ≈ 0,19 s) ;
+  - texte, `alpha` : 0 jusqu'à 0,1125 → 1 à 0,1875 → 1 jusqu'à 0,8125 → 0 à 0,8875 (le texte apparaît après
+    l'ouverture et disparaît avant la fermeture).
+- Attention : `TimeLineActive(label…)` est global par label. Lancer `fan_message` déclencherait aussi le vrai popup
+  de fans du jeu. Pour notre popup (pochette d'album, idée de Лагман, ouverture de Md), il faut reproduire ces clés
+  nous-mêmes à chaque image (`ChangeScale` sur x, `ChangeAlpha` sur le texte), comme pour la bannière.
+
