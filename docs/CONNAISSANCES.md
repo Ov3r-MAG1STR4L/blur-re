@@ -7,7 +7,7 @@ hypothèse comme un fait**. Chaque entrée porte une étiquette :
 - **Fort** : très probable, une seule vérification indirecte
 - **Hypothèse** : piste à valider
 
-Dernière mise à jour : 2026-10-19.
+Dernière mise à jour : 2026-11-16.
 
 ---
 
@@ -825,8 +825,12 @@ Trois couches :
 | 0xBBDD80 | construction des chemins `.level` / `.aid` |
 | 0xB11870 | constructeur de la classe à vtable 0xEC3A68 |
 | 0xC6C4F0 / 0xC6C760 | Lua `GetCustomRaceCities` / `GetCustomRaceRoutes` (menu course perso) |
+| 0x85DE70 / 0x85E530 | `AdvertManager::EnterZone_PostLoad` / initialisation (source AMAX, voir « Sources AMAX ») |
+| 0x87DE10 / 0x723CF0 | données de pubs du niveau / position d'une pub par nom (source AMAX) |
+| 0x41ADC0 / 0x488B20 | `C_GameWorld::UpdatePhysics` / `FakeVehicleSpeedState::Update` (source AMAX) |
+| 0xD5E170 / 0xB86D20 | `GetPrimaryProfilePicture` (vide sur PC) / `RequestRemotePicture` (source AMAX) |
 
-Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes),
+Globales : `0x11AA04C` (jeu ; instance de l'application selon AMAX), `0xD44EE4` (→ +0x14 pilote D3D9), `0xDA89C8` (avatars), `0xDB4530` (joueurs du salon), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes),
 `0x1134E84` / `0x1134E9C` (listes de profils), `0x12260A8` (positions).
 
 ---
@@ -842,6 +846,9 @@ Globales : `0x11AA04C` (jeu), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes
   Ghidra et des relevés **Process Monitor** filtrés sur Blur. Il joue avec les **fichiers dépaquetés**, ce qui
   appuie la règle « le fichier en clair passe avant le pak ». Son pack modifie `Blur.exe` : on ne l'utilise pas.
   TimberStalker : « ajouter des cartes, c'est dans les fichiers xt ; les fichiers de niveau sont plus durs ».
+- Aib0t (créateur d'AMAX) publie ses recherches : `github.com/Aib0t/write-ups` et `github.com/Amax-Emu`. Selon lui,
+  le **code source de Blur est public depuis mai 2026** et une build PS3 avec symboles circule depuis 2023. Détails dans
+  « Sources AMAX ».
 - Vidéo d'un moddeur (2026-10-14) : lieu « Flat Earth », circuit « Home Run v1 », lancé avec `Blur_mod.exe`
   (exe modifié) via Local Network → Custom Game.
 
@@ -2652,3 +2659,100 @@ Ce sont des résultats de lecture de données, **pas une validation fonctionnell
     réglage de luminosité par le gris de `ChangeColour` à l'essai. Pochettes = images intégrées aux MP3 (ffmpeg).
   - Règle demandée par le joueur : pas de pochette pour un morceau → pas de carré.
 
+## Sources AMAX (Aib0t / Amax-Emu) (2026-11-16, lecture des dépôts publics, rien d'essayé en jeu)
+
+Sources : `github.com/Aib0t/write-ups` (articles `blur-ads`, `blur-fps-unlock`) et l'organisation `github.com/Amax-Emu`
+(`amax-ads`, `amax-pfp`, `blur-fps-unlocker`, `amax-binlog-processor`, `amax_emu_files`, `amax-updater`). Aib0t est le
+créateur d'AMAX. Code en Rust (DLL 32 bits chargées par le `d3d9.dll` d'AMAX depuis `amax/dlls`, détours `retour`).
+
+### Ce qui change pour nous
+
+- **Code source de Blur public depuis mai 2026** (selon Aib0t, article FPS, partie « May 2026 ») : il cite
+  `amax/game/Game/GameWorld/GameWorld.cpp` et la fonction `C_GameWorld::CalcNumberOfSteps()` en entier. Nous ne l'avons
+  pas : **à chercher** (Hypothèse : diffusé sur le Discord). Le préfixe `amax/` confirme encore le nom de code.
+- **Build de certification PS3 avec symboles** (fichier DWARF d'environ 200 Mo, fuite de 2023) : noms des fonctions et
+  des classes (`Advertising::AdvertManager::EnterZone_PostLoad`, `Game::C_GameWorld::Update`,
+  `Game::Actors::FakeVehicleSpeedState::Update`, `AIAmax::AmaxAIR::Update`…). Les structures y sont souvent vides. Aib0t
+  s'en sert pour nommer les fonctions du PC par comparaison (mêmes tests `if`, mêmes boucles).
+- **Notre `Blur.exe` est celui d'AMAX** : SHA-1 `dcbd312a0ea26e36ff0967d567bcc890359ee8cb`, identique au `Blur.exe` de
+  `amax_emu_files/blur_12.zip` (patch 1.2, daté de 2013, avec `cache/gamedata.pak` et `.sig`). Toutes leurs adresses
+  valent donc chez nous. **Confirmé** (empreinte, et les 10 adresses de fonctions ci-dessous tombent sur un prologue).
+- « AMAX Racing » : nom public annoncé en 2008 (accord Activision / Massive pour 18 jeux). Selon d'anciens développeurs,
+  nom provisoire pour en parler en public. Le jeu PC a été porté par **Spiral House** (studio anglais).
+- Les « Lua debug vars » du jeu (équivalent des dvars de Call of Duty) exposent des réglages nommés, par exemple
+  `Perks.PickupActor.RotationSpeed`, `Perks.FakePhysics.Speed.AccelerateStabilise` (défaut 5,0) et
+  `...AccelerateStabiliseRate` (défaut 10,0). Piste pour trouver des réglages sans Ghidra.
+- La messagerie interne fonctionne par abonnements (`Messaging::C_MessageSubscriberSystem::BroadcastMessage`, messages
+  à identifiant 32 bits, par exemple `0xA219300F..0xA2193012` et `0xA2193020` = répétition auto des touches dans les menus).
+
+### Publicités (`amax-ads`) : **Fort** (code public utilisé en ligne, adresses vérifiées chez nous)
+
+- Le jeu n'a **pas** Massive Ad Client (aucune chaîne `XMassiveAdClient` sur PC ni PS3, vérifié chez nous) : seule la
+  façade `Advertising` existe (`AdvertDownload`, `AdvertManager`, `AdvertObject`, `AdvertResource` ; `Initialize`,
+  `EnterZone`, `EnterZone_PostLoad`, `Update`, `ExitZone`). Elle charge les textures locales `advertN` de chaque lieu.
+  Le prototype Blur 2 contient le vrai client Massive (journal `CMassiveAssetCache`, zone `traffictestlevel2_01`).
+- `EnterZone_PostLoad` (0x85DE70, thiscall : `this` = AdvertManager, `pLevelResource`, `pLevelInstance`) : pour chaque
+  pub, cherche le paramètre `advert%d` puis `advert%02d` dans le modèle du niveau (0x87DE10 donne les données de pubs
+  du niveau, 0x723CF0 la position d'un nom), puis charge `graphics/textures/<lieu>/<nom>.texture`.
+- Chargeur de textures par type (dans 0x5AABF0) : `.texture`, puis `.dds`, `.tga`, `.bmp`.
+- `AdvertManager` : `+0x54` instance du niveau, `+0x58` tableau des pubs, `+0x60` nombre de pubs ; élément de 0x24
+  octets (taille, `IDirect3DTexture9*`, position renvoyée par 0x723CF0, `0x10`, numéro `advertN`, mode = **2** pour
+  que la pub s'affiche). `C_LevelResource+0x11` : chemin du niveau en clair (`.\levels\<lieu>\level.level`).
+  Le nombre de pubs correspond au bloc `Advert` du `.level` (11 sur `spa_barcelona_oval`).
+- Le pilote D3D9 est à `[[0xD44EE4] + 0x14]` (adresse fixe). Les textures d'AMAX sont créées par
+  `D3DXCreateTextureFromFileInMemoryEx` (`d3dx9_42.dll`) en `D3DPOOL_MANAGED` pour survivre au passage plein écran /
+  fenêtré (sinon plantage). Images PNG dans `%APPDATA%\amax\ads\<lieu>\advertN.png`, téléchargées (`ads.zip` +
+  `checksum.file` CRC32) depuis le dépôt `amax-ads-files` : 15 lieux.
+- **Pour nous** (pochettes du HUD) : charger une image à l'exécution est possible, mais seulement par une DLL (pas par
+  le Lua). Notre planche dans `ui_common.bpr` reste la voie sans code natif.
+
+### Avatars (`amax-pfp`) : **Fort**
+
+- `GamerPictureManager` : pointeur à `[0xDA89C8]` ; 4 images locales (`GAMERPIC_x`) et 19 distantes
+  (`REMOTE_GAMERPIC_x`, chaîne présente chez nous) ; chaque `C_GamerPicture` (80 octets) porte l'identifiant Demonware,
+  un nom, `active` / `free` et un `IDirect3DTexture9*` (64 × 64).
+- `GetPrimaryProfilePicture` (0xD5E170) vaut `xor eax,eax ; ret` sur PC (vérifié chez nous) : fonction vide, d'où
+  l'absence d'avatar d'origine. AMAX la détourne pour télécharger l'avatar du compte.
+- Joueurs du salon : liste chaînée `[[0xDB4530] + 0x18]`, `NetPlayer` : `+0x4` suivant, `+0x48` identifiant
+  Demonware (u64), `+0x58` pseudo UTF-16 (16 caractères). Mise à jour du salon forcée par l'octet `+0x181` de
+  `[0xE42FF8]`.
+
+### FPS débloqués (`blur-fps-unlocker`, article commencé le 23/08/2025, complété après mai 2026) : **Fort**
+
+- Le jeu est calé sur **30 images/s (PS3)** ; le portage PC tourne à 60 avec **les mêmes constantes** : la physique
+  des voitures y est moitié moins marquée, d'où le jeu compétitif bloqué à 30 (voire 23). Constantes :
+  `0xE648B8` = 60,0 et `0xE65A2C` = 0,0166667 (dans `.rdata`, vérifié chez nous), `0x111C6A4` = nombre max de pas
+  physiques par image (4), `0x11AA04C` = instance de l'application (notre « globale jeu »), mode 50 Hz possible
+  (`g_TimeStep50Hz`, constantes 50,0 / 0,02).
+- Cause : `C_GameWorld::CalcNumberOfSteps` accumule le temps et donne 2 pas par image à 30 i/s, 1 à 60, 0 ou 1 à 144 ;
+  mais beaucoup de fonctions appelées par `C_GameWorld::Update` lisent directement `GetTimeStepRaw()`.
+- Correctif final d'Aib0t : n'appeler `C_GameWorld::Update` qu'à **30 Hz** (accumulateur, temps forcé à 1/30) et garder
+  en mémoire les appuis de bouton entre deux mises à jour (sinon les bonus ne partent que si l'appui tombe pendant la
+  mise à jour). Tout le reste (rotation des bonus, stabilisation après nitro, son, traînées du menu) est alors réglé.
+  Code complet pas encore publié (« en test »).
+- Anciennes rustines (avant le code source) : `UpdatePhysics` 0x41ADC0, `FakeVehicleSpeedState::Update` 0x488B20,
+  rotation des bonus 0x4E48E0 (`Perks.PickupActor.RotationSpeed` à 0x11BF428), envoi des messages d'interface
+  0x74C9A0, rotation du carrousel du garage 0x1106438 (90,0), variables de stabilisation 0x112E8E4 / 0x112E91C.
+- Le Drifter (mod) donne un nitro à chaque long dérapage, sans délai : « dérapage nitro en chaîne », très sensible
+  aux FPS. Nitro tiré en arrière : voiture figée, braquage d'environ ±20°, puis projetée en avant.
+- Voiture : vrai régime moteur (courbe), boîte simulée (`RP_CarGears`, `RP_CarTyres`, `RP_CarFriction` :
+  `airFriction`, `rollingFriction`, `downforce`…) ; aucune « vitesse max » directe.
+
+### Journaux de course (`amax-binlog-processor`) : **Fort** (tables) / **Hypothèse** (origine des fichiers)
+
+- Fichiers `logData_*` envoyés par le client : journal général (identifiant de playlist u64 = `CommunityGroupId`
+  dans les symboles, mode, lieu, route, joueurs triés par arrivée : pseudo UTF-16 64 o, identifiant, santé, distance,
+  3 mods, niveau, légende, voiture, fans, bonus, places) et journal `DataGather` (rang, choix de mods, votes,
+  réglages de course perso, défis, récompenses, ramassages sur la piste…).
+- Tables de hachage utiles : 18 lieux, routes (dont des routes de test `OBJTest`, `QuickExport 1..6`, `Graphical`,
+  `Show Room`, `Vehicle Test Scene`), modes (`community_event`, `team_racing`, `motor_mash`, `powered_up_racing`,
+  `skirmish_racing`, `world_tour`, `hardcore_racing`, `driving_school`, `custom_game` = 0), voitures avec classe,
+  mods 0..0x17 (`iron_fist` … `mastermine`) et les 16 noms d'IA.
+
+### Divers
+
+- Paquet client AMAX (`amax_client_files.zip`, 2024-11) : identique à ce qu'on a (`amax_auth.asi`, `amax_pfp.dll`,
+  `blur_rpc.dll`, `lua_hooks.asi`, plugins `block_popups`, `laps`, `resprays`, `fps`, `revs`, `solo`, `foo`, `hello`).
+  `amax-ads` n'y figure pas. Mises à jour via `amax-updater` (`cs.amax-emu.com`).
+- Autres articles d'Aib0t (FESL d'EA, Medius de Sony, Call of Duty Online, NFS Carbon…) : sans rapport direct avec
+  Blur. Le guide « reversing network related stuff 101 » peut servir de méthode.
