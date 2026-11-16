@@ -45,23 +45,26 @@ local SW_X, SW_Y, SW_SCALE = -44.0, 124.0, 1.2   -- streak offset from its defau
 local MID_MIN = 0.2                             -- backing middle piece height with no info line (HUD units)
 local WIDTH_K, WIDTH_PAD, WIDTH_MIN = 1.0, 2.5, 6.0
 local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
--- album cover (idea: Лагман; opening of the fan message "Mine Hotshot", idea: Md; artprobe, 2026-11-16): a square above
--- the banner, a clone of Position_Team_Icon showing a cell of our atlas in ui_common.bpr (make_music.write_covers):
--- ChangeTexture then ChangeEffectIndex MultiTexture (without it: a white glow). Opens from its centre like fan_message,
--- closes on itself when the banner slides away. Placed by the player with live keys.
-local ART_X, ART_Y, ART_SIZE = 4.2, 12.4, 8.5   -- player's 7.7 for the picture + the band drawn around it (256 / 232)
-local ART_COLOUR = "!255 200 200 200"            -- a little below white: the HUD bloom (covers are levelled at build)
+-- album cover (idea: Лагман; opening of the fan message "Mine Hotshot", idea: Md; artprobe, 2026-11-16): a clone of
+-- Position_Team_Icon showing a cell of our atlas in ui_common.bpr (make_music.write_covers, rounded corners): ChangeTexture
+-- then ChangeEffectIndex MultiTexture (without it: a white glow). Layout (player, 2026-11-16): the cover on the left of the
+-- banner, the text at its bottom right, one backing for both (the banner's, raised by ART_PANEL); no cover = the banner
+-- as before. Opens from its centre like fan_message, closes on itself.
+local ART_X, ART_Y, ART_SIZE = 4.2, 8.1, 7.7    -- cover centre and side (HUD units, parent ViewportId3d, BottomLeft)
+local ART_GAP = 0.6                              -- text shift right = ART_SIZE + ART_GAP
+local ART_PANEL = 7.5                            -- backing middle height with a cover (the panel grows upward)
+local TUNE = true                                -- test build: keys 1-8 move the layout (log: read_luamarks.py MCALL)
+local ART_GREY = 200                             -- a little below white: the HUD bloom (covers are levelled at build)
 local ART_OPEN, ART_CELL = 0.19, 0.25            -- s to open / close (fan_message keys); cell size in UV (4 x 4)
 local ART_HOLD = 4.1                             -- s the cover stays open after a track starts (then closes on itself)
--- the dark band of the fan message ("Mine Hotshot +20": colour 5 8 10, alpha 220) and the rounded corners are drawn
--- in the sheet cells by make_music.write_covers: the square is the cover plus its band
 -- Md's idea (2026-11-15): a track change while the cover is open does not reopen it: the picture changes under a
 -- short flicker, and the closing timer starts again
 local ART_FLICK = { 0.0, 0.25, 0.05, 1.0, 0.09, 0.35, 0.14, 1.0 }
--- one lap of white light along the edge once the square is open, and again with the flicker of a track change (player,
--- 2026-11-16: one lap, not a loop): a glow (ui_common box_glow_64) moved around the square, clockwise from top-left
-local LAP, LAP_SIZE, LAP_IN = 0.6, 1.2, 0.47     -- s per lap; glow size; path half-side as a fraction of ART_SIZE
-local LAP_COLOUR = "!255 255 255 255"
+-- a damaged lamp (player, 2026-11-16): now and then the cover dims for a few frames
+local LAMP_CHANCE, LAMP_DIM, LAMP_LEN = 0.015, 150, 0.08   -- per frame; grey level while dimmed; s
+-- one lap of a thin white line along the cover's edge once it is open, and again with a track change (player,
+-- 2026-11-16: one lap, about 3-4 cm long, thin, bright): a bar (hud_grad slice, white) moved clockwise from top-left
+local LAP, LINE_LEN, LINE_W = 0.9, 5.5, 0.12     -- s per lap; bar length and thickness (HUD units)
 local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0.6, 0.40, 0.0, 0.48, 1.0, 0.53, 0.3, 0.60, 1.0 }
 
 local in_race = false
@@ -137,7 +140,7 @@ local function banner_build()
 		local _, _, az = UIButtons.GetPosition(art)
 		UIButtons.ChangeSize(art, ART_SIZE, ART_SIZE)
 		UIButtons.ChangePosition(art, ART_X, ART_Y, az or 0.0)
-		pcall(UIButtons.ChangeColour, art, ART_COLOUR)
+		pcall(UIButtons.ChangeColour, art, "!255 " .. ART_GREY .. " " .. ART_GREY .. " " .. ART_GREY)
 		UIButtons.ChangeAlpha(art, 1.0)
 		pcall(UIButtons.SetAlphaIntensity, art, 1.0, 1.0)
 		UIButtons.SetActive(art, false)
@@ -149,10 +152,10 @@ local function banner_build()
 		UIButtons.SetParent(light, parent, UIEnums.Justify.BottomLeft)
 		local _, _, lz = UIButtons.GetPosition(light)
 		b.light_z = lz or 0.0
-		UIButtons.ChangeSize(light, LAP_SIZE, LAP_SIZE)
-		pcall(UIButtons.ChangeTexture, { filename = "box_glow_64", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } }, 0.0, light)
-		pcall(UIButtons.ChangeEffectIndex, light, UIEnums.EffectIndex.IntensityAsAlpha)   -- black = see-through
-		pcall(UIButtons.ChangeColour, light, LAP_COLOUR)
+		-- a plain bar: the bright end of hud_grad (intensity ~0.76 at u 0.9, more at 0.95), drawn as alpha, in white
+		pcall(UIButtons.ChangeTexture, { filename = "hud_grad", pos = { u = 0.97, v = 0.5 }, size = { u = 0.0, v = 0.0 } }, 0.0, light)
+		pcall(UIButtons.ChangeEffectIndex, light, UIEnums.EffectIndex.IntensityAsAlpha)
+		pcall(UIButtons.ChangeColour, light, "!255 255 255 255")
 		UIButtons.ChangeAlpha(light, 1.0)
 		pcall(UIButtons.SetAlphaIntensity, light, 1.0, 1.0)
 		UIButtons.SetActive(light, false)
@@ -180,11 +183,19 @@ local function banner_build()
 end
 
 local function banner_place(dx, alpha)
-	UIButtons.ChangePosition(banner.bg, POS_X + dx, POS_Y, banner.z)
-	UIButtons.ChangePosition(banner.txt, POS_X + dx + TEXT_DX, POS_Y + TEXT_DY, banner.z)
+	-- with a cover: the text moves right of it and the backing grows upward (its middle piece taller, its top raised:
+	-- the bottom stays where it was), so the text sits at the cover's bottom right
+	local mid = MID_MIN + LINE_DY * banner.lines
+	local raise = banner.cover and math.max(0, ART_PANEL - mid) or 0
+	local tx = banner.cover and ART_SIZE + ART_GAP or 0
+	if banner.mid then UIButtons.ChangeSize(banner.mid, banner.w + tx, mid + raise) end
+	UIButtons.ChangeSize(banner.bg, banner.w + tx, banner.h)
+	if banner.bottom then UIButtons.ChangeSize(banner.bottom, banner.w + tx, banner.h) end
+	UIButtons.ChangePosition(banner.bg, POS_X + dx, POS_Y + raise, banner.z)
+	UIButtons.ChangePosition(banner.txt, POS_X + dx + TEXT_DX + tx, POS_Y + TEXT_DY, banner.z)
 	UIButtons.ChangeAlpha(banner.txt, alpha)
 	for i = 1, banner.lines do                            -- info lines under the title (y goes up)
-		UIButtons.ChangePosition(banner.info[i], POS_X + dx + TEXT_DX, POS_Y + TEXT_DY - LINE_DY * i, banner.z)
+		UIButtons.ChangePosition(banner.info[i], POS_X + dx + TEXT_DX + tx, POS_Y + TEXT_DY - LINE_DY * i, banner.z)
 		UIButtons.ChangeAlpha(banner.info[i], alpha)
 	end
 	UIButtons.ChangeAlpha(banner.bg, alpha)
@@ -255,19 +266,37 @@ local function art_tick()                               -- opens from its centre
 		if b.light then UIButtons.SetActive(b.light, false) end
 		return
 	end
-	if b.light then                                       -- one lap: s = 0..4 along the 4 sides, clockwise (y goes up)
+	if b.light then                                       -- one lap of a thin bar along the edge, clockwise (y goes up)
 		local q = b.lap_t0 and (clock - b.lap_t0) / LAP
 		if q and q >= 0 and q < 1 and clock <= b.art_close then
-			local h, s = ART_SIZE * LAP_IN, q * 4
+			local h = ART_SIZE / 2                            -- the cover's edge (its position is its centre: it opens from it)
 			local corners = { { -h, h }, { h, h }, { h, -h }, { -h, -h }, { -h, h } }
-			local k = math.floor(s)
-			local f, c0, c1 = s - k, corners[k + 1], corners[k + 2]
-			UIButtons.ChangePosition(b.light, ART_X + c0[1] + (c1[1] - c0[1]) * f, ART_Y + c0[2] + (c1[2] - c0[2]) * f, b.light_z)
-			UIButtons.ChangeAlpha(b.light, math.min(1, 4 * q, 4 * (1 - q)))   -- fades in and out at the ends of the lap
+			local d = q * 4 * ART_SIZE                        -- distance run along the edge
+			local k = math.min(3, math.floor(d / ART_SIZE))
+			local c = d - k * ART_SIZE                        -- bar centre on side k, clipped to the side: clean corners
+			local a0, a1 = math.max(0, c - LINE_LEN / 2), math.min(ART_SIZE, c + LINE_LEN / 2)
+			local c0, c1 = corners[k + 1], corners[k + 2]
+			local ux, uy = (c1[1] - c0[1]) / ART_SIZE, (c1[2] - c0[2]) / ART_SIZE
+			local m = (a0 + a1) / 2
+			local len = math.max(0.01, a1 - a0)
+			UIButtons.ChangeSize(b.light, ux ~= 0 and len or LINE_W, uy ~= 0 and len or LINE_W)
+			UIButtons.ChangePosition(b.light, ART_X + c0[1] + ux * m, ART_Y + c0[2] + uy * m, b.light_z)
+			UIButtons.ChangeAlpha(b.light, math.min(1, 8 * q, 8 * (1 - q)))   -- fades in and out at the ends of the lap
 			UIButtons.SetActive(b.light, true)
 		else
 			UIButtons.SetActive(b.light, false)
 		end
+	end
+	-- damaged lamp: a short dim now and then (pseudo-random from the clock: no math.random needed)
+	local r = (math.sin(clock * 127.1 + 311.7) * 43758.5453) % 1
+	if not b.lamp_t0 and r < LAMP_CHANCE then b.lamp_t0 = clock end
+	local g = ART_GREY
+	if b.lamp_t0 then
+		if clock - b.lamp_t0 < LAMP_LEN then g = LAMP_DIM else b.lamp_t0 = nil end
+	end
+	if g ~= b.lamp_g then
+		b.lamp_g = g
+		UIButtons.ChangeColour(b.art, "!255 " .. g .. " " .. g .. " " .. g)
 	end
 	for _, id in ipairs({ b.art }) do UIButtons.ChangeScale(id, sx, 1.0, 1.0) end
 	local a = 1.0
@@ -302,10 +331,8 @@ local function banner_show(p)
 			end
 			UIButtons.SetActive(banner.info[i], h ~= nil)
 		end
-		w = math.max(WIDTH_MIN, w * WIDTH_K + WIDTH_PAD)
-		UIButtons.ChangeSize(banner.bg, w, banner.h)
-		if banner.mid then UIButtons.ChangeSize(banner.mid, w, MID_MIN + LINE_DY * banner.lines) end
-		if banner.bottom then UIButtons.ChangeSize(banner.bottom, w, banner.h) end
+		banner.w = math.max(WIDTH_MIN, w * WIDTH_K + WIDTH_PAD)   -- sizes set by banner_place (with or without cover)
+		banner.cover = COVERS[p + 1] ~= nil and banner.art ~= nil
 		banner.t0 = clock
 		banner_place(0, 0.0)
 		UIButtons.SetActive(banner.bg, true)
@@ -431,6 +458,20 @@ local function tick()
 		if key ~= last_key then                           -- a held key keeps its value: new keys only
 			last_key = key
 			if key == NEXT_KEY1 or key == NEXT_KEY2 then next_track() end
+			-- test build only: 1 / 2 cover x, 3 / 4 cover y, 5 / 6 text shift, 7 / 8 panel height (0.1 unit a press)
+			local d = TUNE and ({ CMN_1 = { -1, 0, 0, 0 }, CMN_2 = { 1, 0, 0, 0 }, CMN_3 = { 0, -1, 0, 0 },
+				CMN_4 = { 0, 1, 0, 0 }, CMN_5 = { 0, 0, -1, 0 }, CMN_6 = { 0, 0, 1, 0 },
+				CMN_7 = { 0, 0, 0, -1 }, CMN_8 = { 0, 0, 0, 1 } })[key]
+			if d then
+				ART_X, ART_Y = ART_X + d[1] * 0.1, ART_Y + d[2] * 0.1
+				ART_GAP, ART_PANEL = ART_GAP + d[3] * 0.1, ART_PANEL + d[4] * 0.1
+				if banner and banner.art then
+					local _, _, az = UIButtons.GetPosition(banner.art)
+					UIButtons.ChangePosition(banner.art, ART_X, ART_Y, az or 0.0)
+					if banner.t0 then banner_place(0, 1.0) end
+				end
+				log(string.format("tune ART_X %.2f ART_Y %.2f ART_GAP %.2f ART_PANEL %.2f", ART_X, ART_Y, ART_GAP, ART_PANEL))
+			end
 		end
 	end
 end
