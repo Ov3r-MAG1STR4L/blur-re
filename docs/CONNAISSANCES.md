@@ -2624,3 +2624,15 @@ Ce sont des résultats de lecture de données, **pas une validation fonctionnell
   de fans du jeu. Pour notre popup (pochette d'album, idée de Лагман, ouverture de Md), il faut reproduire ces clés
   nous-mêmes à chaque image (`ChangeScale` sur x, `ChangeAlpha` sur le texte), comme pour la bannière.
 
+### Pochette d'album dans le HUD : pistes (2026-11-16, **hypothèses à sonder**)
+
+- Demande : un carré au-dessus du titre de la bannière, aligné à gauche (croquis du joueur), avec l'ouverture /
+  fermeture de `fan_message` ; le pack redimensionne lui-même les images (ffmpeg).
+- Ajouter des images dans les `.bpr` est fragile (vignettes blanches, 6 emplacements libres seulement) : pas viable
+  pour une image par morceau.
+- Le code Lua du jeu appelle `UIButtons.ChangeTexture` (52×), `ChangeTextureUV` (13×), `LoadTextureClone` (7×), et
+  le mode photo charge des images à l'exécution (`StartAsyncLoadPhotos`, `DecodeDownloadedPhoto`, `Photo_Loaded`).
+  Pistes : (a) une planche (atlas) de pochettes dans une texture existante, chaque pochette choisie par
+  `ChangeTextureUV` ; (b) charger un fichier image à l'exécution comme le fait le mode photo. Sonde à faire : signatures
+  de ces fonctions et format des photos sur le disque.
+
