@@ -149,22 +149,27 @@ def layout(walls):
     return out
 
 
-def add_actors(ap, lists, items):
-    """New DynamicObjActors, items [(model key, Mat43)], in each record of `lists`."""
+def add_actors(ap, lists, items, template_list=TEMPLATE_LIST, defs=None, prefix="Neon"):
+    """New DynamicObjActors, items [(model key, Mat43)], in each record of `lists`; defs = {key: DynamicObjDef uid
+    in amax.bin} (default: MODELS); template = the DynamicObjActor chunk read while on `template_list`"""
+    defs = defs or {key: m[1] for key, m in MODELS.items()}
     x = XT(ap)
     tpl = None
     used = set()
     for n, t, v, h in x.records():
         used |= {a["SerialisableUid"] for a in v.get("LevelActors", []) if a and "SerialisableUid" in a}
-        if n == TEMPLATE_LIST:
+        if n == template_list and tpl is None:
             c = next(i for i, ch in enumerate(x._ch) if x._names[ch[0]] == "DynamicObjActor")
             ct, cn, co, esz = x._ch[c]
             tpl, tdyn = bytes(x._d[co:co + esz]), ct
     assert tpl and len(tpl) == 140
     k = KSLF(ap)
     top = max(h for h, _, _ in k.index)
-    slot = {key: k.add_external(m[1], "DynamicObjDef") for key, m in sorted(MODELS.items(), key=lambda e: e[1][1])}
-    assert top < min(m[1] for m in MODELS.values())
+    pos = {h: i for i, (h, _, _) in enumerate(k.index)}          # rows already inserted (kslf_write.insert_uid)
+    new = sorted((u, key) for key, u in defs.items() if u not in pos)
+    assert not new or top < new[0][0], "appended rows need hashes above all others"
+    slot = {key: pos[u] for key, u in defs.items() if u in pos}
+    slot.update({key: k.add_external(u, "DynamicObjDef") for u, key in new})
     uid = 0x4E000000
     for lst in lists:
         r = k._record_pos(lst)
@@ -178,7 +183,7 @@ def add_actors(ap, lists, items):
             used.add(uid)
             a = bytearray(tpl)
             name_ofs = len(plain)
-            plain += b"Neon%s%03d\0" % (key.encode(), i)
+            plain += b"%s%s%03d\0" % (prefix.encode(), str(key).encode(), i)
             struct.pack_into("<III", a, 0, uid, name_ofs, 0)        # SerialisableUid, Name, IsCommented
             struct.pack_into("<12f", a, 12, *[c for row in m for c in row])
             struct.pack_into("<I", a, 60, slot[key])               # DynamicObjType

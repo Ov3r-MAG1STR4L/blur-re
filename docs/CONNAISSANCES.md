@@ -1107,7 +1107,10 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
     publique `g_amax_publicKey`, `cache/gamedata.sig`) ; `root.pak`, `models.pak`, `shaders-speed.pak` et
     `root_streaming.pak` (sons en flux : musiques, ambiances) sont montés **sans vérification** ; `gamedata_boot.pak`
     n'est signé que sur console. `bizpak` peut aussi produire un hachage SHA-1 de 20 octets (`.hash`).
-  - Limite d'acteurs du jeu : `kMaxNoActors = 512` (`GameActorList.cpp`) ; 6 000 pour le système d'acteurs.
+  - Limite d'acteurs du jeu (corrigé le 2026-11-16) : `kMaxNoActors = 512` (`GameActorList.cpp`) est déclarée mais
+    **jamais utilisée** ; le monde est créé avec `MAX_NUM_ACTORS = 10000` (`GameWorld.cpp` l. 619,
+    `RaceLogicCore/Data/RLDefinitions.h`), cohérent avec les 8 199 acteurs de Hackney. `MAX_NO_ACTORS = 6000`
+    (`ActorDeclare.h`) sert au système d'acteurs générique. La limite pratique est la mémoire, non mesurée.
   - Attention : la branche `master` de BlurRebuilt contient déjà des retouches d'uKER (commentaires `[Blur2PC]`) ;
     « fuite intacte » n'est donc pas tout à fait exact.
   - Non lus en détail : `actor_studio` (110 000 lignes), `converter_shared` (16 000).
@@ -2871,3 +2874,30 @@ Sources : `BlurRebuilt\code\amax\game\Shaders` (`Default.fx`, `shaders.jam`, `Co
 - **Aib0t (pour Marina)** : `Blur.exe` identique à celui d'AMAX → les adresses de nos analyses de crash restent
   valables ; la physique est calée sur 30 Hz (constantes PS3 jouées à 60 i/s sur PC) : à garder en tête pour juger
   la conduite sur Marina dans Blur_test, sans effet sur la map elle-même.
+
+## Marina, lot 1 : décor éclairé par couleurs de sommet, au-delà des 144 acteurs (2026-11-16, installé, à essayer en jeu)
+Code : `b2lit.py` (conversion), `make_b2_map.py` (`--decor` utilise `b2lit` ; `extra_actors`), `neon.add_actors`
+généralisé (liste, définitions, préfixe). Sortie `blur_extracted\mods\b2_dubai_marina_lot1` (journal `build.log`,
+planche `atlas.png`), installée dans Blur_test (236 fichiers vérifiés, originaux déjà sauvegardés dans
+`b2_dubai_marina\backup_blur_test`).
+- **Rendu** (remplace le mode mixte) : un matériau par modèle (gabarit couleur `default_NB_NL`, validé POC2), carte
+  matériau noire (ni reflet ni lumière propre), lumière Blur 2 (formule de `b2bake` sur les pages de lightmap,
+  bilinéaire sur l'UV1) **par sommet**, codée `128 × √lumière` (gamma 2 du shader de Blur 1). Sans lightmap :
+  `1,25 N·L + 0,32` de Blur 2. Texels mauves ou noirs = vides (moyenne des autres coins). Cases d'atlas 256 px (128
+  avant), 16 textures par atlas 1 024. **Tuilage gardé** : triangle coupé sur les lignes entières d'UV (≤ 16
+  répétitions, au-delà écrasé). Triangles éclairés > 12 m coupés une fois en 4. Faces simples (sens Unity conservé),
+  doubles pour les textures découpées. Tailles libres, ≤ 60 000 sommets / 96 000 index par modèle.
+- **Mesures** (échantillon 5 %, extrapolé) : sans découpe 0,65 M triangles, tuilage seul 1,62 M, tuilage + éclairage
+  4 m × 3 niveaux **6,4 M** (291 modèles : écarté), 12 m × 1 niveau 1,85 M. Construction : 1,51 M triangles Unity à
+  200 m → **1,86 M**, **193 modèles** (2,75 M sommets, 0,01 à 2,3 Mo, ~245 Mo), couleurs : 1 % < 2, 10 % < 18,
+  médiane 76, aucune saturée.
+- **Au-delà de 144 acteurs** (`extra_actors`) : Map Builder ne fait que réutiliser les 144 `DynamicObjActor` d'une
+  liste de Haruna (`TILE_LIST`). Pour chaque modèle en plus : `GameModel` + `DynamicObjDef` clonés de `tower_nfs000`
+  dans `amax.bin` (`clone_object_any`, uids libres à partir de `0xB2DE0000`), référence externe insérée **à sa place
+  triée** dans `actorpack.xt` (`kslf_write.insert_uid`, comme `gen_actorpack.py` ; `add_external` impose un hash
+  au-dessus de tous les autres : ici `0xFFFFFF40`, soit ~90 acteurs possibles seulement), acteur ajouté à la liste
+  des tours (`#16`) par `neon.add_actors`, matrice identité au centre de la zone. Essai hors jeu : 300 acteurs
+  ajoutés et relus. Marina : 142 places Map Builder (109 tours, 33 morceaux de route) + **51 acteurs ajoutés**,
+  1 294 acteurs dans le niveau (limite du jeu 10 000 par partie chargée).
+- **Non vérifié** : chargement, mémoire (programme 32 bits), fluidité, rendu réel des couleurs de sommet sur toute la
+  ville, acteurs ajoutés à une liste Map Builder, ombres trop noires ou trop claires (`NOLM`, `EXPOSURE` à régler).

@@ -16,7 +16,7 @@ Output: OUT/files (to copy over Blur_test). Install separately, with a backup.
 usage: make_b2_map.py LAP.csv PICKUPS.json OUT --name Marina --city Dubai --route 4 --grid X Z [--decor]
        [--official ACTORPACK] [--edges] [--drive LOG...] [--track TRACK_JSON]
 """
-import argparse, csv, json, math, os, shutil, subprocess, sys
+import argparse, csv, json, math, os, shutil, struct, subprocess, sys
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -255,7 +255,7 @@ def decor(files, models, nfs):
     flat = os.path.join(files, "models", "objects", "flat_earth")
     slots = [(J.NFS_UID + 2 * k + 1, "nfs_%03d.model" % k) for k in range(nfs)]
     slots += [(u, "road_21_%02d.model" % k) for k, u in enumerate(J.road_slots(ap))]
-    pad = (J.DECOR_VERTS, 6 * max(len(t) for _, t in models))      # faces doubled: 6 indices per triangle
+    import b2lit
     mats, skipped = [], []
     for uid, fname in slots:
         try:
@@ -265,15 +265,88 @@ def decor(files, models, nfs):
             skipped.append(fname)
     slots = mats
     for k, ((mat, fname), (img, tris)) in enumerate(zip(slots, models)):
-        J.write_model(tris, "b2_%03d" % k, mat, os.path.join(flat, fname), 110,
-                      salt=0x42324400 + k, pad=pad, image=img)
+        nv, ni = b2lit.write(tris, mat, os.path.join(flat, fname), img, 0x42324400 + k, J.HP_GROUND)
+        print(fname, nv, "vertices", ni, "indices")
     from PIL import Image
-    blank = Image.new("RGBA", models[0][0].size, (0, 0, 0, 255))
+    blank = Image.new("RGBA", (4, 4), (0, 0, 0, 255))        # free sizes: 3-vertex hidden models (G3b)
     hidden = [([(0, -50, 0), (0.01, -50, 0), (0, -50, 0.01)], [(0, 0)] * 3)]   # Map Builder's glowing road gone
     eye = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 0]]
     for k, (mat, fname) in enumerate(slots[len(models):] + [(eye, f) for f in skipped], len(models)):
-        J.write_model(hidden, "empty", mat, os.path.join(flat, fname), 110, salt=0x42324400 + k, pad=pad, image=blank)
+        J.write_model(hidden, "empty", mat, os.path.join(flat, fname), 0, salt=0x42324400 + k, image=blank)
     print(min(len(slots), len(models)), "scenery models in", len(slots), "slots (the others emptied)")
+    if len(models) > len(slots):
+        extra_actors(files, models[len(slots):], nfs, len(slots))
+
+
+DECOR_TOTAL = 400    # scenery models in all (ponytail: game memory never measured; lower it if the load fails)
+
+
+def extra_actors(files, models, k0, salt0):
+    """scenery beyond Map Builder's 144-actor list (2026-11-16): one new GameModel + DynamicObjDef per model in
+    amax.bin (clones of Map Builder's tower_nfs000 records, other file name), one new DynamicObjActor per model in
+    the list holding the tower_nfs actors (neon.add_actors: method seen working in game, Reverse Studio).
+    The game creates its world with MAX_NUM_ACTORS = 10000 (source: GameWorld.cpp, RLDefinitions.h)."""
+    import tempfile
+    import make_nfs_map as J
+    import b2lit
+    import neon
+    from blurxt import XT
+    from kslfwrite import KSLF
+    am = os.path.join(files, "gamedata", "xt", "amax.bin")
+    ap = os.path.join(files, "gamedata", "levels", "flat_earth", "actorpack.xt")
+    flat = os.path.join(files, "models", "objects", "flat_earth")
+    tower = "@%08x" % (J.NFS_UID + 1)
+    lst = [n for n, t, v, h in XT(ap).records() if any(a and a.get("DynamicObjType") == tower
+                                                        for a in v.get("LevelActors", []))]
+    assert len(lst) == 1, lst
+    amax = open(am, "rb").read()
+    tmp = os.path.join(tempfile.gettempdir(), "b2_extra_amax.bin")
+    open(tmp, "wb").write(amax)
+    A = neon.dump.File(tmp)
+    have = {u for u, t, oi in A.refs}
+    obj = {u: oi for u, t, oi in A.refs if oi != 0xFFFF}
+    assert J.NFS_UID in obj and J.NFS_UID + 1 in obj, "no tower_nfs000 records to clone"
+    taken = have | {h for h, _, _ in KSLF(ap).index}
+    c = 0xB2DE0000                                        # any free uids: rows inserted at their sorted place
+    items, defs = [], {}
+    for j, (img, tris) in enumerate(models):
+        uids = []
+        while len(uids) < 2:
+            if c not in taken:
+                uids.append(c)
+            c += 1
+        assert c < 0xB2DF0000
+        gm, du = uids
+        k = k0 + j
+        fname = "nfs_%03d.model" % k
+        centre = J.zone_centre([(t[0], None) for t in tris])
+        mat = [[1, 0, 0], [0, 1, 0], [0, 0, 1], centre]
+
+        def gm_patch(data, pool, blocks, fname=r"models\objects\flat_earth" + "\\" + fname):
+            struct.pack_into("<I", data, blocks[0], len(pool))
+            pool += fname.encode() + b"\0"
+        _, amax = neon.kslf_write.clone_object_any(obj[J.NFS_UID], None, gm, gm_patch, data_in=amax)
+        k4 = neon.kslf.Kslf(amax)
+        o4, n4 = k4.sections[4]
+        gm_ref = next(i for i in range(n4) if struct.unpack_from("<I", amax, o4 + 8 * i)[0] == gm)
+
+        def def_patch(data, pool, blocks, gm_ref=gm_ref):
+            struct.pack_into("<I", data, blocks[0], gm_ref)           # Model; the rest as tower_nfs000
+        _, amax = neon.kslf_write.clone_object_any(obj[J.NFS_UID + 1], None, du, def_patch, data_in=amax)
+        nv, ni = b2lit.write(tris, mat, os.path.join(flat, fname), img, 0x42324400 + salt0 + j, J.HP_GROUND)
+        print(fname, nv, "vertices", ni, "indices (new actor)")
+        items.append((j, mat))
+        defs[j] = du
+    open(am, "wb").write(amax)
+    data = open(ap, "rb").read()
+    for du in defs.values():                              # external rows (defined in amax.bin), Map Builder's way
+        data, _ = neon.kslf_write.insert_uid(data, du, "DynamicObjDef")   # (gen_actorpack.py)
+    open(ap, "wb").write(data)
+    neon.add_actors(ap, lst, items, template_list=lst[0], defs=defs, prefix="B2Decor")
+    back = [a for n, t, v, h in XT(ap).records() if n == lst[0] for a in v["LevelActors"]
+            if a and a.get("DynamicObjType") in {"@%08x" % u for u in defs.values()}]
+    assert len(back) == len(models), (len(back), len(models))
+    print(len(models), "scenery actors added to list", lst[0])
 
 
 def track(mp, path, low, grid, route, out_dir):
@@ -340,15 +413,14 @@ def main():
     models, spots = [], os.path.abspath(os.path.join(a.out, "nfs_spots.json"))
     if a.decor:
         import b2decor
-        import b2bake                                  # mixed: walls / props baked with Blur 2's lighting,
-        data = b2bake.extract(UNITY, laps, a.route, radius=200)          # flat ground in sharp tiled atlases
-        pages, rest = b2bake.split(data, laps)
-        total = make_nfs_map.DECOR_MAX + ROAD_SLOTS
-        cooked = [(img, t) for _, img, t in b2bake.page_models(data, pages, laps, total // 2)]
+        import b2bake
+        import b2lit                                   # lot 1 (2026-11-16): sharp tiled atlases, Blur 2 light in
+        data = b2bake.extract(UNITY, laps, a.route, radius=200)          # vertex colours (mixed mode replaced)
+        models = b2lit.jobs(data, laps, DECOR_TOTAL)
         del data
-        models = cooked + b2decor.jobs(rest, laps, total - len(cooked))
         b2decor.sheet(models, os.path.join(a.out, "atlas.png"))
-        json.dump([make_nfs_map.zone_centre(t) for _, t in models[:make_nfs_map.DECOR_MAX]], open(spots, "w"))
+        json.dump([make_nfs_map.zone_centre([(t[0], None) for t in m]) for _, m in models[:make_nfs_map.DECOR_MAX]],
+                  open(spots, "w"))
     nfs = min(len(models), make_nfs_map.DECOR_MAX)
     env = dict(os.environ, BMB_GAME=config.BMB_GAME, BMB_INSTALLED="1", NFS_COUNT=str(nfs), NFS_SPOTS=spots,
                NFS_DRAW=str(make_nfs_map.DECOR_DRAW), NFS_NO_WALLS="1", NFS_FLOOR_Y="-5")
