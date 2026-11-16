@@ -3053,3 +3053,14 @@ Idée de l'utilisateur : un tir de précision unique, très rapide, longue port�
   `icewall_impact` dans le `root.pak` du 10 nov. Aucune icône ni son trouvés. Souvenir de l'utilisateur (non
   vérifié) : Icewall représenté par une étoile. Dans `pickups.bin` de Blur 1, `PickupType.Type` choisit le
   comportement codé (Bolt `0x4CF8489B` = 3).
+- **Crash au chargement du lot 2 (2026-11-16, vidage `Blur.exe.10688.dmp`)** : `0xC0000005` en `Blur.exe+0x2D9EC5`
+  (boucle sur un tableau : pointeur `[esi]` = **0**, compteur `0xFF595959`), pile `0x6E5F50` (chargement des
+  modèles, même zone que le crash de Rio `0x6DB2EB`). Lecture : **allocation ratée, manque de mémoire (Probable)** :
+  `Blur.exe` sans `LARGE_ADDRESS_AWARE` (2 Go), lot 2 = 263 modèles × ~2 Mo de textures (atlas 1 024, DXT5 pour
+  58, carte matériau 1 024² partout) contre 193 × 0,7 Mo au lot 1 qui chargeait. En-têtes DXT5 identiques à ceux
+  des modèles d'origine (`fence01` : longueur = 0x1C + données, mêmes champs). Correctifs : carte matériau 256²
+  (`b2lit.MAT_SIZE`) et seulement sur les modèles qui ont une surface à reflet ; **`Blur_test\Blur.exe` passé en
+  `LARGE_ADDRESS_AWARE`** (1 octet, `0x12E` : Characteristics 0x0103 → 0x0123 ; jusqu'à 4 Go sous Windows 64 bits ;
+  original, SHA-1 `dcbd312a…` = celui d'AMAX, gardé dans `blur_extracted\mods\laa_backup\Blur.exe` ; le jeu installé
+  n'est pas touché ; le fichier est en lecture seule, attribut remis). Le code n'est pas modifié : les adresses des
+  DLL restent valables.

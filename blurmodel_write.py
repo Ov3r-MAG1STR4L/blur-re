@@ -190,9 +190,11 @@ def build(template, verts, indices, rgb, w, h, glow=160, salt=None, pad_verts=No
     else:                          # own material map (R specular / reflection, G emissive, B Fresnel), w x h RGB
         jm = moff - 12
         assert d[jm:jm + 4] == b"DXT1"
-        mat = cpmodel.encode_mips(material, w, h, mips)
-        rep.append((jm - 20, jm - 8, struct.pack("<3I", 0x1C + len(mat), w, h)))
-        rep.append((jm - 4, jm, struct.pack("<I", mips)))
+        mpx, mw2, mh2 = material                  # (RGB bytes, width, height): any size, uv are normalised
+        mm2 = int(math.log2(max(mw2, mh2))) + 1
+        mat = cpmodel.encode_mips(mpx, mw2, mh2, mm2)
+        rep.append((jm - 20, jm - 8, struct.pack("<3I", 0x1C + len(mat), mw2, mh2)))
+        rep.append((jm - 4, jm, struct.pack("<I", mm2)))
         rep.append((moff, jm - 16 + struct.unpack_from("<I", d, jm - 20)[0], mat))
 
     # sommets

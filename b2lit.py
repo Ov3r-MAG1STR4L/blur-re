@@ -33,6 +33,7 @@ MAX_EDGE = 12.0       # m: lit triangles longer than this cut once in 4 (4 m x 3
                       # for 122 slots; 12 m x 1: 1.85 M, measured on a 5 % sample 2026-11-16)
 NOLM = (1.25, 0.32)   # Blur 2 fallback without lightmap: 1.25 N.L + 0.32 (calibration knob)
 MAUVE = np.array((0.86, 0.71, 1.0))   # empty texels of the lightmap pages
+MAT_SIZE = 256        # material map side (2026-11-16: 1024 maps on every model ran Blur, 32-bit, out of memory)
 REFLECT_DEFAULT = (100, 0, 128)   # reflective material without a material map (calibration knob)
 DETAIL = 0.005        # small far triangles dropped: area < DETAIL * distance (as b2decor)
 
@@ -196,7 +197,8 @@ def jobs(data, laps, count):
             cu = ((i % per) + u[:, 0]) / per
             cv = 1 - ((i // per) + (1 - u[:, 1])) / per          # Unity v up; atlas rows top-down; writer stores 1 - v
             mt.append(([tuple(p) for p in t[2]], list(zip(cu, cv)), [tuple(int(x) for x in cc) for cc in c], True))
-        res.append((img, mt, mat, is_cut))
+        refl = any(data.get("mat", {}).get(k) is not None for k in texs)
+        res.append((img, mt, mat.resize((MAT_SIZE, MAT_SIZE)) if refl else None, is_cut))   # none: template's own small map
     return res
 
 
@@ -234,7 +236,7 @@ def write(tris, matrix, path, img, salt, ground, mat=None, cut=False):
         idx += ids + ids[::-1] if two else ids
     assert len(verts) <= 0xFFFF
     d = W.build(_template(), verts, idx, img.tobytes(), *img.size, glow=0, salt=salt, colours=cols,
-                material=mat.tobytes() if mat is not None else None, dxt5=cut)
+                material=(mat.tobytes(), *mat.size) if mat is not None else None, dxt5=cut)
     open(path, "wb").write(d)
     return len(verts), len(idx)
 
