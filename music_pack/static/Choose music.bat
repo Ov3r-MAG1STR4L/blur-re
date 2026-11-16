@@ -23,10 +23,10 @@ where ffmpeg >nul 2>&1 || (
     echo ffmpeg is not installed: see "REQUIREMENTS" in README.txt.
     goto :end
 )
-%PY% -c "import numpy, numba" >nul 2>&1 || (
-    echo Installing the Python modules numpy and numba ^(pip^)...
-    %PY% -m pip install --disable-pip-version-check numpy numba || (
-        echo pip could not install numpy and numba: see "REQUIREMENTS" in README.txt.
+%PY% -c "import numpy, numba, PIL" >nul 2>&1 || (
+    echo Installing the Python modules numpy, numba and Pillow ^(pip^)...
+    %PY% -m pip install --disable-pip-version-check numpy numba pillow || (
+        echo pip could not install numpy, numba and Pillow: see "REQUIREMENTS" in README.txt.
         goto :end
     )
 )
