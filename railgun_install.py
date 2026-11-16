@@ -196,8 +196,8 @@ def main(remove=False):
     front, rear = delays()
     src = {k: os.path.join(SOUNDS, f) for k, f in SOURCES.items()}
     for wav, remix, delay in (("railgun_fire.wav", FRONT, front), ("railgun_fire_rear.wav", REAR, rear)):
-        if all(map(os.path.exists, src.values())):
-            remix_sound(remix, delay=delay, out=os.path.join(dlls, wav), **src)
+        if all(map(os.path.exists, src.values())):    # the final sounds also stay in SOUNDS, to listen to
+            shutil.copyfile(remix_sound(remix, delay=delay, out=os.path.join(SOUNDS, wav), **src), os.path.join(dlls, wav))
         else:
             make_sound(os.path.join(dlls, wav), delay)
     print("railgun installed in", dlls, f"| delay {front} s, rear {rear} s | HUD", hud["colour_fill"], "| name", NAME)
