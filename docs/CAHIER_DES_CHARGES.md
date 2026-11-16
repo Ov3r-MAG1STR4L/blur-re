@@ -40,10 +40,12 @@ Classement établi à partir des données ; l'effet réel en ligne n'est **pas v
 |---|---|---|
 | `.pak` | oui | pas besoin pour l'instant : sans `gamedata.pak`, le jeu lit tout en clair (testé en jeu). Le pak passe AVANT un fichier en clair |
 | `.bin` / `.xt` (KSLF) | oui, à 100 % | oui : reconstruction, valeurs, clonage, ajout à une liste. **Testé en jeu** (route + listes ajoutées, chargées et jouées) |
-| `.loc` (textes) | oui | non |
+| `.loc` (textes) | oui | oui : ajout de textes par clé (`blurloc.add_text`, utilisé par le bandeau de musique, testé en jeu) |
 | Textures de `.model` | oui | oui (réinjection, jamais testée en jeu) |
 | `.aid` (IA / logique de piste) | oui, à 100 % de la structure | oui : réécriture identique (33/33) et **inversion testée en jeu** (Haruna) |
-| `.level*` (géométrie, collision) | structure seulement | non |
+| `.level*` (géométrie, collision) | structure ; collision lue (`bmb_levelphysics`, format Gravity d'après la source) | oui : rampes et murs ajoutés à la collision (`addramp`, testé en jeu), niveaux complets via le Map Builder (projet J) |
+| `.bpr` (images d'interface) | oui | oui : remplacement et ajout d'images (`blurbpr.rebuild`, testé en jeu : pochettes) |
+| `.baf` (sons) | oui | oui : ajout et remplacement de morceaux ADPCM (`blurbaf`, testé en jeu : playlists) |
 | Mémoire en course | position, vitesse, rotation, voiture, profils IA | (lecture seule, par règle) |
 
 ---
@@ -286,7 +288,7 @@ ligne et ne tester que dans `Blur_test`. Solution et faisabilité à discuter av
 parmi les sons jamais utilisés par le jeu (78 sur 2 732, voir CONNAISSANCES) : `FE_Left` / `FE_Right` / `FE_Move`
 (bips de menu, `frontendui.baf`), `HUD_PerksCountdown` (`ingameui.baf`).
 
-## Projet L : popup « morceau en cours » — étude faite, essai en jeu à faire
+## Projet L : popup « morceau en cours » — fait (bandeau publié, v1.1 du pack musique, 2026-11-13)
 
 **Demande (communauté, 2026-11-13)** : afficher le titre du morceau quand la musique change en course.
 **Étude (voir CONNAISSANCES, « Étude : popup »)** : l'affichage est probable (cloner un élément texte du HUD,
@@ -518,3 +520,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-16 | Code source de Blur cloné pour lecture dans `Jeux_WII/blur_source/BlurRebuilt` (commit 87aa6861, 20 206 fichiers, hors dépôt) ; `C_GameWorld::CalcNumberOfSteps` trouvée (GameWorld.cpp l. 2488) |
 | 2026-11-16 | Scan de Blur Map Builder 2.5.0 (C#) : `.aid` = 11 drapeaux de route et 9 règles d'embranchement dynamique dans le code source (Md n'en écrit que 5) ; REBORN = 7 changements, empreinte = notre Blur.exe ; pistes pour aider Md dans CONNAISSANCES |
 | 2026-11-16 | Lecture des outils de Bizarre Creations (fuite) : `.levelphysics` = format Gravity (type 2 = boîte, 6 = cylindre, 7 = composite, fin 0x0FFFFFFF) ; seul `gamedata.pak` est signé (RSA), root/models/shaders/root_streaming non ; `.level` exporté = Header + MdlDat ; acteurs max 512 |
+| 2026-11-16 | Correction globale du dépôt : 14 sondes dans `archive/`, imports morts retirés, arrêt propre des serveurs de test (21 + 59 tests au vert), trois studios ouverts sans erreur ; docs : sections pochette / message de fans remises sous le projet L, README (studios, musique, tests), état des capacités, passation marquée datée |

@@ -34,6 +34,12 @@ Aucun fichier du jeu n'est inclus. Les outils lisent une installation existante 
 | `blur_live.py` | lecture **seule** de la mémoire en course (véhicules, positions, vitesses, profils IA) |
 | `deeprec.py` | enregistrement mémoire profond (objets pointés) pour l'analyse hors ligne |
 | `memscan.py`, `ptrwalk.py`, `aiwalk.py` | recherches en mémoire (lecture seule) |
-| `*probe*.py`, `hash*.py`, autres | essais ponctuels gardés pour l'historique |
+| `nfs_web.py` (NFS Studio, 8765), `reverse_web.py` (Reverse Studio, 8766), `b2track.py` (Tracés Blur 2, 8767) | studios web locaux : tracé 2D / vue 3D des circuits, chemins de l'IA, construction et installation dans Blur_test (pages dans `web/`) |
+| `studio_safe.py`, `studio_history.py` | protections et historique communs aux studios (voir `docs/SECURITE_STUDIOS.md`) |
+| `make_music.py`, `music_menu.py`, `music_pack/` | musique de course : playlists, bandeau du morceau en cours, pack pour la communauté |
+| `make_nfs_map.py`, `nfs_atlas.py`, `stm2obj.py` | circuits de NFS Hot Pursuit Wii vers Blur (projet J) |
+| `b2*.py`, `make_b2_map.py`, `x360/` | prototypes Blur 2 (Xbox 360) et Blur2DubaiTest |
+| `tests/` | tests : `python -m unittest discover tests` (les tests HTTP refusent un port de studio déjà pris) |
+| `archive/` | sondes ponctuelles gardées pour l'historique (plus utilisées) |
 
 Python 3.13, avec `pymem`, `numpy`, `matplotlib`, `Pillow`, `capstone`.
