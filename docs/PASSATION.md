@@ -1,5 +1,8 @@
 # Passation (2026-10-23) — à lire avant de reprendre le projet
 
+> **État au 2026-10-23, non tenu à jour.** Les règles restent valables ; pour l'état actuel des projets et des outils,
+> lire `CAHIER_DES_CHARGES.md` (journal) et le `README.md` du dépôt.
+
 Ce document résume l'état du projet et ce qui reste à faire, pour un nouvel assistant (GitHub Copilot ou autre).
 Les découvertes détaillées sont dans `CONNAISSANCES.md` ; les projets et le journal dans `CAHIER_DES_CHARGES.md`.
 

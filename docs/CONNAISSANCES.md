@@ -838,6 +838,8 @@ Globales : `0x11AA04C` (jeu ; instance de l'application selon AMAX), `0xD44EE4` 
 ## 7. Communauté (Discord Blur / wiki AMAX)
 
 - Pas de décodeur public des `.bin` / `.xt` connu (la page « outils » du wiki était vide en 2026-09).
+  Depuis : le code source fuité (BlurRebuilt, 2026-10) contient les lecteurs et écrivains d'origine, et le Map
+  Builder de Md écrit du KSLF (voir « Sources AMAX » et « Blur Map Builder »).
 - « Md » a fait un éditeur de cartes (tracé 2D, objets 3D du jeu, compilation et installation, test en jeu
   avec IA), un réglage de bloom, et travaille sur le déblocage des FPS (la physique est calée sur 30 images/s).
 - Un moddeur réactive le DoubleTap.
@@ -1685,6 +1687,49 @@ Demande de la communauté : afficher le titre quand la musique change. Deux ques
 - **À vérifier en jeu** : moment du premier morceau (`FIRST_START` = 4 s estimé), dérive de la minuterie, pause,
   épave, accents dans la police. Pack : `gamedata.pak` désormais mis de côté aussi (non retesté hors jeu).
 
+### Animation « message de fans » (popup qui s'ouvre au centre et se referme) — 2026-11-16, **confirmé (ui.json)**
+
+- Popup des fans gagnés (percuter, détruire une voiture…) : `bra_FanRoot` (TopCentre, y −35) → `dmy_FanDummy` →
+  `bra_FanBlobSingle` (une ligne) / `bra_FanBlobDouble` (deux lignes) → fond `gfx_FanBlobSingleC` 250 × 30
+  (`gfx_FanBlobDoubleC` 250 × 44), couleur `!220 5 8 10`, MiddleCentre, **échelle x de départ 0**. Texte
+  `txt_FanMessage` (Main_1, alpha de départ 0, MiddleLeft) et `txt_FanMessageName` / `txt_FansAdded`.
+- Timeline `fan_message`, 2,5 s, type Stop. Clés en fraction de la durée :
+  - fond, `scale.x` : 0 jusqu'à 0,05 → 1 à 0,125 (ouverture depuis le centre en ≈ 0,19 s) → 1 jusqu'à 0,875 →
+    0 à 0,95 (fermeture sur lui-même en ≈ 0,19 s) ;
+  - texte, `alpha` : 0 jusqu'à 0,1125 → 1 à 0,1875 → 1 jusqu'à 0,8125 → 0 à 0,8875 (le texte apparaît après
+    l'ouverture et disparaît avant la fermeture).
+- Attention : `TimeLineActive(label…)` est global par label. Lancer `fan_message` déclencherait aussi le vrai popup
+  de fans du jeu. Pour notre popup (pochette d'album, idée de Лагман, ouverture de Md), il faut reproduire ces clés
+  nous-mêmes à chaque image (`ChangeScale` sur x, `ChangeAlpha` sur le texte), comme pour la bannière.
+
+### Pochette d'album dans le HUD (2026-11-16, **confirmé en jeu** : planche dans `ui_common.bpr`)
+
+- Demande : un carré au-dessus du titre de la bannière, aligné à gauche (croquis du joueur), avec l'ouverture /
+  fermeture de `fan_message` ; le pack redimensionne lui-même les images (ffmpeg).
+- Ajouter des images dans les `.bpr` est fragile (vignettes blanches, 6 emplacements libres seulement) : pas viable
+  pour une image par morceau.
+- Le code Lua du jeu appelle `UIButtons.ChangeTexture` (52×), `ChangeTextureUV` (13×), `LoadTextureClone` (7×), et
+  le mode photo charge des images à l'exécution (`StartAsyncLoadPhotos`, `DecodeDownloadedPhoto`, `Photo_Loaded`).
+  Pistes : (a) une planche (atlas) de pochettes dans une texture existante, chaque pochette choisie par
+  `ChangeTextureUV` ; (b) charger un fichier image à l'exécution comme le fait le mode photo. Sonde à faire : signatures
+  de ces fonctions et format des photos sur le disque.
+- **Sonde artprobe (2026-11-16), confirmé en jeu (Blur_test)** : une image nommée s'affiche sur un carré du HUD.
+  - Gabarit : `Position_Team_Icon` (1,625 × 1,625, même espace d'unités que la bannière) cloné sous
+    `HUD.ViewportId3d`, BottomLeft. `gfx_FanBlobSingleC` est dans un autre espace (250 × 30) : 6 × 6 = un point en haut
+    à gauche.
+  - `UIButtons.ChangeTexture({filename=NOM, pos={u,v}, size={u,v}}, 0.0, id)` **puis**
+    `UIButtons.ChangeEffectIndex(id, UIEnums.EffectIndex.MultiTexture)` : sans le second appel, éclat blanc. Vu :
+    `light_paint_02` (la traînée) dans le carré. `ChangeTexture` ne signale pas d'erreur pour un nom inconnu.
+  - Ouverture / fermeture façon `fan_message` par `ChangeScale(id, sx, 1, 1)` : fonctionne.
+  - Placement choisi par le joueur (final, 2026-11-16) : x 4,2, y 12,4, côté 7,7 (essais : x −2,8, y 16,9, côté 8,2) (unités HUD ; 0,1 ≈ 2,3 px en 1080p).
+  - Prochaine étape : une texture à nous (planche de pochettes) que `filename` peut désigner.
+  - **Planche ajoutée : confirmé en jeu (2026-11-16)**. `artatlas.py` ajoute `blur_music_art` (DXT1 1024², 1 mip,
+    4 × 4 cases de 256 px) à `ui\data\ui_common.bpr` avec `blurbpr.rebuild` (63 → 64 images, originales
+    identiques) : le jeu la trouve par son nom, et `pos` / `size` en UV (0,25) choisissent la case. Les vraies
+    pochettes s'affichent. Elles sont beaucoup trop vives (lumière / bloom du HUD avec la couleur blanche) :
+    réglage de luminosité par le gris de `ChangeColour` à l'essai. Pochettes = images intégrées aux MP3 (ffmpeg).
+  - Règle demandée par le joueur : pas de pochette pour un morceau → pas de carré.
+
 ## Prototype « Blur 2 » Xbox 360 du 31/08/2010 (2026-11-09, liste de l'archive, rien d'extrait sauf un en-tête)
 - Archive `Downloads\Blur 2 (Aug 31, 2010 prototype).rar` : RAR5 de 6,2 Go (7,0 Go décompressé), 979 fichiers. Le
   `tar` de Windows refuse (dictionnaire trop grand), il faut 7-Zip. Dossier `KanzenDev\` (nom de code « Kanzen »),
@@ -1804,7 +1849,8 @@ Rapport complet avec offsets : `Jeux_WII\blur2_aid\easter_eggs\rapport.md` (scri
 
 ## Projet tiers : BlurRebuilt (uKER) (2026-11-09, lecture du dépôt GitHub public)
 - https://github.com/uKER/BlurRebuilt (C++, dernier push le 07/11/2026). Blur **recompilé à partir du code source
-  PC qui a fuité** (« untouched leak », 20 770 fichiers, source de juin 2010) : DirectX 11, HDR, 64 bits, images par
+  PC qui a fuité** (« untouched leak », 20 770 fichiers, source de juin 2010) ; la branche `master` contient en fait déjà
+  des retouches d'uKER (commentaires `[Blur2PC]`, vu le 2026-11-16) : DirectX 11, HDR, 64 bits, images par
   seconde débloquées, latence audio réduite, ultra-large. **Multi en ligne via Amax Emu** (`AmaxClientHost.exe`). Ne
   remplace pas `Blur.exe` : `BlurRebuilt.exe` + `fx11\` à copier dans le dossier du jeu (pour nous : dans la copie de
   test seulement), et la sauvegarde `%APPDATA%\Bizarre Creations\Blur` est partagée.
@@ -2669,49 +2715,6 @@ Ce sont des résultats de lecture de données, **pas une validation fonctionnell
   que ce soit, originaux gardés une fois (+ `_absents.json`), restes des constructions précédentes déplacés dans
   `perimes\`, délais Map Builder, verrou NFS sans course, erreurs JSON. Détail, tests (37) et limites :
   `docs/SECURITE_STUDIOS.md`. Port et navigateur réglables : `BLURRE_PORT`, `BLURRE_NO_BROWSER`.
-
-### Animation « message de fans » (popup qui s'ouvre au centre et se referme) — 2026-11-16, **confirmé (ui.json)**
-
-- Popup des fans gagnés (percuter, détruire une voiture…) : `bra_FanRoot` (TopCentre, y −35) → `dmy_FanDummy` →
-  `bra_FanBlobSingle` (une ligne) / `bra_FanBlobDouble` (deux lignes) → fond `gfx_FanBlobSingleC` 250 × 30
-  (`gfx_FanBlobDoubleC` 250 × 44), couleur `!220 5 8 10`, MiddleCentre, **échelle x de départ 0**. Texte
-  `txt_FanMessage` (Main_1, alpha de départ 0, MiddleLeft) et `txt_FanMessageName` / `txt_FansAdded`.
-- Timeline `fan_message`, 2,5 s, type Stop. Clés en fraction de la durée :
-  - fond, `scale.x` : 0 jusqu'à 0,05 → 1 à 0,125 (ouverture depuis le centre en ≈ 0,19 s) → 1 jusqu'à 0,875 →
-    0 à 0,95 (fermeture sur lui-même en ≈ 0,19 s) ;
-  - texte, `alpha` : 0 jusqu'à 0,1125 → 1 à 0,1875 → 1 jusqu'à 0,8125 → 0 à 0,8875 (le texte apparaît après
-    l'ouverture et disparaît avant la fermeture).
-- Attention : `TimeLineActive(label…)` est global par label. Lancer `fan_message` déclencherait aussi le vrai popup
-  de fans du jeu. Pour notre popup (pochette d'album, idée de Лагман, ouverture de Md), il faut reproduire ces clés
-  nous-mêmes à chaque image (`ChangeScale` sur x, `ChangeAlpha` sur le texte), comme pour la bannière.
-
-### Pochette d'album dans le HUD : pistes (2026-11-16, **hypothèses à sonder**)
-
-- Demande : un carré au-dessus du titre de la bannière, aligné à gauche (croquis du joueur), avec l'ouverture /
-  fermeture de `fan_message` ; le pack redimensionne lui-même les images (ffmpeg).
-- Ajouter des images dans les `.bpr` est fragile (vignettes blanches, 6 emplacements libres seulement) : pas viable
-  pour une image par morceau.
-- Le code Lua du jeu appelle `UIButtons.ChangeTexture` (52×), `ChangeTextureUV` (13×), `LoadTextureClone` (7×), et
-  le mode photo charge des images à l'exécution (`StartAsyncLoadPhotos`, `DecodeDownloadedPhoto`, `Photo_Loaded`).
-  Pistes : (a) une planche (atlas) de pochettes dans une texture existante, chaque pochette choisie par
-  `ChangeTextureUV` ; (b) charger un fichier image à l'exécution comme le fait le mode photo. Sonde à faire : signatures
-  de ces fonctions et format des photos sur le disque.
-- **Sonde artprobe (2026-11-16), confirmé en jeu (Blur_test)** : une image nommée s'affiche sur un carré du HUD.
-  - Gabarit : `Position_Team_Icon` (1,625 × 1,625, même espace d'unités que la bannière) cloné sous
-    `HUD.ViewportId3d`, BottomLeft. `gfx_FanBlobSingleC` est dans un autre espace (250 × 30) : 6 × 6 = un point en haut
-    à gauche.
-  - `UIButtons.ChangeTexture({filename=NOM, pos={u,v}, size={u,v}}, 0.0, id)` **puis**
-    `UIButtons.ChangeEffectIndex(id, UIEnums.EffectIndex.MultiTexture)` : sans le second appel, éclat blanc. Vu :
-    `light_paint_02` (la traînée) dans le carré. `ChangeTexture` ne signale pas d'erreur pour un nom inconnu.
-  - Ouverture / fermeture façon `fan_message` par `ChangeScale(id, sx, 1, 1)` : fonctionne.
-  - Placement choisi par le joueur (final, 2026-11-16) : x 4,2, y 12,4, côté 7,7 (essais : x −2,8, y 16,9, côté 8,2) (unités HUD ; 0,1 ≈ 2,3 px en 1080p).
-  - Prochaine étape : une texture à nous (planche de pochettes) que `filename` peut désigner.
-  - **Planche ajoutée : confirmé en jeu (2026-11-16)**. `artatlas.py` ajoute `blur_music_art` (DXT1 1024², 1 mip,
-    4 × 4 cases de 256 px) à `ui\data\ui_common.bpr` avec `blurbpr.rebuild` (63 → 64 images, originales
-    identiques) : le jeu la trouve par son nom, et `pos` / `size` en UV (0,25) choisissent la case. Les vraies
-    pochettes s'affichent. Elles sont beaucoup trop vives (lumière / bloom du HUD avec la couleur blanche) :
-    réglage de luminosité par le gris de `ChangeColour` à l'essai. Pochettes = images intégrées aux MP3 (ffmpeg).
-  - Règle demandée par le joueur : pas de pochette pour un morceau → pas de carré.
 
 ## Sources AMAX (Aib0t / Amax-Emu) (2026-11-16, lecture des dépôts publics, rien d'essayé en jeu)
 
