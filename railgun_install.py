@@ -3,8 +3,10 @@
 
 The Railgun takes the place of the cut SuperShield power-up (own enum, HUD entry and name); the Bolt stays the Bolt.
 - railgun.dll + railgun.txt -> Blur_test\\amax\\dlls (AMAX's d3d9.dll loads every .dll / .asi there);
-- pickups.bin: the Bolt back to the original (v1 changed it); SuperShield level (uid 0x9B08F5FA) Delay = DELAY,
-  the time between the button and the shot (Shunt 0.5 s, Bolt 0.1 s);
+  railgun.txt holds the firing delays (forward `delay`, backward `rear_delay`), set by the dll, used for the sounds;
+- railgun_fire.wav (forward, remix FRONT) / railgun_fire_rear.wav (backward, remix REAR), charge as long as each
+  delay, made from the sources in SOUNDS (else our synth);
+- pickups.bin: back to the original (v1 changed the Bolt, the first v2 the SuperShield Delay);
 - ui.bin: HUD colours of the SuperShield entry (UiXtConfig.PerkDisplayParameters.superShield), pink -> titanium
   white (same-length string, rewritten in the record's scrambled string zone);
 - loc\\common.loc: "SUPER SHIELD" / "SUPER BOUCLIER"... (hash 1665195695) -> NAME in every language.
@@ -20,19 +22,24 @@ import config  # noqa: E402
 import blurloc  # noqa: E402
 from blurxt import XT, decode_names, encode_names  # noqa: E402
 
-SUPERSHIELD_LEVEL = 0x9B08F5FA
-DELAY = 1.0
+FRONT, REAR = "A_titane", "B_lourd"           # user's choice (2026-11-16): A forward, B backward
 PINK = b"!255 153 153 255"
 TITANIUM = b"!232 236 242 255"          # same length: the string zone keeps its layout
 NAME_HASH, NAME = 1665195695, "RAILGUN"
 SOUNDS = os.path.join(config.BLUR_EXTRACTED, "mods", "railgun_sounds")
+SOURCES = dict(charge="core_assets_sounds_charge_chargeCorvus.ogg", shot="ShuntFire.wav", lfe="ShuntFireLFE.wav",
+               plasma="core_assets_sounds_shoot_shootBeamPlasma.ogg")
 FILES = {"pickups.bin": ("gamedata", "xt"), "ui.bin": ("gamedata", "xt"), "common.loc": ("gamedata", "xt", "loc")}
 
 
-def level(x, uid):
-    hit = [(n, v) for n, t, v, h in x.records() if h == uid]
-    assert len(hit) == 1, hit
-    return hit[0]
+def delays():
+    """(forward, backward) firing delays from natif/railgun/railgun.txt, as the dll reads them."""
+    d = {"delay": 1.0, "rear_delay": 0.5}
+    for line in open(os.path.join(HERE, "natif", "railgun", "railgun.txt"), encoding="utf-8"):
+        k = line.split()
+        if len(k) > 1 and k[0] in d:
+            d[k[0]] = float(k[1])
+    return d["delay"], d["rear_delay"]
 
 
 def recolour(path):
@@ -57,7 +64,7 @@ def recolour(path):
     return got
 
 
-def make_sound(path, delay=DELAY, rate=44100):
+def make_sound(path, delay, rate=44100):
     """Our own railgun sound (no third-party asset): a charge that rises during the firing delay, then the shot
     (crack + low thump + metallic ring). 16-bit mono WAV, played by railgun.dll when the player fires."""
     import numpy as np, wave
@@ -93,7 +100,7 @@ def _pitch(semitones, rate=44100):
 
 
 # Remixes of the charge (chargeCorvus) and of the game's Shunt shot (ShuntFire + ShuntFireLFE) so that the
-# railgun stops sounding like them; same shape: charge of DELAY s, then the shot (boom + falling tail).
+# railgun stops sounding like them; same shape: charge as long as the delay, then the shot (boom + falling tail).
 # charge / shot / lfe: ffmpeg filters; ring: (start Hz, end Hz, mix) ring modulation of the charge; trem: (start Hz,
 # end Hz) tremolo; swell: gain of a reversed, pitched-up Shunt tail rising into the shot; drive: tanh saturation of
 # the shot; haas: right channel delay (ms) for width; plasma: gain of the user's plasma crack.
@@ -110,8 +117,8 @@ REMIXES = {
 }
 
 
-def remix_sound(name, charge, shot, lfe, plasma, delay=DELAY, rate=44100):
-    """One REMIXES variant -> SOUNDS/railgun_<name>.wav (stereo 16-bit)."""
+def remix_sound(name, charge, shot, lfe, plasma, delay, out=None, rate=44100):
+    """One REMIXES variant, its charge `delay` s long -> out (default SOUNDS/railgun_<name>.wav), stereo 16-bit."""
     import numpy as np, wave
     p = REMIXES[name]
     n = int(rate * delay)
@@ -125,7 +132,7 @@ def remix_sound(name, charge, shot, lfe, plasma, delay=DELAY, rate=44100):
     c *= (0.75 + 0.25 * np.sin(2 * np.pi * np.cumsum(a0 + (a1 - a0) * (t / delay) ** 2) / rate))[:, None]
     c *= (0.5 + 0.5 * (t / delay) ** 1.5)[:, None]                  # rises towards the shot
     tail = _load(shot, rate, _pitch(7))[::-1]                         # reversed Shunt tail: swell into the shot
-    k = min(len(tail), int(rate * 0.6))
+    k = min(len(tail), int(rate * 0.6), n)
     sw = tail[-k:] / np.abs(tail[-k:]).max() * np.linspace(0, 1, k)[:, None] ** 2
     c[-k:] += p["swell"] * sw
     c[:int(rate * 0.03)] *= np.linspace(0, 1, int(rate * 0.03))[:, None]
@@ -142,33 +149,7 @@ def remix_sound(name, charge, shot, lfe, plasma, delay=DELAY, rate=44100):
     s[-int(rate * 0.05):] *= np.linspace(1, 0, int(rate * 0.05))[:, None]
     x = np.concatenate([c * 0.85, s])
     x = np.int16(np.clip(x / np.abs(x).max() * 0.8, -1, 1) * 32767)
-    out = os.path.join(SOUNDS, f"railgun_{name}.wav")
-    with wave.open(out, "wb") as w:
-        w.setnchannels(2); w.setsampwidth(2); w.setframerate(rate); w.writeframes(x.tobytes())
-    return out
-
-
-def mix_sound(charge, *layers, out=None, delay=DELAY, rate=44100):
-    """Railgun sound: the end of `charge` fills the firing delay (its start is cut), then every layer
-    ("file" or "file:gain", each normalised to its peak) starts exactly at the delay, summed. Used with the user's
-    charge / plasma shot and the game's own Shunt boom (pickups.baf: ShuntFire = boom + falling tail, ShuntFireLFE =
-    low boom, extracted with blurbaf.py). Stereo 16-bit WAV in SOUNDS (outside the repo: third-party / game sounds)."""
-    import numpy as np, wave
-    n = int(rate * delay)
-    c = _load(charge, rate)[-n:]
-    c[:int(rate * 0.05)] *= np.linspace(0, 1, int(rate * 0.05))[:, None]
-    parts = []
-    for spec in layers:
-        path, _, gain = spec.rpartition(":") if spec.rsplit(":", 1)[-1].replace(".", "").isdigit() else (spec, "", "1")
-        y = _load(path, rate)
-        parts.append(y / np.abs(y).max() * float(gain))  # shootBeamPlasma peaks at 1.44: clipped as it is
-    s = np.zeros((max(len(y) for y in parts), 2), np.float32)
-    for y in parts:
-        s[:len(y)] += y
-    x = np.concatenate([c / np.abs(c).max() * 0.5, s])
-    x = np.int16(np.clip(x / np.abs(x).max() * 0.8, -1, 1) * 32767)
-    out = out or os.path.join(SOUNDS, "railgun_fire.wav")
-    os.makedirs(os.path.dirname(out), exist_ok=True)
+    out = out or os.path.join(SOUNDS, f"railgun_{name}.wav")
     with wave.open(out, "wb") as w:
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(rate); w.writeframes(x.tobytes())
     return out
@@ -195,7 +176,7 @@ def main(remove=False):
         if not os.path.exists(os.path.join(bakdir, f)):
             shutil.copyfile(path, os.path.join(bakdir, f))
     if remove:
-        for f in ("railgun.dll", "railgun.txt", "railgun_fire.wav"):
+        for f in ("railgun.dll", "railgun.txt", "railgun_fire.wav", "railgun_fire_rear.wav"):
             if os.path.exists(os.path.join(dlls, f)):
                 os.remove(os.path.join(dlls, f))
         for f, path in live.items():
@@ -206,38 +187,25 @@ def main(remove=False):
     work = {f: os.path.join(tmp, f) for f in FILES}
     for f in FILES:
         shutil.copyfile(os.path.join(bakdir, f), work[f])     # always from the originals: running twice is harmless
-    name, _ = level(XT(work["pickups.bin"]), SUPERSHIELD_LEVEL)
-    data = XT(work["pickups.bin"]).patched(name, "BalancingData.Delay", DELAY)
-    open(work["pickups.bin"], "wb").write(data)
-    changed = [n for (n, _, v, _), (_, _, w, _) in zip(XT(os.path.join(bakdir, "pickups.bin")).records(),
-                                                       XT(work["pickups.bin"]).records()) if v != w]
-    assert changed == [name], changed
-    assert abs(level(XT(work["pickups.bin"]), SUPERSHIELD_LEVEL)[1]["BalancingData"]["Delay"] - DELAY) < 1e-4
     hud = recolour(work["ui.bin"])
     rename(work["common.loc"])
     for f, path in live.items():
         shutil.copyfile(work[f], path)
     for f in ("railgun.dll", "railgun.txt"):
         shutil.copyfile(os.path.join(HERE, "natif", "railgun", f), os.path.join(dlls, f))
-    own = os.path.join(SOUNDS, "railgun_fire.wav")    # made by --sound from the user's files, else our synth
-    if os.path.exists(own):
-        shutil.copyfile(own, os.path.join(dlls, "railgun_fire.wav"))
-    else:
-        make_sound(os.path.join(dlls, "railgun_fire.wav"))
-    print("railgun installed in", dlls, "| delay", DELAY, "s | HUD", hud["colour_fill"], "| name", NAME)
+    front, rear = delays()
+    src = {k: os.path.join(SOUNDS, f) for k, f in SOURCES.items()}
+    for wav, remix, delay in (("railgun_fire.wav", FRONT, front), ("railgun_fire_rear.wav", REAR, rear)):
+        if all(map(os.path.exists, src.values())):
+            remix_sound(remix, delay=delay, out=os.path.join(dlls, wav), **src)
+        else:
+            make_sound(os.path.join(dlls, wav), delay)
+    print("railgun installed in", dlls, f"| delay {front} s, rear {rear} s | HUD", hud["colour_fill"], "| name", NAME)
 
 
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["--remix"]:                  # --remix [NAME]: make every variant, NAME becomes the sound
-        src = {k: os.path.join(SOUNDS, f) for k, f in (("charge", "core_assets_sounds_charge_chargeCorvus.ogg"),
-               ("shot", "ShuntFire.wav"), ("lfe", "ShuntFireLFE.wav"),
-               ("plasma", "core_assets_sounds_shoot_shootBeamPlasma.ogg"))}
+    if sys.argv[1:2] == ["--remix"]:                  # --remix: every variant in SOUNDS, to listen and choose
         for k in REMIXES:
-            print(remix_sound(k, **src))
-        if sys.argv[2:3]:
-            shutil.copyfile(os.path.join(SOUNDS, f"railgun_{sys.argv[2]}.wav"), os.path.join(SOUNDS, "railgun_fire.wav"))
-            print("sound:", sys.argv[2])
-    elif sys.argv[1:2] == ["--sound"]:                  # --sound CHARGE LAYER[:gain]...: build the sound, then install
-        print("sound:", mix_sound(*sys.argv[2:]))
+            print(remix_sound(k, delay=delays()[0], **{k2: os.path.join(SOUNDS, f) for k2, f in SOURCES.items()}))
     else:
         main("--remove" in sys.argv)

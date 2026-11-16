@@ -1,4 +1,6 @@
-# railgun.dll settings (read when the game starts). Firing delay: SuperShield Delay in pickups.bin (railgun_install.py).
+# railgun.dll settings (read when the game starts).
+delay 1.0        # s between the button and a forward shot (Shunt 0.5, Bolt 0.1)
+rear_delay 0.5   # backward shot: faster, it is a defensive shot
 speed 600        # m/s; range = speed x Perks.Blindfire.LiveTime (10 s)
 radius 0.8       # hitbox (swept ray radius); the Bolt has 0.2
 height 0.3       # height above the ground

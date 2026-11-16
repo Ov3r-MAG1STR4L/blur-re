@@ -3130,6 +3130,12 @@ voitures traversés, casser un bouclier, traverser mines, Shunts et « orbes »,
   `ShuntFire` transposé (−3 / −6 / +2), saturé (tanh), avec flanger / écho / phaser, `ShuntFireLFE` transposé, crépitement
   plasma, élargi en stéréo (retard Haas). **A_titane** installée ; B_lourd (plus grave, écho long, 4,6 s) et
   C_electrique (plus aigu, phaser, 3,2 s) à comparer.
+  **Choix de l'utilisateur : A = tir avant, B = tir arrière, et tir arrière plus rapide (2026-11-16, installé)** :
+  le relais du SuperShield dans `CreatePickup` lit la structure de création (`esi` : +4 sous-type, **2 = arrière** ;
+  **+0x10 délai**, recopié dans le tampon en 0xBAB598) et y écrit `delay` 1,0 s (avant) ou `rear_delay` 0,5 s (arrière,
+  tir défensif), réglables dans `railgun.txt` ; le sens est retenu pour le son : `railgun_fire.wav` (A, charge 1,0 s)
+  ou `railgun_fire_rear.wav` (B, charge 0,5 s, le souffle inversé borné à la charge), fabriqués par l'installateur
+  à partir de `railgun.txt`. `pickups.bin` redevient **identique à l'original** (le délai ne vient plus des données).
 - **Pas encore fait** : projectile blanc et plus gros (il faudra cloner l'arbre d'effets du Bolt :
   `SpecialFX` @f6aba9fe → `AnimatedMeshSpecialFX` `models/perks/Blind_projectile_01.model`, `LightSpecialFX`
   (couleur), `FlareSpecialFX`, particules ; puis faire pointer `mpBlindfireSFX` +0x570 sur le clone) ; nouvelle icône

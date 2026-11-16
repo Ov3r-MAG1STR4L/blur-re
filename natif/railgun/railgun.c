@@ -15,7 +15,8 @@
       Normal / Reversed). The Bolt constructor 0xBEE5D0 (called at 0xBAAF9F, 0xBAB083 and from the reversed Bolt's
       constructor at 0xBEED50) is wrapped: a flagged one is remembered and gets the railgun's speed (+0x158),
       radius (+0x150), height (+0x154), fall rate (+0x15C), health (+0xB0, C_PickupBase::mHealth).
-      The firing delay is the SuperShield level's BalancingData.Delay (pickups.bin), read by the firing code.
+      The same thunk sets the firing delay (PickupCreationStruct +0x10; sub-type +4, 2 = reversed): `delay` forward,
+      `rear_delay` backward (faster: a defensive shot), and remembers the direction for the sound.
    4. Trigger (vehicle hit, vtable [18] of both Bolt vtables 0xEE1578 / 0xEE15D8 -> 0xBEC540) wrapped for a railgun:
       the Bolt balancing data it shares ([+0x56C] -> DamageInflicted at +0x1C) holds the railgun damage only during
       the call (damage = base x falloff[pierced]), a hit is seen by the autopsy byte +0xF0 (set to the target), then
@@ -25,7 +26,8 @@
       once per WALL_GAP_MS.
    6. Mines, Shunts, Bolts: C_PickupBase::GetDamageToApply 0xBA8CC0 returns `crush` for a railgun (they die), and
       its health is huge (they do not stop it).
-   7. Sound: railgun_fire.wav (made by railgun_install.py: charge during the delay, then the shot) played by
+   7. Sound: railgun_fire.wav forward, railgun_fire_rear.wav backward (railgun_install.py: charge during the
+      delay, then the shot) played by
       Windows when a railgun is created; only the player fires them, so no 3D / game audio is needed.
    Log: railgun.log. Settings: railgun.txt next to the dll ("key value" lines, '#' comments).
 */
@@ -57,7 +59,8 @@ static float speed = 600.f, radius = 0.8f, height = 0.3f, fallrate = 2.f, spawn 
 static float base_damage = 50.f, falloff[3] = {1.5f, 1.0f, 0.5f};
 static int crush = 9999;
 
-static char sound[MAX_PATH];        /* railgun_fire.wav next to the dll: charge (firing delay) + shot, played by Windows */
+static float front_delay = 1.0f, rear_delay = 0.5f;   /* s between the button and the shot */
+static char sound[2][MAX_PATH];     /* railgun_fire.wav / railgun_fire_rear.wav next to the dll: charge + shot */
 static FILE *logfile = NULL;
 static volatile LONG passes = 0, walls = 0, shields = 0, fired = 0;
 
@@ -107,6 +110,7 @@ static void __cdecl after_ctor(char *self)
 {
     Rail *r = rail_of(self);
     if (r) r->p = NULL;                              /* pooled memory: a normal Bolt may reuse a railgun's slot */
+    int rear = next_is_rail == 2;
     if (!next_is_rail) return;
     next_is_rail = 0;
     if (!(r = rail_of(NULL))) { say("more than %d railguns alive: this one is a plain Bolt", MAX_RAILS); return; }
@@ -117,14 +121,28 @@ static void __cdecl after_ctor(char *self)
     *(float *)(self + 0x15C) = fallrate;
     *(float *)(self + 0xB0) = 1e9f;
     InterlockedIncrement(&fired);
-    if (sound[0])                                    /* only the player fires railguns (AIs get Bolts) */
-        PlaySoundA(sound, NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
+    if (sound[rear][0])                              /* only the player fires railguns (AIs get Bolts) */
+        PlaySoundA(sound[rear], NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
+}
+
+/* PickupCreationStruct (esi in CreatePickup): +0 type, +4 sub-type (2 = reversed), +0x10 delay before the shot */
+static void __cdecl super_setup(char *info)
+{
+    int rear = *(int *)(info + 4) == 2;
+    next_is_rail = rear ? 2 : 1;
+    *(float *)(info + 0x10) = rear ? rear_delay : front_delay;
 }
 
 static __declspec(naked) void super_case(void)
 {
     __asm {
-        mov next_is_rail, 1
+        push ecx
+        push edx
+        push esi
+        call super_setup
+        add esp, 4
+        pop edx
+        pop ecx
         mov eax, BOLT_CASE
         jmp eax
     }
@@ -375,14 +393,16 @@ static void load_settings(const char *dir)
             else if (!strcmp(key, "height")) height = v[0];
             else if (!strcmp(key, "fallrate")) fallrate = v[0];
             else if (!strcmp(key, "spawn")) spawn = v[0];
+            else if (!strcmp(key, "delay")) front_delay = v[0];
+            else if (!strcmp(key, "rear_delay")) rear_delay = v[0];
             else if (!strcmp(key, "damage")) base_damage = v[0];
             else if (!strcmp(key, "crush")) crush = (int)v[0];
             else if (!strcmp(key, "falloff") && k == 3) memcpy(falloff, v, sizeof v);
         }
         fclose(f);
     }
-    say("settings: speed %.0f radius %.2f height %.2f fallrate %.2f spawn %.2f damage %.0f x %.2f/%.2f/%.2f crush %d",
-        speed, radius, height, fallrate, spawn, base_damage, falloff[0], falloff[1], falloff[2], crush);
+    say("settings: delay %.2f s, rear %.2f s, speed %.0f radius %.2f height %.2f fallrate %.2f spawn %.2f damage %.0f x %.2f/%.2f/%.2f crush %d",
+        front_delay, rear_delay, speed, radius, height, fallrate, spawn, base_damage, falloff[0], falloff[1], falloff[2], crush);
 }
 
 static DWORD WINAPI reporter(LPVOID unused)
@@ -413,8 +433,10 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         say("railgun v2 loaded");
         srand(GetTickCount());
         load_settings(dir);
-        sprintf_s(sound, sizeof sound, "%srailgun_fire.wav", dir);
-        if (GetFileAttributesA(sound) == INVALID_FILE_ATTRIBUTES) { say("no %s: no sound", sound); sound[0] = 0; }
+        sprintf_s(sound[0], MAX_PATH, "%srailgun_fire.wav", dir);
+        sprintf_s(sound[1], MAX_PATH, "%srailgun_fire_rear.wav", dir);
+        for (int i = 0; i < 2; i++)
+            if (GetFileAttributesA(sound[i]) == INVALID_FILE_ATTRIBUTES) { say("no %s: no sound", sound[i]); sound[i][0] = 0; }
         apply();
         t = CreateThread(NULL, 0, reporter, NULL, 0, NULL);
         if (t) CloseHandle(t);
