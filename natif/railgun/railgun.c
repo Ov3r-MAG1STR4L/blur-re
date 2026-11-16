@@ -37,8 +37,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <share.h>
+#include <math.h>
 #include <mmsystem.h>
 #pragma comment(lib, "winmm.lib")
+#pragma comment(lib, "user32.lib")
 
 #define APP          0x11AA04C
 #define VT_BOLT      0xEE1578
@@ -170,6 +172,85 @@ static int __cdecl is_human(int vehicle)
     return r && vehicle == (int)(rd(r + 0x2EC) & 0xFF);
 }
 
+/* ---- 9. impact sounds: railgun_hit_car.wav / railgun_hit_wall.wav, volume by distance to the player's car ----
+   MCI (mpegvideo: own volume, several at once) driven by its own thread: the game thread only queues requests. */
+static int test_mode = 0;           /* railgun.txt "test 1": every Bolt the player picks up becomes a railgun */
+static float impact_range = 300.f;  /* m: silent beyond, full volume at the player's car */
+static char hit_wav[2][MAX_PATH];   /* 0 car, 1 wall */
+static volatile LONG q_head = 0, q_tail = 0;
+static int q_kind[16], q_vol[16];
+
+static const float *vehicle_pos(int i)   /* race vehicle list (blur_live.py): object +0x130 = position */
+{
+    unsigned r = rd(APP), o;
+    if (r) r = rd(r + 0xC90);
+    if (r) r = rd(r + 0x30);
+    if (r) r = rd(r + 0xA10);
+    if (!r || i < 0 || i >= (int)rd(r + 0x1A0) || i > 20) return NULL;
+    o = rd(r + 0x68 + i * 0x10);
+    return o && rd(o + 0x130 + 8) ? (const float *)(o + 0x130) : NULL;
+}
+
+static int player_index(void)
+{
+    unsigned r = rd(APP);
+    if (r) r = rd(r + 0xC90);
+    if (r) r = rd(r + 0x30);
+    if (r) r = rd(r + 0xA10);
+    return r ? (int)(rd(r + 0x2EC) & 0xFF) : -1;
+}
+
+static void impact(int kind, const float *at)  /* game thread: queue a sound if the player is close enough */
+{
+    const float *me = vehicle_pos(player_index());
+    float dx, dy, dz, dist;
+    LONG h;
+    if (!hit_wav[kind][0] || !me || !at) return;
+    dx = at[0] - me[0]; dy = at[1] - me[1]; dz = at[2] - me[2];
+    dist = sqrtf(dx * dx + dy * dy + dz * dz);
+    if (!(dist < impact_range)) return;          /* also drops NaN */
+    h = q_head;
+    if (h - q_tail >= 16) return;
+    q_kind[h & 15] = kind;
+    q_vol[h & 15] = (int)(1000.f * (1.f - dist / impact_range));
+    q_head = h + 1;
+}
+
+static DWORD WINAPI audio(LPVOID unused)
+{
+    int opened[2] = {0, 0}, next[2] = {0, 0}, i;
+    char cmd[MAX_PATH + 64];
+    MSG msg;
+    (void)unused;
+    for (;;) {
+        while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE)) DispatchMessageA(&msg);
+        while (q_tail != q_head) {
+            int k = q_kind[q_tail & 15], v = q_vol[q_tail & 15];
+            if (!opened[k]) {                       /* 3 voices per sound: close impacts overlap */
+                for (i = 0; i < 3; i++) {
+                    sprintf_s(cmd, sizeof cmd, "open \"%s\" type mpegvideo alias rg%d%d", hit_wav[k], k, i);
+                    mciSendStringA(cmd, NULL, 0, NULL);
+                }
+                opened[k] = 1;
+            }
+            i = next[k]; next[k] = (i + 1) % 3;
+            sprintf_s(cmd, sizeof cmd, "setaudio rg%d%d volume to %d", k, i, v);
+            mciSendStringA(cmd, NULL, 0, NULL);
+            sprintf_s(cmd, sizeof cmd, "play rg%d%d from 0", k, i);
+            mciSendStringA(cmd, NULL, 0, NULL);
+            q_tail++;
+        }
+        Sleep(5);
+    }
+}
+
+static int __cdecl pick_type(int vehicle, int type) /* type given on a pick-up */
+{
+    if (type == 10 && !is_human(vehicle)) return 3;          /* AIs cannot use type 10: a Bolt */
+    if (type == 3 && test_mode && is_human(vehicle)) return 10;
+    return type;
+}
+
 static int __cdecl spawn_roll(void) { return rand() < (int)(spawn * RAND_MAX); }
 
 /* ---- 3. creation ---- */
@@ -279,6 +360,7 @@ static void __fastcall trigger_hook(char *self, void *edx, int idx)
         }
         r->pierced++;
         InterlockedIncrement(&passes);
+        impact(0, vehicle_pos(idx));
     }
 }
 
@@ -300,13 +382,17 @@ static __declspec(naked) void kill_thunk(void)      /* replaces "call KillPickup
 }
 
 /* ---- 5. walls ---- */
-static int __cdecl wall_hit(void *self)
+static int __cdecl wall_hit(void *self, const char *result)
 {
     Rail *r = rail_of(self);
     DWORD now;
     if (!r) return 0;
     now = GetTickCount();
-    if (now - r->last_wall > WALL_GAP_MS) { r->pierced++; InterlockedIncrement(&walls); }
+    if (now - r->last_wall > WALL_GAP_MS) {
+        r->pierced++;
+        InterlockedIncrement(&walls);
+        impact(1, result ? (const float *)(result + 0x10) : NULL);
+    }
     r->last_wall = now;
     return 1;
 }
@@ -315,9 +401,10 @@ static __declspec(naked) void wall_thunk(void)
 {
     __asm {
         push ecx
+        push dword ptr [esp + 8]
         push ecx
         call wall_hit
-        add esp, 4
+        add esp, 8
         pop ecx
         test eax, eax
         jnz nowall
@@ -376,22 +463,16 @@ static __declspec(naked) void spawn_thunk(void)     /* replaces "cmp ebp,0Ah / j
 static __declspec(naked) void pick_thunk(void)      /* replaces "call GetNumShotsAwarded" in the PickedUp handler */
 {
     __asm {
-        cmp dword ptr [esp + 4], 0xA
-        jne go
-        push eax
         push ecx
         push edx
+        push dword ptr [esp + 0xC]
         push dword ptr [ecx + 0x2C]
-        call is_human
-        add esp, 4
-        test eax, eax
+        call pick_type
+        add esp, 8
         pop edx
         pop ecx
-        pop eax
-        jnz go
-        mov dword ptr [esp + 4], 3
-        mov dword ptr [edi + 0x14], 3
-    go:
+        mov [esp + 4], eax
+        mov [edi + 0x14], eax
         mov eax, SHOTS_AWARDED
         jmp eax
     }
@@ -403,7 +484,7 @@ enum { CALL, JMP, PTR, RAW };   /* CALL / JMP: E8 / E9 rel32 + nops; PTR: 4-byte
 
 static Patch patches[] = {
     {0xB5B497, 5, "83fd0a7405", CALL, NULL, "SetRandomPickupType: SuperShield (railgun) allowed"},
-    {0x47CC60, 5, "e88bcdfeff", CALL, NULL, "PickedUp: an AI gets a Bolt instead"},
+    {0x47CC60, 5, "e88bcdfeff", CALL, NULL, "PickedUp: an AI gets a Bolt instead (test mode: player Bolt -> railgun)"},
     {0xBAB600, 4, "00b4ba00", PTR, NULL, "CreatePickup: SuperShield -> railgun Bolt"},
     {0xBAAF9F, 5, "e82c360400", CALL, NULL, "Bolt constructor call 1"},
     {0xBAB083, 5, "e848350400", CALL, NULL, "Bolt constructor call 2"},
@@ -478,6 +559,8 @@ static void load_settings(const char *dir)
             else if (!strcmp(key, "spawn")) spawn = v[0];
             else if (!strcmp(key, "delay")) front_delay = v[0];
             else if (!strcmp(key, "rear_delay")) rear_delay = v[0];
+            else if (!strcmp(key, "test")) test_mode = v[0] != 0;
+            else if (!strcmp(key, "impact_range")) impact_range = v[0];
             else if (!strcmp(key, "damage")) base_damage = v[0];
             else if (!strcmp(key, "crush")) crush = (int)v[0];
             else if (!strcmp(key, "falloff") && k == 3) memcpy(falloff, v, sizeof v);
@@ -518,8 +601,15 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         load_settings(dir);
         sprintf_s(sound[0], MAX_PATH, "%srailgun_fire.wav", dir);
         sprintf_s(sound[1], MAX_PATH, "%srailgun_fire_rear.wav", dir);
-        for (int i = 0; i < 2; i++)
+        sprintf_s(hit_wav[0], MAX_PATH, "%srailgun_hit_car.wav", dir);
+        sprintf_s(hit_wav[1], MAX_PATH, "%srailgun_hit_wall.wav", dir);
+        for (int i = 0; i < 2; i++) {
             if (GetFileAttributesA(sound[i]) == INVALID_FILE_ATTRIBUTES) { say("no %s: no sound", sound[i]); sound[i][0] = 0; }
+            if (GetFileAttributesA(hit_wav[i]) == INVALID_FILE_ATTRIBUTES) { say("no %s: no sound", hit_wav[i]); hit_wav[i][0] = 0; }
+        }
+        if (test_mode) say("TEST MODE: every Bolt the player picks up becomes a railgun");
+        t = CreateThread(NULL, 0, audio, NULL, 0, NULL);
+        if (t) CloseHandle(t);
         apply();
         t = CreateThread(NULL, 0, reporter, NULL, 0, NULL);
         if (t) CloseHandle(t);

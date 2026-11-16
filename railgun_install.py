@@ -31,6 +31,9 @@ NAME_HASH, NAME = 1665195695, "RAILGUN"
 SOUNDS = os.path.join(config.BLUR_EXTRACTED, "mods", "railgun_sounds")
 SOURCES = dict(charge="core_assets_sounds_charge_chargeCorvus.ogg", shot="ShuntFire.wav", lfe="ShuntFireLFE.wav",
                plasma="core_assets_sounds_shoot_shootBeamPlasma.ogg")
+BEAMS = ("core_assets_sounds_beams_beamPlasma.ogg", "core_assets_sounds_beams_beamPlasmaSmall.ogg")  # front, rear
+IMPACTS = {"railgun_hit_car.wav": "core_assets_sounds_explosions_blockExplodeElectricBig.ogg",
+           "railgun_hit_wall.wav": "core_assets_sounds_explosions_blockExplodeElectric.ogg"}
 FILES = {"pickups.bin": ("gamedata", "xt"), "dynamiceffects.bin": ("gamedata", "xt"), "ui.bin": ("gamedata", "xt"),
          "common.loc": ("gamedata", "xt", "loc")}
 
@@ -120,8 +123,9 @@ REMIXES = {
 }
 
 
-def remix_sound(name, charge, shot, lfe, plasma, delay, out=None, rate=44100):
-    """One REMIXES variant, its charge `delay` s long -> out (default SOUNDS/railgun_<name>.wav), stereo 16-bit."""
+def remix_sound(name, charge, shot, lfe, plasma, delay, out=None, beam=None, beam_gain=0.45, rate=44100):
+    """One REMIXES variant, its charge `delay` s long -> out (default SOUNDS/railgun_<name>.wav), stereo 16-bit.
+    beam: the user's sustained plasma beam, from the shot on and dying in ~1.5 s (the shot flying away at 600 m/s)."""
     import numpy as np, wave
     p = REMIXES[name]
     n = int(rate * delay)
@@ -141,8 +145,11 @@ def remix_sound(name, charge, shot, lfe, plasma, delay, out=None, rate=44100):
     c[:int(rate * 0.03)] *= np.linspace(0, 1, int(rate * 0.03))[:, None]
     s = _load(shot, rate, p["shot"])
     s = np.tanh(p["drive"] * s / np.abs(s).max()) / np.tanh(p["drive"])
-    for path, af, g in ((lfe, p["lfe"], p["lfe_gain"]), (plasma, None, p["plasma"])):
-        y = _load(path, rate, af)
+    for path, af, g in ((lfe, p["lfe"], p["lfe_gain"]), (plasma, None, p["plasma"])) + (((beam, "beam", beam_gain),) if beam else ()):
+        y = _load(path, rate, None if af == "beam" else af)
+        if af == "beam":
+            y = y[:int(rate * 1.6)]
+            y *= (np.minimum(1, np.arange(len(y)) / (rate * 0.02)) * np.exp(-np.arange(len(y)) / (rate * 0.45)))[:, None]
         y = y / np.abs(y).max() * g
         if len(y) > len(s):
             s = np.vstack([s, np.zeros((len(y) - len(s), 2), np.float32)])
@@ -153,6 +160,17 @@ def remix_sound(name, charge, shot, lfe, plasma, delay, out=None, rate=44100):
     x = np.concatenate([c * 0.85, s])
     x = np.int16(np.clip(x / np.abs(x).max() * 0.8, -1, 1) * 32767)
     out = out or os.path.join(SOUNDS, f"railgun_{name}.wav")
+    with wave.open(out, "wb") as w:
+        w.setnchannels(2); w.setsampwidth(2); w.setframerate(rate); w.writeframes(x.tobytes())
+    return out
+
+
+def impact_sound(src, out, rate=44100):
+    """the user's impact file as 16-bit stereo WAV, peak 0.8, end faded (the dll sets the volume by distance)"""
+    import numpy as np, wave
+    x = _load(src, rate)
+    x[-int(rate * 0.05):] *= np.linspace(1, 0, int(rate * 0.05))[:, None]
+    x = np.int16(np.clip(x / np.abs(x).max() * 0.8, -1, 1) * 32767)
     with wave.open(out, "wb") as w:
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(rate); w.writeframes(x.tobytes())
     return out
@@ -179,7 +197,7 @@ def main(remove=False):
         if not os.path.exists(os.path.join(bakdir, f)):
             shutil.copyfile(path, os.path.join(bakdir, f))
     if remove:
-        for f in ("railgun.dll", "railgun.txt", "railgun_fire.wav", "railgun_fire_rear.wav"):
+        for f in ("railgun.dll", "railgun.txt", "railgun_fire.wav", "railgun_fire_rear.wav", *IMPACTS):
             if os.path.exists(os.path.join(dlls, f)):
                 os.remove(os.path.join(dlls, f))
         for f, path in live.items():
@@ -200,11 +218,16 @@ def main(remove=False):
         shutil.copyfile(os.path.join(HERE, "natif", "railgun", f), os.path.join(dlls, f))
     front, rear = delays()
     src = {k: os.path.join(SOUNDS, f) for k, f in SOURCES.items()}
-    for wav, remix, delay in (("railgun_fire.wav", FRONT, front), ("railgun_fire_rear.wav", REAR, rear)):
+    for wav, remix, delay, beam in (("railgun_fire.wav", FRONT, front, BEAMS[0]), ("railgun_fire_rear.wav", REAR, rear, BEAMS[1])):
+        beam = os.path.join(SOUNDS, beam)
         if all(map(os.path.exists, src.values())):    # the final sounds also stay in SOUNDS, to listen to
-            shutil.copyfile(remix_sound(remix, delay=delay, out=os.path.join(SOUNDS, wav), **src), os.path.join(dlls, wav))
+            out = remix_sound(remix, delay=delay, out=os.path.join(SOUNDS, wav), beam=beam if os.path.exists(beam) else None, **src)
+            shutil.copyfile(out, os.path.join(dlls, wav))
         else:
             make_sound(os.path.join(dlls, wav), delay)
+    for wav, f in IMPACTS.items():                    # impacts, played by the dll at the hit, quieter far away
+        if os.path.exists(os.path.join(SOUNDS, f)):
+            shutil.copyfile(impact_sound(os.path.join(SOUNDS, f), os.path.join(SOUNDS, wav)), os.path.join(dlls, wav))
     print("railgun installed in", dlls, f"| delay {front} s, rear {rear} s | HUD", hud["colour_fill"], "| name", NAME,
           "| effects level %08x" % fx["level"])
 
