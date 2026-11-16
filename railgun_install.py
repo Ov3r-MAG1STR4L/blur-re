@@ -145,7 +145,8 @@ def remix_sound(name, charge, shot, lfe, plasma, delay, out=None, beam=None, bea
     c[:int(rate * 0.03)] *= np.linspace(0, 1, int(rate * 0.03))[:, None]
     s = _load(shot, rate, p["shot"])
     s = np.tanh(p["drive"] * s / np.abs(s).max()) / np.tanh(p["drive"])
-    for path, af, g in ((lfe, p["lfe"], p["lfe_gain"]), (plasma, None, p["plasma"])) + (((beam, "beam", beam_gain),) if beam else ()):
+    layers = ((lfe, p["lfe"], p["lfe_gain"]),) + (((plasma, None, p["plasma"]),) if os.path.exists(plasma) else ())         + (((beam, "beam", beam_gain),) if beam else ())
+    for path, af, g in layers:                       # plasma crack and beam are optional
         y = _load(path, rate, None if af == "beam" else af)
         if af == "beam":
             y = y[:int(rate * 1.6)]
@@ -220,7 +221,7 @@ def main(remove=False):
     src = {k: os.path.join(SOUNDS, f) for k, f in SOURCES.items()}
     for wav, remix, delay, beam in (("railgun_fire.wav", FRONT, front, BEAMS[0]), ("railgun_fire_rear.wav", REAR, rear, BEAMS[1])):
         beam = os.path.join(SOUNDS, beam)
-        if all(map(os.path.exists, src.values())):    # the final sounds also stay in SOUNDS, to listen to
+        if all(os.path.exists(v) for k, v in src.items() if k != "plasma"):   # final sounds also stay in SOUNDS
             out = remix_sound(remix, delay=delay, out=os.path.join(SOUNDS, wav), beam=beam if os.path.exists(beam) else None, **src)
             shutil.copyfile(out, os.path.join(dlls, wav))
         else:
