@@ -25,6 +25,22 @@ def cover(path, tmp):
     return Image.open(out).convert("RGB") if r.returncode == 0 and os.path.exists(out) else None
 
 
+TARGET = 0.30          # mean luminance of a cell after levelling (probe 5: the HUD bloom burns bright covers)
+KNEE = 0.75            # highlights above it are compressed (white areas stay readable)
+
+
+def level(img):
+    """Per-cover brightness (player, 2026-11-16: one fixed brightness cannot suit every cover): scale to TARGET mean
+    luminance (never brighten more than x1.3), then a soft knee on the highlights."""
+    import numpy as np
+    a = np.asarray(img, dtype=np.float32) / 255.0
+    lum = (a @ np.array([0.2126, 0.7152, 0.0722], np.float32)).mean()
+    a *= min(1.3, TARGET / max(lum, 1e-3))
+    hi = a > KNEE
+    a[hi] = KNEE + (1 - KNEE) * (1 - np.exp(-(a[hi] - KNEE) / (1 - KNEE)))
+    return Image.fromarray((np.clip(a, 0, 1) * 255 + 0.5).astype("uint8"))
+
+
 def atlas(files):
     img = Image.new("RGB", (SIZE, SIZE), (40, 40, 40))
     with tempfile.TemporaryDirectory() as tmp:
@@ -34,7 +50,7 @@ def atlas(files):
             if c is None:
                 c = Image.new("RGB", (CELL, CELL), (60 + 12 * k, 60, 120))
                 ImageDraw.Draw(c).text((CELL // 2 - 8, CELL // 2 - 8), str(k), fill=(255, 255, 255))
-            img.paste(c, ((k % 4) * CELL, (k // 4) * CELL))
+            img.paste(level(c), ((k % 4) * CELL, (k // 4) * CELL))
     return img
 
 

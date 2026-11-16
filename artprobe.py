@@ -28,7 +28,7 @@ end
 VARIANTS[#VARIANTS + 1] = { "light_paint_02 full", { filename = "light_paint_02", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } }
 local TEMPLATES = { "Position_Team_Icon", "Pos_BackingBottom", "Fans_Icon", "gfx_FanBlobSingleC" }   -- 7 = next
 local template = 1
-local GREYS, grey = { 255, 200, 170, 140, 115, 90 }, 1   -- 7 = next brightness (probe 4: covers far too bright, HUD bloom)
+local GREYS, grey = { 200, 255, 170, 140, 115, 90 }, 1   -- 7 = next brightness (probe 4: covers far too bright, HUD bloom)
 local ready, art, variant, t0, clock, last_key, n_log = false, nil, 1, 0, 0, "", 0
 local wrapped = false
 
