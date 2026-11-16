@@ -2676,6 +2676,9 @@ créateur d'AMAX. Code en Rust (DLL 32 bits chargées par le `d3d9.dll` d'AMAX d
   `code/mercury/library/ui/source/ui/Game/Profiles/GamerPictureManager_Pc.cpp` / `_Ps3.cpp`. Le moteur s'appelle
   **Mercury** (`code/mercury`, `code/mercurygame`), le jeu `code/amax` ; outils de l'époque dans `code/tools`
   (`LuaDebugger`, `ResourceBundler`, `AnalyseStaticSymbols`…).
+  **Copie locale de lecture** (2026-11-16) : `C:\Users\sanqu\Jeux_WII\blur_source\BlurRebuilt` (clone superficiel, commit
+  `87aa6861`, 20 206 fichiers, 492 Mo), hors du dépôt blur-re : rien n'en est copié ici, rien n'y est compilé ni lancé.
+  `C_GameWorld::CalcNumberOfSteps` : `GameWorld.cpp` ligne 2488.
 - **Build de certification PS3 avec symboles** (fichier DWARF d'environ 200 Mo, fuite de 2023) : noms des fonctions et
   des classes (`Advertising::AdvertManager::EnterZone_PostLoad`, `Game::C_GameWorld::Update`,
   `Game::Actors::FakeVehicleSpeedState::Update`, `AIAmax::AmaxAIR::Update`…). Les structures y sont souvent vides. Aib0t
