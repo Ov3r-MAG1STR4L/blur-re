@@ -25,6 +25,7 @@ DELAY = 1.5
 PINK = b"!255 153 153 255"
 TITANIUM = b"!232 236 242 255"          # same length: the string zone keeps its layout
 NAME_HASH, NAME = 1665195695, "RAILGUN"
+SOUNDS = os.path.join(config.BLUR_EXTRACTED, "mods", "railgun_sounds")
 FILES = {"pickups.bin": ("gamedata", "xt"), "ui.bin": ("gamedata", "xt"), "common.loc": ("gamedata", "xt", "loc")}
 
 
@@ -78,6 +79,42 @@ def make_sound(path, delay=DELAY, rate=44100):
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate); w.writeframes(x.tobytes())
 
 
+def _load(path, rate):
+    import numpy as np
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-f", "f32le", "-ac", "2", "-ar", str(rate), "-"],
+                         capture_output=True, check=True).stdout
+    return np.frombuffer(raw, np.float32).reshape(-1, 2).copy()
+
+
+def mix_sound(charge, shot, impact=None, out=None, delay=DELAY, rate=44100):
+    """Railgun sound from the user's files: the end of `charge` fills the firing delay (its quiet start is cut),
+    `shot` starts exactly at the delay, `impact` (optional) = the loudest moment of another file, layered under the
+    shot for weight. Stereo 16-bit WAV in SOUNDS (outside the repo: third-party sounds)."""
+    import numpy as np, wave
+    n = int(rate * delay)
+    c = _load(charge, rate)[-n:]
+    c[:int(rate * 0.05)] *= np.linspace(0, 1, int(rate * 0.05))[:, None]
+    s = _load(shot, rate)
+    s /= np.abs(s).max()                             # shootBeamPlasma peaks at 1.44: clipped as it is
+    if impact:
+        i = _load(impact, rate)
+        env = np.convolve(np.abs(i).mean(1), np.ones(441) / 441, "same")
+        k = max(0, int(np.argmax(np.diff(env, prepend=0) * (env > 0.5 * env.max()))) - int(rate * 0.01))
+        i = i[k:k + int(rate * 1.2)]
+        i *= np.linspace(1, 0, len(i))[:, None] ** 2
+        layer = np.zeros((max(len(s), len(i)), 2), np.float32)
+        layer[:len(s)] += s
+        layer[:len(i)] += 0.5 * i / np.abs(i).max()
+        s = layer
+    x = np.concatenate([c / np.abs(c).max() * 0.6, s])
+    x = np.int16(np.clip(x / np.abs(x).max() * 0.8, -1, 1) * 32767)
+    out = out or os.path.join(SOUNDS, "railgun_fire.wav")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with wave.open(out, "wb") as w:
+        w.setnchannels(2); w.setsampwidth(2); w.setframerate(rate); w.writeframes(x.tobytes())
+    return out
+
+
 def rename(path):
     d = blurloc.parse_raw(open(path, "rb").read())
     for code, texts in d["langs"]:
@@ -111,7 +148,8 @@ def main(remove=False):
     for f in FILES:
         shutil.copyfile(os.path.join(bakdir, f), work[f])     # always from the originals: running twice is harmless
     name, _ = level(XT(work["pickups.bin"]), SUPERSHIELD_LEVEL)
-    open(work["pickups.bin"], "wb").write(XT(work["pickups.bin"]).patched(name, "BalancingData.Delay", DELAY))
+    data = XT(work["pickups.bin"]).patched(name, "BalancingData.Delay", DELAY)
+    open(work["pickups.bin"], "wb").write(data)
     changed = [n for (n, _, v, _), (_, _, w, _) in zip(XT(os.path.join(bakdir, "pickups.bin")).records(),
                                                        XT(work["pickups.bin"]).records()) if v != w]
     assert changed == [name], changed
@@ -122,9 +160,16 @@ def main(remove=False):
         shutil.copyfile(work[f], path)
     for f in ("railgun.dll", "railgun.txt"):
         shutil.copyfile(os.path.join(HERE, "natif", "railgun", f), os.path.join(dlls, f))
-    make_sound(os.path.join(dlls, "railgun_fire.wav"))
+    own = os.path.join(SOUNDS, "railgun_fire.wav")    # made by --sound from the user's files, else our synth
+    if os.path.exists(own):
+        shutil.copyfile(own, os.path.join(dlls, "railgun_fire.wav"))
+    else:
+        make_sound(os.path.join(dlls, "railgun_fire.wav"))
     print("railgun installed in", dlls, "| delay", DELAY, "s | HUD", hud["colour_fill"], "| name", NAME)
 
 
 if __name__ == "__main__":
-    main("--remove" in sys.argv)
+    if sys.argv[1:2] == ["--sound"]:                  # --sound CHARGE SHOT [IMPACT]: build the sound, then install
+        print("sound:", mix_sound(*sys.argv[2:5]))
+    else:
+        main("--remove" in sys.argv)

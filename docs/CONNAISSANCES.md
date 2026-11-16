@@ -3114,6 +3114,12 @@ voitures traversés, casser un bouclier, traverser mines, Shunts et « orbes »,
 - **Son** : `railgun_fire.wav` fabriqué par l'installateur (charge qui monte pendant 1,5 s, puis claquement, coup
   sourd et résonance métallique), joué par la DLL (`PlaySound`) à la création du Railgun : pas de banque audio à
   modifier, seul le joueur en tire. Volume indépendant du réglage du jeu.
+  **Son de l'utilisateur (2026-11-16, installé)** : `railgun_install.py --sound CHARGE TIR [IMPACT]` assemble
+  `chargeCorvus.ogg` (1,67 s, début muet coupé → 1,5 s pile), `shootBeamPlasma.ogg` (crête 1,44 ramenée à 1) posé
+  à 1,5 s, et le choc de son `blur_raygun_heavy_beam_final.wav` (repéré à 0,9 s) mêlé à −6 dB : 2,7 s, tir à 1,50 s.
+  Sources et résultat dans `blur_extracted\modsailgun_sounds` (hors du dépôt : sons tiers, les `core_assets`
+  viennent sans doute de Mindustry, GPL 3) ; l'installateur prend ce fichier s'il existe, sinon le son synthétisé.
+  **v2 installée dans Blur_test** (Bolt d'origine, SuperShield Delay 1,5).
 - **Pas encore fait** : projectile blanc et plus gros (il faudra cloner l'arbre d'effets du Bolt :
   `SpecialFX` @f6aba9fe → `AnimatedMeshSpecialFX` `models/perks/Blind_projectile_01.model`, `LightSpecialFX`
   (couleur), `FlareSpecialFX`, particules ; puis faire pointer `mpBlindfireSFX` +0x570 sur le clone) ; nouvelle icône
