@@ -3,7 +3,7 @@
 Installs the plugin artprobe: in a race, a square (clone of gfx_FanBlobSingleC, the fan-message backing) above the
 music banner, opening from its centre and closing on itself like fan_message (scale.x keys), in a 4 s loop. Its
 texture is set with UIButtons.ChangeTexture({filename, pos={u,v}, size={u,v}}, 0.0, id) (form used by HUD.luac);
-the 8 key (CMN_8) goes to the next texture variant, the 7 key to the next gadget template
+the 8 key (CMN_8) goes to the next texture variant, the 7 key to the next brightness (colour grey level)
 (probe 1: gfx_FanBlobSingleC lives in another unit space: 6 x 6 = a dot, top-left). Log in memory: read_luamarks.py APROBE.
 usage: artprobe.py [--undo]   (Blur closed)"""
 import os, shutil, sys
@@ -28,6 +28,7 @@ end
 VARIANTS[#VARIANTS + 1] = { "light_paint_02 full", { filename = "light_paint_02", pos = { u = 0.0, v = 0.0 }, size = { u = 1.0, v = 1.0 } } }
 local TEMPLATES = { "Position_Team_Icon", "Pos_BackingBottom", "Fans_Icon", "gfx_FanBlobSingleC" }   -- 7 = next
 local template = 1
+local GREYS, grey = { 255, 200, 170, 140, 115, 90 }, 1   -- 7 = next brightness (probe 4: covers far too bright, HUD bloom)
 local ready, art, variant, t0, clock, last_key, n_log = false, nil, 1, 0, 0, "", 0
 local wrapped = false
 
@@ -57,7 +58,8 @@ local function build()
 	art = { id = id, z = z or 0.0 }
 	UIButtons.ChangeSize(id, ART_W, ART_H)
 	UIButtons.ChangePosition(id, ART_X, ART_Y, art.z)
-	pcall(UIButtons.ChangeColour, id, "!255 255 255 255")
+	local g = GREYS[grey]
+	pcall(UIButtons.ChangeColour, id, "!255 " .. g .. " " .. g .. " " .. g)
 	UIButtons.ChangeAlpha(id, 1.0)
 	pcall(UIButtons.SetAlphaIntensity, id, 1.0, 1.0)
 	UIButtons.SetActive(id, true)
@@ -81,9 +83,10 @@ local function tick()
 		last_key = key
 		if key == "CMN_8" then variant = variant % #VARIANTS + 1 apply() end
 		if key == "CMN_7" then
-			pcall(UIButtons.SetActive, art.id, false)
-			template = template % #TEMPLATES + 1
-			art = nil
+			grey = grey % #GREYS + 1
+			local g = GREYS[grey]
+			pcall(UIButtons.ChangeColour, art.id, "!255 " .. g .. " " .. g .. " " .. g)
+			log("brightness " .. g)
 			return
 		end
 		-- live placement (player wants to tune it finely): 1 / 2 = x, 3 / 4 = y, 5 / 6 = size; 0.1 unit ~ 2.6 px at 1080p
