@@ -372,6 +372,16 @@ détruits, HUD blanc titane, nom RAILGUN, son de charge et de tir. Validation v2
 au HUD ; tir 1,5 s après l'appui ; journal « railgun(s) fired / vehicle hit(s) / wall(s) / shield(s) downed » ;
 moins de dégâts sur la 3e voiture traversée ; les IA ne gardent jamais de Railgun.
 
+**À faire (demandes de l'utilisateur, 2026-11-17)** :
+- **Visuel** : charge = mélange de la charge du Shunt (`ShuntBuild2.model`, effet d'écran, secousse caméra) et des
+  anneaux du Nitro arrière (`NitroReverseBlastRings.model`) ; projectile = spirale comme l'orbe mais plus grosse,
+  blanc titane, avec une traînée bien visible qui s'efface lentement en particules le long de la trajectoire ;
+  impact = perte de contrôle comme l'orbe (déjà le cas : le Railgun est un projectile Bolt), effet d'impact aussi
+  sur les murs et objets traversés ; nouveau symbole (HUD case 104, bonus sur la piste `ShieldSuperPickup.model`).
+- **Options LAN** (écran « Power-up Options » de la partie perso : Nitro, Barge, Shunt, Bolt, Repair, Shield, Mine,
+  Shock) : ajouter une ligne « Railgun » On / Off qui pilote son apparition.
+- **Son d'impact** sur voitures et objets : l'utilisateur cherche un son (un seul pour les deux, ou deux).
+
 **Suite possible** : visuel propre (SpecialFX du niveau Normal) ; Railgun rare (une partie des Bolts seulement :
 crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre joueurs).
 

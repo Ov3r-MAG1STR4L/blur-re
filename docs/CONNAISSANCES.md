@@ -3156,3 +3156,22 @@ voitures traversés, casser un bouclier, traverser mines, Shunts et « orbes »,
   gravité = |g| selon un mélange vertical → −normale, t = (mph − 40) / (70 − 40) (seuils Blur 2), même direction
   pour la compensation au sol. Vérifié hors jeu sur le tour roulé : normale 0,17-0,65 sur le mur du virage
   sud-ouest, 1,0 ailleurs, aucune normale négative.
+
+### Effets visuels réutilisables pour le Railgun (2026-11-17, inventaire de `pickups.bin` et `dynamiceffects.bin`, Confirmé)
+- Chaque niveau de bonus a ses effets (`SpecialFX` → composants `AnimatedMeshSpecialFX` = modèle animé,
+  `LightSpecialFX` = lumière colorée, `FlareSpecialFX`, `ParticleSpecialFX` → `Particle_Event` de
+  `dynamiceffects.bin`, `PostSpecialFX` = effet d'écran, `CameraSpecialFX` = secousse).
+- **Orbe (Bolt)** : charge `Blind_build_01` ; projectile @f6aba9fe = `Blind_projectile_01.model` (la spirale) + lumière
+  violette + halo `Barge_Flare` + **traînée `RearLightTrail`** (@c6dd8255 : 1 particule tous les 0,25 m, repère monde,
+  vie **0,15 s**, taille 0,5, violet a 0,02, effet `LightTrail` : sprite `bigflare` additif, taille et alpha qui
+  tombent à 0) ; impact = `Blindfire_hit_01` + `Blindfire_Pow_01` + étincelles `Perks_Impact_Sparks`,
+  `bolted_particles_01`, éclats `Perks_Black_Bits_Small` + lumière rose.
+- **Shunt** : charge @3b3b8c89 = `ShuntBuild2.model` + `PostSpecialFX` + secousse caméra + lumière rouge ; projectile =
+  `ShuntProjectile1` + particules `Shield_Particles` + halo `Red_Flare` ; impact = `ShuntPow1/2`, `ShuntHit1`,
+  `ShuntedBall1`, `ShuntRing1` (anneau) + `shunted_particles_02`.
+- **Nitro arrière** : tir = `NitroReverseBlastRings.model` (anneaux de souffle). Nitro DoubleTap : `Rift2.model`.
+- **SuperShield** (notre Railgun) : bonus sur la piste = `ShieldSuperPickup.model` + lumière gris bleuté ; impact
+  véhicule = `BatteringRamKhan.model` + `Perks_Impact_Sparks`.
+- Autres pistes : `Tracer_Effect` « Basic » (forme `BeamCapped`, texture `Tracer`, 0,1 × 10 m : un rayon, sans doute
+  la visée laser du Bolt, `mLasersight` activé quand le Bolt est sélectionné) ; fumées blanches `tyre_smoke`,
+  `Mine_Smoke`, `engine_smoke` (traînée qui s'efface lentement).
