@@ -116,7 +116,8 @@ class Bpr:
         for name, template_name, raw in additions:
             if name in used:
                 raise ValueError(f"duplicate BPR entry name: {name}")
-            template, _ = self.raw(template_name)
+            # a record (list) gives format / mips / size directly (album-art atlas: no 1024x1024 template exists)
+            template = list(template_name) if isinstance(template_name, (list, tuple)) else self.raw(template_name)[0]
             if len(raw) != template[4]:
                 raise ValueError(f"image size mismatch for {name}: {len(raw)} != {template[4]}")
             rec = list(template)
