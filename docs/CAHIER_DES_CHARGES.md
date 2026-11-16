@@ -352,6 +352,23 @@ Ordre décidé par l'utilisateur :
    Collecte : uniquement en LAN / `Blur_test` ou sur ses propres courses, jamais via lecture mémoire pendant les
    parties en ligne AMAX (risque anti-triche, données d'autres joueurs).
 
+## Projet M : bonus « Railgun » (idée de l'utilisateur, 2026-11-16) — prototype installé, à essayer en jeu
+
+**Objectif** : un tir unique, très rapide, longue portée, qui traverse murs et véhicules (touche toutes les voitures
+sur sa ligne). Détails techniques : CONNAISSANCES, « Bonus Railgun ».
+
+**Faisabilité** : un 12e type de bonus demande de réécrire le jeu (énumération `E_PICKUP_TYPE` partout). Prototype :
+**le Bolt devient le Railgun** dans Blur_test (`railgun_install.py`, `natif/railgun`), réversible (`--remove`).
+
+**Validation en jeu (copie)** :
+1. un Bolt ramassé = **1** tir ; `railgun.log` dit « patched » 6 fois ;
+2. tir sur deux voitures alignées : les deux sont touchées (compteur « vehicle hit(s) passed through ») ;
+3. tir contre un mur / dans un virage : le tir continue derrière (compteur « wall hit(s) ignored ») ;
+4. pas de plantage sur 3 courses avec IA ; noter ce qui gêne (tir qui meurt derrière les bâtiments, IA trop fortes).
+
+**Suite possible** : visuel propre (SpecialFX du niveau Normal) ; Railgun rare (une partie des Bolts seulement :
+crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre joueurs).
+
 ## Journal
 
 | Date | Avancée |
@@ -525,3 +542,4 @@ Ordre décidé par l'utilisateur :
 | 2026-11-16 | Marina lot 1 installé dans Blur_test, à essayer en jeu : `b2lit` (textures tuilées nettes, lumière Blur 2 en couleurs de sommet, codage gamma 2), 193 modèles dont 51 acteurs ajoutés au-delà des 144 de Map Builder (`extra_actors`, `insert_uid`) ; limite du jeu = 10 000 acteurs (`MAX_NUM_ACTORS`), pas 512 |
 | 2026-11-16 | Marina lot 1 essayé en jeu : fluide, décor complet (acteurs au-delà de 144 confirmés), éclairage visible ; à corriger : reflets, transparences, décor manquant par endroits, bonus (centre de route, types en rotation), téléportation en boucle = passages sur murs du virage sud-ouest (gravité collée d'Unity absente de Blur 1) |
 | 2026-11-16 | Gravité collée aux murs : DLL `natif/b2gravity` (crochet à 0x453BEF dans `C_VehicleActor::Update`, gravité propre à chaque voiture d'après le code source), 23 zones tirées des conduites Unity, seuil « retournée » 0,45 → 0 dans Blur_test ; installée, à essayer en jeu |
+| 2026-11-16 | Railgun (Projet M) : un 12e bonus est infaisable (énumération `E_PICKUP_TYPE` partout, `GetPickupType` = premier du type) ; prototype = le Bolt modifié : DLL `natif/railgun` (1 tir : `GetNumShotsAwarded` 0x4699F0 + 3 copies ; traverse les voitures : `KillPickup` sauté en 0xBECB2A ; traverse les murs : test de mur en 0xBE654B) + `pickups.bin` #796 (600 m/s, rayon 0,4, 150 dégâts) ; installé dans Blur_test, à essayer en jeu |

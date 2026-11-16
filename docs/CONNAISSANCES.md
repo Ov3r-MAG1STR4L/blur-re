@@ -828,6 +828,8 @@ Trois couches :
 | 0x85DE70 / 0x85E530 | `AdvertManager::EnterZone_PostLoad` / initialisation (source AMAX, voir « Sources AMAX ») |
 | 0x87DE10 / 0x723CF0 | données de pubs du niveau / position d'une pub par nom (source AMAX) |
 | 0x41ADC0 / 0x488B20 | `C_GameWorld::UpdatePhysics` / `FakeVehicleSpeedState::Update` (source AMAX) |
+| 0xBEC540 / 0xBE6200 / 0xBA6AC0 | Bolt `Trigger` / `C_PickupProjectile::CheckCollisions` / `KillPickup` (voir « Railgun ») |
+| 0x4699F0 | `GetNumShotsAwarded` (3 tirs du Bolt) |
 | 0xD5E170 / 0xB86D20 | `GetPrimaryProfilePicture` (vide sur PC) / `RequestRemotePicture` (source AMAX) |
 
 Globales : `0x11AA04C` (jeu ; instance de l'application selon AMAX), `0xD44EE4` (→ +0x14 pilote D3D9), `0xDA89C8` (avatars), `0xDB4530` (joueurs du salon), `0x1134DC0` (→ profils IA), `0x1134DCC` (pilotes),
@@ -2990,3 +2992,54 @@ But : rouler sur les passages en paroi de Marina (virage sud-ouest jusqu'à 77 m
   (`blurmodel_write.build(material=)`) : R / B de la `_MaterialTex` Blur 2 pour les matériaux à `_EnvironmentCube`
   (`REFLECT_DEFAULT` sans carte), G = 0 ; éclairage sans lightmap symétrique (|N·L|). `build()` par défaut inchangé
   octet pour octet (vérifié contre la version commitée).
+
+## Bonus « Railgun » : le Bolt qui traverse tout (`natif/railgun`, 2026-11-16, installé dans Blur_test, à essayer en jeu)
+Idée de l'utilisateur : un tir de précision unique, très rapide, longue portée, qui traverse murs et véhicules.
+- **Un vrai 12e bonus est infaisable par les données (Fort, code source)** : partout le bonus est identifié par son
+  énumération `E_PICKUP_TYPE` (réserve de la voiture, HUD, réseau, IA, sons, `GetNumShotsAwarded`…), et
+  `RaceLogicCore::GetPickupType(enum)` rend le **premier** `PickupType` de cette énumération. Un `PickupType` cloné
+  du Bolt (`Type` 3) serait donc ignoré (ou masquerait le Bolt). Ajouter une valeur à l'énumération = réécrire le
+  jeu. Les sous-types libres du Bolt (`DoubleTap`, `ReversedDoubleTap`, `Mini`) ne sont déclenchés par rien
+  (DoubleTap coupé, voir Projet D). **Prototype : le Bolt devient le Railgun** quand la DLL est chargée.
+- **Données du Bolt (Confirmé, `pickups.bin`)** : `PickupType` #287 (`Type` Blindfire, Normal `@dd8a965a`,
+  Reversed `@beb0b7ff`, Modified `@341a95f3`, ReversedModified `@9c82bee7`). `BlindfireBalancingData` du niveau
+  Normal (#796) : Delay 0,1, Health 50, Radius 0,2, FallRate 1, HeightFromGround 0,3, **Speed 300 m/s**,
+  DamageInflicted 50, WarningDistance 100, WarningDot 0,99. Le projectile ne lit **que le niveau Normal**
+  (constructeur `C_PickupBlindfireProjectile` : `GetPickupType(BLINDFIRE)->mNormal->mBalancingData`), les dégâts
+  aussi (`VLC_Damage::GetDamageInflicted`) ; le Reversed (Speed 50) ne sert qu'au `Delay`. Ni `rldatabase.bin` ni
+  `amax.bin` n'ont de réglage du Bolt. Durée de vie : variable de réglage `Perks.Blindfire.LiveTime` = 10 s
+  (objet `0x123C918`, valeur `0x123C93C`, lue dans `Update` `0xBE9F50`). **3 tirs codés en dur** (`GetNumShotsAwarded`).
+- **Code (Confirmé, désassemblage capstone de notre `Blur.exe`, lecture seule ; noms d'après la fuite)** :
+
+| Adresse | Rôle |
+|---|---|
+| `0xEE1578` / `0xEE15D8` | vtables `C_PickupBlindfireProjectile` / `…Reverse` (24 entrées, ne diffèrent qu'en [2] `PostDelayInitialise`) ; constructeur `0xBEE5D0` (écrit la vtable en `0xBEE5FA`, `push 3` = BLINDFIRE) |
+| `0xBE9F50` | `C_PickupBlindfireProjectile::Update` (vtable [6]) |
+| `0xBEC540` | `::Trigger(idx)` (vtable [18]) : `RegisterHit` (vtable [8]), `CheckLegalHit` `0xBABDA0`, `NinjaKill` ([14]), puis **`KillPickup(-1, HIT_VEHICLE)` en `0xBECB2A`** |
+| `0xBA6AC0` | `C_PickupBase::KillPickup(byVehicle, cause)` (thiscall, `ret 8` ; `mKillPickup` = +0x24, cause = +0xEC) |
+| `0xBE6200` | `C_PickupProjectile::CheckCollisions(oldPos, rayIdx)` (appelée par `UpdateCollisionBody` en `0xBE805D` / `0xBE806B`) |
+| `0xBE4D10` | `CheckIsValidWallCollision` (abs(n·haut) < `Perks.Projectile.UpAngle` 0,5, valeur `0x123B8DC`), appelée en `0xBE6511` (rayon épais) et **`0xBE654B`** (rayon fin : décide l'explosion) |
+| `0xBE4D90` | `CheckRebound` ; `CollideWithEnvironment` = vtable [20] (`0xBE2230`, `call [edx+0x50]` en `0xBE65AA`) |
+| `0x4699F0` | `C_VehicleComponent_Pickups::GetNumShotsAwarded` (Bolt 3, sinon 1, + capacité de boss `AdditionalBlindfireShots` = 25) ; copies inlinées en `0x470858`, `0x47909A`, `0x47BE36` (« tirs = type » quand type = 3) |
+
+- **Comportement d'origine (code source)** : le projectile suit le sol (rayon de 100 m vers le bas depuis +2 m,
+  `AlignProjectileToGround`, descente limitée par `FallRate`) ; il meurt contre un **mur** (surface à abs(n.y) < 0,5
+  vue par le rayon épais **et** par le rayon fin), sur un **véhicule** (`Trigger`), hors du monde (aucun sol), de
+  vieillesse (10 s) ou contre un autre bonus plus fort que sa `Health`. Le « déjà touché » existe déjà par véhicule
+  (`CheckCanHit` : `mVehiclesHitMajor`), donc un tir qui continue ne touche chaque voiture qu'une fois.
+- **DLL `railgun.dll`** (`natif/railgun/railgun.c`, `build.bat` VS 2026 x86 `/MT`, chargée par le `d3d9.dll`
+  d'AMAX depuis `amax\dlls`) : vérifie les octets d'origine des 6 sites (sinon ne patche **rien**), puis
+  (1) `GetNumShotsAwarded` → `mov eax,1 ; ret 4` et les 3 copies inlinées → `nop` (le 1 posé juste avant reste) ;
+  (2) `0xBECB2A` → appel d'un relais qui saute `KillPickup` si la vtable est celle du Bolt (il continue après
+  une voiture) ; (3) `0xBE654B` → relais qui répond « pas un mur » pour le Bolt (pas d'explosion, le rayon de sol
+  le repose derrière le mur). Autres projectiles intacts. Journal `railgun.log` (patchs, puis compteurs « voitures
+  traversées » / « murs ignorés » toutes les 2 s).
+- **Réglages (`railgun_install.py`, Blur_test seulement, original dans `blur_extracted\mods\railgun_backup`,
+  `--remove` remet le Bolt)** : Speed 600 m/s (portée 6 km en 10 s), Radius 0,4, FallRate 2, DamageInflicted 150
+  (les 3 tirs en un), Health 9999 (mines et projectiles ne l'arrêtent plus). Relecture : seul l'enregistrement #796 change.
+- **Visuel** : icône, boule et impacts du Bolt réutilisés tels quels (même type). Un visuel propre passerait par
+  les `SpecialFX` du niveau Normal (`RLBlindfireSpecialFX` : `ProjectileSpecialFX`, `HitEnvironmentSpecialFX`…).
+- **Non vérifié / risques** : tout en jeu (voir Projet M) ; derrière un bâtiment le rayon de sol peut se poser sur
+  un toit ou ne rien trouver (mort « hors du monde ») ; une seconde voiture dans le même pas de 10 m que la
+  première n'est vue qu'au pas suivant (le rayon s'arrête au premier obstacle) ; les IA tirent aussi des Railguns ;
+  le HUD affiche peut-être encore 3 crans ; la capacité de boss « tirs du Bolt en plus » ne donne plus rien.
