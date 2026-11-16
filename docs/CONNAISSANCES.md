@@ -2827,3 +2827,46 @@ créateur d'AMAX. Code en Rust (DLL 32 bits chargées par le `d3d9.dll` d'AMAX d
   `amax-ads` n'y figure pas. Mises à jour via `amax-updater` (`cs.amax-emu.com`).
 - Autres articles d'Aib0t (FESL d'EA, Medius de Sony, Call of Duty Online, NFS Carbon…) : sans rapport direct avec
   Blur. Le guide « reversing network related stuff 101 » peut servir de méthode.
+
+## Shaders d'objets de Blur 1 lus dans le code source (2026-11-16, lecture seule, Fort)
+Sources : `BlurRebuilt\code\amax\game\Shaders` (`Default.fx`, `shaders.jam`, `Common\Defines.h`, `Material.h`,
+`Lighting.h`, `Lighting\DefaultLighting.h`, `Pixel.h`) et `mercury\library\graphics\shader\include\shader`
+(`SphericalHarmonics.h`, `Hdr.h`). Sert à vérifier nos conclusions de Marina (G1 à G7, essais de couleurs de sommet).
+- **Suffixes** (`shaders.jam`) : `_NB` sans relief, **`_NL` sans lightmap** (et non « sans éclairage de scène »,
+  ancienne lecture corrigée), `_NM` sans carte matériau, `_NV` sans couleur de sommet, `_NS` sans spéculaire, `_LN`
+  éclairage de nuit. `Default.fx` est compilé avec toutes les combinaisons de NB, NL, NM, NV, NS. Sur PC chaque
+  shader existe aussi en variante `_LN` ; `DAY_LIGHTING` n'est pas défini pour `Default.fx` → éclairage
+  **`DefaultLighting.h`**, avec `SHNODE_IN_VERTEX_CONSTANT` (pas de `ENABLE_SHNODE_IN_PIXEL_SHADER`).
+- **Couleur de sommet (`default_NB_NL`)** : éclairage statique = **couleur.rgb²** (couleur D3D 0..1), puis
+  × 0,5 × (soleil + ciel), qui valent 1 sans lightmap → **diffus = (couleur² + lumières dynamiques) × albédo**.
+  Albédo lu en sRGB (`SRGB_TEXTURE`), puis brouillard (`EvaluateDepthFog`), puis × `g_fExposure` et gamma
+  (`Hdr.h`). **Confirme** : la couleur multiplie la texture (essai 2) ; « couleur et texture répondent pareil »
+  (couleur au carré ≈ texture sRGB) ; le plancher vient du brouillard ; le « gain 2 » vient de l'exposition, pas
+  de la couleur. **Corrige** le codage de `b2vcolor_poc` : la couleur est en **gamma 2**, pas 2,2 →
+  `couleur = 255 × sqrt(lumière / exposition)` (avec notre réglage, ≈ `128 × lumière^0,5` ; écart faible avec
+  l'exposant 1/2,2 utilisé, demi-teintes un peu trop claires).
+- **Carte matériau `_ipr0`** (`EvaluateMaterialParameters`, hors `DAY_LIGHTING`) : **R = intensité spéculaire**
+  (reflet du cubemap × R, `AdjustCubemapIntensity` = carré), **G = émissif** (émissif = G × albédo ×
+  `g_vEmissiveColour`, ajouté après le diffus), **B = Fresnel et brillance**. **Confirme** : « lumière du
+  matériau (vert) ajoutée par-dessus sans passer par la couleur » (essai 2), « R = brillance / reflet » (G5) ;
+  le rendu « plat et clair » du gabarit `default_NB_NL_NV` = son émissif (vert 110), pas un éclairage.
+  `DefaultLighting` n'a **pas** de reflet du soleil (`EvaluateHighlight` = 0), seulement le reflet du cubemap.
+- **Sans lightmap ni couleur (`_NL_NV`)** : la lumière vient du **nœud SH de l'instance** (`g_SHNode`, source
+  `<LuxCustom>`, défaut noir) évalué au sommet = échantillons de lumière du niveau. **Explique** (Probable) le
+  témoin `fence01` (`default_NB_NL_NM_NV`, sans émissif car `_NM`) éclairé seulement par les phares : la map Map
+  Builder n'a pas d'échantillons de lumière utiles à cet endroit. Reprendre les `LSData` (audit A, piste 2) ou
+  passer ces objets en couleur de sommet.
+- **Découpe alpha** : passe préalable `clip(alpha × fondu de distance − 0,5)` → seuil fixe 0,5, sans dégradé.
+  **Confirme** G7 (bâche découpée dans les plis à alpha < 128).
+- **Non trouvé dans la source** : le remplissage de 5 à 20 octets avant les flux de sommets (règle empirique,
+  toujours valable : 2 590 flux d'origine + crash corrigé), le champ matériau `u5` des maillages (règle G5d non
+  générale), la lecture 16 bits des index (Confirmé en jeu, G2). Le format `.model` de Blur 1 n'est pas lu par
+  `mesh2` (autre format) ; le lecteur est à chercher dans `gamesys\game_resource\ModelResource.cpp`.
+- **Gravité** : aucune trace de « GravityBend » ni de gravité locale dans la fuite (`amax`, `mercury` ;
+  `amax\library\Kanzen` ne contient que caméra et utilitaires). Seuls `UpsideDownDotProductThreshold` (voiture à
+  l'envers → remise sur la piste) et la direction de gravité locale pour l'animation du pilote existent. La gravité
+  collée de Blur2DubaiTest est donc **propre à l'outil d'uKER** (Unity), pas du code de Bizarre Creations : rien
+  à porter dans Blur 1 pour le looping. Marina n'en a pas besoin.
+- **Aib0t (pour Marina)** : `Blur.exe` identique à celui d'AMAX → les adresses de nos analyses de crash restent
+  valables ; la physique est calée sur 30 Hz (constantes PS3 jouées à 60 i/s sur PC) : à garder en tête pour juger
+  la conduite sur Marina dans Blur_test, sans effet sur la map elle-même.
