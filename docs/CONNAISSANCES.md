@@ -2901,3 +2901,33 @@ planche `atlas.png`), installée dans Blur_test (236 fichiers vérifiés, origin
   1 294 acteurs dans le niveau (limite du jeu 10 000 par partie chargée).
 - **Non vérifié** : chargement, mémoire (programme 32 bits), fluidité, rendu réel des couleurs de sommet sur toute la
   ville, acteurs ajoutés à une liste Map Builder, ombres trop noires ou trop claires (`NOLM`, `EXPOSURE` à régler).
+- **Essai en jeu du lot 1 (2026-11-16, utilisateur, 6 captures)** : **charge et « tourne à merveille »** (fluide) ;
+  textures nettes et tuilées, éclairage par couleurs de sommet visible (ombres portées sur les sols, façades
+  modelées), les acteurs ajoutés au-delà de 144 s'affichent (décor complet autour du tracé). **Confirmé** : 193
+  modèles / 1 294 acteurs / ~245 Mo de décor chargés d'un bloc sans problème de mémoire constaté.
+  Défauts relevés :
+  - **pas de reflets** (attendu : carte matériau noire) ;
+  - **transparences** : palmiers découpés mais sombres, franges noires ;
+  - **décor manquant** par endroits (une longue ligne de barrière, un triangle de sol noir près du départ) : cause
+    non établie (filtre des petits triangles lointains `DETAIL`, objets inactifs ou hors des groupes gardés par
+    `b2decor.keep`, textures `mdl_*` écartées : à vérifier en comparant Unity et l'export) ;
+  - **bonus mal placés** : `make_b2_map.world` les donne à Map Builder en « rangées » d'un bonus (x, z seuls) →
+    projetés **au centre de la route**, hauteur de sa route, **type en rotation** (`AUTO_PATTERN`) au lieu du type
+    officiel. Map Builder accepte des bonus `single` (x, z, type) ; la hauteur reste celle de sa route ; types de
+    Blur 2 absents de Blur 1 (Blindfire 27, Bomb 12, Icewall 5, Javelin 5 sur 100) ;
+  - **remise sur piste en boucle** (voiture bloquée, téléportée sans fin). Voir ci-dessous.
+- **Marina a des passages sur murs (2026-11-16, mesure sur la collision Unity, corrige « Marina n'en a pas besoin »)** :
+  le tour roulé dans Blur2DubaiTest passe sur des surfaces quasi verticales (|normale y| 0,17-0,18, soit ~80°) dans
+  le virage sud-ouest, jusqu'à **77 m** de haut (~70 m de parcours, vers x -1 207, z -602 et -1 184, -670), et
+  ~40 m vers (-1 041 ; 29). Rayon vertical depuis les points du tracé : 75 / 337 points n'ont pas de sol à moins de
+  6 m sous eux (dont le virage sud-ouest, aucun sol sous 35-72 m). C'est le **wallride / tunnel** des
+  métadonnées d'IA du 4 novembre (nœuds 38-50). Unity y tient la voiture par sa gravité collée (`GravityBend`,
+  outil d'uKER). **Blur 1 n'a pas cette gravité** (aucune trace dans le code source) : la voiture tombe, le jeu
+  (`VLC_HandOfGod`) la remet sur la trajectoire (`E_HandOfGodResetType_AtSpeedOnSpline`), donc à nouveau sur le
+  mur → boucle. Cause **Probable** de la téléportation en boucle (endroit exact non relevé en jeu).
+- **Remise sur piste (code source, `VLC_HandOfGod.cpp`, Fort)** : déclenchée par voiture retournée, bloquée,
+  dans le mauvais sens, en tonneaux, ou zone de remise du niveau ; remise **sur la spline d'IA** si les données
+  d'IA existent, sinon au meilleur point de départ (`GetBestStartPosition`). Le suivi de route
+  (`trackdata.cpp`) teste la hauteur (`minY` ≤ y ≤ `maxY` de chaque point) **sauf** sur les routes LOGIC, départ,
+  arrivée et intermédiaires (2D). Map Builder écrit ligne IA = route -2,9 / +7,8 m, LOGIC et portes à hauteur de
+  route (`gen_aid.HEIGHTS`). Le tracé Marina ne se croise pas lui-même en vue de dessus.
