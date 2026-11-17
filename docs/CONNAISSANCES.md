@@ -3428,4 +3428,12 @@ Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeur
   L'icône de la Mine porte encore les couleurs `Flash_*`.
 - **Icône du Railgun** : remplacer la case 104 dans les deux planches support (données seules). Une entrée HUD de
   plus demande une DLL (`GetPerkInfo`). Planche contact : `perk_icons.py`.
+- **Vérification dans `Blur.exe` (2026-11-17, Confirmé, `hud_exe_probe.py`)** :
+  - `GetPerkInfo` = `0xC55320` (thiscall, `(type, amount, extraBoltMod)`, `ret 0xC`, table `0xC553E0`) ; Fan /
+    Stopwatch → NULL ; SuperShield → +0x2D0 ; branches du Bolt identiques à la source ;
+  - `UIPerkInfo` = 0x48 o en mémoire, `PerkDisplayParameters` = 0x480 o à `[0x124291C]` + 0x70 ;
+  - seuil `cmp …, 0x64` dans `UIPerks::Render` (`0xC57FD1`, vtable `0xEE99F0`) et `UIPerks2::Render` (`0xC592B8`,
+    vtable `0xEEAFF0`), V = index × size.v + pos.v ;
+  - `GetTextureParam` (`0x74B270`) vérifie ses bornes ;
+  - aucune différence avec la source.
 

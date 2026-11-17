@@ -169,8 +169,8 @@ Code (**Fort**) :
   `ui.bin`).
 
 Les noms `texture_index`, `UiPerkDisplayParameters`, `UIPerkInfo`, `UIPerks2`, `attached_to_car`, `slot_effect`,
-`extra_blindfire4`, `UI.HUD.PerksOnlyOneForAI` sont tous dans `Blur.exe` : **Confirmé**. Le seuil « 100 » n'a pas été
-retrouvé dans le désassemblage (§7).
+`extra_blindfire4`, `UI.HUD.PerksOnlyOneForAI` sont tous dans `Blur.exe` : **Confirmé**. Le seuil « 100 »,
+`GetPerkInfo` et le calcul des V sont **confirmés dans l'exe** (§8).
 
 **Le Lua ne choisit pas l'icône.** `HUD.lua` :
 
@@ -323,11 +323,9 @@ Tout le reste se fait en C++ dans les gadgets. **Fort** (source Lua) ; noms **Co
 
 ## 7. Questions ouvertes
 
-1. Le seuil « index ≥ 100 → planche support » et le calcul V sont-ils **identiques dans `Blur.exe`** ?
-   - Preuve à chercher : les fonctions `UIPerks2::Render` / `UIPerks::Render` (une comparaison à `0x64`, puis
-     `GetTextureParam(6)` / `(2)`), à repérer par la vtable de `UIPerks2` (son nom est dans l'exe).
-   - Essai en jeu : mettre `shield.texture_index` à 104 dans la copie et voir l'étoile.
-2. Adresse de `C_PerkDisplayParameters::GetPerkInfo` dans l'exe (pour une entrée de plus).
+1. ~~Seuil « 100 » et calcul V dans `Blur.exe`~~ : **confirmés** (§8). Reste l'essai en jeu : mettre
+   `shield.texture_index` à 104 dans la copie et voir l'étoile.
+2. ~~Adresse de `GetPerkInfo`~~ : `0xC55320` (§8).
 3. Le moteur accepte-t-il une planche agrandie (128 × 1024) sans souci de budget mémoire ? Essai en jeu.
 4. Qui lit `colour_glow`, `loc_id_name`, `past_loc_id_name` ? Chercher dans les `.luac` (`InGameScoring`) et les
    messages de score.
@@ -336,3 +334,199 @@ Tout le reste se fait en C++ dans les gadgets. **Fort** (source Lua) ; noms **Co
    l'original avant tout essai.
 7. Le choix caméra extérieure → carrousel derrière la voiture / pare-chocs → carrousel du HUD est-il le même dans
    l'exe ? Un essai en jeu suffit (changer de caméra).
+
+---
+
+## 8. Vérification dans `Blur.exe` (2026-11-17, désassemblage capstone, lecture seule)
+
+Tout ce qui suit est **Confirmé** dans l'exécutable vendu (`Blur.exe`, 13,7 Mo, base 0x400000, `.text` fichier 0x400
+→ VA 0x401000). Script reproductible, sans rustine : **`hud_exe_probe.py`**. Il retrouve et vérifie chaque
+instruction citée, et échoue si l'exe diffère.
+
+### 8.1 Disposition en mémoire (tables XT de l'exe)
+
+Les fiches de champs XT sont dans `.data` : 20 o par champ = (pointeur du nom, type, 0, **décalage**, drapeaux).
+
+| Fiche | VA | Taille en mémoire |
+|---|---|---|
+| `UIPerkInfo` | `0x1105CF8` | **0x48** (24 o sur le disque) |
+| `UiPerkDisplayParameters` | `0x1105EE8` | **0x480** = 16 × 0x48 |
+| `UIPerks2` | `0x1105E30` | 0x2C0 |
+| `UIPerks` | `0x1105DB0` | 0x194 |
+
+Champs de `UIPerkInfo` : `texture_index` +0, `colour_fill` +4, `colour_glow` +8, `colour_text` +0xC (pointeurs vers
+les noms), `loc_id_name` +0x10, `past_loc_id_name` +0x14. Le constructeur `0xC5BBB0` ajoute trois
+`C_UISpriteColours` résolues à **+0x18 (fill), +0x28 (glow), +0x38 (text)**.
+
+Entrées de `UiPerkDisplayParameters` (lues à `0x1106068`) :
+
+| Entrée | Décalage | Entrée | Décalage |
+|---|---|---|---|
+| `nitrous` | 0 | `repair` | 0x240 |
+| `shock` | 0x48 | `shield` | 0x288 |
+| `shunt` | 0x90 | `superShield` | 0x2D0 |
+| `barge` | 0xD8 | `empty` | 0x318 |
+| `bomb` | 0x120 | `extra_blindfire4` | 0x360 |
+| `blindfire3` | 0x168 | `extra_blindfire3` | 0x3A8 |
+| `blindfire2` | 0x1B0 | `extra_blindfire2` | 0x3F0 |
+| `blindfire1` | 0x1F8 | `extra_blindfire1` | 0x438 |
+
+La structure vit dans `C_UiXtConfig` à **+0x70**. L'instance est le pointeur global **`[0x124291C]`**.
+
+### 8.2 `C_PerkDisplayParameters::GetPerkInfo` = `0xC55320` (fonction propre, non inlinée)
+
+Convention : `thiscall`. `ecx` = `&PerkDisplayParameters`, puis `(E_PICKUP_TYPE type, S32 amount, bool
+extraBoltMod)`, `ret 0xC`. Elle rend un `C_UIPerkInfo*` ou `NULL`.
+
+```
+0xC55320  mov eax, ecx
+0xC55322  mov ecx, dword ptr [esp + 4]      ; type
+0xC55326  inc ecx                           ; -1 (NONE) -> 0
+0xC55327  cmp ecx, 0xb
+0xC5532A  ja  0xC553DB                      ; -> NULL
+0xC55330  jmp dword ptr [ecx*4 + 0xC553E0]  ; table de 12 entrées
+```
+
+| `type` | Cible | Résultat |
+|---|---|---|
+| −1 NONE | `0xC553D3` | `add eax, 0x318` → `empty` |
+| 0 Nitrous | `0xC553DD` | `ret 0xc`, eax = this → `nitrous` |
+| 1 Shock | `0xC55337` | +0x48 `shock` |
+| 2 Shunt | `0xC5533D` | +0x90 `shunt` |
+| 3 Blindfire | `0xC55355` | branche du nombre de tirs (ci-dessous) |
+| 4 Barge | `0xC55345` | +0xD8 |
+| 5 Bomb | `0xC5534D` | +0x120 |
+| 6 Repair | `0xC553BB` | +0x240 |
+| 7 Shield | `0xC553C3` | +0x288 |
+| **8 Fan** | `0xC553DB` | **`xor eax, eax` → NULL** |
+| **9 Stopwatch** | `0xC553DB` | **NULL** |
+| 10 SuperShield | `0xC553CB` | **+0x2D0 `superShield`** |
+
+Branche du Bolt (`0xC55355`) :
+
+```
+cmp byte ptr [esp+0xc], 0 ; mov ecx, [esp+8]      ; extraBoltMod ? amount
+je 0xC55394
+  amount 4 -> +0x360, 3 -> +0x3A8, 2 -> +0x3F0, 1 -> +0x438, autre -> +0x360   (extra_blindfire4..1)
+0xC55394:
+  amount 3 -> +0x168, 2 -> +0x1B0, 1 -> +0x1F8, autre -> +0x168                (blindfire3..1)
+```
+
+Identique à la source, valeur par défaut comprise.
+
+**Appelants** :
+
+| Adresse | Fonction | Arguments |
+|---|---|---|
+| `0xC554CF` | `UIPerks2::GetPerkInfo` (`0xC554C0`) : `mov eax,[0x124291C]` ; NULL si pas de config ; `lea ecx,[eax+0x70]` ; `jmp 0xC55320`. Appelée en `0xC59293` (case pleine) et `0xC592A2` (case vide : `push 0, 0, -1`) | — |
+| `0xC57F9B` | `UIPerks::Render` | `(type, mNumShots, extraBoltMod)` lus dans `mPickupStore[mPickupStoreIndex]` (éléments de 24 o, `+0` type, `+8` tirs) |
+| `0xC60971` | `UITargeting::ProcessHitByPerk` | `(type, 0, 0)`. **Le résultat est jeté aussitôt** (`ret 4`) : c'est le `return;` de la source, le texte « touché par… » est bien coupé dans l'exe |
+
+Une **copie inlinée et simplifiée** existe aussi dans `UIRaceLine` (`0xC56350`, appelée en `0xC5A9EE` et `0xC5BA0C`).
+Elle a sa propre table (`0xC56490`, type + 1), **sans le nombre de tirs** : le Bolt donne toujours `blindfire3`, et
+Fan / Stopwatch donnent NULL. Elle ne sert qu'à la couleur des points de la barre de course.
+
+### 8.3 Seuil 100 et choix de la planche
+
+**`UIPerks::Render`** = `0xC57E90` (entrée 10 de la vtable `0xEE99F0`, fiche en `0xEE9A18`) :
+
+```
+0xC57FA4  mov ebp, [0x124291C] ; add ebp, 0x388 ; mov byte [esp+0x13], 1   ; réserve vide -> empty (0x70+0x318)
+0xC57FCE  mov ebx, dword ptr [ebp]          ; texture_index
+0xC57FD1  cmp ebx, 0x64
+0xC57FD6  jge 0xC57FDC
+0xC57FD8  push 0 ; jmp 0xC57FE1            ; < 100 -> GetTextureParam(0) = perk_sheet
+0xC57FDC  sub ebx, 0x64 ; push 2            ; >= 100 -> index-100, GetTextureParam(2) = perk_sheet_support
+0xC57FE1  call 0x74B270                     ; GetTextureParam
+...
+0xC5809D  push 1 ; call 0x74B270            ; case vide -> GetTextureParam(1) = hud_main
+0xC580C4  movss xmm0,[edi+0x10] ; cvtsi2ss xmm1, ebx ; mulss xmm1, xmm0 ; addss xmm1,[edi+8]
+                                            ; V = index * size.v + pos.v ; U = [edi+4], largeur [edi+0xC], texture [edi+0x14]
+```
+
+**`UIPerks2::Render`** = `0xC58130` (entrée 10 de la vtable `0xEEAFF0`) :
+
+```
+0xC592B6  mov eax, dword ptr [edi]          ; texture_index
+0xC592B8  cmp eax, 0x64
+0xC592C1  jge 0xC592CE
+0xC592C3  push 0 ; call 0x74B270 ; push 1   ; perk_sheet (case choisie) / perk_sheet_inverted (autres)
+0xC592CE  sub dword ptr [esp+0x3c], 0x64
+0xC592D3  push 6 ; call 0x74B270 ; push 7   ; perk_sheet_support / perk_sheet_support_inverted
+0xC592DC  call 0x74B270
+0xC59896  movss xmm0,[edi+0x10] ; cvtsi2ss xmm1,[esp+0x3c] ; ... ; addss xmm1,[edi+8]   ; même calcul de V
+```
+
+**`GetTextureParam`** = `0x74B270` (thiscall, `ret 4`) :
+
+- tableau du gadget `[this+0x60]`, nombre d'éléments `[this+0x64]`, éléments de 24 o :
+
+| + | Champ |
+|---|---|
+| 0 | nom |
+| 4 | pos.u |
+| 8 | pos.v |
+| 0xC | size.u |
+| 0x10 | size.v |
+| 0x14 | texture |
+
+- **bornes vérifiées** : `test eax,eax ; jl` / `cmp eax,[esi+0x64] ; jge`. Hors bornes, la fonction rend un paramètre
+  statique par défaut : texture `"null"`, pos 0, size 1. Pas de plantage.
+
+### 8.4 Source contre exécutable
+
+| Mécanisme | Source fuitée | `Blur.exe` | Conclusion |
+|---|---|---|---|
+| Seuil 100 | `if (sTexIndex < 100)` dans les deux `Render` | `cmp ebx, 0x64` (`0xC57FD1`), `cmp eax, 0x64` (`0xC592B8`) | **Confirmé**, identique |
+| Planche normale | `GetTextureParam(0)` (+ `(1)` inversée dans `UIPerks2`) | `push 0` / `push 1` | **Confirmé** |
+| Planche support | `index -= 100` ; `GetTextureParam(2)` / `(6)` + `(7)` | `sub ebx, 0x64 ; push 2` / `sub [esp+0x3c], 0x64 ; push 6 ; push 7` | **Confirmé** |
+| Calcul de V | `pos.v + size.v * index` | `cvtsi2ss` / `mulss [+0x10]` / `addss [+8]` | **Confirmé** |
+| `GetPerkInfo` | `C_PerkDisplayParameters::GetPerkInfo`, `switch` | `0xC55320`, table `0xC553E0`, `ret 0xC` ; + wrapper `0xC554C0` ; + copie simplifiée inlinée dans `UIRaceLine` (`0xC56350`) | **Confirmé** (la copie inlinée n'est pas dans la source sous cette forme : c'est l'optimiseur qui a intégré la fonction statique de `UIRaceLine`) |
+| Icône du Bolt | 3 / 2 / 1 tirs, mod 4-1, défaut 3 (ou 4) | mêmes comparaisons, mêmes défauts | **Confirmé** |
+| SuperShield | `m_PerkInfoSuperShield` | type 10 → +0x2D0 | **Confirmé** |
+| Fan / Stopwatch | `default: return NULL` | table → `0xC553DB` `xor eax, eax` | **Confirmé** |
+| Texte « touché par… » | `return;` avant l'affichage | résultat de `GetPerkInfo` jeté (`0xC60976 ret 4`) | **Confirmé** |
+| Choix caméra extérieure / pare-chocs | `UIPerks2.cpp:520-527` | non désassemblé | **à vérifier** (essai en jeu) |
+
+Aucune différence trouvée entre la source et l'exe pour ces mécanismes.
+
+### 8.5 Jusqu'où le HUD peut s'étendre (d'après l'exe)
+
+| Question | Réponse | Preuve |
+|---|---|---|
+| Changer le seuil ? | Seulement par rustine : deux immédiats `0x64` (`0xC57FD1` + `0xC57FDC`, `0xC592B8` + `0xC592CE`). **Inutile** : le seuil ne limite rien, il choisit juste la planche | §8.3 |
+| Plus d'index ? | **Oui, par les données.** Rien ne borne l'index : V = index × `size.v` + `pos.v`, et `texture_address = Wrap` dans `ui.bin`. Avec une planche support de 128 × 1024 et `size.v` = 0,09375 (3 gadgets), les cases 100 à 109 existent | §8.3, §6.2 |
+| Taille des planches codée en dur ? | **Non.** Ni dimension ni nom de texture dans le code : tout vient de `UITextureParam` (`ui.bin`) | §8.3 |
+| Une 3e planche ? | **Pas par les données.** Le code ne connaît que les paramètres 0/1 et 6/7 (`UIPerks2`), 0/2 (`UIPerks`), et seulement deux branches (< 100, ≥ 100). Ajouter des paramètres à un gadget est possible (`GetTextureParam` vérifie ses bornes), mais rien ne les lirait sans rustine des deux `Render` | §8.3 |
+| Étendre `GetPerkInfo` par une DLL ? | **Oui, c'est le bon point d'accroche.** Fonction unique, `thiscall`, 3 arguments, `ret 0xC`, 3 appelants (§8.2), rend un pointeur. Une enveloppe peut rendre son propre bloc de **0x48 o** (index à +0 ; `C_UISpriteColours` déjà résolues à +0x18 / +0x28 / +0x38). Attention : la copie inlinée de `UIRaceLine` (`0xC56350`) n'y passe pas (seulement la couleur de la barre de course) | §8.2 |
+| Plus de 16 entrées ? | Pas dans `ui.bin` : la structure est fixe (0x480, 16 champs nommés). Une DLL peut garder ses propres blocs de 0x48 et les rendre depuis l'enveloppe de `GetPerkInfo`, sans limite | §8.1 |
+| Remplacer une icône est-il plus sûr ? | **Oui.** Aucun code touché, mêmes chemins qu'en jeu normal | — |
+| Le Railgun peut-il garder l'entrée SuperShield ? | **Oui, sans rien de plus.** Le joueur garde un type 10 en réserve : `GetPerkInfo` → +0x2D0 → index 104 → case 4 de `perk_sheet_support`. Les IA reçoivent un Bolt : leur icône `ai_perks` est celle du Bolt | §8.2 + `POWERUPS.md` §14 |
+
+### 8.6 Recommandations
+
+- **A. Remplacer une icône existante** : redessiner la case dans les deux planches de `ui_common.bpr`, à la même
+  taille, au même format et avec les mêmes mips, remplacement en place (§6.1). Aucune rustine. C'est le plus sûr.
+- **B. Réutiliser un index pour un bonus maison** : laisser le bonus porter un type existant (méthode du Railgun) et
+  changer seulement le `texture_index` / les couleurs de cette entrée dans `ui.bin`. Données seules.
+- **C. Une vraie nouvelle entrée** : une DLL qui enveloppe `GetPerkInfo` (`0xC55320`), en vérifiant les octets
+  d'origine comme `railgun.dll`. Elle rend un bloc de 0x48 o à elle quand le contexte l'exige : par exemple le bonus
+  maison repéré dans `mPickupStore`, ou un sous-type. L'index de ce bloc pointe vers une case ≥ 100 d'une planche
+  support agrandie.
+- **D. Une planche de plus / plus de 16 entrées** :
+  - plus de 16 entrées = blocs de la DLL (C), sans toucher à `ui.bin` ;
+  - plus de cases = agrandir `perk_sheet_support` (données) ;
+  - une 3e planche n'est utile que si 100 + n cases ne suffisent pas. Elle demanderait une rustine des deux `Render`
+    (troisième branche, nouveaux numéros de paramètre) : à éviter.
+
+**Prochain essai conseillé, sur une copie séparée** (`make_test_copy.ps1`, jamais le jeu installé) :
+
+1. dans `ui.bin` de la copie, passer `shield.texture_index` de 7 à **104** (modification d'un nombre, `blurxt.py
+   --set`), sans toucher à `ui_common.bpr` ;
+2. course perso, ramasser un Bouclier ;
+3. on doit voir l'étoile dans le carrousel, en caméra extérieure **et** en caméra pare-chocs, ainsi qu'au-dessus d'une
+   IA qui tient un Bouclier ;
+4. cela valide en jeu le seuil, le calcul de V et la planche support.
+
+Pour vérifier aussi les planches agrandies : refaire l'essai avec `perk_sheet_support` en 128 × 1024 et `size.v` à
+0,09375, et l'index **105** sur une case dessinée exprès.
