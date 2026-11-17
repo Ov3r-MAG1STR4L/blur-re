@@ -427,6 +427,10 @@ def main():
     subprocess.run([sys.executable, "build.py"], cwd=os.path.join(config.BMB_GAME, "map_builder", "flat_earth"),
                    env=env, check=True, stdout=subprocess.DEVNULL, timeout=1800)   # 30 min max (Map Builder)
     make_nfs_map.main()
+    import b2pickups                                   # official power-ups at their 3D place, own types (2026-11-17)
+    lines = [np.array([(float(r["x"]), float(r["y"]), float(r["z"])) for r in csv.DictReader(open(f))]) for f in laps]
+    b2pickups.apply(os.path.join(files, "gamedata", "levels", "flat_earth", "actorpack.xt"),
+                    b2pickups.spots(pk, lines, low))
     if models:
         decor(files, models, nfs)
     phys = os.path.join(files, "levels", "flat_earth", "level.levelphysics")
