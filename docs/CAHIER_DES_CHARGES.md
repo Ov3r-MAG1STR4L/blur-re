@@ -579,3 +579,4 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
 | 2026-11-17 | Planche support, étape 2 **réussie** : cases 106-109 affichées chacune (captures + retour « tout fonctionne ») ; ajouter des icônes au HUD par les données seules est démontré |
 | 2026-11-17 | Bouclier posé sur la piste : 2 textures intégrées à `shieldpickup.model` (non partagées) ; `shield_pickup_icon.py` les remplace par un triangle « 6 » (seuls leurs octets changent) ; copie `Blur_test_hud_pickup` (avec `boot.pak` mis de côté) ; `docs/ESSAI_HUD_SHIELD_PICKUP.md` ; pas encore joué |
 | 2026-11-17 | Bouclier posé sur la piste **réussi en jeu** (capture : triangle « 6 » sur la piste, HUD inchangé, jeu démarré sans `boot.pak`) ; ramassage, Bouclier de 6 s et réapparition à capturer |
+| 2026-11-17 | Bouclier posé sur la piste : vues de côté, de dos et au rétroviseur, Bouclier de 6 s et réapparition OK (rapportés) ; seul défaut : léger fantôme de l'hexagone dans la lueur |

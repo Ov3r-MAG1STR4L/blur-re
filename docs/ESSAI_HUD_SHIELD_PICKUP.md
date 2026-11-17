@@ -144,7 +144,14 @@ qu'on redessine : par exemple `shieldsuperpickup.model` pour le Railgun.
 | 7 | Autres bonus | Nitro posé sur la piste inchangé (double chevron vert) |
 | 9 | Démarrage sans `boot.pak` | le jeu démarre et la course se lance |
 | — | HUD | le carrousel montre toujours l'**hexagone**, ce qui est attendu (`ui.bin` d'origine dans cette copie) : le HUD et le bonus sur la piste sont bien indépendants |
-| 3-6 | Animation, ramassage, Bouclier de 6 s, réapparition | **pas de capture** : non vérifiés à ce stade |
+| 3-6 | Animation, ramassage, Bouclier de 6 s, réapparition | **OK**, d'après l'utilisateur (sans capture) |
+| — | Vue de côté | OK (rapporté) : le cadre est plat, presque invisible de profil, comme l'original |
+| — | Vue de dos | OK (rapporté) : symbole vu inversé, comme l'original |
+| — | Rétroviseur | OK (rapporté) |
+| — | Fantôme de l'hexagone | **présent** (rapporté) : léger hexagone dans la lueur de `icon_shield_01` (défaut du remplissage, connu) |
+
+Retour de l'utilisateur, 2026-11-17 : côté, dos, rétroviseur, Bouclier de 6 s et réapparition sont OK. Le
+comportement du bonus n'a pas changé.
 
 **Conclusion** :
 
@@ -155,7 +162,5 @@ qu'on redessine : par exemple `shieldsuperpickup.model` pour le Railgun.
   jeu démarre sans lui. Ce n'est pas une preuve de la priorité de `boot.pak` : aucun essai n'a été fait avec
   `boot.pak` actif.
 
-**Reste à faire** :
-
-- vérifier, avec des captures, le ramassage, le Bouclier de 6 s, la réapparition et la vue de côté ;
-- améliorer le léger fantôme de l'hexagone, s'il gêne.
+**Reste à faire** : seulement le léger fantôme de l'hexagone, s'il gêne. Il faut améliorer le remplissage de
+`icon_shield_01` dans `shield_pickup_icon.py`, ou dessiner le cadre en entier, sans partir de l'original.
