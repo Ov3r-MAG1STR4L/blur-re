@@ -313,6 +313,13 @@ Les deux planches (normale : 107, 108, 109 ; inversée : 106) et les deux gadget
 `UIPerks` : IA) sont couverts par des captures. La copie est restée sur le test 109 : `ui.bin` `3c65b140…`, planche
 `38b34bbe…`.
 
+Retour de l'utilisateur : « l'affichage extérieur c'est toujours un hexagone, partout ». Les captures 106 / 107
+montrent pourtant la nouvelle forme dans le carrousel derrière la voiture. L'hexagone est donc, selon toute
+vraisemblance, le **Bouclier posé sur la piste**. Il est **attendu** : ce modèle (`models\perks\pickups\shieldpickup.model`)
+a ses propres textures (`icon_shield_01`, `icon_shield_01_inverse`) et ne lit pas `ui.bin`
+(`ESSAI_HUD_SHIELD104_DIAGNOSTIC.md` §5). Pour le changer, il faut réinjecter ces textures (`blurtex.py inject`) ou
+changer `PickupType.PickupSpecialFX` du Bouclier dans `pickups.bin`. C'est indépendant du HUD.
+
 **Conclusion** : la planche support agrandie à **10 cases** fonctionne en jeu, et les cases 105 à 109 sont chacune
 utilisables et indépendantes. **Ajouter des icônes au HUD par les seules données (`ui_common.bpr` + `ui.bin`, sans
 toucher à `Blur.exe`) est démontré.**
