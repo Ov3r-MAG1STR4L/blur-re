@@ -139,7 +139,16 @@ Originaux sauvegardés : `hud_support_atlas\original\ui_common.bpr` et `ui.bin`.
 ## 7. Copie de test
 
 `C:\Users\sanqu\Jeux_WII\Blur_test_hud_atlas` (`make_test_copy.ps1 -Dest … -Mod …\hud_support_atlas\files -Run`).
-Contrôles après création : §9.
+Créée le 2026-11-17 à 21:17 : 1 378 fichiers, 9,4 Go, aucun échec. Le « code 3 » est celui de robocopy : des
+fichiers copiés, pas une erreur. Contrôles (**Confirmé**) :
+
+| Contrôle | Résultat |
+|---|---|
+| `gamedata\xt\ui.bin` | SHA-1 `38d57bea…` = fichier préparé |
+| `ui\data\ui_common.bpr` | SHA-1 `144164cb…` = fichier préparé |
+| `cache` | `gamedata.pak`, `root.pak`, `root_streaming.pak` (+ `.sig`) en `.off` |
+| Modules | `amax\dlls` = `lua_hooks.asi` seul ; pas de `amax\config` (hors ligne) ; aucun Railgun (ni DLL, ni plugin) |
+| Copies de référence | `Blur_test_hud\…\ui.bin` toujours `106400da…`, `Blur_test\…\ui.bin` toujours `c17ba829…` : pas touchées |
 
 ## 8. Procédure en jeu
 

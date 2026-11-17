@@ -536,3 +536,5 @@ Essai préparé (copie `Blur_test_hud`, `shield.texture_index` → 104) : voir *
 Résultat partiel de l'essai : étoile en caméra pare-chocs et au-dessus des IA, hexagone signalé en caméra extérieure. Diagnostic (même code et même configuration pour les deux carrousels ; l'hexagone viendrait des Boucliers posés sur la piste, `shieldpickup.model` / `icon_shield_01`) : **`ESSAI_HUD_SHIELD104_DIAGNOSTIC.md`**.
 
 **Essai en jeu réussi (2026-11-17, captures)** : `shield.texture_index` = 104 affiche l'étoile dans le carrousel extérieur, dans le carrousel pare-chocs et au-dessus des IA. Le seuil 100, la planche `perk_sheet_support` (normale et inversée) et le calcul de V sont **confirmés en jeu**. Les bonus posés sur la piste gardent leur propre icône (textures intégrées à `models\perks\pickups\<type>pickup.model`, indépendantes de `ui.bin`).
+
+**Planche support agrandie (cases 100-109)** : faisabilité démontrée (données seules : planches en 128 × 1024 + `size.v` 0,09375 dans 3 gadgets) et prototype préparé dans `Blur_test_hud_atlas` (Bouclier → 105). Voir **`ESSAI_HUD_SUPPORT_ATLAS.md`**. Pas encore joué.
