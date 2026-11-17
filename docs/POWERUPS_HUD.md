@@ -544,3 +544,5 @@ Résultat partiel de l'essai : étoile en caméra pare-chocs et au-dessus des IA
 Étape 2 (cases 106-109, une par une, Bouclier → 106 / 107 / 108 / 109) préparée dans `Blur_test_hud_atlas`, test 106 installé ; pas encore jouée. Voir `ESSAI_HUD_SUPPORT_ATLAS.md` §9.
 
 **Étape 2 réussie (2026-11-17)** : les cases 106 à 109 s'affichent chacune avec leur forme (une capture par index, le reste rapporté OK par l'utilisateur). La planche support à 10 cases (100-109) fonctionne : **on peut ajouter des icônes au HUD sans toucher à `Blur.exe`**.
+
+**Bouclier posé sur la piste** : modèle 3D `shieldpickup.model` avec 2 textures intégrées (`icon_shield_01`, `_inverse`), indépendantes de `ui.bin`. Essai « triangle 6 » préparé dans `Blur_test_hud_pickup` : voir **`ESSAI_HUD_SHIELD_PICKUP.md`**. Pas encore joué.

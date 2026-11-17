@@ -3447,3 +3447,12 @@ Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeur
 
 - **Planche support agrandie (2026-11-17, Confirmé en jeu, captures)** : `perk_sheet_support` et son inversée en 128 × 1024 (`hud_support_atlas.py`), `size.v` 0,09375 dans `Perks_MainHUD`, `Perks_MainAttached` et `ai_perks`, Bouclier → index **105** : la nouvelle case s'affiche dans les deux carrousels et au-dessus des IA, en version normale et inversée. Ajouter des icônes au HUD est donc possible **sans toucher à l'exe**. Cases 106-109 pas encore essayées. La couleur du dessin est ignorée (`IntensityAsAlpha`) : seule compte `colour_fill`.
 - **Planche support à 10 cases validée en jeu (2026-11-17)** : cases 105 à 109 affichées chacune avec sa forme, dans les carrousels et au-dessus des IA, en versions normale et inversée (captures dans `hud_support_atlas\captures`, une par index pour 106-109, le reste rapporté OK par l'utilisateur). Ajouter des icônes au HUD est possible **par les seules données**.
+- **Bonus posés sur la piste (2026-11-17)** :
+  - chaque type a son modèle `models\perks\pickups\<type>pickup.model`, avec ses textures **intégrées** (Bouclier :
+    `icon_shield_01` et `_inverse`, DXT1 256², en niveaux de gris, non partagées) ;
+  - la couleur vient du shader et de la lumière de l'effet ;
+  - `boot.pak` contient 718 fichiers, tous identiques à ceux de `root.pak` (modèles et `.cycle` des bonus compris).
+    Pour qu'un modèle modifié posé en clair soit lu, il faut sans doute aussi mettre `boot.pak` de côté (à confirmer
+    en jeu).
+
+  Essai : `shield_pickup_icon.py` / `ESSAI_HUD_SHIELD_PICKUP.md`.
