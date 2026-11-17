@@ -6,7 +6,8 @@ shape as perk_sheet / perk_sheet_inverted. Cells 100-104 (pixel rows 0-480) keep
 every mip (480, 240, 120 rows are whole DXT block rows); cells 105-109 are new test icons (rows 480-960).
 ui.bin: size.v 0.1875 -> 0.09375 for the support textures of the three HUD gadgets (Perks_MainHUD, Perks_MainAttached:
 textures 6 and 7; ai_perks: texture 2), so V = (index - 100) * 96 / 1024 still picks 96-pixel cells; then
-shield.texture_index -> 105. A second ui.bin (variants/ui_106_109.bin) also gives 106-109 to Nitro, Barge, Repair, Mine.
+shield.texture_index -> 105. Step 2: variants/ui_shield_106..109.bin = the same file with shield.texture_index only
+changed to 106, 107, 108 or 109 (one index per test, Nitro untouched).
 Every change is checked: other 61 images and cells 100-104 byte-identical, only the expected u32 of ui.bin change.
 
 usage: hud_support_atlas.py            build into blur_extracted\\mods\\hud_support_atlas (never the game folder)
@@ -28,8 +29,8 @@ CELL, KEEP, W, H, MIPS = 96, 480, 128, 1024, 3                      # cells 100-
 SHEETS = {"perk_sheet_support": 1, "perk_sheet_support_inverted": 5}
 SIZE_V = [(61, 6), (61, 7), (22, 6), (22, 7), (26, 2)]              # (hud_objects element, texture) of the support sheet
 NEW = [(105, "circle", (255, 80, 80)), (106, "triangle", (80, 255, 80)), (107, "square", (80, 140, 255)),
-       (108, "cross", (255, 230, 60)), (109, "diamond", (255, 80, 255))]
-VARIANT = {"nitrous": 106, "barge": 107, "repair": 108, "bomb": 109}
+       (108, "diamond", (255, 230, 60)), (109, "cross", (255, 80, 255))]     # step 2 (2026-11-17): 108 / 109 swapped
+SHIELD_STEPS = [106, 107, 108, 109]       # step 2: one ui.bin per index, shield.texture_index only (Nitro untouched)
 
 
 def sha1(b):
@@ -136,21 +137,28 @@ def main():
         assert abs(struct.unpack_from("<f", src_ui, off)[0] - 0.1875) < 1e-6, (el, tex)
         fn, _, _ = x.locate("hud_objects", f"Elements[{el}].textures[{tex}].filename")
         edits.append((off, "<f", 0.09375, f"{names[el]}.textures[{tex}].size.v 0.1875 -> 0.09375"))
-    for n, v in [("shield", 105)] + list(VARIANT.items()):
-        off, _, _ = x.locate("#187", f"PerkDisplayParameters.{n}.texture_index")
-        edits.append((off, "<i", v, f"PerkDisplayParameters.{n}.texture_index {struct.unpack_from('<i', src_ui, off)[0]} -> {v}"))
-    for label, use in (("files/gamedata/xt/ui.bin", 6), ("variants/ui_106_109.bin", len(edits))):
+    shield, _, _ = x.locate("#187", "PerkDisplayParameters.shield.texture_index")
+    assert struct.unpack_from("<i", src_ui, shield)[0] == 7
+    outputs = [("files/gamedata/xt/ui.bin", 105)] + [(f"variants/ui_shield_{n}.bin", n) for n in SHIELD_STEPS]
+    step1 = None
+    for label, v in outputs:
         b = bytearray(src_ui)
-        for off, f, v, _ in edits[:use]:
-            struct.pack_into(f, b, off, v)
+        for off, f, val, _ in edits:
+            struct.pack_into(f, b, off, val)
+        struct.pack_into("<i", b, shield, v)
         diff = [i for i in range(0, len(b), 4) if b[i:i + 4] != src_ui[i:i + 4]]
-        assert diff == sorted(e[0] for e in edits[:use]), (label, diff)
+        assert diff == sorted([e[0] for e in edits] + [shield]), (label, diff)
+        if step1 is None:
+            step1 = bytes(b)
+        else:                                                        # vs the validated step 1: shield only
+            assert [i for i in range(0, len(b), 4) if b[i:i + 4] != step1[i:i + 4]] == [shield], label
         path = os.path.join(OUT, *label.split("/"))
         os.makedirs(os.path.dirname(path), exist_ok=True)
         open(path, "wb").write(b)
-        print(f"{label}: {len(diff)} u32 changed, SHA-1 {sha1(b)}")
-        for off, f, v, what in edits[:use]:
-            print(f"   0x{off:06X}  {src_ui[off:off + 4].hex()} -> {bytes(b[off:off + 4]).hex()}  {what}")
+        print(f"{label}: SHA-1 {sha1(b)}  shield.texture_index @0x{shield:06X} = {v}"
+              + ("" if v == 105 else f"  (step 1: 105 -> {v}, only change)"))
+    for off, f, v, what in edits:
+        print(f"   all files: 0x{off:06X}  {src_ui[off:off + 4].hex()} -> {struct.pack(f, v).hex()}  {what}")
     for el, tex in SIZE_V:                                           # the patched fields are the support sheet
         x2 = XT(os.path.join(OUT, "files", "gamedata", "xt", "ui.bin"))
         for name, t, val, _ in x2.records():

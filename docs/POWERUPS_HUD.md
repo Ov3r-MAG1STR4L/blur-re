@@ -540,3 +540,5 @@ Résultat partiel de l'essai : étoile en caméra pare-chocs et au-dessus des IA
 **Planche support agrandie (cases 100-109)** : faisabilité démontrée (données seules : planches en 128 × 1024 + `size.v` 0,09375 dans 3 gadgets) et prototype préparé dans `Blur_test_hud_atlas` (Bouclier → 105). Voir **`ESSAI_HUD_SUPPORT_ATLAS.md`**. Pas encore joué.
 
 **Essai en jeu réussi (2026-11-17, captures)** : la case **105** de la planche support agrandie s'affiche dans le carrousel extérieur, le carrousel pare-chocs et au-dessus des IA, en version normale et inversée. **Ajouter des icônes au HUD est possible par les données seules.** Les cases 106-109 restent à essayer. Une icône du HUD se dessine en niveaux de gris : sa couleur vient de `colour_fill`. Voir `ESSAI_HUD_SUPPORT_ATLAS.md` §9.
+
+Étape 2 (cases 106-109, une par une, Bouclier → 106 / 107 / 108 / 109) préparée dans `Blur_test_hud_atlas`, test 106 installé ; pas encore jouée. Voir `ESSAI_HUD_SUPPORT_ATLAS.md` §9.

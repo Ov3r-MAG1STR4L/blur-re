@@ -217,6 +217,89 @@ utilise l'intensité de la texture et la couleur `colour_fill`, pas la couleur d
 IntensityAsAlpha`). C'est pour ça que les icônes d'origine sont grises. **Fort** (constat sur capture). **Une icône
 du HUD doit donc être dessinée en niveaux de gris, et sa couleur se règle dans `ui.bin`.**
 
-### 2e étape : cases 106-109 (à faire)
+### 2e étape : cases 106-109, une par une (préparée le 2026-11-17, **pas encore jouée**)
 
-Copier `variants\ui_106_109.bin` sur `Blur_test_hud_atlas\gamedata\xt\ui.bin`, puis suivre le §8.
+**Sauvegarde de l'état validé de l'étape 1**, avant toute modification, dans
+`hud_support_atlas\etape1_valide\` :
+
+- `gamedata\xt\ui.bin` : SHA-1 `38d57bea…` ;
+- `ui\data\ui_common.bpr` : SHA-1 `144164cb…`.
+
+Pour revenir à l'étape 1, recopier ces deux fichiers dans la copie.
+
+**Planches** (`hud_support_atlas.py`, liste `NEW`). Les dessins demandés :
+
+| Case | Dessin |
+|---|---|
+| 106 | triangle « 6 » |
+| 107 | carré « 7 » |
+| 108 | **losange « 8 »** |
+| 109 | **croix « 9 »** |
+
+106 et 107 étaient déjà ainsi ; 108 et 109 ont été échangés. Contrôles hors jeu, par rapport au `ui_common.bpr` de
+l'étape 1 :
+
+- dans les deux planches et à chaque niveau de mip, **seules les cases 108 et 109 diffèrent** ;
+- les cases 100-107 (105 comprise, validée en jeu) sont identiques à l'octet ;
+- les 61 autres images sont inchangées.
+
+Nouveau `ui_common.bpr` : SHA-1 `38b34bbe…` (2 538 080 o). Données :
+
+| Image | SHA-1 |
+|---|---|
+| `perk_sheet_support` | `6d00aa2a…` |
+| `perk_sheet_support_inverted` | `4f666204…` |
+
+Aperçu : `preview\etape2_cases_105_109.png`. Les formes se distinguent sans la couleur : le HUD ne garde que
+l'intensité.
+
+**`ui.bin` d'essai** (`variants\`). Chacun = le `ui.bin` de l'étape 1 avec **un seul** u32 changé :
+`shield.texture_index`, décalage `0x061D00`. Les 5 `size.v` sont les mêmes partout, et le Nitro n'est pas touché.
+
+| Test | Fichier | Avant → après | SHA-1 |
+|---|---|---|---|
+| 106 | `ui_shield_106.bin` | 105 → 106 (`69000000` → `6a000000`) | `c5cc94df…` |
+| 107 | `ui_shield_107.bin` | 105 → 107 (`6b000000`) | `85ff9ab1…` |
+| 108 | `ui_shield_108.bin` | 105 → 108 (`6c000000`) | `6ca6f78d…` |
+| 109 | `ui_shield_109.bin` | 105 → 109 (`6d000000`) | `3c65b140…` |
+
+L'ancienne variante `ui_106_109.bin`, qui changeait 4 bonus d'un coup, a été retirée : elle n'a jamais été installée.
+
+**Installé dans `Blur_test_hud_atlas`** (2026-11-17) :
+
+- `ui\data\ui_common.bpr` = `38b34bbe…` ;
+- `gamedata\xt\ui.bin` = `ui_shield_106.bin` (`c5cc94df…`) → **test 106 prêt**.
+
+`Blur_test_hud` et `Blur_test` sont inchangées (vérifié par SHA-1).
+
+**Passer au test suivant**, Blur fermé, une fois le test courant fait et capturé :
+
+```
+copy /Y "C:\Users\sanqu\Jeux_WII\blur_extracted\mods\hud_support_atlas\variants\ui_shield_107.bin" "C:\Users\sanqu\Jeux_WII\Blur_test_hud_atlas\gamedata\xt\ui.bin"
+```
+
+Pour les tests 108 et 109, remplacer `107` par `108`, puis `109`. La planche ne change plus.
+
+**Pour chaque index** : course perso, **Shield et Nitro**. Captures dans
+`captures\<index>_exterieur_bouclier.*`, `<index>_exterieur_nitro.*`, `<index>_parechocs.*`, `<index>_ia.*`.
+
+1. Caméra extérieure, Bouclier choisi : la forme et le chiffre de l'index sur la planche normale.
+2. Caméra extérieure, Nitro choisi : la même forme, **inversée**, et le Nitro inchangé.
+3. Caméra pare-chocs.
+4. IA qui porte un Bouclier.
+5. Activer le Bouclier (bulle de 6 s).
+6. Vérifier : aucun plantage, aucune texture manquante, aucune moitié de case, aucune forme voisine visible.
+
+Si un index échoue : arrêter, garder les captures, et ne pas passer au suivant avant le diagnostic.
+
+### Tableau des résultats
+
+| Index | Caméra extérieure | Caméra pare-chocs | IA | Inversée | Stabilité |
+|---|---|---|---|---|---|
+| 105 | Validé (captures 01-02) | Validé (03) | Validé (04) | Validé (01, 03) | Validé (pas de plantage ni de texture cassée vus ; Bouclier activé non capturé) |
+| 106 | À tester | À tester | À tester | À tester | À tester |
+| 107 | À tester | À tester | À tester | À tester | À tester |
+| 108 | À tester | À tester | À tester | À tester | À tester |
+| 109 | À tester | À tester | À tester | À tester | À tester |
+
+La validation de 105 ne vaut pas pour 106-109 : chaque index doit avoir ses propres captures.
