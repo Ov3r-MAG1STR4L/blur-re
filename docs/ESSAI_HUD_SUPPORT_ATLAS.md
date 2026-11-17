@@ -187,4 +187,36 @@ Aucune correction dans l'exe.
 
 ## 9. Résultats
 
-*(à remplir)*
+### 1re étape : case 105 (2026-11-17, **Confirmé en jeu**, captures)
+
+Captures : `blur_extracted\mods\hud_support_atlas\captures\`, hors dépôt. Copie `Blur_test_hud_atlas`, Shield + Nitro.
+
+| # | Cas | Capture | Résultat |
+|---|---|---|---|
+| 1 | Bouclier choisi, caméra extérieure | `02_exterieur_105_selectionne` | **rond + « 5 »** (planche normale), gros, dans le carrousel derrière la voiture |
+| 2 | Caméra pare-chocs | `03_parechocs_105_inverse` | **rond + « 5 »** dans le carrousel du HUD (Bouclier non choisi : version inversée) |
+| 3 | Bouclier non choisi (Nitro choisi) | `01_exterieur_105_inverse`, `03_…` | **version inversée** : rond noir et « 5 » sur cadre clair |
+| 4 | IA qui porte un Bouclier (Rhymer) | `04_ia_105` | **rond + « 5 »** au-dessus de son nom |
+| 5 | Nitro (`perk_sheet`, case 4) | toutes | double chevron vert inchangé |
+| 6 | Bouclier activé | — | pas de capture (non vérifié dans cette étape) |
+| 7 | Corruption / plantage | toutes | aucune texture manquante, aucun mélange d'icônes, pas de plantage pendant la course |
+| 8 | Cases 100-104 | — | pas visibles en course normale ; conservation prouvée **hors jeu** seulement |
+
+**Conclusion** :
+
+- le jeu **accepte une planche support agrandie** (128 × 1024, DXT1 et DXT5, 3 mips) ;
+- il **affiche une case qui n'existait pas** (105), dans les deux carrousels et au-dessus des IA, en version normale et
+  inversée ;
+- on peut donc **ajouter des icônes au HUD par les seules données** : `ui_common.bpr` + 5 `size.v` dans `ui.bin`,
+  sans toucher à `Blur.exe`.
+
+Seule la case 105 est validée en jeu : les cases 106-109 ne le sont pas encore.
+
+Observation : sur la planche normale, le rond rouge s'affiche **gris clair**, avec la teinte du Bouclier. Le gadget
+utilise l'intensité de la texture et la couleur `colour_fill`, pas la couleur du dessin (`effect_index =
+IntensityAsAlpha`). C'est pour ça que les icônes d'origine sont grises. **Fort** (constat sur capture). **Une icône
+du HUD doit donc être dessinée en niveaux de gris, et sa couleur se règle dans `ui.bin`.**
+
+### 2e étape : cases 106-109 (à faire)
+
+Copier `variants\ui_106_109.bin` sur `Blur_test_hud_atlas\gamedata\xt\ui.bin`, puis suivre le §8.

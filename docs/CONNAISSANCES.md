@@ -3445,3 +3445,4 @@ Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeur
     rien.
   - `gamedata_boot.pak`, resté actif, contient aussi `ui.bin`, mais c'est le fichier en clair qui est lu.
 
+- **Planche support agrandie (2026-11-17, Confirmé en jeu, captures)** : `perk_sheet_support` et son inversée en 128 × 1024 (`hud_support_atlas.py`), `size.v` 0,09375 dans `Perks_MainHUD`, `Perks_MainAttached` et `ai_perks`, Bouclier → index **105** : la nouvelle case s'affiche dans les deux carrousels et au-dessus des IA, en version normale et inversée. Ajouter des icônes au HUD est donc possible **sans toucher à l'exe**. Cases 106-109 pas encore essayées. La couleur du dessin est ignorée (`IntensityAsAlpha`) : seule compte `colour_fill`.
