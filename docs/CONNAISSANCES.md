@@ -3266,3 +3266,26 @@ Essai de l'utilisateur (journal : 79 Railguns tirés, 37 voitures touchées, 40 
   donc notre Railgun). **Règle** : le Railgun peut sortir là où l'emplacement autorise l'orbe (bit 3) ; relais à la place du
   `mov eax, 1` en `0xB5B4AF`. Et quand l'interrupteur de la course perso est sur On, plus de tirage à 35 % : le Railgun
   pèse comme les autres bonus choisis. Journal : « filtered spawn draw(s) allowed it ».
+
+### Railgun v5 : Railgun seul, sons sans doublons, tremblement au bon endroit, charge arrière (2026-11-17, installé)
+Retours de l'utilisateur et de Md (clip) : son « boueux, déclenché plusieurs fois », volume de base trop fort, tremblement
+pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière absent du rétroviseur, charge arrière.
+- **Railgun seul (Fort, code source)** : `CustomRace.cpp` met `levelState.mPickupsEnabled = false` quand aucun des 8 bonus
+  d'origine n'est coché : plus aucun bonus sur la piste. Le plugin, dans ce cas, coche l'orbe et « bonus aléatoires » le temps
+  de `Amax.SetupRace` (le menu garde le choix) et appelle `railgun_only` : la DLL refuse tout autre type au tirage
+  (`0xB5B497`) et accepte le Railgun à **tous** les emplacements, filtres de carte compris (`0xB5B4AF`). En mode positions
+  fixes, `SetRandomPickupTypeMpSetup` retire déjà les types interdits (probabilité 0) puis retire au sort.
+- **Sons en double (Confirmé dans le code)** : le Railgun étant un Bolt, le jeu jouait aussi ses sons d'orbe (tir, vol, impact)
+  sous les nôtres. `Audio::InterfaceController` (`0x111D1E8`) `::SendMessageToSubsystem` = **`0x535770`** (thiscall
+  (sous-système, message, valeur, msg*), `ret 0x10` ; **9 = bonus**). La DLL écarte les messages du sous-système 9 dont les
+  12 premiers mots contiennent l'identifiant d'un Railgun (`PickupCreationStruct` +0x14 = `mPickupId`, `C_PickupBase` +0x14
+  = `mUniqueId`). Volume général des sons du Railgun : `volume` 0,7.
+- **Tremblement (Confirmé dans les données)** : une entrée d'effet a 4 emplacements ; le Shunt range sa charge en **Local**
+  (le tireur : secousse `CameraSpecialFX` + effet d'écran) / **External** (les autres : sans secousse) / **Internal**
+  (vue intérieure) ; nous l'avions mise en Global (tout le monde). Charge du Railgun : Local = Internal = avec secousse,
+  External = la secousse remplacée par la lumière blanche, Global = nul (`0xFFFFFFFF`).
+- **Charge arrière** : 2e niveau du Railgun accroché à `SuperShield.ReversedModified` (poignée +0x3C) : charge arrière du
+  Shunt (`ShuntBuildRev`, vitesse 4,375 pour ses 0,2 s → **1,75** pour nos 0,5 s), même Local / External. Délai arrière du
+  Shunt d'origine : 0,2 s.
+- **Rétroviseur** : à 600 m/s le tir arrière sort du champ en une ou deux images ; `rear_speed` 300 (celle de l'orbe).
+- Reste : couleurs des modèles (spirale violette, coque bleue, charges rouges, anneaux verts), symbole sur la piste.

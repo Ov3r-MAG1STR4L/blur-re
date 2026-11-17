@@ -25,12 +25,14 @@ local function settings()
 	return s
 end
 
-local function tell_dll(on)
+local VANILLA = { "bolt", "shock", "mine", "nitro", "barge", "shield", "shunt", "repair" }
+
+local function tell_dll(mode)
 	if not (package and package.loadlib) then
 		print_api("railgun: no package.loadlib, the switch cannot reach railgun.dll")
 		return
 	end
-	local f, err = package.loadlib(DLL, on and "railgun_on" or "railgun_off")
+	local f, err = package.loadlib(DLL, "railgun_" .. mode)
 	if f then f() else print_api("railgun: " .. tostring(err)) end
 end
 
@@ -67,7 +69,23 @@ local function wrap()
 			local ok, v = pcall(UIButtons.GetSelection, rail_id)
 			if ok then s.powerups.railgun = NumberToBool(v) end
 		end
-		tell_dll(not (s and s.powerups and s.powerups.railgun == false))
+		local on = not (s and s.powerups and s.powerups.railgun == false)
+		local any = false
+		for _, k in ipairs(VANILLA) do
+			if s and s.powerups and s.powerups[k] then any = true end
+		end
+		if on and not any and s and s.powerups then
+			-- railgun only: the game turns every power-up off when the 8 of its own are off (CustomRace.cpp:
+			-- mPickupsEnabled), so the Bolt goes on behind the scenes, every position draws (random power-ups), and
+			-- the dll refuses every type but the railgun. The menu keeps the user's choice.
+			local bolt, random = s.powerups.bolt, s.random_powerups
+			s.powerups.bolt, s.random_powerups = true, 1
+			tell_dll("only")
+			local r = { org_setup(s, ...) }
+			s.powerups.bolt, s.random_powerups = bolt, random
+			return unpack(r)
+		end
+		tell_dll(on and "on" or "off")
 		return org_setup(s, ...)
 	end
 end

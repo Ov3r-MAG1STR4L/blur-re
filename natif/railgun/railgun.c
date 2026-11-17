@@ -61,14 +61,16 @@ static float base_damage = 50.f, falloff[3] = {1.5f, 1.0f, 0.5f};
 static int crush = 9999;
 
 static float front_delay = 1.0f, rear_delay = 0.5f;   /* s between the button and the shot */
+static float rear_speed = 300.f, volume = 0.7f;        /* rear shot m/s; our sounds' master volume */
 static char dir[MAX_PATH];          /* folder of the dll: settings, sounds, log */
 static FILE *logfile = NULL;
 static volatile LONG passes = 0, walls = 0, shields = 0, fired = 0;
 
-typedef struct { char *p; int pierced; DWORD last_wall; int rear; char *bal; } Rail;   /* bal: Bolt Normal balancing */
+typedef struct { char *p; int pierced; DWORD last_wall; int rear; char *bal; unsigned uid; } Rail;   /* bal: Bolt Normal balancing */
 #define MAX_RAILS 32
 static Rail rails[MAX_RAILS];
 static int next_is_rail = 0, next_shooter = -1;
+static unsigned pending_uid;       /* unique id of the railgun being created */
 static int armed[32];             /* an AI picked a railgun: its next Bolt shot is one */
 static int in_trigger = 0;          /* a railgun's Trigger is running: the hit effects come from its level */
 static void say(const char *fmt, ...);
@@ -80,23 +82,29 @@ static Rail *rail_of(void *p);
 #define VLC_LEVEL_CONT  0x47417A
 typedef char *(__fastcall *TypeFn)(void *db, void *edx, int type);
 
-static char *rail_level(void)       /* RLPickupLevel*, NULL if the data has none (then the Bolt's effects stay) */
+static char *rail_level(int rear)   /* RLPickupLevel*, NULL if the data has none (then the Bolt's effects stay) */
 {
-    static char *level;
+    static char *level[2];
     static int tried;
     if (!tried) {
         char *t = ((TypeFn)GET_PICKUP_TYPE)((void *)0x1133220, NULL, 10);
-        unsigned table = t ? *(unsigned *)(t + 0x34) : 0;          /* XtHandle mModified: table, id, offset */
+        int i;
         tried = 1;
-        if (table && *(unsigned short *)table == *(unsigned short *)(t + 0x38) && *(unsigned *)(table + 8))
-            level = (char *)(*(unsigned *)(table + 8) + *(unsigned short *)(t + 0x3A));
-        say(level ? "railgun effects: own level found" : "railgun effects: no own level (Bolt effects)");
+        for (i = 0; i < 2 && t; i++) {                  /* XtHandle mModified +0x34 / mReverseModified +0x3C */
+            char *h = t + 0x34 + 8 * i;
+            unsigned table = *(unsigned *)h;
+            if (table && *(unsigned short *)table == *(unsigned short *)(h + 4) && *(unsigned *)(table + 8))
+                level[i] = (char *)(*(unsigned *)(table + 8) + *(unsigned short *)(h + 6));
+        }
+        if (!level[1]) level[1] = level[0];
+        say(level[0] ? "railgun effects: own levels found" : "railgun effects: no own level (Bolt effects)");
     }
-    return level;
+    return level[rear != 0];
 }
 
-static char *__cdecl level_for(void *self) { return rail_of(self) ? rail_level() : NULL; }
-static char *__cdecl level_for_hit(int type) { return in_trigger && type == 3 ? rail_level() : NULL; }
+static int in_trigger_rear = 0;
+static char *__cdecl level_for(void *self) { Rail *r = rail_of(self); return r ? rail_level(r->rear) : NULL; }
+static char *__cdecl level_for_hit(int type) { return in_trigger && type == 3 ? rail_level(in_trigger_rear) : NULL; }
 
 static __declspec(naked) void base_level_thunk(void)  /* C_PickupBase::GetRLSubTypeLevel(sub), thiscall, ret 4 */
 {
@@ -190,7 +198,7 @@ static Voice vc[NVOICE];
 static volatile LONG q_head = 0, q_tail = 0;
 static int q_snd[32];
 static float q_at[32][3];
-static int lan_on = 1;              /* 0 off, 1 default (spawn roll), 2 on in a custom race (railgun.lua): no roll */
+static int lan_on = 1;              /* 0 off, 1 default (spawn roll), 2 on in a custom race: no roll, 3 railgun only */
 static volatile LONG draws = 0;
 
 static const float *vehicle_pos(int i)   /* race vehicle list (blur_live.py): object +0x130 = position, +0xCC side */
@@ -233,7 +241,7 @@ static float hear(const float *at, float range, float *pan)    /* audio thread: 
     dist = sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
     if (!(dist < range)) return 0.f;                               /* also NaN */
     if (dist > 1.f) *pan = (d[0] * side[0] + d[1] * side[1] + d[2] * side[2]) / dist;
-    return powf(1.f - dist / range, 0.6f);                         /* stays loud longer than a straight line */
+    return volume * powf(1.f - dist / range, 0.6f);                /* stays loud longer than a straight line */
 }
 
 static void gain(int v, float vol, float pan)
@@ -377,6 +385,7 @@ static DWORD WINAPI audio(LPVOID unused)
 /* custom race switch, called from Lua through package.loadlib (amax\plugins\railgun\railgun.lua): lua_CFunctions
    with no argument read and no result */
 __declspec(dllexport) int __cdecl railgun_on(void *L) { (void)L; lan_on = 2; say("custom race: Railgun ON"); return 0; }
+__declspec(dllexport) int __cdecl railgun_only(void *L) { (void)L; lan_on = 3; say("custom race: Railgun ONLY"); return 0; }
 __declspec(dllexport) int __cdecl railgun_off(void *L) { (void)L; lan_on = 0; say("custom race: Railgun OFF"); return 0; }
 
 /* pick-up: an AI cannot use type 10 (cPerkSkillUsage knows 0-7): it gets a 1-shot Bolt fired as a railgun;
@@ -409,8 +418,9 @@ static void overrides(char *self, Rail *r)
     *(float *)(self + 0x15C) = fallrate;
     *(float *)(self + 0xB0) = 1e9f;
     *(char **)(self + 0x56C) = r->bal;               /* the reversed Bolt puts its Reversed balancing here */
-    if (rail_level() && *(unsigned *)(rail_level() + 0x1C))
-        *(unsigned *)(self + 0x570) = *(unsigned *)(rail_level() + 0x1C);   /* mpBlindfireSFX: projectile, impacts */
+    if (rail_level(r->rear) && *(unsigned *)(rail_level(r->rear) + 0x1C))
+        *(unsigned *)(self + 0x570) = *(unsigned *)(rail_level(r->rear) + 0x1C);   /* mpBlindfireSFX */
+    if (r->rear) *(float *)(self + 0x158) = rear_speed;      /* seen in the mirror: at 600 m/s it is gone in 1-2 frames */
 }
 
 static void __cdecl after_ctor(char *self)
@@ -420,7 +430,7 @@ static void __cdecl after_ctor(char *self)
     if (!next_is_rail) return;
     next_is_rail = 0;
     if (!(r = rail_of(NULL))) { say("more than %d railguns alive: this one is a plain Bolt", MAX_RAILS); return; }
-    r->p = self; r->pierced = 0; r->last_wall = 0; r->rear = rear;
+    r->p = self; r->pierced = 0; r->last_wall = 0; r->rear = rear; r->uid = rd((unsigned)self + 0x14);
     r->bal = (char *)rd((unsigned)self + 0x56C);    /* the Bolt's Normal balancing (damage is read there) */
     overrides(self, r);
     InterlockedIncrement(&fired);
@@ -434,6 +444,7 @@ static void __cdecl super_setup(char *info)
     next_is_rail = rear ? 2 : 1;
     if (rear) *(int *)(info + 4) = 0;               /* forward Bolt class, turned in its PostDelayInitialise */
     next_shooter = *(int *)(info + 8);
+    pending_uid = *(unsigned *)(info + 0x14);
     *(float *)(info + 0x10) = rear ? rear_delay : front_delay;
 }
 
@@ -536,6 +547,7 @@ static void __fastcall trigger_hook(char *self, void *edx, int idx)
     if (bal) *(int *)(bal + 0x1C) = (int)(base_damage * falloff[r->pierced < 2 ? r->pierced : 2] + 0.5f);
     *(unsigned char *)(self + 0xF0) = 0xFE;
     in_trigger = 1;
+    in_trigger_rear = r->rear;
     ((TriggerFn)TRIGGER)(self, NULL, idx);
     in_trigger = 0;
     if (bal) *(int *)(bal + 0x1C) = old;
@@ -633,7 +645,7 @@ static __declspec(naked) void spawn_thunk(void)     /* replaces "cmp ebp,0Ah / j
 {
     __asm {
         cmp ebp, 0xA
-        jne keep
+        jne other
         push eax
         push ecx
         push edx
@@ -645,6 +657,11 @@ static __declspec(naked) void spawn_thunk(void)     /* replaces "cmp ebp,0Ah / j
         jnz keep
         mov dword ptr [esp], SPAWN_IGNORE
     keep:
+        ret
+    other:                                              /* railgun only: every other type is refused */
+        cmp lan_on, 3
+        jne keep
+        mov dword ptr [esp], SPAWN_IGNORE
         ret
     }
 }
@@ -660,8 +677,11 @@ static __declspec(naked) void shuffle_thunk(void)
     __asm {
         cmp ebp, 0xA
         jne normal
+        cmp lan_on, 3                                   /* railgun only: every position */
+        je any_pos
         test byte ptr [edi + 0x108], 8
         jz refuse
+    any_pos:
         lock inc draws
         mov dword ptr [esp], SHUFFLE_OK
         ret
@@ -670,6 +690,51 @@ static __declspec(naked) void shuffle_thunk(void)
         ret
     normal:
         mov eax, 1
+        ret
+    }
+}
+
+/* The game's own pickup sounds (Audio::InterfaceController 0x111D1E8 ::SendMessageToSubsystem 0x535770, thiscall
+   (subsystem, message, value, msg*), ret 0x10; 9 = pickups) also play the Bolt's fire / flight / hit sounds for a
+   railgun under ours ("muddy, triggered many times"). Messages that carry a railgun's unique id (PickupCreationStruct
+   +0x14, C_PickupBase +0x14) among their first words are dropped. */
+static int __cdecl rail_msg(const unsigned *msg)
+{
+    int i, k;
+    if (!msg || !rd((unsigned)msg) || !rd((unsigned)(msg + 12))) return 0;
+    for (i = 1; i <= 12; i++) {
+        unsigned u = msg[i];
+        if (!u || u == 0xFFFFFFFF) continue;
+        if (u == pending_uid) return 1;
+        for (k = 0; k < MAX_RAILS; k++)
+            if (rails[k].p && rails[k].uid == u) return 1;
+    }
+    return 0;
+}
+
+#define AUDIO_CONT 0x535776
+#define AUDIO_SKIP 0x53579E
+static __declspec(naked) void audio_msg_thunk(void)  /* entry of SendMessageToSubsystem (6 bytes replaced) */
+{
+    __asm {
+        cmp dword ptr [esp + 4], 9
+        jne orig
+        push ecx
+        push dword ptr [esp + 0x14]
+        call rail_msg
+        add esp, 4
+        pop ecx
+        test eax, eax
+        jz orig
+        ret 0x10
+    orig:
+        mov eax, [ecx]
+        test eax, eax
+        jz skip
+        push AUDIO_CONT
+        ret
+    skip:
+        push AUDIO_SKIP
         ret
     }
 }
@@ -707,6 +772,7 @@ enum { CALL, JMP, PTR, RAW };   /* CALL / JMP: E8 / E9 rel32 + nops; PTR: 4-byte
 static Patch patches[] = {
     {0xB5B497, 5, "83fd0a7405", CALL, NULL, "SetRandomPickupType: SuperShield (railgun) allowed"},
     {0xB5B4AF, 5, "b801000000", CALL, NULL, "SetRandomPickupType: railgun where the position allows the Bolt"},
+    {0x535770, 6, "8b0185c07428", JMP, NULL, "SendMessageToSubsystem: no Bolt sounds for a railgun"},
     {0x47CC60, 5, "e88bcdfeff", CALL, NULL, "PickedUp: an AI gets a Bolt instead (test mode: player Bolt -> railgun)"},
     {0xBAB600, 4, "00b4ba00", PTR, NULL, "CreatePickup: SuperShield -> railgun Bolt"},
     {0xBAAF9F, 5, "e82c360400", CALL, NULL, "Bolt constructor call 1"},
@@ -732,7 +798,7 @@ static void unhex(const char *s, unsigned char *out, int n)
 
 static void apply(void)
 {
-    void *to[] = {(void *)spawn_thunk, (void *)shuffle_thunk, (void *)pick_thunk, (void *)super_case, (void *)ctor_wrap, (void *)ctor_wrap,
+    void *to[] = {(void *)spawn_thunk, (void *)shuffle_thunk, (void *)audio_msg_thunk, (void *)pick_thunk, (void *)super_case, (void *)ctor_wrap, (void *)ctor_wrap,
                   (void *)ctor_wrap, (void *)trigger_hook, (void *)trigger_hook, (void *)kill_thunk, (void *)wall_thunk,
                   (void *)dmg_thunk, (void *)base_level_thunk, (void *)vlc_level_thunk, (void *)pdi_hook,
                   (void *)bolt_case};
@@ -789,6 +855,8 @@ static void load_settings(void)
             else if (!strcmp(key, "impact_range")) impact_range = v[0];
             else if (!strcmp(key, "loop_range")) loop_range = v[0];
             else if (!strcmp(key, "fire_range")) fire_range = v[0];
+            else if (!strcmp(key, "rear_speed")) rear_speed = v[0];
+            else if (!strcmp(key, "volume")) volume = v[0];
             else if (!strcmp(key, "damage")) base_damage = v[0];
             else if (!strcmp(key, "crush")) crush = (int)v[0];
             else if (!strcmp(key, "falloff") && k == 3) memcpy(falloff, v, sizeof v);
@@ -825,7 +893,7 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         if (slash) slash[1] = 0;
         sprintf_s(path, sizeof path, "%srailgun.log", dir);
         logfile = _fsopen(path, "w", _SH_DENYNO);   /* readable while the game runs */
-        say("railgun v4 loaded");
+        say("railgun v5 loaded");
         srand(GetTickCount());
         load_settings();
         if (test_mode) say("TEST MODE: every Bolt the player picks up becomes a railgun");

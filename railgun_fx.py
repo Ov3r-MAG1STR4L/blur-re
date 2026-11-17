@@ -28,6 +28,8 @@ BASE = 0xFFFF2000                                          # above every hash of
 BOLT_LEVEL, SUPERSHIELD_TYPE = 0xDD8A965A, 0xB85C8D7A
 PROJ, PROJ_LIGHT, PROJ_MESH, PROJ_INNER, PROJ_PART = 0xF6ABA9FE, 0x3521EF73, 0x1CE75F16, 0xCEAFD367, 0x2607B072
 SHUNT_CHARGE, SHUNT_RED, NITRO_RINGS = 0x3B3B8C89, 0xD7F8C4E6, 0x6EF7CFB3
+SHUNT_REV_CHARGE, REAR_BUILD_SPEED = 0x0E21E55E, 1.75   # ShuntBuildRev at 4.375 fits the Shunt's 0.2 s; ours 0.5 s
+NULL_REF = 0xFFFFFFFF
 FIRED, FIRED_LIGHT = 0xB965D104, 0x602C1239
 SHOCK_EXT, SHOCK_LOCAL, SHOCK_LIGHTS = 0x79746C67, 0x2482A962, (0xFCDCEFDA, 0x6F4C6268, 0xF232D009)
 TRAIL_EVENT, TRAIL_EFFECT = 0xC6DD8255, 0x0C399DBB
@@ -150,13 +152,28 @@ def build(pk_in, dyn_in, pk_out, dyn_out):
     k, src, proj = e.clone(PROJ)
     for i, s in enumerate((mesh, light, part_neon)):            # [2] was the Barge_Flare halo
         e.put(k, src, f"Components[{i}].Component", "<I", s)
-    # charge: Shunt charge, reverse Nitro rings instead of the screen effect, white light
+    # charge, as the Shunt does it: Local = the shooter's own view (camera shake), External = what the others see
+    # (no shake); [0] screen effect -> reverse Nitro rings, [3] red light -> white, [2] camera (Local only)
     white = _white_light(e, SHUNT_RED, 1.4)
-    k, src, charge = e.clone(SHUNT_CHARGE)
-    e.put(k, src, "Components[0].Component", "<I", e.slot(NITRO_RINGS))
-    e.put(k, src, "Components[3].Component", "<I", white)
-    for i in (0, 1):                                              # rings, ShuntBuild2: stretched over the delay
-        e.put(k, src, f"Components[{i}].SpeedFactor", "<f", CHARGE_SPEED)
+    charges = {}
+    for view in ("local", "external"):
+        k, src, charges[view] = e.clone(SHUNT_CHARGE)
+        e.put(k, src, "Components[0].Component", "<I", e.slot(NITRO_RINGS))
+        e.put(k, src, "Components[3].Component", "<I", white)
+        if view == "external":
+            e.put(k, src, "Components[2].Component", "<I", white)
+        for i in (0, 1):                                          # rings, ShuntBuild2: stretched over the delay
+            e.put(k, src, f"Components[{i}].SpeedFactor", "<f", CHARGE_SPEED)
+    charge = charges["local"]
+    # rear charge: the Shunt's reverse charge (ShuntBuildRev) for the 0.5 s rear delay, white light
+    rear = {}
+    for view in ("local", "external"):
+        k, src, rear[view] = e.clone(SHUNT_REV_CHARGE)
+        e.put(k, src, "Components[1].SpeedFactor", "<f", REAR_BUILD_SPEED)
+        e.put(k, src, "Components[3].Component", "<I", white)
+        if view == "external":                                   # no screen effect, no shake for the others
+            e.put(k, src, "Components[0].Component", "<I", white)
+            e.put(k, src, "Components[2].Component", "<I", white)
     # firing flash
     flash = _white_light(e, FIRED_LIGHT, 2.8)
     k, src, fired = e.clone(FIRED)
@@ -168,17 +185,24 @@ def build(pk_in, dyn_in, pk_out, dyn_out):
         k, src, hits[name] = e.clone(h)
         for i, s in zip(at, lights):
             e.put(k, src, f"Components[{i}].Component", "<I", s)
-    # the level
-    k, src, level = e.clone(BOLT_LEVEL)
+    # the levels: forward (SuperShield.Modified) and rear (SuperShield.ReverseModified), same but the charge
+    levels = {}
     sfx = "SpecialFX."
-    e.put(k, src, sfx + "ProjectileSpecialFX[0].GlobalSpecialFX", "<I", proj)
-    e.put(k, src, sfx + "ChargingSpecialFX[0].GlobalSpecialFX", "<I", charge)
-    e.put(k, src, sfx + "FiredSpecialFX[0].GlobalSpecialFX", "<I", fired)
-    e.put(k, src, sfx + "HitVehicleSpecialFX[0].ExternalSpecialFX", "<I", hits["ext"])
-    e.put(k, src, sfx + "HitVehicleSpecialFX[0].LocalSpecialFX", "<I", hits["local"])
-    e.put(k, src, sfx + "HitVehicleSpecialFX[0].DurationIntro.EndTime", "<f", HIT_TIME)
+    for name, ch in (("front", charges), ("rear", rear)):
+        k, src, levels[name] = e.clone(BOLT_LEVEL)
+        e.put(k, src, sfx + "ProjectileSpecialFX[0].GlobalSpecialFX", "<I", proj)
+        e.put(k, src, sfx + "ChargingSpecialFX[0].GlobalSpecialFX", "<I", NULL_REF)
+        e.put(k, src, sfx + "ChargingSpecialFX[0].LocalSpecialFX", "<I", ch["local"])
+        e.put(k, src, sfx + "ChargingSpecialFX[0].InternalSpecialFX", "<I", ch["local"])
+        e.put(k, src, sfx + "ChargingSpecialFX[0].ExternalSpecialFX", "<I", ch["external"])
+        e.put(k, src, sfx + "FiredSpecialFX[0].GlobalSpecialFX", "<I", fired)
+        e.put(k, src, sfx + "HitVehicleSpecialFX[0].ExternalSpecialFX", "<I", hits["ext"])
+        e.put(k, src, sfx + "HitVehicleSpecialFX[0].LocalSpecialFX", "<I", hits["local"])
+        e.put(k, src, sfx + "HitVehicleSpecialFX[0].DurationIntro.EndTime", "<f", HIT_TIME)
+    level = levels["front"]
     k = e.rec(SUPERSHIELD_TYPE)
-    e.put(k, k, "Modified", "<I", level)
+    e.put(k, k, "Modified", "<I", levels["front"])
+    e.put(k, k, "ReversedModified", "<I", levels["rear"])
     assert [h for h, _, _ in e.k.index] == sorted(h for h, _, _ in e.k.index), "index must stay sorted"
     open(pk_out, "wb").write(e.k.build())
     made.update(level=e.k.index[level][0], projectile=e.k.index[proj][0], charge=e.k.index[charge][0])
@@ -221,10 +245,14 @@ if __name__ == "__main__":                                    # self-check on co
     assert trail_ev["name"] == "RearLightTrail" and abs(trail_ev["emitters"][0]["particle"]["life"]["mean"] - TRAIL_LIFE) < 1e-4
     eff = R[int(trail_ev["emitters"][0]["effect"][1:], 16)][1]
     assert eff["render"]["colourCurveA"][0]["outTangent"] == -1.0
-    ch = comps(s["ChargingSpecialFX"][0]["GlobalSpecialFX"])
+    ch = comps(s["ChargingSpecialFX"][0]["LocalSpecialFX"])
+    assert s["ChargingSpecialFX"][0]["GlobalSpecialFX"] is None
+    assert comps(s["ChargingSpecialFX"][0]["ExternalSpecialFX"])[2][0] == "LightSpecialFX"   # no shake for the others
+    rl = R[int(st["ReversedModified"][1:], 16)][1]
+    assert "ShuntBuildRev" in comps(rl["SpecialFX"]["ChargingSpecialFX"][0]["LocalSpecialFX"])[1][1]["AnimatedMeshFileName"]
     assert "NitroReverseBlastRings" in ch[0][1]["AnimatedMeshFileName"] and "ShuntBuild2" in ch[1][1]["AnimatedMeshFileName"]
     assert ch[3][1]["Colour"]["g"] > 1
-    assert R[int(s["ChargingSpecialFX"][0]["GlobalSpecialFX"][1:], 16)][1]["Components"][1]["SpeedFactor"] == CHARGE_SPEED
+    assert R[int(s["ChargingSpecialFX"][0]["LocalSpecialFX"][1:], 16)][1]["Components"][1]["SpeedFactor"] == CHARGE_SPEED
     hit = s["HitVehicleSpecialFX"][0]
     ext = comps(hit["ExternalSpecialFX"])
     assert "Shocked02" in ext[0][1]["AnimatedMeshFileName"] and all(c[1]["Colour"]["r"] > 4 for c in ext[1:4])
