@@ -128,4 +128,4 @@ Cela validerait l'ajout de cases sans toucher à l'exe.
 
 ## 8. Résultats
 
-*(à remplir après l'essai)*
+Premier essai (rapporté, sans capture) : cas 1 et 5 étoile (pare-chocs), cas 7 étoile (IA), cas 3 normal, cas 4 **hexagone** (caméra extérieure). Diagnostic : `ESSAI_HUD_SHIELD104_DIAGNOSTIC.md` ; à refaire avec captures (protocole du §8 du diagnostic).

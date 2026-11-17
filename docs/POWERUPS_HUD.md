@@ -532,3 +532,5 @@ Pour vérifier aussi les planches agrandies : refaire l'essai avec `perk_sheet_s
 0,09375, et l'index **105** sur une case dessinée exprès.
 
 Essai préparé (copie `Blur_test_hud`, `shield.texture_index` → 104) : voir **`ESSAI_HUD_SHIELD104.md`**. Pas encore joué.
+
+Résultat partiel de l'essai : étoile en caméra pare-chocs et au-dessus des IA, hexagone signalé en caméra extérieure. Diagnostic (même code et même configuration pour les deux carrousels ; l'hexagone viendrait des Boucliers posés sur la piste, `shieldpickup.model` / `icon_shield_01`) : **`ESSAI_HUD_SHIELD104_DIAGNOSTIC.md`**.
