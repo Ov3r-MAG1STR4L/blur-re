@@ -169,6 +169,11 @@ def impact_sound(src, out, fade=True, rate=44100):
     x = _load(src, rate)
     if fade:
         x[-int(rate * 0.05):] *= np.linspace(1, 0, int(rate * 0.05))[:, None]
+    else:                                             # loop: end crossfaded into the start, no click at the wrap
+        n = int(rate * 0.06)
+        w = np.linspace(0, 1, n)[:, None]
+        x[:n] = x[:n] * w + x[-n:] * (1 - w)
+        x = x[:-n]
     x = np.int16(np.clip(x / np.abs(x).max() * 0.95, -1, 1) * 32767)
     with wave.open(out, "wb") as w:
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(rate); w.writeframes(x.tobytes())

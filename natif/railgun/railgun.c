@@ -62,6 +62,7 @@ static int crush = 9999;
 
 static float front_delay = 1.0f, rear_delay = 0.5f;   /* s between the button and the shot */
 static float rear_speed = 300.f, volume = 0.7f;        /* rear shot m/s; our sounds' master volume */
+static float rear_offset = 4.5f;   /* m: a rear shot starts this far back from where a forward one starts */
 static float duck_depth = 0.45f, duck_hold = 0.3f, duck_release = 1.0f;   /* Shunt-like ducking (player's shots) */
 static volatile DWORD duck_t0 = 0;   /* GetTickCount of the player's last railgun (charge start) */
 static volatile float duck_delay = 1.f;
@@ -194,9 +195,9 @@ static const char *snd_file[NSND] = {"railgun_fire.wav", "railgun_fire_rear.wav"
 static char *snd_data[NSND];
 static DWORD snd_len[NSND];
 #define NVOICE 16
-#define BLOCK 512                   /* frames per buffer: 11.6 ms */
-#define NBUF 3
-typedef struct { int snd, on, loop, rail; DWORD pos, t; float l, r; } Voice;
+#define BLOCK 1024                  /* frames per buffer: 23 ms */
+#define NBUF 4                      /* ~90 ms queued: no underrun when the game is busy */
+typedef struct { int snd, on, loop, rail, stop; DWORD pos, t; float l, r, cl, cr; } Voice;   /* cl/cr: gains now, ramped to l/r */
 static Voice vc[NVOICE];
 static HWAVEOUT mix_out;           /* our output (its volume = the whole application's) */
 static volatile LONG q_head = 0, q_tail = 0;
@@ -267,6 +268,7 @@ static int start(int snd, float vol, float pan, int rail)  /* a free voice, else
     if (best < 0) return -1;
     v = best;
     vc[v].snd = snd; vc[v].pos = 0; vc[v].loop = rail >= 0; vc[v].rail = rail; vc[v].t = GetTickCount();
+    vc[v].stop = 0; vc[v].cl = vc[v].cr = 0.f;      /* fades in over the first block */
     gain(v, vol, pan);
     vc[v].on = 1;
     return v;
@@ -301,14 +303,21 @@ static void mix(short *dst)         /* sums every voice into one block (16-bit s
         if (!vc[v].on) continue;
         src = (const short *)snd_data[vc[v].snd];
         frames = snd_len[vc[v].snd] / 4;
-        for (f = 0; f < BLOCK; f++) {
-            if (vc[v].pos >= frames) {
-                if (!vc[v].loop) { vc[v].on = 0; break; }
-                vc[v].pos = 0;
+        {
+            float tl = vc[v].stop ? 0.f : vc[v].l, tr = vc[v].stop ? 0.f : vc[v].r;
+            float dl = (tl - vc[v].cl) / BLOCK, dr = (tr - vc[v].cr) / BLOCK, gl = vc[v].cl, gr = vc[v].cr;
+            for (f = 0; f < BLOCK; f++) {
+                if (vc[v].pos >= frames) {
+                    if (!vc[v].loop) { vc[v].on = 0; break; }
+                    vc[v].pos = 0;
+                }
+                gl += dl; gr += dr;
+                acc[2 * f] += src[2 * vc[v].pos] * gl;
+                acc[2 * f + 1] += src[2 * vc[v].pos + 1] * gr;
+                vc[v].pos++;
             }
-            acc[2 * f] += src[2 * vc[v].pos] * vc[v].l;
-            acc[2 * f + 1] += src[2 * vc[v].pos + 1] * vc[v].r;
-            vc[v].pos++;
+            vc[v].cl = tl; vc[v].cr = tr;
+            if (vc[v].stop) vc[v].on = 0;               /* faded out over this block */
         }
     }
     for (f = 0; f < BLOCK * 2; f++) {            /* compensation, soft knee above 0.8 of full scale */
@@ -371,7 +380,7 @@ static void loops(void)
         }
         if (alive && lv[i] < 0) lv[i] = start(rails[i].rear ? S_LOOP_REAR : S_LOOP, vol, pan, i);
         else if (alive) gain(lv[i], vol, pan);
-        else if (lv[i] >= 0) { vc[lv[i]].on = 0; lv[i] = -1; }
+        else if (lv[i] >= 0) { vc[lv[i]].stop = 1; vc[lv[i]].rail = -1; lv[i] = -1; }
     }
 }
 
@@ -385,6 +394,7 @@ static DWORD WINAPI audio(LPVOID unused)
     int b;
     (void)unused;
     load_sounds();
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
     if (waveOutOpen(&out, WAVE_MAPPER, &fmt, (DWORD_PTR)ev, 0, CALLBACK_EVENT) != MMSYSERR_NOERROR || !(mix_out = out)) {
         say("no sound output (waveOutOpen failed)");
         return 0;
@@ -433,7 +443,7 @@ static int __cdecl pick(int vehicle, int *type)
     return -1;
 }
 
-static int __cdecl spawn_roll(void) { return lan_on == 2 || (lan_on && rand() < (int)(spawn * RAND_MAX)); }
+static int __cdecl spawn_roll(void) { return lan_on >= 2 || (lan_on && rand() < (int)(spawn * RAND_MAX)); }
 
 /* ---- 3. creation ---- */
 static void __cdecl before_ctor(char *self)         /* pooled memory: a new Bolt may reuse a railgun's slot */
@@ -466,8 +476,8 @@ static void __cdecl after_ctor(char *self)
     r->bal = (char *)rd((unsigned)self + 0x56C);    /* the Bolt's Normal balancing (damage is read there) */
     overrides(self, r);
     InterlockedIncrement(&fired);
-    play_at(rear ? S_FIRE_REAR : S_FIRE, vehicle_pos(next_shooter));
-    if (is_human(next_shooter)) { duck_delay = rear ? rear_delay : front_delay; duck_t0 = GetTickCount(); }
+    if (is_human(next_shooter)) {
+        play_at(rear ? S_FIRE_REAR : S_FIRE, vehicle_pos(next_shooter)); duck_delay = rear ? rear_delay : front_delay; duck_t0 = GetTickCount(); }
 }
 
 /* PickupCreationStruct (esi in CreatePickup): +0 type, +4 sub-type (2 = reversed), +0x10 delay before the shot */
@@ -516,7 +526,7 @@ static void __fastcall pdi_hook(char *self, void *edx, const float *m, void *sfx
     (void)edx;
     if (r && r->rear && m) {
         memcpy(c, m, sizeof c);
-        for (i = 0; i < 3; i++) { c[i] = -c[i]; c[6 + i] = -c[6 + i]; }
+        for (i = 0; i < 3; i++) { c[9 + i] -= rear_offset * c[6 + i]; c[i] = -c[i]; c[6 + i] = -c[6 + i]; }
         m = c;
     }
     ((PdiFn)BOLT_PDI)(self, NULL, m, sfx);
@@ -891,6 +901,7 @@ static void load_settings(void)
             else if (!strcmp(key, "rear_speed")) rear_speed = v[0];
             else if (!strcmp(key, "volume")) volume = v[0];
             else if (!strcmp(key, "duck")) duck_depth = v[0];
+            else if (!strcmp(key, "rear_offset")) rear_offset = v[0];
             else if (!strcmp(key, "duck_release")) duck_release = v[0];
             else if (!strcmp(key, "damage")) base_damage = v[0];
             else if (!strcmp(key, "crush")) crush = (int)v[0];
@@ -928,7 +939,7 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         if (slash) slash[1] = 0;
         sprintf_s(path, sizeof path, "%srailgun.log", dir);
         logfile = _fsopen(path, "w", _SH_DENYNO);   /* readable while the game runs */
-        say("railgun v6 loaded");
+        say("railgun v7 loaded");
         srand(GetTickCount());
         load_settings();
         if (test_mode) say("TEST MODE: every Bolt the player picks up becomes a railgun");

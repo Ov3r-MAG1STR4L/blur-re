@@ -3318,3 +3318,12 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   d'autant (genou doux au-dessus de 0,8). Pas de passe-bas (volume seulement).
 - **Charge arrière** : anneaux du Nitro arrière (blancs) à la place de l'effet d'écran, vitesse 1,0 pour les 0,5 s,
   avec `ShuntBuildRev`.
+- **v7 (2026-11-17, installé)** : (1) « Railgun seul » laissait des orbes : le tirage à 35 % s'appliquait encore en mode
+  seul, 65 % des tirages n'avaient alors aucun type accepté et l'emplacement gardait une orbe ; plus de tirage dès que
+  l'interrupteur est sur On. (2) Son de tir : seulement pour le Railgun du joueur (chacun n'entend que le sien). (3)
+  Grésillements : mixeur à 4 tampons de 1024 images (~90 ms, plus de tampon vide quand le jeu est chargé), fil audio en
+  priorité haute, gain de chaque voix interpolé sur un tampon (plus de clic au départ, au mouvement ni à l'arrêt d'une
+  voix) ; boucles du projectile rendues continues (60 ms de fin fondus dans le début). (4) Tir arrière : la classe avant
+  le fait partir du point de tir avant ; décalé de `rear_offset` (4,5 m) vers l'arrière avant le demi-tour. L'orbe
+  arrière du jeu (`@e2afbeba`, maillage `@d016c65a`) n'a pas de traînée et n'exclut pas le rétroviseur ; visibilité au
+  rétroviseur toujours à confirmer.
