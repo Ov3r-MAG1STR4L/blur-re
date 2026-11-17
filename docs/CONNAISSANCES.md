@@ -3436,4 +3436,12 @@ Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeur
     vtable `0xEEAFF0`), V = index × size.v + pos.v ;
   - `GetTextureParam` (`0x74B270`) vérifie ses bornes ;
   - aucune différence avec la source.
+- **Essai en jeu (2026-11-17, Confirmé, captures)** : `shield.texture_index` 7 → 104 (copie `Blur_test_hud`, un seul
+  octet de `ui.bin`).
+  - Étoile dans les deux carrousels (extérieur et pare-chocs) et au-dessus des IA : seuil 100 et planche support
+    validés en jeu.
+  - Les bonus **posés sur la piste** ont leurs propres textures, intégrées au modèle
+    (`models\perks\pickups\shieldpickup.model` : `icon_shield_01`, `icon_shield_01_inverse`) : `ui.bin` n'y change
+    rien.
+  - `gamedata_boot.pak`, resté actif, contient aussi `ui.bin`, mais c'est le fichier en clair qui est lu.
 

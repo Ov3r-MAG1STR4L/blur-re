@@ -129,3 +129,26 @@ Cela validerait l'ajout de cases sans toucher à l'exe.
 ## 8. Résultats
 
 Premier essai (rapporté, sans capture) : cas 1 et 5 étoile (pare-chocs), cas 7 étoile (IA), cas 3 normal, cas 4 **hexagone** (caméra extérieure). Diagnostic : `ESSAI_HUD_SHIELD104_DIAGNOSTIC.md` ; à refaire avec captures (protocole du §8 du diagnostic).
+
+### Résultat avec captures (2026-11-17, **Confirmé en jeu**)
+
+Captures : `blur_extracted\mods\hud_shield104\captures\` (hors dépôt). Course perso Shield + Nitro, Amboy.
+
+| Capture | Ce qu'on voit |
+|---|---|
+| `01_exterieur_etoile_et_bouclier_piste.webp` (caméra extérieure) | carrousel derrière la voiture : **étoile** (case non choisie, version inversée : cadre clair), Nitro choisi (vert), case vide ; sur la piste, à droite : un Bouclier posé = **hexagone** (`shieldpickup.model`), à côté de Nitros posés |
+| `02_parechocs_etoile.webp` (caméra pare-chocs) | carrousel du HUD : **étoile**, Nitro, case vide |
+| `03_exterieur_etoile.webp` (caméra extérieure, sans bonus en vue) | carrousel derrière la voiture : **étoile** (petite, non choisie), Nitro choisi |
+
+**Conclusion** :
+
+- l'index 104 s'affiche **dans les trois affichages** : carrousel extérieur, carrousel pare-chocs, icône au-dessus
+  des IA ;
+- la planche normale et la planche inversée de `perk_sheet_support` servent bien toutes les deux ;
+- **le seuil 100 et le calcul de V sont validés en jeu** ;
+- l'hexagone signalé au premier essai était le Bouclier **posé sur la piste**, qui a ses propres textures
+  (`icon_shield_01`), comme prévu par le diagnostic ;
+- le Bouclier fonctionne normalement (bulle de 6 s).
+
+Non vérifié par capture : barre de course (cas 8, attendu inchangé) et Railgun (cas 9, autre copie).
+

@@ -69,7 +69,7 @@ Conclusion du désassemblage : **au même instant, les deux carrousels ne peuven
 Hypothèses 1 à 7 de la demande : aucune n'est visible dans le code. Il n'y a ni autre structure, ni autre instance de
 configuration, ni cache, ni autre fonction, ni transformation de l'index, ni autre texture pour le gadget attaché.
 
-## 5. Cause la plus probable (**Hypothèse**, à confirmer par une capture)
+## 5. Cause (**Confirmée en jeu** par les captures du 2026-11-17, voir `ESSAI_HUD_SHIELD104.md` §8)
 
 **L'hexagone vu en caméra extérieure n'est pas le carrousel : ce sont les Boucliers posés sur la piste.**
 
@@ -125,3 +125,13 @@ l'effet, mais la priorité exacte entre ce pak et le dossier reste à mesurer (P
    - l'essai est alors entièrement réussi pour le HUD.
 6. Les captures vont dans `blur_extracted\mods\hud_shield104\captures\`. Noter le résultat dans
    `ESSAI_HUD_SHIELD104.md` §8.
+
+## 9. Résultat (2026-11-17)
+
+Captures faites (`hud_shield104\captures-03`) :
+
+- en caméra extérieure, le carrousel derrière la voiture montre **l'étoile** ;
+- le Bouclier posé sur la piste montre **l'hexagone**.
+
+Le §5 est **confirmé**, et il n'y a rien à corriger dans le HUD.
+
