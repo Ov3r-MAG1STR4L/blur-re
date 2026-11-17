@@ -3456,3 +3456,4 @@ Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeur
     en jeu).
 
   Essai : `shield_pickup_icon.py` / `ESSAI_HUD_SHIELD_PICKUP.md`.
+  - **Confirmé en jeu (capture)** : le Bouclier posé sur la piste affiche le triangle « 6 » (textures réinjectées, copie `Blur_test_hud_pickup` sans `boot.pak`, jeu démarré normalement). Ramassage, Bouclier de 6 s et réapparition pas encore capturés.

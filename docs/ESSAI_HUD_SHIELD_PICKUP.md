@@ -135,6 +135,27 @@ toucher à `pickups.bin` ni au comportement.
 Pour un bonus maison qui emprunte un type (comme le Railgun avec le SuperShield), c'est le modèle du type emprunté
 qu'on redessine : par exemple `shieldsuperpickup.model` pour le Railgun.
 
-## 8. Résultats
+## 8. Résultats (2026-11-17, capture `captures\01_piste_triangle6.webp`, **Confirmé en jeu**)
 
-*(à remplir après l'essai)*
+| # | Vérifié | Résultat |
+|---|---|---|
+| 1 | Bouclier posé sur la piste | **triangle + « 6 »** dans le cadre lumineux, avec la teinte habituelle (blanc rosé) : le modèle modifié est bien lu |
+| 2 | Proportions, lisibilité | cadre et taille inchangés, symbole lisible en course (vue de 3/4 avant) |
+| 7 | Autres bonus | Nitro posé sur la piste inchangé (double chevron vert) |
+| 9 | Démarrage sans `boot.pak` | le jeu démarre et la course se lance |
+| — | HUD | le carrousel montre toujours l'**hexagone**, ce qui est attendu (`ui.bin` d'origine dans cette copie) : le HUD et le bonus sur la piste sont bien indépendants |
+| 3-6 | Animation, ramassage, Bouclier de 6 s, réapparition | **pas de capture** : non vérifiés à ce stade |
+
+**Conclusion** :
+
+- on peut changer l'apparence d'un bonus posé sur la piste en remplaçant **seulement les textures intégrées** à son
+  modèle ;
+- il ne faut rien toucher d'autre : `pickups.bin`, l'exe et la géométrie restent tels quels ;
+- dans une copie de test, il faut aussi mettre `boot.pak` de côté (contenu identique à `root`, déjà en clair). Le
+  jeu démarre sans lui. Ce n'est pas une preuve de la priorité de `boot.pak` : aucun essai n'a été fait avec
+  `boot.pak` actif.
+
+**Reste à faire** :
+
+- vérifier, avec des captures, le ramassage, le Bouclier de 6 s, la réapparition et la vue de côté ;
+- améliorer le léger fantôme de l'hexagone, s'il gêne.
