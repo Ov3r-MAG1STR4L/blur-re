@@ -208,9 +208,10 @@ def build(pk_in, dyn_in, pk_out, dyn_out):
         k, src, rear[view] = e.clone(SHUNT_REV_CHARGE)
         e.put(k, src, "Components[1].SpeedFactor", "<f", REAR_BUILD_SPEED)
         e.put(k, src, "Components[1].Component", "<I", build_rev)
+        e.put(k, src, "Components[0].Component", "<I", rings)     # screen effect -> reverse Nitro rings (user)
+        e.put(k, src, "Components[0].SpeedFactor", "<f", CHARGE_SPEED * 2)   # rings over the 0.5 s rear delay
         e.put(k, src, "Components[3].Component", "<I", white)
-        if view == "external":                                   # no screen effect, no shake for the others
-            e.put(k, src, "Components[0].Component", "<I", white)
+        if view == "external":                                   # no shake for the others
             e.put(k, src, "Components[2].Component", "<I", white)
     # firing flash
     flash = _white_light(e, FIRED_LIGHT, 2.8)
@@ -295,7 +296,8 @@ if __name__ == "__main__":                                    # self-check on co
     assert s["ChargingSpecialFX"][0]["GlobalSpecialFX"] is None
     assert comps(s["ChargingSpecialFX"][0]["ExternalSpecialFX"])[2][0] == "LightSpecialFX"   # no shake for the others
     rl = R[int(st["ReversedModified"][1:], 16)][1]
-    assert "ShuntBuildRev" in comps(rl["SpecialFX"]["ChargingSpecialFX"][0]["LocalSpecialFX"])[1][1]["AnimatedMeshFileName"]
+    rc = comps(rl["SpecialFX"]["ChargingSpecialFX"][0]["LocalSpecialFX"])
+    assert "ShuntBuildRev" in rc[1][1]["AnimatedMeshFileName"] and "NitroReverseBlastRings" in rc[0][1]["AnimatedMeshFileName"]
     assert "NitroReverseBlastRings" in ch[0][1]["AnimatedMeshFileName"] and "ShuntBuild2" in ch[1][1]["AnimatedMeshFileName"]
     assert ch[3][1]["Colour"]["g"] > 1
     assert R[int(s["ChargingSpecialFX"][0]["LocalSpecialFX"][1:], 16)][1]["Components"][1]["SpeedFactor"] == CHARGE_SPEED

@@ -3307,3 +3307,14 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
 - **Étouffement du son** des autres bonus : sans doute un effet des graphes audio du jeu (`finalsubmix` réagit aux
   tirs / impacts de chaque bonus, voir « Audio et musique ») déclenché par leurs messages au sous-système 9. Le Railgun
   n'en a pas : ses messages de Bolt sont retirés et nos sons passent hors du moteur audio du jeu.
+- **Étouffement « comme le Shunt » (2026-11-17, installé, à essayer)** : graphes audio `finalsubmix.dat` (entrées
+  `PerkShuntFireEventInput`, `PerkShuntHitEventInput`, `PerkBoltFireEventInput`… → `ShuntFireVolume`, `ShuntFireTimer`,
+  `MusicMixerPerkDuckAmount`) et `finalperksubmix.dat` (`PerkShuntChargeEventInput` → `ShuntChargeFilterCutOff`,
+  passe-bas pendant la charge). Ces noms ne sont pas dans l'exe : `PickupSubSystem.cpp` (`E_PickUpSubsystem_Fire`) crée
+  l'entité audio du type de bonus et déclenche son action `PickupFire` ; c'est ce graphe-là qui joue le son **et**
+  envoie l'événement au mixage final : pas d'étouffement du Shunt sans ses sons. Imitation : pendant la charge du
+  **joueur**, le volume de toute l'application (`waveOutSetVolume` sur notre sortie, par application depuis Vista) descend
+  jusqu'à 1 − `duck` (0,45) au tir, y reste 0,3 s puis remonte en `duck_release` (1 s) ; nos sons sont multipliés
+  d'autant (genou doux au-dessus de 0,8). Pas de passe-bas (volume seulement).
+- **Charge arrière** : anneaux du Nitro arrière (blancs) à la place de l'effet d'écran, vitesse 1,0 pour les 0,5 s,
+  avec `ShuntBuildRev`.

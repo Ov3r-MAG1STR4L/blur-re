@@ -62,6 +62,9 @@ static int crush = 9999;
 
 static float front_delay = 1.0f, rear_delay = 0.5f;   /* s between the button and the shot */
 static float rear_speed = 300.f, volume = 0.7f;        /* rear shot m/s; our sounds' master volume */
+static float duck_depth = 0.45f, duck_hold = 0.3f, duck_release = 1.0f;   /* Shunt-like ducking (player's shots) */
+static volatile DWORD duck_t0 = 0;   /* GetTickCount of the player's last railgun (charge start) */
+static volatile float duck_delay = 1.f;
 static char dir[MAX_PATH];          /* folder of the dll: settings, sounds, log */
 static FILE *logfile = NULL;
 static volatile LONG passes = 0, walls = 0, shields = 0, fired = 0;
@@ -195,6 +198,7 @@ static DWORD snd_len[NSND];
 #define NBUF 3
 typedef struct { int snd, on, loop, rail; DWORD pos, t; float l, r; } Voice;
 static Voice vc[NVOICE];
+static HWAVEOUT mix_out;           /* our output (its volume = the whole application's) */
 static volatile LONG q_head = 0, q_tail = 0;
 static int q_snd[32];
 static float q_at[32][3];
@@ -268,9 +272,27 @@ static int start(int snd, float vol, float pan, int rail)  /* a free voice, else
     return v;
 }
 
+/* Ducking as the Shunt's: its audio entity sends events to the game's final submix (finalsubmix.dat
+   PerkShuntFireEventInput -> ShuntFireVolume / ShuntFireTimer; finalperksubmix.dat PerkShuntChargeEventInput ->
+   ShuntChargeFilterCutOff), from the same graph that plays its sounds, so it cannot be had without them. Here: the
+   whole application's volume (waveOutSetVolume acts per application since Vista: the game's sounds too) goes down
+   during the player's charge, stays down a moment after the shot, then comes back; our own sounds are scaled back up
+   so they keep their level. 1.0 = no ducking. */
+static float duck_gain(void)
+{
+    float t, d = duck_delay;
+    if (!duck_t0) return 1.f;
+    t = (GetTickCount() - duck_t0) / 1000.f;
+    if (t < d) return 1.f - duck_depth * t / d;
+    if (t < d + duck_hold) return 1.f - duck_depth;
+    if (t < d + duck_hold + duck_release) return 1.f - duck_depth * (1.f - (t - d - duck_hold) / duck_release);
+    return 1.f;
+}
+
 static void mix(short *dst)         /* sums every voice into one block (16-bit stereo), our own volume per voice */
 {
     static float acc[BLOCK * 2];
+    float g = duck_gain(), comp = 1.f / g;
     int v, f;
     memset(acc, 0, sizeof acc);
     for (v = 0; v < NVOICE; v++) {
@@ -289,8 +311,18 @@ static void mix(short *dst)         /* sums every voice into one block (16-bit s
             vc[v].pos++;
         }
     }
-    for (f = 0; f < BLOCK * 2; f++)
-        dst[f] = (short)(acc[f] > 32767.f ? 32767 : acc[f] < -32768.f ? -32768 : acc[f]);
+    for (f = 0; f < BLOCK * 2; f++) {            /* compensation, soft knee above 0.8 of full scale */
+        float x = acc[f] * comp, a = x < 0.f ? -x : x;
+        if (a > 26214.f) x = (x < 0.f ? -1.f : 1.f) * (26214.f + 6553.f * tanhf((a - 26214.f) / 6553.f));
+        dst[f] = (short)x;
+    }
+    {
+        static float last = 1.f;
+        if (g != last && (g == 1.f || last - g > 0.01f || g - last > 0.01f)) {
+            waveOutSetVolume(mix_out, ((DWORD)(g * 0xFFFF) << 16) | (DWORD)(g * 0xFFFF));
+            last = g;
+        }
+    }
 }
 
 static void load_sounds(void)
@@ -353,7 +385,7 @@ static DWORD WINAPI audio(LPVOID unused)
     int b;
     (void)unused;
     load_sounds();
-    if (waveOutOpen(&out, WAVE_MAPPER, &fmt, (DWORD_PTR)ev, 0, CALLBACK_EVENT) != MMSYSERR_NOERROR) {
+    if (waveOutOpen(&out, WAVE_MAPPER, &fmt, (DWORD_PTR)ev, 0, CALLBACK_EVENT) != MMSYSERR_NOERROR || !(mix_out = out)) {
         say("no sound output (waveOutOpen failed)");
         return 0;
     }
@@ -435,6 +467,7 @@ static void __cdecl after_ctor(char *self)
     overrides(self, r);
     InterlockedIncrement(&fired);
     play_at(rear ? S_FIRE_REAR : S_FIRE, vehicle_pos(next_shooter));
+    if (is_human(next_shooter)) { duck_delay = rear ? rear_delay : front_delay; duck_t0 = GetTickCount(); }
 }
 
 /* PickupCreationStruct (esi in CreatePickup): +0 type, +4 sub-type (2 = reversed), +0x10 delay before the shot */
@@ -857,6 +890,8 @@ static void load_settings(void)
             else if (!strcmp(key, "fire_range")) fire_range = v[0];
             else if (!strcmp(key, "rear_speed")) rear_speed = v[0];
             else if (!strcmp(key, "volume")) volume = v[0];
+            else if (!strcmp(key, "duck")) duck_depth = v[0];
+            else if (!strcmp(key, "duck_release")) duck_release = v[0];
             else if (!strcmp(key, "damage")) base_damage = v[0];
             else if (!strcmp(key, "crush")) crush = (int)v[0];
             else if (!strcmp(key, "falloff") && k == 3) memcpy(falloff, v, sizeof v);
@@ -893,7 +928,7 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         if (slash) slash[1] = 0;
         sprintf_s(path, sizeof path, "%srailgun.log", dir);
         logfile = _fsopen(path, "w", _SH_DENYNO);   /* readable while the game runs */
-        say("railgun v5 loaded");
+        say("railgun v6 loaded");
         srand(GetTickCount());
         load_settings();
         if (test_mode) say("TEST MODE: every Bolt the player picks up becomes a railgun");

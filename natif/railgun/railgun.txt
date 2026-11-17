@@ -15,3 +15,5 @@ fire_range 400   # m: an AI's railgun shot is heard up to this distance
 loop_range 400   # m: the flying railgun is heard up to this distance from your car
 rear_speed 300   # m/s of a rear shot (600 forward): slower, so it is seen in the mirror
 volume 0.7       # master volume of the railgun sounds (Md: lower the base)
+duck 0.45        # how much the game (and the music) goes down during the player's charge, like the Shunt (0 = none)
+duck_release 1.0 # s to come back after the shot
