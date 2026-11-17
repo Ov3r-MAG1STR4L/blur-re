@@ -6,6 +6,9 @@ modifier ou créer un bonus. Les valeurs brutes de chaque bonus sont dans **`POW
 `powerups_dump.py`. Les travaux du Railgun (CONNAISSANCES, « Bonus Railgun ») sont le premier cas pratique de ce
 document.
 
+Suite : **`POWERUP_BEHAVIOUR_STUDY.md`** (interactions entre bonus, bouclier, nature du Fan et du Stopwatch,
+anomalies, plan de tests).
+
 ## 0. Sources et niveaux de confiance
 
 | Source | Ce qu'elle prouve |

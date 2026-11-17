@@ -3457,3 +3457,18 @@ Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeur
 
   Essai : `shield_pickup_icon.py` / `ESSAI_HUD_SHIELD_PICKUP.md`.
   - **Confirmé en jeu (capture)** : le Bouclier posé sur la piste affiche le triangle « 6 » (textures réinjectées, copie `Blur_test_hud_pickup` sans `boot.pak`, jeu démarré normalement). Ramassage, Bouclier de 6 s et réapparition pas encore capturés.
+
+## Comportement et interactions des bonus (2026-11-17, lecture seule) → `POWERUP_BEHAVIOUR_STUDY.md`
+
+Ce qui manquait à `POWERUPS.md` (source fuitée, sauf mention) :
+
+- **Fan et Stopwatch ne sont pas des bonus utilisables** : pastilles des défis de fans et du temps des points de
+  contrôle, rejetées par `HitPickUp`, ramassées par le joueur 0 seulement. D'où `GetPerkInfo` = NULL (normal).
+  `FansToGain` / `TimeToGain` de `pickups.bin` ne sont lus nulle part (vestiges).
+- **Bouclier** : bloque tout coup passant par `AttemptHitByPickup` sauf le Nitro arrière ; ne s'use plus, sauf par la
+  Shock (100 de dégâts contre 50 de santé : elle le casse). La Réparation passe à travers.
+- **Bonus contre bonus** : chacun prend les dégâts de l'autre selon `Health` / `DamageInflicted` (Bolt 50/50, Shunt et
+  Mine 100/100) → 2 Bolts pour détruire une Mine ou un Shunt. La Barge détruit Shunt, Bolt et Mine dans son ellipse.
+- **Nitro** : un Shunt ou une Mine reçus coupent le Nitro en cours (`DisableActiveNitrous`).
+- À vérifier en jeu : plan T1-T7 du document (non lancé).
+
