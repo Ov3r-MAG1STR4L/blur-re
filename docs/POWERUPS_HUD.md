@@ -530,3 +530,5 @@ Aucune différence trouvée entre la source et l'exe pour ces mécanismes.
 
 Pour vérifier aussi les planches agrandies : refaire l'essai avec `perk_sheet_support` en 128 × 1024 et `size.v` à
 0,09375, et l'index **105** sur une case dessinée exprès.
+
+Essai préparé (copie `Blur_test_hud`, `shield.texture_index` → 104) : voir **`ESSAI_HUD_SHIELD104.md`**. Pas encore joué.
