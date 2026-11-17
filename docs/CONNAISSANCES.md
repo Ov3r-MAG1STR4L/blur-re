@@ -3238,3 +3238,25 @@ Essai de l'utilisateur (journal : 79 Railguns tirés, 37 voitures touchées, 40 
 - **Vu en jeu** : le Railgun sur la piste s'affiche tantôt comme l'orbe (mode test : orbe ramassée puis changée), tantôt comme
   une **étoile** (`ShieldSuperPickup.model`, le vrai SuperShield) : motif à redessiner. Modèles toujours dans leurs couleurs.
 
+### Railgun v4 : option LAN, tir arrière visible, mixeur logiciel (2026-11-17, installé, à essayer)
+- **Option LAN (Confirmé dans le code, pas encore vu à l'écran)** : l'écran Power-up Options
+  (`Screens\Multiplayer\Shared\MpCustomRacePowerups.lua`, archive BZUI) crée ses lignes par
+  `CustomRace_SetupToggle(GUI.table_id, n°, texte, icône, "perk_icons")` (`MpCustomRaceHelper.lua` : clone `toggle_node`,
+  `UIButtons.AddTableRow(table, nœud, n°)`), n° = `GUI.options` : powerups 1, respawn 2, random 3, bolt 4, shock 5, mine 6,
+  nitro 7, barge 8, shield 9, shunt 10, repair 11 ; colonne de droite = Random, Shunt, Shield (4e place libre). À la sortie,
+  `CustomRace_PowerupsTable` copie les choix dans `UIGlobals.CustomRaceSettings.powerups.{bolt…}` puis `Amax.SetupRace`.
+  Plugin AMAX `amax\pluginsailgunailgun.lua` (source `natif/railgun/railgun.lua`) : enveloppe
+  `UIButtons.AddTableRow` (ajoute la ligne n° 12 « RAILGUN » juste après celle du Shield) et `Amax.SetupRace` (lit
+  l'interrupteur, garde `powerups.railgun`) ; transmet le choix à la DLL par `package.loadlib("amax\dllsailgun.dll",
+  "railgun_on" | "railgun_off")` (fonctions exportées sans argument ; le chargeur ouvre `package` et pointe `cpath`
+  vers `plugins\?.dll`). Off = le tirage ne donne plus de Railgun. Icône provisoire `perk_bolt`.
+- **Tir arrière invisible** : le Bolt arrière du jeu n'inverse que l'axe avant (`0xBEEDE0` : AZ négatif, matrice miroir ;
+  `PostDelayInitialise` reçoit un pointeur sur 4 lignes de 3 flottants AX, AY, AZ, AW). Le Railgun arrière est désormais
+  un Bolt **avant** (sous-type remis à 0 dans la structure de création) tourné d'un demi-tour (AX et AZ négatifs) par
+  l'entrée [2] de sa vtable (`0xEE1580`, d'origine `0xBEE6C0`).
+- **Sons : cause probable des « bugs sonores »** : `waveOutSetVolume` règle le volume de toute l'application depuis Vista,
+  donc aussi les sons du jeu. Remplacé par un **mixage logiciel** : une seule sortie `waveOut`, 3 tampons de 512 images
+  (≈ 35 ms), 16 voix additionnées avec leur volume gauche / droite.
+- **Orbes et Railgun séparés** : `test 0` (le mode test changeait les orbes ramassées en Railgun : d'où des tirs à
+  0,5 de dégâts depuis une orbe, cause exacte non établie) ; le Railgun ne vient plus que de l'étoile.
+

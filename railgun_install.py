@@ -175,6 +175,24 @@ def impact_sound(src, out, fade=True, rate=44100):
     return out
 
 
+REQUIRE = '\trequire("railgun.railgun"),\n'
+
+
+def plugin(game, remove=False):
+    """the custom race "Railgun" switch: amax\\plugins\\railgun\\railgun.lua + its line in plugins.lua"""
+    plugs = os.path.join(game, "amax", "plugins")
+    lst = os.path.join(plugs, "plugins.lua")
+    text = open(lst, encoding="utf-8").read().replace(REQUIRE, "")
+    if remove:
+        shutil.rmtree(os.path.join(plugs, "railgun"), ignore_errors=True)
+    else:
+        os.makedirs(os.path.join(plugs, "railgun"), exist_ok=True)
+        shutil.copyfile(os.path.join(HERE, "natif", "railgun", "railgun.lua"), os.path.join(plugs, "railgun", "railgun.lua"))
+        end = text.rindex("}")
+        text = text[:end] + REQUIRE + text[end:]
+    open(lst, "w", encoding="utf-8", newline="").write(text)
+
+
 def rename(path):
     d = blurloc.parse_raw(open(path, "rb").read())
     for code, texts in d["langs"]:
@@ -201,6 +219,7 @@ def main(remove=False):
                 os.remove(os.path.join(dlls, f))
         for f, path in live.items():
             shutil.copyfile(os.path.join(bakdir, f), path)
+        plugin(game, remove=True)
         print("railgun removed, originals back")
         return
     tmp = tempfile.mkdtemp(prefix="railgun_")
@@ -215,6 +234,7 @@ def main(remove=False):
         shutil.copyfile(work[f], path)
     for f in ("railgun.dll", "railgun.txt"):
         shutil.copyfile(os.path.join(HERE, "natif", "railgun", f), os.path.join(dlls, f))
+    plugin(game)
     front, rear = delays()
     src = {k: os.path.join(SOUNDS, f) for k, f in SOURCES.items()}
     for wav, remix, delay in (("railgun_fire.wav", FRONT, front), ("railgun_fire_rear.wav", REAR, rear)):
