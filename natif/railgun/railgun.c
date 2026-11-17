@@ -190,7 +190,8 @@ static Voice vc[NVOICE];
 static volatile LONG q_head = 0, q_tail = 0;
 static int q_snd[32];
 static float q_at[32][3];
-static int lan_on = 1;              /* custom race "Railgun" switch (amax\plugins\railgun\railgun.lua) */
+static int lan_on = 1;              /* 0 off, 1 default (spawn roll), 2 on in a custom race (railgun.lua): no roll */
+static volatile LONG draws = 0;
 
 static const float *vehicle_pos(int i)   /* race vehicle list (blur_live.py): object +0x130 = position, +0xCC side */
 {
@@ -375,7 +376,7 @@ static DWORD WINAPI audio(LPVOID unused)
 
 /* custom race switch, called from Lua through package.loadlib (amax\plugins\railgun\railgun.lua): lua_CFunctions
    with no argument read and no result */
-__declspec(dllexport) int __cdecl railgun_on(void *L) { (void)L; lan_on = 1; say("custom race: Railgun ON"); return 0; }
+__declspec(dllexport) int __cdecl railgun_on(void *L) { (void)L; lan_on = 2; say("custom race: Railgun ON"); return 0; }
 __declspec(dllexport) int __cdecl railgun_off(void *L) { (void)L; lan_on = 0; say("custom race: Railgun OFF"); return 0; }
 
 /* pick-up: an AI cannot use type 10 (cPerkSkillUsage knows 0-7): it gets a 1-shot Bolt fired as a railgun;
@@ -391,7 +392,7 @@ static int __cdecl pick(int vehicle, int *type)
     return -1;
 }
 
-static int __cdecl spawn_roll(void) { return lan_on && rand() < (int)(spawn * RAND_MAX); }
+static int __cdecl spawn_roll(void) { return lan_on == 2 || (lan_on && rand() < (int)(spawn * RAND_MAX)); }
 
 /* ---- 3. creation ---- */
 static void __cdecl before_ctor(char *self)         /* pooled memory: a new Bolt may reuse a railgun's slot */
@@ -648,6 +649,31 @@ static __declspec(naked) void spawn_thunk(void)     /* replaces "cmp ebp,0Ah / j
     }
 }
 
+/* A position's own type filter (level data: ConstantShuffle +0xE3, ShuffleTypes +0x108, what Map Builder sets per
+   position) is tested on ONE byte at 0xB5B4B8 ("test byte [edi+0x108], 1 << type"): types 8+ never pass, so the
+   railgun was refused wherever a map filters. Rule: the railgun may appear wherever the position allows the Bolt
+   (bit 3). Replaces "mov eax, 1" at 0xB5B4AF (start of that test). */
+#define SHUFFLE_OK  0xB5B517
+#define SHUFFLE_NO  0xB5B6C4
+static __declspec(naked) void shuffle_thunk(void)
+{
+    __asm {
+        cmp ebp, 0xA
+        jne normal
+        test byte ptr [edi + 0x108], 8
+        jz refuse
+        lock inc draws
+        mov dword ptr [esp], SHUFFLE_OK
+        ret
+    refuse:
+        mov dword ptr [esp], SHUFFLE_NO
+        ret
+    normal:
+        mov eax, 1
+        ret
+    }
+}
+
 /* ---- 2. AI pick-up ---- */
 static __declspec(naked) void pick_thunk(void)      /* replaces "call GetNumShotsAwarded" in the PickedUp handler */
 {
@@ -680,6 +706,7 @@ enum { CALL, JMP, PTR, RAW };   /* CALL / JMP: E8 / E9 rel32 + nops; PTR: 4-byte
 
 static Patch patches[] = {
     {0xB5B497, 5, "83fd0a7405", CALL, NULL, "SetRandomPickupType: SuperShield (railgun) allowed"},
+    {0xB5B4AF, 5, "b801000000", CALL, NULL, "SetRandomPickupType: railgun where the position allows the Bolt"},
     {0x47CC60, 5, "e88bcdfeff", CALL, NULL, "PickedUp: an AI gets a Bolt instead (test mode: player Bolt -> railgun)"},
     {0xBAB600, 4, "00b4ba00", PTR, NULL, "CreatePickup: SuperShield -> railgun Bolt"},
     {0xBAAF9F, 5, "e82c360400", CALL, NULL, "Bolt constructor call 1"},
@@ -705,7 +732,7 @@ static void unhex(const char *s, unsigned char *out, int n)
 
 static void apply(void)
 {
-    void *to[] = {(void *)spawn_thunk, (void *)pick_thunk, (void *)super_case, (void *)ctor_wrap, (void *)ctor_wrap,
+    void *to[] = {(void *)spawn_thunk, (void *)shuffle_thunk, (void *)pick_thunk, (void *)super_case, (void *)ctor_wrap, (void *)ctor_wrap,
                   (void *)ctor_wrap, (void *)trigger_hook, (void *)trigger_hook, (void *)kill_thunk, (void *)wall_thunk,
                   (void *)dmg_thunk, (void *)base_level_thunk, (void *)vlc_level_thunk, (void *)pdi_hook,
                   (void *)bolt_case};
@@ -774,13 +801,14 @@ static void load_settings(void)
 
 static DWORD WINAPI reporter(LPVOID unused)
 {
-    LONG a = 0, b = 0, c = 0, d = 0;
+    LONG a = 0, b = 0, c = 0, d = 0, e = 0;
     (void)unused;
     for (;;) {                                      /* counts only: shows the hooks fire in game */
         Sleep(2000);
-        if (fired != a || passes != b || walls != c || shields != d) {
-            a = fired; b = passes; c = walls; d = shields;
-            say("so far: %ld railgun(s) fired, %ld vehicle hit(s), %ld wall(s) pierced, %ld shield(s) downed", a, b, c, d);
+        if (fired != a || passes != b || walls != c || shields != d || draws != e) {
+            a = fired; b = passes; c = walls; d = shields; e = draws;
+            say("so far: %ld railgun(s) fired, %ld vehicle hit(s), %ld wall(s) pierced, %ld shield(s) downed, "
+                "%ld filtered spawn draw(s) allowed it", a, b, c, d, e);
         }
     }
 }

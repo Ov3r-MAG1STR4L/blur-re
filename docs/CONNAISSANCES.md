@@ -3259,4 +3259,10 @@ Essai de l'utilisateur (journal : 79 Railguns tirés, 37 voitures touchées, 40 
   (≈ 35 ms), 16 voix additionnées avec leur volume gauche / droite.
 - **Orbes et Railgun séparés** : `test 0` (le mode test changeait les orbes ramassées en Railgun : d'où des tirs à
   0,5 de dégâts depuis une orbe, cause exacte non établie) ; le Railgun ne vient plus que de l'étoile.
-
+- **Railgun seul activé : jamais sur la piste (2026-11-17, corrigé)**. Chaque emplacement de bonus a dans les données du niveau
+  `ConstantShuffle` (+0xE3) et `ShuffleTypes` (+0x108) (`PickupPositionActor` l. 184-185 ; ce que Map Builder règle par
+  emplacement : « seulement des Shunts ici », puis aléatoire). `SetRandomPickupType` le teste en `0xB5B4B8` avec
+  **`test byte [edi+0x108], 1 << type`** : un seul octet, les types 8 et plus ne passent jamais (Fan, Stopwatch, SuperShield,
+  donc notre Railgun). **Règle** : le Railgun peut sortir là où l'emplacement autorise l'orbe (bit 3) ; relais à la place du
+  `mov eax, 1` en `0xB5B4AF`. Et quand l'interrupteur de la course perso est sur On, plus de tirage à 35 % : le Railgun
+  pèse comme les autres bonus choisis. Journal : « filtered spawn draw(s) allowed it ».
