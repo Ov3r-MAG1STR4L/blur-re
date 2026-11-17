@@ -3245,9 +3245,9 @@ Essai de l'utilisateur (journal : 79 Railguns tirés, 37 voitures touchées, 40 
   `UIButtons.AddTableRow(table, nœud, n°)`), n° = `GUI.options` : powerups 1, respawn 2, random 3, bolt 4, shock 5, mine 6,
   nitro 7, barge 8, shield 9, shunt 10, repair 11 ; colonne de droite = Random, Shunt, Shield (4e place libre). À la sortie,
   `CustomRace_PowerupsTable` copie les choix dans `UIGlobals.CustomRaceSettings.powerups.{bolt…}` puis `Amax.SetupRace`.
-  Plugin AMAX `amax\pluginsailgunailgun.lua` (source `natif/railgun/railgun.lua`) : enveloppe
+  Plugin AMAX `amax\plugins\railgun\railgun.lua` (source `natif/railgun/railgun.lua`) : enveloppe
   `UIButtons.AddTableRow` (ajoute la ligne n° 12 « RAILGUN » juste après celle du Shield) et `Amax.SetupRace` (lit
-  l'interrupteur, garde `powerups.railgun`) ; transmet le choix à la DLL par `package.loadlib("amax\dllsailgun.dll",
+  l'interrupteur, garde `powerups.railgun`) ; transmet le choix à la DLL par `package.loadlib("amax\dlls\railgun.dll",
   "railgun_on" | "railgun_off")` (fonctions exportées sans argument ; le chargeur ouvre `package` et pointe `cpath`
   vers `plugins\?.dll`). Off = le tirage ne donne plus de Railgun. Icône provisoire `perk_bolt`.
 - **Tir arrière invisible** : le Bolt arrière du jeu n'inverse que l'axe avant (`0xBEEDE0` : AZ négatif, matrice miroir ;
