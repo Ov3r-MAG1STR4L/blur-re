@@ -176,6 +176,26 @@ static int surface_normal(const float *p, const float *up, float *n)
     return 1;
 }
 
+/* "Vehicle.GamePhysicsMechanics.InFlightDownForce.Enable" (Debug::Bool, value byte 0x1127CF4, tested by
+   C_VehicleActor::UpdateDownForce at 0x43C665): once the front wheels leave the ground, the game pushes the car
+   down the WORLD vertical (amax.bin AmaxVehicleDefaults.flightControl: inFlightDownForce 200 000, after 0.01 s,
+   for 3 s). Off while any car is bent onto a surface, back to its own value otherwise. */
+#define AIR_DOWNFORCE_ON 0x1127CF4
+static DWORD last_status = 0;
+static int air_saved = -1;
+
+static void air_downforce_switch(void)
+{
+    unsigned char *sw = (unsigned char *)AIR_DOWNFORCE_ON;
+    int i, any = 0;
+    for (i = 0; i < 32; i++) any |= applied[i];
+    if (any) {
+        if (air_saved < 0) { air_saved = *sw; *sw = 0; say("in-flight downforce off (was %d)", air_saved); }
+    } else if (air_saved >= 0) {
+        *sw = (unsigned char)air_saved; say("in-flight downforce back to %d", air_saved); air_saved = -1;
+    }
+}
+
 static void __stdcall gravity(char *self)
 {
     float g = *(float *)G_DEBUG;
@@ -216,8 +236,15 @@ static void __stdcall gravity(char *self)
             say("vehicle %d %s zone at (%.0f, %.0f, %.0f), %.0f km/h, up (%.2f, %.2f, %.2f)", k,
                 inside ? "enters" : "leaves", p[0], p[1], p[2], speed * 3.6f, up[0], up[1], up[2]);
         }
+        if (k == 0 && inside && GetTickCount() - last_status > 500) {          /* player: state every 0.5 s */
+            last_status = GetTickCount();
+            say("  v0 (%.0f, %.0f, %.0f) %.0f km/h up (%.2f, %.2f, %.2f) %s t %.2f g (%.1f, %.1f, %.1f)",
+                p[0], p[1], p[2], speed * 3.6f, up[0], up[1], up[2],
+                on ? "surface" : (t > 0.f ? "NO SURFACE within 4 m" : "too slow"), t, gx, gy, gz);
+        }
     }
     out[0] = gx; out[1] = gy; out[2] = gz;
+    air_downforce_switch();
 }
 
 static __declspec(naked) void stub(void)
@@ -300,8 +327,12 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         slash = strrchr(dir, '\\');
         if (slash) slash[1] = 0;
         sprintf_s(path, sizeof path, "%sb2gravity.log", dir);
-        logfile = _fsopen(path, "w", _SH_DENYNO);          /* readable while the game runs */
-        say("b2gravity loaded");
+        logfile = _fsopen(path, "a", _SH_DENYNO);          /* readable while the game runs; one block per launch */
+        {
+            SYSTEMTIME st;
+            GetLocalTime(&st);
+            say("==== %04d-%02d-%02d %02d:%02d:%02d b2gravity loaded", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+        }
         load_zones();
         load_surfaces();
         patch();
