@@ -3289,3 +3289,21 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   Shunt d'origine : 0,2 s.
 - **Rétroviseur** : à 600 m/s le tir arrière sort du champ en une ou deux images ; `rear_speed` 300 (celle de l'orbe).
 - Reste : couleurs des modèles (spirale violette, coque bleue, charges rouges, anneaux verts), symbole sur la piste.
+
+### Couleurs des effets : dans les animations `.cycle` (2026-11-17, Confirmé hors jeu, installé, à voir en jeu)
+- Les modèles d'effets (`models/perks/*.model`) sont **gris** : textures DXT1 en niveaux de gris (saturation moyenne ≈ 1 sur
+  255), couleurs de sommets blanches (`blurmesh`), pas de constante de couleur dans le matériau. Le modèle déclare un
+  paramètre animé (`AnimatedParamRA` … `hlslShader18.Colour`, shaders `MeshEffectUVDistort.fx`, `MeshEffectDLayer.fx`) et
+  la couleur est une piste de l'animation `animations/perks/<nom>.cycle` (`hlslShaderN.Colour`, `ColourFresnel`,
+  `TL_Colour`) : **triplet RGB constant en float32 avant les courbes compressées**. Repérés : `shuntbuild2` 0x15E et
+  `shuntbuildrev` 0x18B = (1 ; 0,3 ; 0,3) rouge ; `nitroreverseblastrings` 0x268 = (0,4 ; 1 ; 0,4) vert ; `shocked02` 0x225
+  (0,36 ; 0,57 ; 1) et 0x22D (0,18 ; 0,48 ; 1) ; `shocksparks02` 0x291 / 0x29D ; `shocksparks03` 0x256 ; `blindfire_hit_01`
+  0x1EC (0,57 ; 0,3 ; 1) ; `blindfire_pow_01` 0x2CD / 0x2D9 (violet, rose). Pas de piste de couleur dans
+  `blind_projectile_01.cycle` (shader `biz_mb_lightGrafittiShader`, seulement `g_fTime`) : la spirale reste à étudier.
+- **Railgun** : copies `animations/perks/railgun_<nom>.cycle` (couleur → blanc titane, même intensité maximale ;
+  `railgun_fx.recolour_cycle`) et copies des enregistrements `AnimatedMeshSpecialFX` dont `AnimationFileName` pointe
+  dessus (le modèle reste l'original) ; impact de l'orbe (Global) copié en blanc aussi (modèles + lumière). Les bonus
+  d'origine gardent leurs couleurs.
+- **Étouffement du son** des autres bonus : sans doute un effet des graphes audio du jeu (`finalsubmix` réagit aux
+  tirs / impacts de chaque bonus, voir « Audio et musique ») déclenché par leurs messages au sous-système 9. Le Railgun
+  n'en a pas : ses messages de Bolt sont retirés et nos sons passent hors du moteur audio du jeu.

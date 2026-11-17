@@ -88,6 +88,12 @@ class Edit:
         struct.pack_into(fmt, data, self.offset(src, path), value)
         self.k.records[k][2] = bytes(data)
 
+    def set_str(self, k, src, field, value):
+        """top-level string field of record k (a clone of record number src) -> value"""
+        if not hasattr(self, "_names"):
+            self._names = [n for n, *_ in self.k.x.records()]
+        self.k.set_string(self._names[src], k, field, value)
+
     def external(self, h, like):
         """index slot for record h of another file, typed like the existing external slot of hash `like`"""
         assert h > self.k.index[-1][0]
@@ -99,6 +105,35 @@ def _white_light(e, h, scale=1.0):
     k, src, slot = e.clone(h)
     for c, v in zip("rgb", TITANIUM):
         e.put(k, src, "Colour." + c, "<f", v * scale)
+    return slot
+
+
+# The effect models are grey (greyscale textures, white vertex colours): their colour is the animated shader parameter
+# "hlslShaderN.Colour" of their .cycle (animations/perks), stored as a constant RGB triple before the packed curves
+# (found by hand: shuntbuild2 at 0x15E = 1.0 0.3 0.3, the Shunt's red). The railgun gets recoloured copies
+# (railgun_<name>.cycle next to the originals) and clones of the AnimatedMeshSpecialFX records that point to them.
+# name: (record hash, offsets of the colour triples)
+CYCLES = {"shuntbuild2": (0xA4D6F3F5, (0x15E,)), "shuntbuildrev": (0xD0D5DBBF, (0x18B,)),
+          "nitroreverseblastrings": (0x6EF7CFB3, (0x268,)), "shocked02": (0x40900025, (0x225, 0x22D)),
+          "shocksparks02": (0x4365D47A, (0x291, 0x29D)), "shocksparks03": (0x77CF9027, (0x256,)),
+          "blindfire_hit_01": (0xE0D33BBD, (0x1EC,)), "blindfire_pow_01": (0x9C2F9D93, (0x2CD, 0x2D9))}
+BOLT_HIT, BOLT_HIT_LIGHT = 0xF54BA12D, 0xC1E4C744
+
+
+def recolour_cycle(src, dst, offsets):
+    """copy of a .cycle with its colour triples turned titanium white, same brightness (max component)"""
+    b = bytearray(open(src, "rb").read())
+    for o in offsets:
+        rgb = struct.unpack_from("<3f", b, o)
+        assert 0 < max(rgb) <= 20 and max(rgb) - min(rgb) >= 0.25 * max(rgb), (src, hex(o), rgb)   # a real colour
+        struct.pack_into("<3f", b, o, *(v * max(rgb) / max(TITANIUM) for v in TITANIUM))
+    open(dst, "wb").write(bytes(b))
+
+
+def _white_mesh(e, name):
+    """clone of an AnimatedMeshSpecialFX record playing railgun_<name>.cycle; returns its slot"""
+    k, src, slot = e.clone(CYCLES[name][0])
+    e.set_str(k, src, "AnimationFileName", f"animations/perks/railgun_{name}.cycle")
     return slot
 
 
@@ -155,10 +190,12 @@ def build(pk_in, dyn_in, pk_out, dyn_out):
     # charge, as the Shunt does it: Local = the shooter's own view (camera shake), External = what the others see
     # (no shake); [0] screen effect -> reverse Nitro rings, [3] red light -> white, [2] camera (Local only)
     white = _white_light(e, SHUNT_RED, 1.4)
+    rings, build2, build_rev = (_white_mesh(e, n) for n in ("nitroreverseblastrings", "shuntbuild2", "shuntbuildrev"))
     charges = {}
     for view in ("local", "external"):
         k, src, charges[view] = e.clone(SHUNT_CHARGE)
-        e.put(k, src, "Components[0].Component", "<I", e.slot(NITRO_RINGS))
+        e.put(k, src, "Components[0].Component", "<I", rings)
+        e.put(k, src, "Components[1].Component", "<I", build2)
         e.put(k, src, "Components[3].Component", "<I", white)
         if view == "external":
             e.put(k, src, "Components[2].Component", "<I", white)
@@ -170,6 +207,7 @@ def build(pk_in, dyn_in, pk_out, dyn_out):
     for view in ("local", "external"):
         k, src, rear[view] = e.clone(SHUNT_REV_CHARGE)
         e.put(k, src, "Components[1].SpeedFactor", "<f", REAR_BUILD_SPEED)
+        e.put(k, src, "Components[1].Component", "<I", build_rev)
         e.put(k, src, "Components[3].Component", "<I", white)
         if view == "external":                                   # no screen effect, no shake for the others
             e.put(k, src, "Components[0].Component", "<I", white)
@@ -180,11 +218,17 @@ def build(pk_in, dyn_in, pk_out, dyn_out):
     e.put(k, src, "Components[0].Component", "<I", flash)
     # vehicle hit: Shock shell + sparks, white lights (External = seen by others, Local = the victim's view)
     lights = [_white_light(e, h, 4.5) for h in SHOCK_LIGHTS]
+    shell, sparks2, sparks3 = (_white_mesh(e, n) for n in ("shocked02", "shocksparks02", "shocksparks03"))
     hits = {}
-    for name, h, at in (("ext", SHOCK_EXT, (1, 2, 3)), ("local", SHOCK_LOCAL, (1, 2, 3))):
+    for name, h, at, meshes in (("ext", SHOCK_EXT, (1, 2, 3), (0, 5, 6)), ("local", SHOCK_LOCAL, (1, 2, 3), (4, 7, 8))):
         k, src, hits[name] = e.clone(h)
-        for i, s in zip(at, lights):
+        for i, s in zip(at + meshes, lights + [shell, sparks2, sparks3]):
             e.put(k, src, f"Components[{i}].Component", "<I", s)
+    # the orb's own impact (Global), white: its two models and its light
+    k, src, bolt_hit = e.clone(BOLT_HIT)
+    for i, s in ((2, _white_mesh(e, "blindfire_hit_01")), (4, _white_light(e, BOLT_HIT_LIGHT, 1.0)),
+                 (5, _white_mesh(e, "blindfire_pow_01"))):
+        e.put(k, src, f"Components[{i}].Component", "<I", s)
     # the levels: forward (SuperShield.Modified) and rear (SuperShield.ReverseModified), same but the charge
     levels = {}
     sfx = "SpecialFX."
@@ -199,6 +243,8 @@ def build(pk_in, dyn_in, pk_out, dyn_out):
         e.put(k, src, sfx + "HitVehicleSpecialFX[0].ExternalSpecialFX", "<I", hits["ext"])
         e.put(k, src, sfx + "HitVehicleSpecialFX[0].LocalSpecialFX", "<I", hits["local"])
         e.put(k, src, sfx + "HitVehicleSpecialFX[0].DurationIntro.EndTime", "<f", HIT_TIME)
+        e.put(k, src, sfx + "HitVehicleSpecialFX[0].GlobalSpecialFX", "<I", bolt_hit)
+        e.put(k, src, sfx + "HitEnvironmentSpecialFX[0].GlobalSpecialFX", "<I", bolt_hit)
     level = levels["front"]
     k = e.rec(SUPERSHIELD_TYPE)
     e.put(k, k, "Modified", "<I", levels["front"])
@@ -256,6 +302,6 @@ if __name__ == "__main__":                                    # self-check on co
     hit = s["HitVehicleSpecialFX"][0]
     ext = comps(hit["ExternalSpecialFX"])
     assert "Shocked02" in ext[0][1]["AnimatedMeshFileName"] and all(c[1]["Colour"]["r"] > 4 for c in ext[1:4])
-    assert hit["GlobalSpecialFX"] == "@f54ba12d" and hit["DurationIntro"]["EndTime"] == HIT_TIME
+    assert "railgun_blindfire_hit_01" in comps(hit["GlobalSpecialFX"])[2][1]["AnimationFileName"] and hit["DurationIntro"]["EndTime"] == HIT_TIME
     assert lv["BalancingData"]["Speed"] == 300.0                # a byte copy of the Bolt's level
     print("graph ok: projectile", [c[0] for c in proj], "| charge", [c[1].get("AnimatedMeshFileName", c[0]) for c in ch])

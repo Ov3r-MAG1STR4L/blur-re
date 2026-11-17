@@ -220,6 +220,10 @@ def main(remove=False):
         for f, path in live.items():
             shutil.copyfile(os.path.join(bakdir, f), path)
         plugin(game, remove=True)
+        for name in railgun_fx.CYCLES:
+            f = os.path.join(game, "animations", "perks", f"railgun_{name}.cycle")
+            if os.path.exists(f):
+                os.remove(f)
         print("railgun removed, originals back")
         return
     tmp = tempfile.mkdtemp(prefix="railgun_")
@@ -235,6 +239,9 @@ def main(remove=False):
     for f in ("railgun.dll", "railgun.txt"):
         shutil.copyfile(os.path.join(HERE, "natif", "railgun", f), os.path.join(dlls, f))
     plugin(game)
+    anim = os.path.join(game, "animations", "perks")              # titanium white copies of the effects' colours
+    for name, (_, offsets) in railgun_fx.CYCLES.items():
+        railgun_fx.recolour_cycle(os.path.join(anim, name + ".cycle"), os.path.join(anim, f"railgun_{name}.cycle"), offsets)
     front, rear = delays()
     src = {k: os.path.join(SOUNDS, f) for k, f in SOURCES.items()}
     for wav, remix, delay in (("railgun_fire.wav", FRONT, front), ("railgun_fire_rear.wav", REAR, rear)):
