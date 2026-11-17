@@ -112,7 +112,7 @@ static void wall_force(char *self, float *ext, const float *d, float g)
     if (n > 1e-3f) { cd[0] /= n; cd[1] /= n; cd[2] /= n; }
     /* cancel the world gravity and the world-vertical downforce, push the same amounts along d */
     for (i = 0; i < 3; i++)
-        ext[i] = m * G * ((i == 1 ? 1.f : 0.f) + d[i]) + c * (cd[i] + d[i]);
+        ext[i] = c * (cd[i] + d[i]);              /* v4: gravity itself replaced at the source, only the downforce here */
 }
 
 /* Collision surfaces of the zones (b2gravity.bin from b2gravity_zones.py: "B2GV", u32 n, n x (x y z nx ny nz)),
@@ -218,6 +218,8 @@ static void air_downforce_switch(void)
     }
 }
 
+static void remember(char *self, int k, float gx, float gy, float gz, int bent);
+
 static void __stdcall gravity(char *self)
 {
     float g = *(float *)G_DEBUG;
@@ -275,6 +277,7 @@ static void __stdcall gravity(char *self)
         }
     }
     out[0] = gx; out[1] = gy; out[2] = gz;
+    if (k >= 0 && k < 32) remember(self, k, gx, gy, gz, applied[k]);
     air_downforce_switch();
 }
 
@@ -309,6 +312,154 @@ static __declspec(naked) void stub(void)
         popad
         ret
     }
+}
+
+/* ---- v4 (2026-11-17): Blur 1's own gravity REPLACED, not compensated ----------------------------------------
+   Each car's gravity (the vector written into the actor by the Update hook) is kept here per physics car, and:
+   - on the ground: RacingPhysics::Car::EvaluateDerivative applies force -= mass * 9.81 * Y (ApplyGravity, inline,
+     102 bytes at 0x7D202C, esi = car + 0xC8, edi = derivative, force at +0x24, mass at esi + 0x10C): replaced by
+     force += mass * gravity of that car;
+   - on take-off: Car::EndFrame pushes once AddForce(mass * (0, -1, 0) * 9.81) on the Gravity body (call 0x48B4E0 at
+     0x7C5272, thiscall, ret 4, esi = car): skipped for a car whose gravity is bent.
+   Unknown car: exactly (0, -9.81, 0), as the game. */
+#define SITE_GRAV     0x7D202C
+#define SITE_GRAV_END 0x7D2092
+#define SITE_PUSH     0x7C5272
+#define ADDFORCE      0x48B4E0
+static const unsigned char ORIGINAL_GRAV[102] = {
+    0xF2,0x0F,0x51,0x0D,0x38,0x3C,0xE6,0x00,0xF3,0x0F,0x10,0x86,0x0C,0x01,0x00,0x00,0xF3,0x0F,0x59,0x05,0xD0,0xD3,
+    0xEA,0x00,0xF2,0x0F,0x5A,0xD1,0x0F,0x28,0xCF,0xF3,0x0F,0x5E,0xCA,0x0F,0x28,0xD1,0xF3,0x0F,0x59,0xD6,0x0F,0x28,
+    0xE0,0xF3,0x0F,0x59,0xE1,0xF3,0x0F,0x10,0x4F,0x24,0x0F,0x28,0xDA,0xF3,0x0F,0x59,0xD8,0xF3,0x0F,0x5C,0xCB,0xF3,
+    0x0F,0x11,0x4F,0x24,0xF3,0x0F,0x10,0x4F,0x28,0xF3,0x0F,0x5C,0xCC,0xF3,0x0F,0x11,0x4F,0x28,0xF3,0x0F,0x10,0x4F,
+    0x2C,0xF3,0x0F,0x59,0xC2,0xF3,0x0F,0x5C,0xC8,0xF3,0x0F,0x11,0x4F,0x2C};
+static const unsigned char ORIGINAL_PUSH[5] = {0xE8, 0x69, 0x62, 0xCC, 0xFF};
+
+static unsigned car_of[32];                 /* physics car of the vehicle k */
+static float car_grav[32][3];               /* its gravity (m/s2) this frame */
+static int car_bent[32];
+static int skip_push;
+
+static void remember(char *self, int k, float gx, float gy, float gz, int bent)
+{
+    float l = sqrtf(gx * gx + gy * gy + gz * gz);
+    car_of[k] = rd((unsigned)self + 0x238);
+    car_bent[k] = bent;
+    if (bent && l > 1e-3f) { car_grav[k][0] = gx / l * 9.81f; car_grav[k][1] = gy / l * 9.81f; car_grav[k][2] = gz / l * 9.81f; }
+    else { car_grav[k][0] = 0.f; car_grav[k][1] = -9.81f; car_grav[k][2] = 0.f; }
+}
+
+static int car_slot(unsigned car)
+{
+    int i;
+    for (i = 0; i < 32; i++) if (car_of[i] == car) return i;
+    return -1;
+}
+
+static void __stdcall apply_gravity(char *rb, float *der)
+{
+    float m = *(float *)(rb + 0x10C);
+    int s = car_slot((unsigned)(rb - 0xC8));
+    if (s >= 0) {
+        der[9] += m * car_grav[s][0]; der[10] += m * car_grav[s][1]; der[11] += m * car_grav[s][2];   /* +0x24 */
+    } else {
+        der[10] -= m * 9.81f;
+    }
+}
+
+static void __stdcall push_check(unsigned car)
+{
+    int s = car_slot(car);
+    skip_push = s >= 0 && car_bent[s];
+}
+
+static __declspec(naked) void stub_grav(void)
+{
+    __asm {
+        pushad
+        pushfd
+        sub esp, 128
+        movups [esp], xmm0
+        movups [esp + 16], xmm1
+        movups [esp + 32], xmm2
+        movups [esp + 48], xmm3
+        movups [esp + 64], xmm4
+        movups [esp + 80], xmm5
+        movups [esp + 96], xmm6
+        movups [esp + 112], xmm7
+        push edi
+        push esi
+        call apply_gravity
+        movups xmm0, [esp]
+        movups xmm1, [esp + 16]
+        movups xmm2, [esp + 32]
+        movups xmm3, [esp + 48]
+        movups xmm4, [esp + 64]
+        movups xmm5, [esp + 80]
+        movups xmm6, [esp + 96]
+        movups xmm7, [esp + 112]
+        add esp, 128
+        popfd
+        popad
+        ret
+    }
+}
+
+static __declspec(naked) void stub_push(void)
+{
+    __asm {                                  /* [esp] return, [esp+4] force vector, ecx = Gravity body, esi = car */
+        pushad
+        pushfd
+        sub esp, 128
+        movups [esp], xmm0
+        movups [esp + 16], xmm1
+        movups [esp + 32], xmm2
+        movups [esp + 48], xmm3
+        movups [esp + 64], xmm4
+        movups [esp + 80], xmm5
+        movups [esp + 96], xmm6
+        movups [esp + 112], xmm7
+        push esi
+        call push_check
+        movups xmm0, [esp]
+        movups xmm1, [esp + 16]
+        movups xmm2, [esp + 32]
+        movups xmm3, [esp + 48]
+        movups xmm4, [esp + 64]
+        movups xmm5, [esp + 80]
+        movups xmm6, [esp + 96]
+        movups xmm7, [esp + 112]
+        add esp, 128
+        popfd
+        popad
+        cmp dword ptr [skip_push], 0
+        jne skip
+        mov eax, ADDFORCE
+        jmp eax                              /* AddForce returns to the game with its own ret 4 */
+    skip:
+        ret 4
+    }
+}
+
+static int patch_bytes(unsigned addr, const unsigned char *orig, int len, void *target, unsigned resume)
+{
+    unsigned char *site = (unsigned char *)addr;
+    DWORD old;
+    int i;
+    if (!readable(site, len) || memcmp(site, orig, len)) { say("bytes at 0x%X not the expected ones: NOT patched", addr); return 0; }
+    if (!VirtualProtect(site, len, PAGE_EXECUTE_READWRITE, &old)) { say("VirtualProtect failed at 0x%X", addr); return 0; }
+    site[0] = 0xE8;
+    *(int *)(site + 1) = (int)((unsigned char *)target - (site + 5));
+    i = 5;
+    if (resume) {                            /* jmp over the rest of the replaced block */
+        site[5] = 0xE9;
+        *(int *)(site + 6) = (int)((unsigned char *)resume - (site + 10));
+        i = 10;
+    }
+    for (; i < len; i++) site[i] = 0x90;
+    VirtualProtect(site, len, old, &old);
+    FlushInstructionCache(GetCurrentProcess(), site, len);
+    say("patched 0x%X (%d bytes)", addr, len);
+    return 1;
 }
 
 static void load_zones(void)
@@ -367,6 +518,8 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         load_zones();
         load_surfaces();
         patch();
+        patch_bytes(SITE_GRAV, ORIGINAL_GRAV, 102, stub_grav, SITE_GRAV_END);
+        patch_bytes(SITE_PUSH, ORIGINAL_PUSH, 5, stub_push, 0);
     }
     return TRUE;
 }

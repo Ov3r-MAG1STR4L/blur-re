@@ -3344,3 +3344,17 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   `0xB85C8D7A`, référence externe insérée triée). Marina : **41 bonus**, 41 places distinctes (avant : projetés au centre
   de la route de Map Builder, types en rotation, jusqu'à 8 au même endroit), dont 8 railguns. Appliqué à la map
   installée et à la sortie `b2_dubai_marina_lot2` (`.bak` gardé).
+- **Gravité v4 : gravité de Blur 1 remplacée à la source (2026-11-17, demande de l'utilisateur ; installée, à
+  essayer)**. Essai v3.2 : gravité presque horizontale sur la paroi, mais haut de la voiture bloqué vers y ≈ 0,8 (deux
+  roues). Le code de course ne limite pas l'inclinaison (`RigidBody::ConstrainAxisY` / `ConstrainAxisRotationY`
+  existent mais ne sont appelés nulle part ; `TumblingDetection` 0,85 ne fait que détecter) : la verticale du monde
+  n'entre que par la gravité et l'appui constant. Sites (Confirmé, désassemblage) :
+  - **au sol** : `ApplyGravity` inline dans `EvaluateDerivative`, **102 octets en `0x7D202C`..`0x7D2092`** (esi =
+    voiture + 0xC8, edi = dérivée, force à +0x24, masse esi+0x10C, constante 9,81 en `0xEAD3D0`), précédé des tests
+    `[0x10DA247]` / `[esi+0x1550]` (gardés) → `call` vers notre fonction + `jmp 0x7D2092` : force += masse × gravité
+    propre à la voiture (celle écrite dans l'acteur ; hors zone exactement (0, −9,81, 0)) ;
+  - **au décollage** : `Car::EndFrame` → `AddForce(masse × (0, −1, 0) × 9,81)` sur le corps Gravity (`call 0x48B4E0`
+    en **`0x7C5272`**, thiscall, `ret 4` ; constantes `0xE727DC` = −0, `0xE646A4` = −1) → sauté pour une voiture dont
+    la gravité est courbée ;
+  - la force externe ne corrige plus que l'appui constant (C·(cd + d)).
+  Octets d'origine vérifiés avant chaque patch (sinon rien n'est modifié).
