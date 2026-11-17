@@ -297,9 +297,24 @@ Si un index échoue : arrêter, garder les captures, et ne pas passer au suivant
 | Index | Caméra extérieure | Caméra pare-chocs | IA | Inversée | Stabilité |
 |---|---|---|---|---|---|
 | 105 | Validé (captures 01-02) | Validé (03) | Validé (04) | Validé (01, 03) | Validé (pas de plantage ni de texture cassée vus ; Bouclier activé non capturé) |
-| 106 | À tester | À tester | À tester | À tester | À tester |
-| 107 | À tester | À tester | À tester | À tester | À tester |
-| 108 | À tester | À tester | À tester | À tester | À tester |
-| 109 | À tester | À tester | À tester | À tester | À tester |
+| 106 | Validé : triangle « 6 » inversé (capture `106_exterieur_inverse`) | rapporté OK | rapporté OK | Validé (même capture) | rapporté OK |
+| 107 | Validé : carré « 7 », case choisie (`107_exterieur_selectionne`) | rapporté OK | rapporté OK | rapporté OK | rapporté OK |
+| 108 | rapporté OK | rapporté OK | Validé : losange « 8 » au-dessus de Carver (`108_ia`) | rapporté OK | rapporté OK |
+| 109 | rapporté OK | Validé : croix « 9 », case choisie (`109_parechocs_selectionne`) | rapporté OK | rapporté OK | rapporté OK |
+
+« rapporté OK » : l'utilisateur a joué les quatre tests et indique que tout fonctionne (2026-11-17). Une capture par
+index a été fournie (`captures\106…109_*`). Sur ces captures :
+
+- chaque case montre sa propre forme et son propre chiffre ;
+- aucune moitié de case, aucune forme voisine qui déborde, aucune texture manquante ;
+- les icônes d'origine affichées à côté (Mine, Repair, Shunt, Bolt) sont normales.
+
+Les deux planches (normale : 107, 108, 109 ; inversée : 106) et les deux gadgets (`UIPerks2` : carrousels ;
+`UIPerks` : IA) sont couverts par des captures. La copie est restée sur le test 109 : `ui.bin` `3c65b140…`, planche
+`38b34bbe…`.
+
+**Conclusion** : la planche support agrandie à **10 cases** fonctionne en jeu, et les cases 105 à 109 sont chacune
+utilisables et indépendantes. **Ajouter des icônes au HUD par les seules données (`ui_common.bpr` + `ui.bin`, sans
+toucher à `Blur.exe`) est démontré.**
 
 La validation de 105 ne vaut pas pour 106-109 : chaque index doit avoir ses propres captures.
