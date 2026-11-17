@@ -8,8 +8,8 @@ keep theirs: every record we change is a clone (new hashes above every existing 
   of the screen effect, and a titanium white light instead of the red one;
 - firing flash = the Bolt's, white;
 - projectile = the Bolt's spiral (Blind_projectile_01) with a white light, a long white light trail (clone of the
-  Bolt's RearLightTrail: 0.15 s -> TRAIL_LIFE, fading slowly) and a white smoke trail (clone of a tyre_smoke trail)
-  in place of the halo;
+  Bolt's RearLightTrail: 0.15 s -> TRAIL_LIFE, fading slowly) and a neon core trail
+  (the user wanted a luminous neon line, not smoke: a second, thin and bright light trail) in place of the halo;
 - vehicle hit = the Bolt's impact (Global) + the Shock's whole-car electric shell and sparks (External / Local),
   lights in white, HIT_TIME long.
 usage: build(pickups_in, dyn_in, pickups_out, dyn_out) -> dict of what was made. Self-check: python railgun_fx.py
@@ -20,7 +20,8 @@ from kslfwrite import KSLF
 
 TITANIUM = (0.91, 0.93, 0.96)
 TRAIL_LIFE, TRAIL_SIZE, TRAIL_STEP = 2.5, 1.2, 0.75       # s, m, m between two particles
-SMOKE_LIFE, SMOKE_SIZE, SMOKE_STEP = 2.5, 1.8, 1.0
+NEON_LIFE, NEON_SIZE, NEON_STEP, NEON_ALPHA = 2.5, 0.45, 0.2, 0.35   # thin bright core: a neon tube
+CHARGE_SPEED = 0.5                            # charge animations (Shunt build, Nitro rings) played at half speed
 HIT_TIME = 2.5
 BASE = 0xFFFF2000                                          # above every hash of every Blur file (max 0xFFFE3216)
 
@@ -29,7 +30,7 @@ PROJ, PROJ_LIGHT, PROJ_MESH, PROJ_INNER, PROJ_PART = 0xF6ABA9FE, 0x3521EF73, 0x1
 SHUNT_CHARGE, SHUNT_RED, NITRO_RINGS = 0x3B3B8C89, 0xD7F8C4E6, 0x6EF7CFB3
 FIRED, FIRED_LIGHT = 0xB965D104, 0x602C1239
 SHOCK_EXT, SHOCK_LOCAL, SHOCK_LIGHTS = 0x79746C67, 0x2482A962, (0xFCDCEFDA, 0x6F4C6268, 0xF232D009)
-TRAIL_EVENT, TRAIL_EFFECT, SMOKE_EVENT = 0xC6DD8255, 0x0C399DBB, 0xEAE1D391
+TRAIL_EVENT, TRAIL_EFFECT = 0xC6DD8255, 0x0C399DBB
 
 
 class Edit:
@@ -101,7 +102,7 @@ def _white_light(e, h, scale=1.0):
 
 def build(pk_in, dyn_in, pk_out, dyn_out):
     made = {}
-    # ---- dynamiceffects.bin: long light trail (own effect: slow fade) and smoke trail ----
+    # ---- dynamiceffects.bin: long light trail (own effect: slow fade) and neon core ----
     d = Edit(dyn_in)
     d.next = BASE
     k, src, eff_slot = d.clone(TRAIL_EFFECT)
@@ -120,42 +121,42 @@ def build(pk_in, dyn_in, pk_out, dyn_out):
         d.put(k, src, p + "particle.colour." + c, "<f", v)
     d.put(k, src, p + "particle.colour.a", "<f", 0.06)
     trail = d.k.index[slot][0]
-    k, src, slot = d.clone(SMOKE_EVENT)
-    d.put(k, src, p + "spawn.amount.distance", "<f", SMOKE_STEP)
-    d.put(k, src, p + "particle.life.mean", "<f", SMOKE_LIFE)
-    d.put(k, src, p + "particle.life.d", "<f", 0.5)
-    d.put(k, src, p + "particle.size.mean", "<f", SMOKE_SIZE)
-    d.put(k, src, p + "particle.speedInherited.mean", "<f", 0.0)   # stays along the line, does not follow the shot
-    d.put(k, src, p + "particle.speedInherited.d", "<f", 0.0)
-    for col in ("colour", "colour2"):
-        for c, v in zip("rgb", TITANIUM):
-            d.put(k, src, f"{p}particle.{col}.{c}", "<f", v * (0.8 if col == "colour" else 0.6))
-    smoke = d.k.index[slot][0]
+    k, src, slot = d.clone(TRAIL_EVENT)                      # neon core (user: a luminous line, not smoke)
+    d.put(k, src, p + "effect", "<I", eff_slot)
+    d.put(k, src, p + "spawn.amount.distance", "<f", NEON_STEP)
+    d.put(k, src, p + "particle.life.mean", "<f", NEON_LIFE)
+    d.put(k, src, p + "particle.size.mean", "<f", NEON_SIZE)
+    for c, v in zip("rgb", TITANIUM):
+        d.put(k, src, p + "particle.colour." + c, "<f", v)
+    d.put(k, src, p + "particle.colour.a", "<f", NEON_ALPHA)
+    neon = d.k.index[slot][0]
     open(dyn_out, "wb").write(d.k.build())
-    made.update(trail_effect=trail_effect, trail=trail, smoke=smoke)
+    made.update(trail_effect=trail_effect, trail=trail, neon=neon)
 
     # ---- pickups.bin ----
     e = Edit(pk_in)
-    t_slot, s_slot = e.external(trail, TRAIL_EVENT), e.external(smoke, TRAIL_EVENT)
-    e.next = max(BASE + 0x10, smoke)
+    t_slot, n_slot = e.external(trail, TRAIL_EVENT), e.external(neon, TRAIL_EVENT)
+    e.next = max(BASE + 0x10, neon)
     # projectile
     k, src, part_trail = e.clone(PROJ_PART)
     e.put(k, src, "ParticleEvent", "<I", t_slot)
-    k, src, part_smoke = e.clone(PROJ_PART)
-    e.put(k, src, "ParticleEvent", "<I", s_slot)
+    k, src, part_neon = e.clone(PROJ_PART)
+    e.put(k, src, "ParticleEvent", "<I", n_slot)
     k, src, inner = e.clone(PROJ_INNER)
     e.put(k, src, "Components[0].Component", "<I", part_trail)
     k, src, mesh = e.clone(PROJ_MESH)
     e.put(k, src, "InternalSpecialFX[0].SpecialFX", "<I", inner)
     light = _white_light(e, PROJ_LIGHT, 4.0)                      # the Bolt's is dim (0.25 0.19 0.38)
     k, src, proj = e.clone(PROJ)
-    for i, s in enumerate((mesh, light, part_smoke)):            # [2] was the Barge_Flare halo
+    for i, s in enumerate((mesh, light, part_neon)):            # [2] was the Barge_Flare halo
         e.put(k, src, f"Components[{i}].Component", "<I", s)
     # charge: Shunt charge, reverse Nitro rings instead of the screen effect, white light
     white = _white_light(e, SHUNT_RED, 1.4)
     k, src, charge = e.clone(SHUNT_CHARGE)
     e.put(k, src, "Components[0].Component", "<I", e.slot(NITRO_RINGS))
     e.put(k, src, "Components[3].Component", "<I", white)
+    for i in (0, 1):                                              # rings, ShuntBuild2: stretched over the delay
+        e.put(k, src, f"Components[{i}].SpeedFactor", "<f", CHARGE_SPEED)
     # firing flash
     flash = _white_light(e, FIRED_LIGHT, 2.8)
     k, src, fired = e.clone(FIRED)
@@ -199,7 +200,7 @@ def graph(pk, dyn):
 if __name__ == "__main__":                                    # self-check on copies of the test game's files
     import os, tempfile, config
     pk_in = os.path.join(config.BLUR_EXTRACTED, "mods", "railgun_backup", "pickups.bin")
-    dyn_in = os.path.join(config.BLUR_TEST, "gamedata", "xt", "dynamiceffects.bin")
+    dyn_in = os.path.join(config.BLUR_EXTRACTED, "mods", "railgun_backup", "dynamiceffects.bin")
     t = tempfile.mkdtemp()
     pk, dyn = os.path.join(t, "pickups.bin"), os.path.join(t, "dynamiceffects.bin")
     made = build(pk_in, dyn_in, pk, dyn)
@@ -213,8 +214,8 @@ if __name__ == "__main__":                                    # self-check on co
     proj = comps(s["ProjectileSpecialFX"][0]["GlobalSpecialFX"])
     assert proj[0][0] == "AnimatedMeshSpecialFX" and "Blind_projectile_01" in proj[0][1]["AnimatedMeshFileName"]
     assert proj[1][0] == "LightSpecialFX" and proj[1][1]["Colour"]["r"] > 3
-    smoke_ev = R[int(proj[2][1]["ParticleEvent"][1:], 16)][1]
-    assert smoke_ev["name"] == "tyre_smoke" and abs(smoke_ev["emitters"][0]["particle"]["life"]["mean"] - SMOKE_LIFE) < 1e-4
+    neon_ev = R[int(proj[2][1]["ParticleEvent"][1:], 16)][1]
+    assert neon_ev["name"] == "RearLightTrail" and abs(neon_ev["emitters"][0]["particle"]["colour"]["a"] - NEON_ALPHA) < 1e-4
     inner = R[int(proj[0][1]["InternalSpecialFX"][0]["SpecialFX"][1:], 16)][1]
     trail_ev = R[int(R[int(inner["Components"][0]["Component"][1:], 16)][1]["ParticleEvent"][1:], 16)][1]
     assert trail_ev["name"] == "RearLightTrail" and abs(trail_ev["emitters"][0]["particle"]["life"]["mean"] - TRAIL_LIFE) < 1e-4
@@ -223,6 +224,7 @@ if __name__ == "__main__":                                    # self-check on co
     ch = comps(s["ChargingSpecialFX"][0]["GlobalSpecialFX"])
     assert "NitroReverseBlastRings" in ch[0][1]["AnimatedMeshFileName"] and "ShuntBuild2" in ch[1][1]["AnimatedMeshFileName"]
     assert ch[3][1]["Colour"]["g"] > 1
+    assert R[int(s["ChargingSpecialFX"][0]["GlobalSpecialFX"][1:], 16)][1]["Components"][1]["SpeedFactor"] == CHARGE_SPEED
     hit = s["HitVehicleSpecialFX"][0]
     ext = comps(hit["ExternalSpecialFX"])
     assert "Shocked02" in ext[0][1]["AnimatedMeshFileName"] and all(c[1]["Colour"]["r"] > 4 for c in ext[1:4])

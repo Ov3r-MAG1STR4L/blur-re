@@ -3214,3 +3214,27 @@ voitures traversés, casser un bouclier, traverser mines, Shunts et « orbes »,
   (`loop_range` 400 m) et gauche / droite selon l'axe latéral de la voiture (+0xCC). Projectile (`C_PickupBase`,
   Confirmé par `Update` 0xBE9F50) : **+0x24 tué, +0x28 actif (après le délai), +0x80 position** (`mMatrix.AW`).
   Le craquement plasma du tir est facultatif (fichier retiré par l'utilisateur).
+
+### Railgun v3 : retours du premier essai en jeu (2026-11-17, installé, à réessayer)
+Essai de l'utilisateur (journal : 79 Railguns tirés, 37 voitures touchées, 40 murs traversés, aucun plantage).
+- **Tir arrière « vers le ciel »** : le constructeur du Bolt arrière `0xBEED30` (5 arguments, `ret 0x14`, appelé en
+  `0xBAAFDA`) appelle celui du Bolt puis **réécrit** `mpBlindfireData` (+0x56C, niveau Reversed : Speed 50), `mpBlindfireSFX`
+  (+0x570), `mSpeed`, `mFallRate` (source `PickupBlindfireReverse.cpp`). Les réglages du Railgun sont maintenant reposés
+  après lui (enveloppe en 0xBAAFDA) et +0x56C remis sur le niveau Normal du Bolt (là où les dégâts sont lus). Cause exacte
+  de la montée : **à confirmer** par la nouvelle ligne du journal (déplacement en 0,3 s après le départ, y = hauteur).
+- **IA** : une IA qui ramasse un Railgun reçoit un Bolt à **1 tir** (`GetNumShotsAwarded` court-circuité) et est « armée » ;
+  son prochain Bolt passe par l'entrée [3] de la table de `CreatePickup` (`0xBAB5E4`, d'origine `0xBAAF59`) et devient un
+  Railgun (délai, son, effets). L'IA vise avec sa logique d'orbe.
+- **Sons** : mixeur maison sur 12 voix `waveOut` (fichiers chargés en mémoire au démarrage, 44,1 kHz 16 bits stéréo exigés),
+  plus de MCI ni de `PlaySound` (qui coupait le tir précédent et ajoutait un retard) ; tir, impacts et boucles se superposent ;
+  volume `(1 − d / portée)^0,6` et gauche / droite ; tir d'une IA entendu jusqu'à `fire_range` (400 m). Crêtes 0,8 → 0,95,
+  charge ×1,5 plus forte dans le son de tir.
+- **Dégâts** : 1,5 × 50 partout (`falloff 1.5 1.5 1.5`), à la demande de l'utilisateur.
+- **Visuel** : la fumée blanche devient un **cœur de néon** (2e copie de la traînée de l'orbe : une particule tous les 0,2 m,
+  taille 0,45, alpha 0,35, vie 2,5 s) ; animations de charge (anneaux du Nitro, `ShuntBuild2`) à **demi-vitesse**
+  (`SpeedFactor` 0,5 des composants) pour couvrir le délai.
+- **Hauteur de route** : le projectile suit déjà le sol comme l'orbe (même code) ; FallRate 2 à 600 m/s = même pente de
+  descente par image que l'orbe (FallRate 1 à 300 m/s).
+- **Vu en jeu** : le Railgun sur la piste s'affiche tantôt comme l'orbe (mode test : orbe ramassée puis changée), tantôt comme
+  une **étoile** (`ShieldSuperPickup.model`, le vrai SuperShield) : motif à redessiner. Modèles toujours dans leurs couleurs.
+

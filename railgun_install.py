@@ -155,8 +155,8 @@ def remix_sound(name, charge, shot, lfe, plasma, delay, out=None, rate=44100):
     d = int(rate * p["haas"] / 1000)
     s[d:, 1] = s[:-d, 1].copy()
     s[-int(rate * 0.05):] *= np.linspace(1, 0, int(rate * 0.05))[:, None]
-    x = np.concatenate([c * 0.85, s])
-    x = np.int16(np.clip(x / np.abs(x).max() * 0.8, -1, 1) * 32767)
+    x = np.concatenate([c * 1.5, s])                   # charge well audible (user, 2026-11-17)
+    x = np.int16(np.clip(x / np.abs(x).max() * 0.95, -1, 1) * 32767)
     out = out or os.path.join(SOUNDS, f"railgun_{name}.wav")
     with wave.open(out, "wb") as w:
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(rate); w.writeframes(x.tobytes())
@@ -164,12 +164,12 @@ def remix_sound(name, charge, shot, lfe, plasma, delay, out=None, rate=44100):
 
 
 def impact_sound(src, out, fade=True, rate=44100):
-    """the user's file as 16-bit stereo WAV, peak 0.8, end faded unless it loops (the dll sets the volume)"""
+    """the user's file as 16-bit stereo WAV, peak 0.95, end faded unless it loops (the dll sets the volume)"""
     import numpy as np, wave
     x = _load(src, rate)
     if fade:
         x[-int(rate * 0.05):] *= np.linspace(1, 0, int(rate * 0.05))[:, None]
-    x = np.int16(np.clip(x / np.abs(x).max() * 0.8, -1, 1) * 32767)
+    x = np.int16(np.clip(x / np.abs(x).max() * 0.95, -1, 1) * 32767)
     with wave.open(out, "wb") as w:
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(rate); w.writeframes(x.tobytes())
     return out

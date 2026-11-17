@@ -6,9 +6,10 @@ radius 0.8       # hitbox (swept ray radius); the Bolt has 0.2
 height 0.3       # height above the ground
 fallrate 2       # how fast it follows the ground downhill
 damage 50        # base = one Bolt (50)
-falloff 1.5 1.0 0.5   # damage multiplier: first target, after 1 wall / car pierced, after 2 or more
+falloff 1.5 1.5 1.5   # damage x base for the 1st target, after 1 pierced, after 2+ (user: 1.5 everywhere)
 crush 9999       # damage to mines, Shunts, Bolts (orbes) on its line: they are destroyed
 spawn 0.35       # chance that a pickup draw may give a railgun (0..1)
 test 1           # TEST: every Bolt the player picks up becomes a railgun (0 = normal game)
 impact_range 300 # m: impact sounds fade out with the distance to your car, silent beyond
+fire_range 400   # m: an AI's railgun shot is heard up to this distance
 loop_range 400   # m: the flying railgun is heard up to this distance from your car

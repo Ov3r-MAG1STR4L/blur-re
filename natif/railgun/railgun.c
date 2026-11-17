@@ -40,7 +40,6 @@
 #include <math.h>
 #include <mmsystem.h>
 #pragma comment(lib, "winmm.lib")
-#pragma comment(lib, "user32.lib")
 
 #define APP          0x11AA04C
 #define VT_BOLT      0xEE1578
@@ -62,14 +61,15 @@ static float base_damage = 50.f, falloff[3] = {1.5f, 1.0f, 0.5f};
 static int crush = 9999;
 
 static float front_delay = 1.0f, rear_delay = 0.5f;   /* s between the button and the shot */
-static char sound[2][MAX_PATH];     /* railgun_fire.wav / railgun_fire_rear.wav next to the dll: charge + shot */
+static char dir[MAX_PATH];          /* folder of the dll: settings, sounds, log */
 static FILE *logfile = NULL;
 static volatile LONG passes = 0, walls = 0, shields = 0, fired = 0;
 
-typedef struct { char *p; int pierced; DWORD last_wall; int rear; } Rail;
+typedef struct { char *p; int pierced; DWORD last_wall; int rear; char *bal; } Rail;   /* bal: Bolt Normal balancing */
 #define MAX_RAILS 32
 static Rail rails[MAX_RAILS];
-static int next_is_rail = 0;
+static int next_is_rail = 0, next_shooter = -1;
+static int armed[32];             /* an AI picked a railgun: its next Bolt shot is one */
 static int in_trigger = 0;          /* a railgun's Trigger is running: the hit effects come from its level */
 static void say(const char *fmt, ...);
 static Rail *rail_of(void *p);
@@ -172,17 +172,26 @@ static int __cdecl is_human(int vehicle)
     return r && vehicle == (int)(rd(r + 0x2EC) & 0xFF);
 }
 
-/* ---- 9. impact sounds: railgun_hit_car.wav / railgun_hit_wall.wav, volume by distance to the player's car ----
-   MCI (mpegvideo: own volume, several at once) driven by its own thread: the game thread only queues requests. */
+/* ---- 9. sounds: a small mixer on waveOut voices (several at once, no start delay, volume / pan per voice) ----
+   The game thread only queues requests (sound + where); the audio thread plays them, and follows the flying
+   railguns with their loop. Files next to the dll, 44.1 kHz 16-bit stereo (railgun_install.py). */
 static int test_mode = 0;           /* railgun.txt "test 1": every Bolt the player picks up becomes a railgun */
-static float impact_range = 300.f;  /* m: silent beyond, full volume at the player's car */
-static char hit_wav[2][MAX_PATH];   /* 0 car, 1 wall */
-static char loop_wav[2][MAX_PATH];  /* railgun_loop.wav / railgun_loop_rear.wav: the projectile's own sound in flight */
-static float loop_range = 400.f;    /* m */
+static float impact_range = 300.f, loop_range = 400.f, fire_range = 400.f;   /* m: silent beyond */
+enum { S_FIRE, S_FIRE_REAR, S_HIT_CAR, S_HIT_WALL, S_LOOP, S_LOOP_REAR, NSND };
+static const char *snd_file[NSND] = {"railgun_fire.wav", "railgun_fire_rear.wav", "railgun_hit_car.wav",
+                                     "railgun_hit_wall.wav", "railgun_loop.wav", "railgun_loop_rear.wav"};
+static char *snd_data[NSND];
+static DWORD snd_len[NSND];
+#define NVOICE 12
+static HWAVEOUT voice[NVOICE];
+static WAVEHDR vhdr[NVOICE];
+static int voice_rail[NVOICE];      /* rail slot of a loop voice, -1 otherwise */
+static DWORD voice_t[NVOICE];
 static volatile LONG q_head = 0, q_tail = 0;
-static int q_kind[16], q_vol[16];
+static int q_snd[32];
+static float q_at[32][3];
 
-static const float *vehicle_pos(int i)   /* race vehicle list (blur_live.py): object +0x130 = position */
+static const float *vehicle_pos(int i)   /* race vehicle list (blur_live.py): object +0x130 = position, +0xCC side */
 {
     unsigned r = rd(APP), o;
     if (r) r = rd(r + 0xC90);
@@ -202,105 +211,144 @@ static int player_index(void)
     return r ? (int)(rd(r + 0x2EC) & 0xFF) : -1;
 }
 
-static void impact(int kind, const float *at)  /* game thread: queue a sound if the player is close enough */
+static void play_at(int snd, const float *at)  /* game thread: queue a sound heard from `at` */
 {
-    const float *me = vehicle_pos(player_index());
-    float dx, dy, dz, dist;
-    LONG h;
-    if (!hit_wav[kind][0] || !me || !at) return;
-    dx = at[0] - me[0]; dy = at[1] - me[1]; dz = at[2] - me[2];
-    dist = sqrtf(dx * dx + dy * dy + dz * dz);
-    if (!(dist < impact_range)) return;          /* also drops NaN */
-    h = q_head;
-    if (h - q_tail >= 16) return;
-    q_kind[h & 15] = kind;
-    q_vol[h & 15] = (int)(1000.f * (1.f - dist / impact_range));
+    LONG h = q_head;
+    if (!at || h - q_tail >= 32) return;
+    q_snd[h & 31] = snd;
+    memcpy(q_at[h & 31], at, sizeof q_at[0]);
     q_head = h + 1;
 }
 
-static void mci(const char *fmt, ...)
+static float hear(const float *at, float range, float *pan)    /* audio thread: volume 0..1 and pan -1..+1 */
 {
-    char cmd[MAX_PATH + 64];
-    va_list a;
-    va_start(a, fmt); vsprintf_s(cmd, sizeof cmd, fmt, a); va_end(a);
-    mciSendStringA(cmd, NULL, 0, NULL);
+    const float *me = vehicle_pos(player_index()), *side;
+    float d[3], dist;
+    *pan = 0.f;
+    if (!me || !at) return 0.f;
+    side = me - (0x130 - 0xCC) / 4;                                /* AX row of the car's matrix */
+    d[0] = at[0] - me[0]; d[1] = at[1] - me[1]; d[2] = at[2] - me[2];
+    dist = sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    if (!(dist < range)) return 0.f;                               /* also NaN */
+    if (dist > 1.f) *pan = (d[0] * side[0] + d[1] * side[1] + d[2] * side[2]) / dist;
+    return powf(1.f - dist / range, 0.6f);                         /* stays loud longer than a straight line */
 }
 
-/* audio thread: the flying railguns' loops. Projectile (C_PickupBase): +0x24 killed, +0x28 active (after the delay),
-   +0x80 position (mMatrix.AW, copied each frame by the Bolt's Update 0xBE9F50). Volume by distance to the player's car,
-   left / right by the car's side axis (vehicle +0xCC). Read only, from this thread. */
+static void gain(int v, float vol, float pan)
+{
+    float l = vol * (pan > 0.f ? 1.f - 0.7f * pan : 1.f), r = vol * (pan < 0.f ? 1.f + 0.7f * pan : 1.f);
+    waveOutSetVolume(voice[v], ((DWORD)(r * 0xFFFF) << 16) | (DWORD)(l * 0xFFFF));
+}
+
+static int start(int snd, float vol, float pan, int rail)  /* a free voice, else the oldest one-shot */
+{
+    int v, best = -1;
+    if (!snd_data[snd]) return -1;
+    for (v = 0; v < NVOICE; v++) {
+        if (!voice[v] || voice_rail[v] >= 0) continue;
+        if (!(vhdr[v].dwFlags & WHDR_INQUEUE)) { best = v; break; }
+        if (best < 0 || voice_t[v] < voice_t[best]) best = v;
+    }
+    if (best < 0) return -1;
+    v = best;
+    waveOutReset(voice[v]);
+    if (vhdr[v].dwFlags & WHDR_PREPARED) waveOutUnprepareHeader(voice[v], &vhdr[v], sizeof vhdr[v]);
+    memset(&vhdr[v], 0, sizeof vhdr[v]);
+    vhdr[v].lpData = snd_data[snd];
+    vhdr[v].dwBufferLength = snd_len[snd];
+    if (rail >= 0) { vhdr[v].dwFlags = WHDR_BEGINLOOP | WHDR_ENDLOOP; vhdr[v].dwLoops = 0x7FFFFFFF; }
+    waveOutPrepareHeader(voice[v], &vhdr[v], sizeof vhdr[v]);
+    gain(v, vol, pan);
+    waveOutWrite(voice[v], &vhdr[v], sizeof vhdr[v]);
+    voice_rail[v] = rail;
+    voice_t[v] = GetTickCount();
+    return v;
+}
+
+static void load_sounds(void)
+{
+    WAVEFORMATEX fmt = {WAVE_FORMAT_PCM, 2, 44100, 44100 * 4, 4, 16, 0};
+    int i;
+    for (i = 0; i < NSND; i++) {                   /* RIFF: "fmt " 44.1 kHz 16-bit stereo, then "data" */
+        char path[MAX_PATH], *b = NULL, *c;
+        long n = 0;
+        FILE *f;
+        sprintf_s(path, sizeof path, "%s%s", dir, snd_file[i]);
+        if (!fopen_s(&f, path, "rb")) {
+            fseek(f, 0, SEEK_END); n = ftell(f); fseek(f, 0, SEEK_SET);
+            b = (char *)malloc(n);
+            if (b && fread(b, 1, n, f) != (size_t)n) n = 0;
+            fclose(f);
+        }
+        for (c = b ? b + 12 : NULL; c && c + 8 <= b + n; c += 8 + *(DWORD *)(c + 4)) {
+            if (!memcmp(c, "fmt ", 4) && (*(WORD *)(c + 10) != 2 || *(DWORD *)(c + 12) != 44100 || *(WORD *)(c + 22) != 16))
+                break;
+            if (!memcmp(c, "data", 4)) { snd_data[i] = c + 8; snd_len[i] = *(DWORD *)(c + 4); break; }
+        }
+        say(snd_data[i] ? "sound %s: %.1f s" : "sound %s: missing or not 44.1 kHz 16-bit stereo", snd_file[i],
+            snd_len[i] / 176400.0);
+    }
+    for (i = 0; i < NVOICE; i++) {
+        voice_rail[i] = -1;
+        if (waveOutOpen(&voice[i], WAVE_MAPPER, &fmt, 0, 0, CALLBACK_NULL) != MMSYSERR_NOERROR) voice[i] = NULL;
+    }
+}
+
+/* the flying railguns' loops. Projectile (C_PickupBase): +0x24 killed, +0x28 active (after the delay), +0x80
+   position (mMatrix.AW, copied each frame by the Bolt's Update 0xBE9F50). Read only, from this thread. */
 static void loops(void)
 {
-    static int playing[MAX_RAILS], file_of[MAX_RAILS];
+    static int lv[MAX_RAILS] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     int i;
     for (i = 0; i < MAX_RAILS; i++) {
         char *p = rails[i].p;
         int alive = p && (rd((unsigned)p + 0x28) & 0xFF) && !(rd((unsigned)p + 0x24) & 0xFF) && rd((unsigned)p + 0x80 + 8);
-        int k = rails[i].rear;
-        if (alive && !playing[i] && loop_wav[k][0]) {
-            if (file_of[i] != k + 1) {
-                if (file_of[i]) mci("close rl%d", i);
-                mci("open \"%s\" type mpegvideo alias rl%d", loop_wav[k], i);
-                file_of[i] = k + 1;
-            }
-            mci("setaudio rl%d volume to 0", i);
-            mci("play rl%d from 0 repeat", i);
-            playing[i] = 1;
+        float pan = 0.f, vol = alive ? hear((const float *)(p + 0x80), loop_range, &pan) : 0.f;
+        static float from[MAX_RAILS][3];
+        static DWORD t0[MAX_RAILS];
+        if (alive && lv[i] < 0) { memcpy(from[i], p + 0x80, sizeof from[i]); t0[i] = GetTickCount(); }
+        if (alive && t0[i] && GetTickCount() - t0[i] >= 300) {     /* flight check: where did it go in 0.3 s? */
+            const float *at = (const float *)(p + 0x80);
+            say("railgun %s: moved %.0f %.0f %.0f m in %lu ms (y = height), speed %.0f", rails[i].rear ? "rear" : "front",
+                at[0] - from[i][0], at[1] - from[i][1], at[2] - from[i][2], GetTickCount() - t0[i], *(float *)(p + 0x158));
+            t0[i] = 0;
         }
-        if (playing[i] && alive) {
-            const float *me = vehicle_pos(player_index()), *at = (const float *)(p + 0x80);
-            const float *side = me ? me - (0x130 - 0xCC) / 4 : NULL;      /* AX row of the car's matrix */
-            float d[3], dist, vol, pan = 0.f;
-            if (!me) continue;
-            d[0] = at[0] - me[0]; d[1] = at[1] - me[1]; d[2] = at[2] - me[2];
-            dist = sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
-            vol = dist < loop_range ? 1000.f * (1.f - dist / loop_range) : 0.f;
-            if (dist > 1.f) pan = (d[0] * side[0] + d[1] * side[1] + d[2] * side[2]) / dist;   /* +1 = right */
-            mci("setaudio rl%d left volume to %d", i, (int)(vol * (pan > 0.f ? 1.f - 0.7f * pan : 1.f)));
-            mci("setaudio rl%d right volume to %d", i, (int)(vol * (pan < 0.f ? 1.f + 0.7f * pan : 1.f)));
-        }
-        if (playing[i] && !alive) {
-            mci("stop rl%d", i);
-            playing[i] = 0;
-        }
+        if (alive && lv[i] < 0) lv[i] = start(rails[i].rear ? S_LOOP_REAR : S_LOOP, vol, pan, i);
+        else if (alive) gain(lv[i], vol, pan);
+        else if (lv[i] >= 0) { waveOutReset(voice[lv[i]]); voice_rail[lv[i]] = -1; lv[i] = -1; }
     }
 }
 
 static DWORD WINAPI audio(LPVOID unused)
 {
-    int opened[2] = {0, 0}, next[2] = {0, 0}, i;
-    char cmd[MAX_PATH + 64];
-    MSG msg;
     DWORD last = 0;
     (void)unused;
+    load_sounds();
     for (;;) {
-        if (GetTickCount() - last >= 30) { last = GetTickCount(); loops(); }
-        while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE)) DispatchMessageA(&msg);
         while (q_tail != q_head) {
-            int k = q_kind[q_tail & 15], v = q_vol[q_tail & 15];
-            if (!opened[k]) {                       /* 3 voices per sound: close impacts overlap */
-                for (i = 0; i < 3; i++) {
-                    sprintf_s(cmd, sizeof cmd, "open \"%s\" type mpegvideo alias rg%d%d", hit_wav[k], k, i);
-                    mciSendStringA(cmd, NULL, 0, NULL);
-                }
-                opened[k] = 1;
-            }
-            i = next[k]; next[k] = (i + 1) % 3;
-            sprintf_s(cmd, sizeof cmd, "setaudio rg%d%d volume to %d", k, i, v);
-            mciSendStringA(cmd, NULL, 0, NULL);
-            sprintf_s(cmd, sizeof cmd, "play rg%d%d from 0", k, i);
-            mciSendStringA(cmd, NULL, 0, NULL);
+            int k = q_snd[q_tail & 31];
+            float pan, range = k == S_HIT_CAR || k == S_HIT_WALL ? impact_range : fire_range;
+            float vol = hear(q_at[q_tail & 31], range, &pan);
+            if (vol > 0.f) start(k, vol, pan, -1);
             q_tail++;
         }
-        Sleep(5);
+        if (GetTickCount() - last >= 20) { last = GetTickCount(); loops(); }
+        Sleep(2);
     }
 }
 
-static int __cdecl pick_type(int vehicle, int type) /* type given on a pick-up */
+/* pick-up: an AI cannot use type 10 (cPerkSkillUsage knows 0-7): it gets a 1-shot Bolt fired as a railgun;
+   test mode: the player's Bolts become railguns. Returns the shots to award, or -1 for the game's own count. */
+static int __cdecl pick(int vehicle, int *type)
 {
-    if (type == 10 && !is_human(vehicle)) return 3;          /* AIs cannot use type 10: a Bolt */
-    if (type == 3 && test_mode && is_human(vehicle)) return 10;
-    return type;
+    if (*type == 10 && !is_human(vehicle)) {
+        *type = 3;
+        if (vehicle >= 0 && vehicle < 32) armed[vehicle] = 1;
+        return 1;
+    }
+    if (*type == 3 && test_mode && is_human(vehicle)) *type = 10;
+    return -1;
 }
 
 static int __cdecl spawn_roll(void) { return rand() < (int)(spawn * RAND_MAX); }
@@ -312,6 +360,18 @@ static void __cdecl before_ctor(char *self)         /* pooled memory: a new Bolt
     if (r) r->p = NULL;
 }
 
+static void overrides(char *self, Rail *r)
+{
+    *(float *)(self + 0x150) = radius;
+    *(float *)(self + 0x154) = height;
+    *(float *)(self + 0x158) = speed;
+    *(float *)(self + 0x15C) = fallrate;
+    *(float *)(self + 0xB0) = 1e9f;
+    *(char **)(self + 0x56C) = r->bal;               /* the reversed Bolt puts its Reversed balancing here */
+    if (rail_level() && *(unsigned *)(rail_level() + 0x1C))
+        *(unsigned *)(self + 0x570) = *(unsigned *)(rail_level() + 0x1C);   /* mpBlindfireSFX: projectile, impacts */
+}
+
 static void __cdecl after_ctor(char *self)
 {
     Rail *r;
@@ -320,16 +380,16 @@ static void __cdecl after_ctor(char *self)
     next_is_rail = 0;
     if (!(r = rail_of(NULL))) { say("more than %d railguns alive: this one is a plain Bolt", MAX_RAILS); return; }
     r->p = self; r->pierced = 0; r->last_wall = 0; r->rear = rear;
-    *(float *)(self + 0x150) = radius;
-    *(float *)(self + 0x154) = height;
-    *(float *)(self + 0x158) = speed;
-    *(float *)(self + 0x15C) = fallrate;
-    *(float *)(self + 0xB0) = 1e9f;
-    if (rail_level() && *(unsigned *)(rail_level() + 0x1C))
-        *(unsigned *)(self + 0x570) = *(unsigned *)(rail_level() + 0x1C);   /* mpBlindfireSFX: projectile, impacts */
+    r->bal = (char *)rd((unsigned)self + 0x56C);    /* the Bolt's Normal balancing (damage is read there) */
+    overrides(self, r);
     InterlockedIncrement(&fired);
-    if (sound[rear][0])                              /* only the player fires railguns (AIs get Bolts) */
-        PlaySoundA(sound[rear], NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
+    play_at(rear ? S_FIRE_REAR : S_FIRE, vehicle_pos(next_shooter));
+}
+
+static void __cdecl after_rev(char *self)            /* after the reversed Bolt's own constructor */
+{
+    Rail *r = rail_of(self);
+    if (r) overrides(self, r);
 }
 
 /* PickupCreationStruct (esi in CreatePickup): +0 type, +4 sub-type (2 = reversed), +0x10 delay before the shot */
@@ -337,7 +397,51 @@ static void __cdecl super_setup(char *info)
 {
     int rear = *(int *)(info + 4) == 2;
     next_is_rail = rear ? 2 : 1;
+    next_shooter = *(int *)(info + 8);
     *(float *)(info + 0x10) = rear ? rear_delay : front_delay;
+}
+
+static void __cdecl bolt_setup(char *info)          /* a Bolt fired by an AI that picked a railgun */
+{
+    int f = *(int *)(info + 8);
+    if (f >= 0 && f < 32 && armed[f] && !is_human(f)) { armed[f] = 0; super_setup(info); }
+}
+
+static __declspec(naked) void bolt_case(void)
+{
+    __asm {
+        push ecx
+        push edx
+        push esi
+        call bolt_setup
+        add esp, 4
+        pop edx
+        pop ecx
+        mov eax, BOLT_CASE
+        jmp eax
+    }
+}
+
+#define REV_CTOR 0xBEED30           /* C_PickupBlindfireProjectileReverse ctor, thiscall, 5 args, ret 0x14 */
+static __declspec(naked) void rev_wrap(void)
+{
+    __asm {
+        push ecx
+        push dword ptr [esp + 0x18]
+        push dword ptr [esp + 0x18]
+        push dword ptr [esp + 0x18]
+        push dword ptr [esp + 0x18]
+        push dword ptr [esp + 0x18]
+        mov eax, REV_CTOR
+        call eax
+        pop ecx
+        push eax
+        push ecx
+        call after_rev
+        add esp, 4
+        pop eax
+        ret 0x14
+    }
 }
 
 static __declspec(naked) void super_case(void)
@@ -393,7 +497,7 @@ static void __fastcall trigger_hook(char *self, void *edx, int idx)
     int old;
     (void)edx;
     if (!r) { ((TriggerFn)TRIGGER)(self, NULL, idx); return; }
-    bal = (char *)rd((unsigned)self + 0x56C);
+    bal = r->bal;
     old = bal ? *(int *)(bal + 0x1C) : 0;
     if (bal) *(int *)(bal + 0x1C) = (int)(base_damage * falloff[r->pierced < 2 ? r->pierced : 2] + 0.5f);
     *(unsigned char *)(self + 0xF0) = 0xFE;
@@ -412,7 +516,7 @@ static void __fastcall trigger_hook(char *self, void *edx, int idx)
         }
         r->pierced++;
         InterlockedIncrement(&passes);
-        impact(0, vehicle_pos(idx));
+        play_at(S_HIT_CAR, vehicle_pos(idx));
     }
 }
 
@@ -443,7 +547,7 @@ static int __cdecl wall_hit(void *self, const char *result)
     if (now - r->last_wall > WALL_GAP_MS) {
         r->pierced++;
         InterlockedIncrement(&walls);
-        impact(1, result ? (const float *)(result + 0x10) : NULL);
+        play_at(S_HIT_WALL, result ? (const float *)(result + 0x10) : NULL);
     }
     r->last_wall = now;
     return 1;
@@ -517,14 +621,21 @@ static __declspec(naked) void pick_thunk(void)      /* replaces "call GetNumShot
     __asm {
         push ecx
         push edx
-        push dword ptr [esp + 0xC]
+        lea eax, [esp + 0xC]
+        push eax
         push dword ptr [ecx + 0x2C]
-        call pick_type
+        call pick
         add esp, 8
         pop edx
         pop ecx
-        mov [esp + 4], eax
+        push eax
+        mov eax, [esp + 8]
         mov [edi + 0x14], eax
+        pop eax
+        test eax, eax
+        js normal
+        ret 4
+    normal:
         mov eax, SHOTS_AWARDED
         jmp eax
     }
@@ -548,6 +659,8 @@ static Patch patches[] = {
     {0xBA8CC0, 9, "8b410850b920321301", JMP, NULL, "GetDamageToApply: railgun crushes pickups"},
     {0xBA8D00, 6, "568bf18b4608", JMP, NULL, "C_PickupBase::GetRLSubTypeLevel: railgun level (charge, flash)"},
     {0x474170, 10, "8b44240450b920321301", JMP, NULL, "VLC GetRLSubTypeLevel: railgun level during its hits"},
+    {0xBAAFDA, 5, "e8513d0400", CALL, NULL, "reversed Bolt constructor call: railgun settings after it"},
+    {0xBAB5E4, 4, "59afba00", PTR, NULL, "CreatePickup: Bolt case (an AI's railgun)"},
 };
 
 static void unhex(const char *s, unsigned char *out, int n)
@@ -561,7 +674,8 @@ static void apply(void)
 {
     void *to[] = {(void *)spawn_thunk, (void *)pick_thunk, (void *)super_case, (void *)ctor_wrap, (void *)ctor_wrap,
                   (void *)ctor_wrap, (void *)trigger_hook, (void *)trigger_hook, (void *)kill_thunk, (void *)wall_thunk,
-                  (void *)dmg_thunk, (void *)base_level_thunk, (void *)vlc_level_thunk};
+                  (void *)dmg_thunk, (void *)base_level_thunk, (void *)vlc_level_thunk, (void *)rev_wrap,
+                  (void *)bolt_case};
     unsigned char want[16], put[16];
     int i, n = sizeof patches / sizeof *patches;
     DWORD old;
@@ -592,7 +706,7 @@ static void apply(void)
     }
 }
 
-static void load_settings(const char *dir)
+static void load_settings(void)
 {
     char path[MAX_PATH], line[256], key[64];
     float v[3];
@@ -614,6 +728,7 @@ static void load_settings(const char *dir)
             else if (!strcmp(key, "test")) test_mode = v[0] != 0;
             else if (!strcmp(key, "impact_range")) impact_range = v[0];
             else if (!strcmp(key, "loop_range")) loop_range = v[0];
+            else if (!strcmp(key, "fire_range")) fire_range = v[0];
             else if (!strcmp(key, "damage")) base_damage = v[0];
             else if (!strcmp(key, "crush")) crush = (int)v[0];
             else if (!strcmp(key, "falloff") && k == 3) memcpy(falloff, v, sizeof v);
@@ -641,7 +756,7 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
 {
     (void)r;
     if (reason == DLL_PROCESS_ATTACH) {
-        char dir[MAX_PATH], path[MAX_PATH], *slash;
+        char path[MAX_PATH], *slash;
         HANDLE t;
         DisableThreadLibraryCalls(h);
         GetModuleFileNameA(h, dir, sizeof dir);
@@ -649,20 +764,9 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         if (slash) slash[1] = 0;
         sprintf_s(path, sizeof path, "%srailgun.log", dir);
         logfile = _fsopen(path, "w", _SH_DENYNO);   /* readable while the game runs */
-        say("railgun v2 loaded");
+        say("railgun v3 loaded");
         srand(GetTickCount());
-        load_settings(dir);
-        sprintf_s(sound[0], MAX_PATH, "%srailgun_fire.wav", dir);
-        sprintf_s(sound[1], MAX_PATH, "%srailgun_fire_rear.wav", dir);
-        sprintf_s(hit_wav[0], MAX_PATH, "%srailgun_hit_car.wav", dir);
-        sprintf_s(hit_wav[1], MAX_PATH, "%srailgun_hit_wall.wav", dir);
-        sprintf_s(loop_wav[0], MAX_PATH, "%srailgun_loop.wav", dir);
-        sprintf_s(loop_wav[1], MAX_PATH, "%srailgun_loop_rear.wav", dir);
-        for (int i = 0; i < 2; i++) {
-            if (GetFileAttributesA(sound[i]) == INVALID_FILE_ATTRIBUTES) { say("no %s: no sound", sound[i]); sound[i][0] = 0; }
-            if (GetFileAttributesA(hit_wav[i]) == INVALID_FILE_ATTRIBUTES) { say("no %s: no sound", hit_wav[i]); hit_wav[i][0] = 0; }
-            if (GetFileAttributesA(loop_wav[i]) == INVALID_FILE_ATTRIBUTES) { say("no %s: no sound", loop_wav[i]); loop_wav[i][0] = 0; }
-        }
+        load_settings();
         if (test_mode) say("TEST MODE: every Bolt the player picks up becomes a railgun");
         t = CreateThread(NULL, 0, audio, NULL, 0, NULL);
         if (t) CloseHandle(t);
