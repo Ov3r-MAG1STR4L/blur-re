@@ -3472,3 +3472,31 @@ Ce qui manquait à `POWERUPS.md` (source fuitée, sauf mention) :
 - **Nitro** : un Shunt ou une Mine reçus coupent le Nitro en cours (`DisableActiveNitrous`).
 - À vérifier en jeu : plan T1-T7 du document (non lancé).
 
+### Comportement des bonus, v2 : essais T1 à T8, mods de carrière et multijoueur (2026-11-17, lecture seule)
+
+Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v2).
+
+- **Essais T1 à T8 (en jeu)** : tous cohérents avec la source. Nitro arrière qui traverse le bouclier, Shock qui le
+  casse, 2 Bolts par Mine, bouclier testé à l'impact, Barge qui détruit Shunt, Bolt et Mine, Shunt et Mine qui coupent
+  le Nitro, Repair à tout moment, Mine de 60 s même après le départ de son poseur.
+- **Mods de carrière = capacités `Boss_*`** (même système que les mods multijoueur, `Slot4`) :
+  - **boss IA** : mod porté par la voiture (`amax.bin` `AmaxVehicle.BossAbilitySlot`) ;
+  - **joueur** : un seul mod (`mSpEquippedAbility`), actif seulement en épreuve solo de course ou de boss.
+- **Valeurs** :
+  - Overbolt : 4 Bolts ;
+  - Quad Shock : 4 dômes ;
+  - Super Shunt : +50 dégâts (0,5 × `HealthIncrement` 100) ;
+  - Armor Plating = **`BossRepairBonus`** : −50 contre Barge, Shunt et Mine ;
+  - Titanium Shield : bouclier DoubleTap de 12 s, santé 50, poids « Ultra » et écart `JINK_SHIELD` au contact ;
+  - Scatter Shot : sous-types `MOD` → 3 Bolts `SUB_MOD` à ±2°, pile vidée ;
+  - Fan Nitro : un Nitro tous les 500 de score ;
+  - Nitro Rift : coup NITROUS 2,5 s, 30 m, qui traverse les boucliers.
+- **Shielding Efficiency** (multijoueur) : durée × 1,8, santé +100 (50 → 150). Le bouclier survit à 1 dôme de
+  Shock : c'est l'explication probable de l'exception vue en ligne. **AMAX annonce avoir réduit ce mod (2025-01-04)**,
+  et les valeurs en ligne actuelles sont inconnues.
+- **L'explosion d'une Mine est un effet visuel** sans zone de dégâts. Un contact entre deux Mines est sans effet. Une
+  Mine lancée qui touche une Mine : dégâts croisés.
+- **Contradiction** : en jeu, le Shock détruit une Mine, mais la source ne contient aucun code pour cela.
+- **Correction de `POWERUPS.md` §11** : la masse de 10 000 (`C_PickupDoubleShield`) n'est jamais appliquée, car
+  la classe n'est jamais créée.
+

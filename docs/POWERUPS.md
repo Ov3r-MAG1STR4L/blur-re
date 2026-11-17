@@ -704,7 +704,7 @@ Code : `VLC_Pickups.cpp:757-917`, `1334-1500`, **Fort** ; essai en jeu du 2026-1
 | Shunt | `PickupDoubleShunt` | deux Shunts à 0,5 s d'écart (`ShotDelay`) ; arrière : `PickupDoubleShuntReverse`, un tir central et un de chaque côté à 10° (`Perks.DoubleShuntReverse.Angle`, `NumShotsOffCentre` 1) |
 | Mine | `PickupDoubleBomb` | 3 mines sur 15 m (`Perks.DoubleBomb.NumMines` / `SpreadDistance`), vie 3 s |
 | Shock | aiguillage vers `C_ShockManager` (§3.2) ; la classe `PickupDoubleShock` existe, mais `CreatePickup` ne la crée pas | déjà le chemin de chaque tir : pas de différence |
-| Bouclier | — | dure 12 s au lieu de 6 ; masse 10 000 (`Perks.DoubleShield.Mass`) ; aussi par `BossDoubleShield` |
+| Bouclier | — | dure 12 s au lieu de 6 ; masse 10 000 (`Perks.DoubleShield.Mass`) ; aussi par `BossDoubleShield` (**correction 2026-11-17** : cette masse est celle de `C_PickupDoubleShield`, que `CreatePickup` ne crée jamais ; la poussée réelle vient du poids « Ultra » et de `JINK_SHIELD`, voir `POWERUP_BEHAVIOUR_STUDY.md` §4.2) |
 | Barge | aucun niveau DoubleTap dans les données | — |
 
   Dégâts : toujours ceux du niveau Normal (§3.1).
