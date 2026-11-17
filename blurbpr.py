@@ -102,16 +102,24 @@ class Bpr:
         r = self.recs[self.names.index(name)]
         return r, self.b[self.data0 + r[2]:self.data0 + r[2] + r[4]]
 
-    def rebuild(self, additions=()):
+    def rebuild(self, additions=(), resize=None):
         """Rebuild the bundle, preserving all existing image bytes and optionally appending new entries.
 
         Each addition is (name, template_name, image_bytes); the template supplies the pixel format and dimensions.
+        `resize` = {name: (w, h, image_bytes)} replaces an existing image, same format and mip count, new size
+        (the HUD support sheet grown from 128x512 to 128x1024, 2026-11-17).
         The data start field is recomputed with the expanded table and names, then all image offsets are packed again.
         """
+        resize = resize or {}
+        if set(resize) - set(self.names):
+            raise KeyError(f"resize: unknown image(s) {sorted(set(resize) - set(self.names))}")
         entries = []
         for name, rec in zip(self.names, self.recs):
+            rec = list(rec)
             raw = self.b[self.data0 + rec[2]:self.data0 + rec[2] + rec[4]]
-            entries.append((name, list(rec), raw))
+            if name in resize:
+                rec[8], rec[9], raw = resize[name]
+            entries.append((name, rec, raw))
         used = set(self.names)
         for name, template_name, raw in additions:
             if name in used:
