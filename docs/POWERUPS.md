@@ -464,8 +464,8 @@ les refuse).
   Entrées : `nitrous` 4, `shock` 3, `shunt` 2, `barge` 1, `bomb` 0, `blindfire1/2/3` 5 / 9 / 6 (une icône par
   nombre de tirs restants), `repair` 8, `shield` 7, `superShield` 104, `empty`, `extra_blindfire1-4` 103 à 100
   (capacité « tirs de Bolt en plus »). **Confirmé.**
-- **Planche des icônes** : la `.bpr` qui contient les cases 0-9 et 100-104 n'est pas encore localisée (**Inconnu** ;
-  piste : `blurbpr.py` sur les `.bpr` du HUD, comme pour la pochette d'album).
+- **Planche des icônes** : `ui_common.bpr` → `perk_sheet` / `perk_sheet_support` (+ inversées). Détail complet dans
+  **`POWERUPS_HUD.md`**.
 - **Alertes** :
   - Shunt qui arrive : `UiGameMsg_DisplayECMWarning` / `RemoveECMWarning` (`VehicleLogicActor.cpp:842`), dans les
     25 m (`ECMWarningDist`), si `ECMWarningEnabled` ;
@@ -936,7 +936,7 @@ tout le monde a le mod.
 **Suites** (par ordre d'utilité) :
 
 1. confirmer en jeu le rétroviseur (§7) ;
-2. localiser la planche d'icônes du HUD (cases 0-9, 100-104) ;
+2. ~~localiser la planche d'icônes du HUD~~ : fait, voir `POWERUPS_HUD.md` ;
 3. écrivain de `.baf` (remplacer des sons) ;
 4. bit LAN libre pour transmettre une option à tous ;
 5. sous-types libres comme emplacements de nouveaux bonus ;

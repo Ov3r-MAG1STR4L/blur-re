@@ -3391,3 +3391,41 @@ Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeur
   actions `PickupFire` / `PickupDoubleFire` / `PickupHitCar`…, valeur `IsFocusCar` (son du tireur ≠ son des autres),
   4 projectiles audibles au plus, occlusion par rayon. Tout est local à chaque machine. **Fort**.
 
+## Icônes des bonus dans le HUD (2026-11-17, lecture seule) → `POWERUPS_HUD.md`
+- **Planches** (`root.pak` `ui\data\ui_common.bpr`, **Confirmé**) :
+  - `perk_sheet` (DXT1 128 × 1024, cases 0-9) et `perk_sheet_inverted` (DXT5) ;
+  - `perk_sheet_support` (DXT1 128 × 512, cases 100-104) et `perk_sheet_support_inverted` ;
+  - une case = 128 × 96 px, aucune place libre ;
+  - `mod_gift` (5 symboles de mods).
+- **Découpe** par les gadgets de `ui.bin` `hud_objects` (`Perks_MainHUD`, `Perks_MainAttached`, `ai_perks`) :
+  V = `pos.v` + `size.v` × index (`size.v` 0,09375 / 0,1875). Les index ≥ 100 passent sur la planche support, avec
+  index − 100 (`UIPerks2.cpp`, `UIPerks.cpp`, **Fort**).
+- **L'index n'est pas le n° du bonus** : `GetPerkInfo(type, nbTirs)` choisit une entrée nommée de
+  `PerkDisplayParameters` :
+
+| Bonus | Case |
+|---|---|
+| Mine | 0 |
+| Barge | 1 |
+| Shunt | 2 |
+| Shock | 3 |
+| Nitro | 4 |
+| Bolt 1 / 3 / 2 tirs | 5 / 6 / 9 |
+| Shield | 7 |
+| Repair | 8 |
+| Bolt avec le mod (4 à 1 tirs) | 100-103 |
+| **SuperShield = étoile** | **104** |
+| Fan, Stopwatch | aucune icône |
+
+  Le sous-type (DoubleTap, Reversed…) ne change jamais l'icône.
+- **Affichage** :
+  - carrousel 3D derrière la voiture en caméra extérieure ;
+  - carrousel du HUD en caméra pare-chocs et en écran partagé ;
+  - une icône au-dessus de chaque adversaire (`ai_perks`) ;
+  - couleur du bonus sur la barre de course.
+- **Inutilisé** : formes vectorielles `perk_*_x2` (Mine, Barge, Shunt, Shock, Nitro) dans `perk_icons.ipf`, jamais
+  référencées (DoubleTap, **Hypothèse**) ; symboles de mods et halo désactivés par les données (`slot_effect` à 0).
+  L'icône de la Mine porte encore les couleurs `Flash_*`.
+- **Icône du Railgun** : remplacer la case 104 dans les deux planches support (données seules). Une entrée HUD de
+  plus demande une DLL (`GetPerkInfo`). Planche contact : `perk_icons.py`.
+
