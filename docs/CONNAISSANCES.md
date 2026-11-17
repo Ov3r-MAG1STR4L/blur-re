@@ -7,7 +7,7 @@ hypothèse comme un fait**. Chaque entrée porte une étiquette :
 - **Fort** : très probable, une seule vérification indirecte
 - **Hypothèse** : piste à valider
 
-Dernière mise à jour : 2026-11-16.
+Dernière mise à jour : 2026-11-17.
 
 ---
 
@@ -3358,3 +3358,36 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
     la gravité est courbée ;
   - la force externe ne corrige plus que l'appui constant (C·(cd + d)).
   Octets d'origine vérifiés avant chaque patch (sinon rien n'est modifié).
+
+## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
+Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
+`docs/POWERUPS_DONNEES.md` (généré par `powerups_dump.py`). Découvertes nouvelles :
+- **Prototypes jamais compilés** dans la source : BlackHole, Bombard, Jump, Magnet, Teleport, Trap, Ghost, Grab, Pulse,
+  Rift, Flash, Bomb « Upgraded » (dans `amax.vcproj`, mais aucune de leurs variables `Perks.*` dans `Blur.exe`).
+  **Confirmé** (chaînes absentes). L'entrée HUD de la Mine porte encore les couleurs `Flash_*`.
+- **DoubleTap** : maintenir « Utiliser » 0,5 s (`Perks.ChargeTime`) avec 2 bonus du même type et l'amélioration
+  `mUpgrades.Double*` ; consomme 2 bonus. Coupé par `bool do_charging = false;` (`VLC_Pickups.cpp:757`). **Fort**.
+- **Shock** : chaque tir passe par le sous-type DoubleTap, qui n'est qu'un aiguillage vers `C_ShockManager`. Celui-ci
+  crée 3 dômes de niveau **Normal**, devant la cible, sur l'`.aid`. **En réseau, c'est l'hôte qui place les dômes.**
+  Un coup de Shock = freinage forcé selon la courbe `BalancingGraph` (vitesse / 200 mph). **Fort**. Cela explique
+  l'essai « DoubleTap partout » sans effet sur la Shock.
+- **Dégâts** : toujours `DamageInflicted` du niveau Normal (sauf Mini, Decoy, Nitro arrière mineur) ; coup mineur de
+  Shunt / Shock ÷ 2. Réactions des voitures = animations scriptées `FakeVehiclePhysics` (pas de force). **Fort**.
+- **Vitesse du Shunt** : `Perks.Shunt.MaxSpeed` 110 m/s, guidage `HomingTurnRate` 65 °/s dans 50 m (codé en dur). **Fort**.
+- **IA** : `C_VehicleComponent_Pickups_AI::Update()` = `return;`. Les données `AIPickupController` de `pickups.bin`
+  sont donc mortes. L'IA active (`cPerkSkillUsage`, `air.bin`) va chercher les bonus projetés sur ses `.aid` (25
+  nœuds devant, hauteur −0,5 à +2 m, si réserve < 3) : un emplacement ajouté est vu sans code. **Fort**.
+- **Rétroviseur** : il coupe les particules et les lumières dynamiques (`Mirror.cpp:66-67`) mais dessine les
+  maillages d'effets (aucun `ExcludeFromMirror` dans `pickups.bin`, 169 / 212 exclus des reflets). Les traînées n'y
+  sont donc jamais visibles. **Fort** (code) / **Confirmé** (données).
+- **Réseau** : pair à pair ; chaque machine simule le projectile.
+  - Coup décidé **par la victime** par défaut, mais **par le tireur** pour le Bolt, la Barge et la Mine lancée
+    (`IsDefenderCentric`).
+  - Type et sous-type tiennent dans 1 octet (4 + 4 bits : types 11-15 libres) ; délai ×100 dans 1 octet
+    (≤ 2,55 s).
+  - Options LAN : `NetRaceSettings.m_Pickups` en `U16` (8 bits libres).
+  **Fort**.
+- **Audio** : entités nommées en dur par type (`gAudioPickupString`, aucune pour SuperShield / Fan / Stopwatch),
+  actions `PickupFire` / `PickupDoubleFire` / `PickupHitCar`…, valeur `IsFocusCar` (son du tireur ≠ son des autres),
+  4 projectiles audibles au plus, occlusion par rayon. Tout est local à chaque machine. **Fort**.
+
