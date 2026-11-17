@@ -42,6 +42,7 @@ static float min_speed = 13.9f;                          /* 50 km/h, as Blur2Dub
 static char dir[MAX_PATH];
 static FILE *logfile = NULL;
 static int in_zone_last[32], applied[32];
+static float nprev[32][3];
 
 static void say(const char *fmt, ...)
 {
@@ -80,18 +81,20 @@ static int vehicle_index(unsigned self)
 }
 
 /* On the ground the racing physics (RacingPhysics::Car::EvaluateDerivative, Blur.exe 0x7D1FE4) ignores the body's
-   gravity: it adds m_dd.externalForce (car + 0x1474: [esi+0x13AC], esi = car + 0xC8), then its own gravity
+   gravity: it adds m_dd.externalForce (car + 0x1468: [esi+0x13A0], added to the FORCE at [edi+0x24] where the
+   gravity is taken off; v2 / v3 wrote car + 0x1474 = externalTorque by mistake, 2026-11-17), then its own gravity
    force.y -= mass * 9.81 (mass: car + 0x1D4) and a constant downforce C along the world vertical seen across the
    heading (cd = Y without its part along the heading), C = [car+0x740] * 9.81 * [[car+0x167C]+0x26C].
    car = [vehicle actor + 0x238] (m_pVehiclePhysics). externalForce is only rewritten in the air (CopyFromGravity),
    so on the ground the value written here stays for every physics step of the frame. */
-#define CAR_EXT_FORCE 0x1474
+#define CAR_EXT_FORCE 0x1468
+#define CAR_EXT_TORQUE 0x1474
 #define CAR_MASS      0x1D4
 
 static float *ground_force(char *self)
 {
     unsigned car = rd((unsigned)self + 0x238);
-    if (!car || !readable((void *)(car + CAR_EXT_FORCE), 12) || !readable((void *)(car + 0x740), 4)) return NULL;
+    if (!car || !readable((void *)(car + CAR_EXT_FORCE), 24) || !readable((void *)(car + 0x740), 4)) return NULL;
     return (float *)(car + CAR_EXT_FORCE);
 }
 
@@ -117,6 +120,7 @@ static void wall_force(char *self, float *ext, const float *d, float g)
    of Blur 2's CeilingRidingControl (GravityBend surfaces). */
 #define CELL 4.0f
 #define RAY 4.0f
+#define SMOOTH 3.0f
 #define NBUCKET (1 << 18)
 static float *pts = NULL;
 static int npts = 0, *nextp = NULL, head[NBUCKET];
@@ -168,10 +172,28 @@ static int surface_normal(const float *p, const float *up, float *n)
         }
     }
     if (best < 0) return 0;
-    {
+    {   /* v3.2: mean of the points up to SMOOTH m farther than the nearest one, each turned towards the car,
+           weighted by closeness, those disagreeing with the nearest normal left out (railings, barriers) */
         const float *q = pts + 6 * best;
         float s = (p[0] - q[0]) * q[3] + (p[1] - q[1]) * q[4] + (p[2] - q[2]) * q[5] >= 0.f ? 1.f : -1.f;
-        n[0] = q[3] * s; n[1] = q[4] * s; n[2] = q[5] * s;
+        float n0[3], lim = sqrtf(bd) + SMOOTH, l;
+        n0[0] = q[3] * s; n0[1] = q[4] * s; n0[2] = q[5] * s;
+        n[0] = n[1] = n[2] = 0.f;
+        for (dx = -1; dx <= 1; dx++) for (dy = -1; dy <= 1; dy++) for (dz = -1; dz <= 1; dz++) {
+            int i;
+            for (i = head[bucket(cx + dx, cy + dy, cz + dz)]; i >= 0; i = nextp[i]) {
+                const float *r = pts + 6 * i;
+                float a = r[0] - p[0], b = r[1] - p[1], c = r[2] - p[2], dd = sqrtf(a * a + b * b + c * c), w, si;
+                if (dd > lim || a * up[0] + b * up[1] + c * up[2] > 0.5f) continue;
+                si = -(a * r[3] + b * r[4] + c * r[5]) >= 0.f ? 1.f : -1.f;
+                if ((r[3] * n0[0] + r[4] * n0[1] + r[5] * n0[2]) * si < 0.5f) continue;
+                w = 1.f / (dd + 0.5f);
+                n[0] += w * r[3] * si; n[1] += w * r[4] * si; n[2] += w * r[5] * si;
+            }
+        }
+        l = sqrtf(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+        if (l < 1e-4f) { n[0] = n0[0]; n[1] = n0[1]; n[2] = n0[2]; }
+        else { n[0] /= l; n[1] /= l; n[2] /= l; }
     }
     return 1;
 }
@@ -218,6 +240,14 @@ static void __stdcall gravity(char *self)
             float l;
             if (!npts) { n[0] = up[0] / len; n[1] = up[1] / len; n[2] = up[2] / len; }   /* old rule */
             if (t > 1.f) t = 1.f;
+            if (k < 32 && applied[k]) {                      /* temporal smoothing (no sudden swings) */
+                float m0 = 0.75f, l2;
+                n[0] = m0 * nprev[k][0] + (1.f - m0) * n[0]; n[1] = m0 * nprev[k][1] + (1.f - m0) * n[1];
+                n[2] = m0 * nprev[k][2] + (1.f - m0) * n[2];
+                l2 = sqrtf(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+                if (l2 > 1e-4f) { n[0] /= l2; n[1] /= l2; n[2] /= l2; }
+            }
+            if (k < 32) { nprev[k][0] = n[0]; nprev[k][1] = n[1]; nprev[k][2] = n[2]; }
             d[0] = -n[0] * t; d[1] = -(1.f - t) - n[1] * t; d[2] = -n[2] * t;           /* down -> into the surface */
             l = sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
             if (l < 1e-3f) { d[0] = 0.f; d[1] = -1.f; d[2] = 0.f; l = 1.f; }
@@ -229,6 +259,7 @@ static void __stdcall gravity(char *self)
                     k, p[0], p[1], p[2], speed * 3.6f, n[0], n[1], n[2], t);
         } else if (ext && k < 32 && applied[k]) {
             ext[0] = ext[1] = ext[2] = 0.f;                 /* back to the game's own forces */
+            ext[3] = ext[4] = ext[5] = 0.f;                 /* torque: written by v2 / v3 */
         }
         if (k < 32) applied[k] = on && ext;
         if (k < 32 && inside != in_zone_last[k]) {

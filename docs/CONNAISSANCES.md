@@ -3327,3 +3327,20 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   le fait partir du point de tir avant ; décalé de `rear_offset` (4,5 m) vers l'arrière avant le demi-tour. L'orbe
   arrière du jeu (`@e2afbeba`, maillage `@d016c65a`) n'a pas de traînée et n'exclut pas le rétroviseur ; visibilité au
   rétroviseur toujours à confirmer.
+- **Essai de la v3.1 (2026-11-17, journal par lancement)** : la gravité suit bien la paroi du virage sud-ouest
+  jusqu'à 112 m (normale x ≈ 0,9 à 60-100 m), mais la voiture ne pivote pas (haut y ≈ 0,8 : deux roues) et la gravité
+  saute par moments (à 47 m : x +4,5 au lieu de −6, surface voisine prise pour la paroi) ; boucle de remises en piste
+  au pied du mur (−1 175 ; −648), voiture replacée à 107 km/h puis ralentie à 83. **Bug trouvé (Confirmé par
+  désassemblage)** : dans `EvaluateDerivative`, `[esi+0x13A0]` est ajouté à la **force** (`[edi+0x24]`, là où la
+  gravité est retirée) et `[esi+0x13AC]` au **couple** (`[edi+0xC]`) : `externalForce` = **voiture + 0x1468**,
+  `externalTorque` = voiture + 0x1474. Les v2 / v3 écrivaient la compensation dans le **couple** (rotations folles au
+  lieu d'une poussée vers le mur). **v3.2** : force en +0x1468, couple remis à 0 en sortie de zone, normale = moyenne
+  des points à moins de 3 m de plus que le plus proche (pondérée, surfaces en désaccord écartées) puis lissée dans le
+  temps (75 % de la précédente). À essayer.
+- **Bonus de Marina à leur place (2026-11-17, `b2pickups.py`, appelé par `make_b2_map`)** : les deux listes de Map
+  Builder (`699ADE84` solo, `73B55A31` multi, 109 `PickupPosition` chacune) réécrites par `gen_actorpack.place_pickups`
+  aux **positions 3D officielles** (`dubai.json`, axes Unity → (−x, y, −z), y + 1 − 2,38), cap du tracé le plus proche,
+  types : Blindfire → Bolt, Bomb → Mine, Nitrous → Nitro, **Javelin et Icewall → Railgun** (type SuperShield
+  `0xB85C8D7A`, référence externe insérée triée). Marina : **41 bonus**, 41 places distinctes (avant : projetés au centre
+  de la route de Map Builder, types en rotation, jusqu'à 8 au même endroit), dont 8 railguns. Appliqué à la map
+  installée et à la sortie `b2_dubai_marina_lot2` (`.bak` gardé).
