@@ -17,7 +17,29 @@ def blur_running():
     return "Blur.exe" in out
 
 
+NAMES = {1: "Business Bay", 2: "Dubai Island", 3: "Construction", 4: "Marina"}
+
+
+def installed():
+    """route whose gravity zones are in Blur_test (header line of b2gravity.txt), or None"""
+    import re
+    try:
+        head = open(os.path.join(config.BLUR_TEST, "amax", "dlls", "b2gravity.txt"), encoding="utf-8",
+                    errors="replace").readline()
+    except OSError:
+        return None
+    m = re.search(r"Dubai route (\d+)", head)
+    return int(m.group(1)) if m else None
+
+
 def main():
+    if sys.argv[1:] == ["--etat"]:
+        r = installed()
+        print("Route installée : %s" % ("%d - %s" % (r, NAMES[r]) if r in NAMES else "aucune route de Dubaï reconnue"))
+        for k, n in NAMES.items():
+            built = os.path.isdir(os.path.join(b2track.MAPS["dubai%d" % k]["out"], "files"))
+            print("  %d  %-13s %s" % (k, n, "construite" if built else "pas construite"))
+        return
     r = int(sys.argv[1])
     m = b2track.MAPS["dubai%d" % r]
     if blur_running():
