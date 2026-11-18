@@ -3389,6 +3389,16 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
     ground along car -up / world -Y » ; Fix2 coupé (comme le coup de pouce en l'air) tant qu'**une** voiture est
     courbée, remis ensuite. Ancienne DLL gardée : `amax\dlls\b2gravity_v4.dll.bak`.
   - Limite connue : Fix2 est global (toutes les voitures frottent normalement les murs pendant ce temps).
+- **Essai v5 (2026-11-18)** : nette amélioration (on contrôle la montée et la descente sur le mur), mais toujours
+  deux roues. Journal : gravité bien horizontale sur la paroi (−9,7 ; 0 ; −1,3), roues « car −up », mais le haut de la
+  voiture reste à ~30-40° (y 0,74-0,87) au lieu de ~85°. Explication : les roues ne cherchent le sol que **sous**
+  la voiture (2 m selon −haut) ; le mur est **à côté**, rien ne fait tourner la voiture vers lui.
+- **Gravité v6 (2026-11-18, installée, à essayer)** : couple d'alignement écrit dans `m_dd.externalTorque`
+  (Car + 0x1474, ajouté au couple de la dérivée, `car.cpp:723`) tant que la voiture est courbée :
+  `t × m × 9,81 × (align × (haut ∧ n) − damp × ω)`, ω = rotation du haut entre deux images (horloge QPC),
+  n = normale lissée de la surface. Réglages dans `b2gravity.txt` : `align 1.5`, `damp 0.6` (≈ amortissement
+  critique pour une inertie de roulis ~ m × 0,8 m², à régler en jeu). Le journal d'état affiche aussi `n` et le
+  couple. Remis à 0 à la sortie (comme avant). Ancienne DLL : `b2gravity_v5.dll.bak`.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
