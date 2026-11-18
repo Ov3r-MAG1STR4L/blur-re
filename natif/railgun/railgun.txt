@@ -5,8 +5,8 @@ speed 600        # m/s; range = speed x Perks.Blindfire.LiveTime (10 s)
 radius 0.8       # hitbox (swept ray radius); the Bolt has 0.2
 height 0.3       # height above the ground
 fallrate 2       # how fast it follows the ground downhill
-damage 50        # base = one Bolt (50)
-falloff 1.5 1.5 1.5   # damage x base for the 1st target, after 1 pierced, after 2+ (user: 1.5 everywhere)
+damage 150       # base; one Bolt = 50 (user: 150, 2026-11-18)
+falloff 1 1 1    # damage x base for the 1st target, after 1 pierced, after 2+ (user: 1 everywhere)
 crush 9999       # damage to mines, Shunts, Bolts (orbes) on its line: they are destroyed
 spawn 0.35       # chance that a pickup draw may give a railgun (0..1)
 test 0           # 1 = TEST: every Bolt the player picks up becomes a railgun (orbs and railgun mixed)
