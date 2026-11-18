@@ -43,6 +43,14 @@ static char dir[MAX_PATH];
 static FILE *logfile = NULL;
 static int in_zone_last[32], applied[32];
 static float nprev[32][3];
+/* v6: roll the car onto the surface. The wheels only look for ground under the car (2 m along -up), so a wall
+   beside the car is never reached and nothing turns the car: it stays at ~30 deg, two wheels on the road
+   (essai v5). Torque = t * m * 9.81 * (align * (up x n) - damp * w), w = angular velocity from the change of
+   up between two frames (only its part across up). "align" / "damp" lines in b2gravity.txt
+   (ponytail: tuned by hand in game; per-car inertia from the exe if one value does not fit every car). */
+static float align_k = 1.5f, align_d = 0.6f;
+static float upprev[32][3];
+static LARGE_INTEGER tprev[32];
 
 static void say(const char *fmt, ...)
 {
@@ -113,6 +121,29 @@ static void wall_force(char *self, float *ext, const float *d, float g)
     /* cancel the world gravity and the world-vertical downforce, push the same amounts along d */
     for (i = 0; i < 3; i++)
         ext[i] = c * (cd[i] + d[i]);              /* v4: gravity itself replaced at the source, only the downforce here */
+}
+
+/* v6: torque rolling the car onto the surface (see align_k) */
+static void align_torque(char *self, int k, float *ext, const float *up, const float *n, float t)
+{
+    unsigned car = rd((unsigned)self + 0x238);
+    float m = *(float *)(car + CAR_MASS), c[3], w[3] = {0.f, 0.f, 0.f}, s;
+    LARGE_INTEGER now, fq;
+    int i, fresh = k < 0 || k >= 32 || !applied[k];
+    QueryPerformanceCounter(&now); QueryPerformanceFrequency(&fq);
+    if (m <= 0.f || m > 1e5f) return;
+    c[0] = up[1] * n[2] - up[2] * n[1]; c[1] = up[2] * n[0] - up[0] * n[2]; c[2] = up[0] * n[1] - up[1] * n[0];
+    if (!fresh) {
+        float dt = (float)(now.QuadPart - tprev[k].QuadPart) / (float)fq.QuadPart;
+        const float *u0 = upprev[k];
+        if (dt > 0.004f && dt < 0.1f) {                              /* w across up = (u0 x up) / dt */
+            w[0] = (u0[1] * up[2] - u0[2] * up[1]) / dt; w[1] = (u0[2] * up[0] - u0[0] * up[2]) / dt;
+            w[2] = (u0[0] * up[1] - u0[1] * up[0]) / dt;
+        }
+    }
+    if (k >= 0 && k < 32) { upprev[k][0] = up[0]; upprev[k][1] = up[1]; upprev[k][2] = up[2]; tprev[k] = now; }
+    s = t * m * 9.81f;
+    for (i = 0; i < 3; i++) ext[3 + i] = s * (align_k * c[i] - align_d * w[i]);
 }
 
 /* Collision surfaces of the zones (b2gravity.bin from b2gravity_zones.py: "B2GV", u32 n, n x (x y z nx ny nz)),
@@ -282,7 +313,11 @@ static void __stdcall gravity(char *self)
             if (l < 1e-3f) { d[0] = 0.f; d[1] = -1.f; d[2] = 0.f; l = 1.f; }
             d[0] /= l; d[1] /= l; d[2] /= l;
             gx = -g * d[0]; gy = -g * d[1]; gz = -g * d[2];                              /* |g| along d */
-            if (ext) wall_force(self, ext, d, g);
+            if (ext) {
+                float u[3] = {up[0] / len, up[1] / len, up[2] / len};
+                wall_force(self, ext, d, g);
+                if (len > 0.5f) align_torque(self, k, ext, u, n, t);
+            }
             if (k < 32 && !applied[k])
                 say("vehicle %d bent at (%.0f, %.0f, %.0f) %.0f km/h: surface normal (%.2f, %.2f, %.2f), t %.2f",
                     k, p[0], p[1], p[2], speed * 3.6f, n[0], n[1], n[2], t);
@@ -299,9 +334,12 @@ static void __stdcall gravity(char *self)
         }
         if (k == 0 && inside && GetTickCount() - last_status > 500) {          /* player: state every 0.5 s */
             last_status = GetTickCount();
-            say("  v0 (%.0f, %.0f, %.0f) %.0f km/h up (%.2f, %.2f, %.2f) %s t %.2f g (%.1f, %.1f, %.1f)",
+            say("  v0 (%.0f, %.0f, %.0f) %.0f km/h up (%.2f, %.2f, %.2f) %s t %.2f g (%.1f, %.1f, %.1f)"
+                " n (%.2f, %.2f, %.2f) torque %.0f",
                 p[0], p[1], p[2], speed * 3.6f, up[0], up[1], up[2],
-                on ? "surface" : (t > 0.f ? "NO SURFACE within 4 m" : "too slow"), t, gx, gy, gz);
+                on ? "surface" : (t > 0.f ? "NO SURFACE within 4 m" : "too slow"), t, gx, gy, gz,
+                on ? n[0] : 0.f, on ? n[1] : 0.f, on ? n[2] : 0.f,
+                (on && ext) ? sqrtf(ext[3] * ext[3] + ext[4] * ext[4] + ext[5] * ext[5]) : 0.f);
         }
     }
     out[0] = gx; out[1] = gy; out[2] = gz;
@@ -500,13 +538,15 @@ static void load_zones(void)
         float b[6], s;
         if (line[0] == '#') continue;
         if (sscanf_s(line, "speed %f", &s) == 1) { min_speed = s; continue; }
+        if (sscanf_s(line, "align %f", &s) == 1) { align_k = s; continue; }
+        if (sscanf_s(line, "damp %f", &s) == 1) { align_d = s; continue; }
         if (nzones < MAX_ZONES && sscanf_s(line, "%f %f %f %f %f %f", b, b + 1, b + 2, b + 3, b + 4, b + 5) == 6) {
             memcpy(zones[nzones++], b, sizeof b);
             say("zone %d: x %.0f..%.0f  y %.0f..%.0f  z %.0f..%.0f", nzones - 1, b[0], b[3], b[1], b[4], b[2], b[5]);
         }
     }
     fclose(f);
-    say("%d zone(s), speed > %.1f m/s", nzones, min_speed);
+    say("%d zone(s), speed > %.1f m/s, align %.2f damp %.2f", nzones, min_speed, align_k, align_d);
 }
 
 static void patch(void)
