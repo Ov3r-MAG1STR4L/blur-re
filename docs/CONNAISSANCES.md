@@ -3608,6 +3608,9 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   « orientation: N triangles turned…, M kept with both faces ». Les 4 routes reconstruites avec (2026-11-18) :
   route 1 8 780 retournés / 1 146 à deux faces (10,4 Mo), route 2 12 461 / 1 019 (8,3 Mo), route 3 36 781 / 2 879
   (15,3 Mo), Marina 38 048 / 3 517 (14,3 Mo). À essayer (installer avec `Installer route Dubai.bat`).
+- **Retour en arrière (2026-11-18, demande de l'utilisateur : « c'est devenu chaotique »)** : retournement des faces
+  **désactivé** (`ORIENT` = 0, le code reste) et 4 routes reconstruites comme juste avant (tracé sûr, couche arrière,
+  pas de retournement). La DLL v14 reste. Le comportement en jeu du retournement n'a pas été décrit en détail.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

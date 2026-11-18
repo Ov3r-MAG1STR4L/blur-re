@@ -80,7 +80,9 @@ BACKSTOP = 1.0
 # of the lap face AWAY from it (roads 17f 11-25 %, walls 15d 29-45 %). Within ORIENT m of the lap, a triangle is
 # turned to face the lap; when the lap passes on both sides of it (within ORIENT_BOTH m: thin wall between two
 # roads, bridge deck with a road under it) it is kept with both faces.
-ORIENT, ORIENT_BOTH = 60.0, 20.0
+# Switched OFF the same day at the user's request ("it became a bit chaotic", back to the build just before): set
+# ORIENT to 60.0 to use it again.
+ORIENT, ORIENT_BOTH = 0.0, 20.0
 
 
 def lap_points_3d(paths, dy):
@@ -108,7 +110,7 @@ def build(cols, base, route, laps, radius, dy=0.0):
         n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-12
         for i in np.where(d < radius)[0]:
             tri, nn, two = T[i], n[i], False
-            idx = lap3.query_ball_point(c[i], ORIENT)
+            idx = lap3.query_ball_point(c[i], ORIENT) if ORIENT > 0 else []
             if idx:
                 s = (L3[idx] - c[i]) @ nn                  # lap points in front (> 0) / behind (< 0)
                 dist = np.linalg.norm(L3[idx] - c[i], axis=1)
