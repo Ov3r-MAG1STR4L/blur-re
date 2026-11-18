@@ -3549,6 +3549,17 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   une copie 1 m derrière, même sens : un centre passé derrière le premier plan est encore devant le second, qui le
   repousse. Business Bay reconstruite avec et **installée** (2026-11-18) : 137 533 triangles (89 064 + ~48 000 de
   couche arrière), 732 objets, `level.levelphysics` 10,2 Mo (Marina : 12,8 Mo, accepté par le jeu). À essayer.
+- **Essai avec la couche arrière (2026-11-18)** : même choc au même endroit, puis `NO SURFACE within 4 m` à
+  (452 ; 27 ; 172) et réapparition **sous la map** en (460 ; −5 ; 153) (même point et ~107 km/h dans deux parties :
+  c'est la réapparition du jeu, pas une chute). **Vraie cause (Fort)** : le tracé de course venait du tour Unity, qui
+  **montait sur ce mur** (points 85-94, h 3,5 → 23,1 → 3,5) : Map Builder posait sa route (tuiles vidées mais
+  collision et ligne de réapparition) **en l'air à côté du mur**. Le choc à (433 ; 19 ; 190) = point 87 du tracé
+  (h 17) ; la réapparition se fait sur cette ligne. La route sous la chute existe bien (17f, y 4,4, n.y vers le haut).
+  **Règle pour toute route tirée d'un tour roulé** : le tracé suit la route au sol, pas la voiture sur un mur ni dans
+  un looping. Correction : points 85-94 remis à h 3,5 (`dubai_route1_trace.json`, ancienne version `.v1`). Les
+  autres bosses du tracé (points 137-145, +5,7 m ; 266-285, 18 → 9 m ; 174-191, 82 → 28 m) sont de vraies routes
+  (profils réguliers) et restent. Essais écartés : sol le plus haut par centres de triangles à 4 m (faux sur les
+  longues rampes : 50 m de trou), rayon vertical seul (dents de scie autour du mur).
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

@@ -598,3 +598,4 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
 | 2026-11-18 | v12 en échec sur Business Bay (contrôle fait sur la voiture du menu, pas refait à la grille). v13 installée : contrôle refait à chaque arrêt après 30 m ; à essayer |
 | 2026-11-18 | v13 essayée : zones OK, mais traversée d'une paroi (collision sans épaisseur, solide d'un seul côté, voiture plaquée à ~2,3 g). `b2collision` : 2e couche 1 m derrière les surfaces raides et plafonds ; Business Bay reconstruite et installée |
 | 2026-11-18 | **Priorités (décision de l'utilisateur)** : gravité, maps et IA d'abord ; reflets et transparences de Dubaï mis de côté (uKER a déjà un bon rendu) |
+| 2026-11-18 | Traversée du mur et réapparition sous la map : le tracé de Business Bay montait sur le mur (route Map Builder en l'air, percutée). Tracé remis au sol (points 85-94), Business Bay reconstruite |
