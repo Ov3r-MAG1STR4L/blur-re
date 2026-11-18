@@ -3358,6 +3358,37 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
     la gravité est courbée ;
   - la force externe ne corrige plus que l'appui constant (C·(cd + d)).
   Octets d'origine vérifiés avant chaque patch (sinon rien n'est modifié).
+- **Essai v4 (2026-11-18) : toujours deux roues et voiture « accrochée » au mur** (journal : virage sud-ouest, gravité
+  presque horizontale, haut de la voiture figé vers (0,42 ; 0,75 ; 0,50) pendant toute la montée). **Cause trouvée
+  dans la source (Fort, à confirmer dans l'exe)** : Blur 1 empêche **activement** de rouler sur les murs, à deux
+  endroits qui ne dépendent pas de la gravité :
+  1. **Roues** (`Car::CreateGravityCache`, `racingphysics/.../Car/car.cpp:597-627`) : les triangles où les roues
+     peuvent se poser sont pris selon la **verticale du monde** (`normal = −Y`, `maxCosAngle = −0,25` → seulement
+     n.y > 0,25, pente < ~75°). Un mur plus raide **n'est jamais un sol pour les roues** : les roues du bas restent
+     sur la route, la caisse frotte le mur (= deux roues). Un mode prévu mais jamais branché existe :
+     **`m_bEnableWallRiding`** (`Car::EnableWallRiding(bool)`, `car.cpp:941`, faux par défaut, aucun appelant) → la
+     recherche se fait alors selon **−haut de la voiture**.
+  2. **Contacts caisse / décor** (`C_RaceLogicLayer::ProcessCollisions`, `RaceLogicLayer.cpp:2433-2490`, « WallRiding
+     Fix2 », `Vehicle.GamePhysicsMechanics.WallRiding.EnableFix2` = vrai) : tout contact avec |n.y| < 0,25
+     (`NormalDotUpThreshold2`) devient un **mur** : matériau `Anisotropic_Wall` (ou `Anisotropic_ZeroY` en l'air),
+     pénétration mini 0,05, normale ramenée à l'horizontale de la voiture si haut.y > 0,866, et **freinage**
+     `vitesse × 450 (WallDragCoefficient) × échelle × courbe WallRidingSystem(mph)` (`RaceLogicLayer.cpp:2584-2599`)
+     → l'« accroche ».
+- **Gravité v5 (2026-11-18, installée dans Blur_test, à essayer)** : les deux verrous levés pendant qu'une voiture
+  est courbée. Adresses (Confirmé, désassemblage de l'exe AMAX 1.2) :
+  - **`m_bEnableWallRiding` = `Car + 0x12D5`** (`Car` = [acteur + 0x238]) : écrit seulement par
+    `Car::EnableWallRiding` (`0x7BFA00` : `mov [ecx+0x12D5], al`), lu par `CreateGravityCache` en `0x7BFECD`
+    (`cmp byte [esi+0x12D5]` → −`AxisY` de la voiture par l'appel virtuel +0x4C, sinon `0xE727DC`). Voisins
+    trouvés dans le constructeur `Car::Car` (fin en `0x7D26BF`) : `m_copyMassVariablesToGravity` +0x12D4,
+    `m_dd.noNetworkJumpCounter` +0x160C, `bNetworkJumpedThisFrame` +0x1610, **`m_dd.m_UsePhysicsGravity` +0x1618**
+    (c'est le `[esi+0x1550]` gardé par la v4, esi = Car + 0xC8), `m_OverrideSteps` +0x161C, `m_OverrideIntegrationMethod`
+    +0x1620.
+  - **Fix2 = octet `0x1212A84`** (objet `Debug::Bool` `0x1212A60` + 0x24, comme `0x1127CF4` du coup de
+    pouce en l'air), lu par `ProcessCollisions` en `0xB99AC3`. `WallDragCoefficient` = flottant `0x1212DEC`.
+  - DLL : `car_wallride` met `Car + 0x12D5` à 1 tant que la voiture est courbée (0 sinon), journal « wheels:
+    ground along car -up / world -Y » ; Fix2 coupé (comme le coup de pouce en l'air) tant qu'**une** voiture est
+    courbée, remis ensuite. Ancienne DLL gardée : `amax\dlls\b2gravity_v4.dll.bak`.
+  - Limite connue : Fix2 est global (toutes les voitures frottent normalement les murs pendant ce temps).
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

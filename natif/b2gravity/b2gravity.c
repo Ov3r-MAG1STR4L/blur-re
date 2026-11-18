@@ -203,19 +203,46 @@ static int surface_normal(const float *p, const float *up, float *n)
    down the WORLD vertical (amax.bin AmaxVehicleDefaults.flightControl: inFlightDownForce 200 000, after 0.01 s,
    for 3 s). Off while any car is bent onto a surface, back to its own value otherwise. */
 #define AIR_DOWNFORCE_ON 0x1127CF4
+/* v5: "Vehicle.GamePhysicsMechanics.WallRiding.EnableFix2" (Debug::Bool object 0x1212A60, value byte +0x24,
+   read by C_RaceLogicLayer::ProcessCollisions at 0xB99AC3): body contacts with |n.y| < 0.25 become walls
+   (Anisotropic_Wall material, horizontal normal) plus a drag of speed x 450 -> the car "sticks" to the wall.
+   Off while any car is bent, like the in-flight downforce. Global: every car in the race gets normal wall
+   contacts during that time. */
+#define WALL_FIX2_ON 0x1212A84
+/* v5: RacingPhysics::Car::m_bEnableWallRiding (car + 0x12D5: set by Car::EnableWallRiding at 0x7BFA00, never
+   called; tested by Car::CreateGravityCache at 0x7BFECD). False: the wheels look for ground along the WORLD
+   vertical and only keep triangles with n.y > 0.25, so a wall never carries the wheels (two wheels on the road,
+   the body rubbing the wall). True: along -up of the car. Set per car while it is bent. */
+#define CAR_WALLRIDE 0x12D5
 static DWORD last_status = 0;
-static int air_saved = -1;
+static int air_saved = -1, fix2_saved = -1;
+
+static void flag_switch(unsigned addr, int any, int *saved, const char *name)
+{
+    unsigned char *sw = (unsigned char *)addr;
+    if (any) {
+        if (*saved < 0) { *saved = *sw; *sw = 0; say("%s off (was %d)", name, *saved); }
+    } else if (*saved >= 0) {
+        *sw = (unsigned char)*saved; say("%s back to %d", name, *saved); *saved = -1;
+    }
+}
 
 static void air_downforce_switch(void)
 {
-    unsigned char *sw = (unsigned char *)AIR_DOWNFORCE_ON;
     int i, any = 0;
     for (i = 0; i < 32; i++) any |= applied[i];
-    if (any) {
-        if (air_saved < 0) { air_saved = *sw; *sw = 0; say("in-flight downforce off (was %d)", air_saved); }
-    } else if (air_saved >= 0) {
-        *sw = (unsigned char)air_saved; say("in-flight downforce back to %d", air_saved); air_saved = -1;
-    }
+    flag_switch(AIR_DOWNFORCE_ON, any, &air_saved, "in-flight downforce");
+    flag_switch(WALL_FIX2_ON, any, &fix2_saved, "wall-riding fix2");
+}
+
+/* wheels look for ground under the car (on) or under the world (off) */
+static void car_wallride(char *self, int k, int on)
+{
+    unsigned car = rd((unsigned)self + 0x238);
+    unsigned char *f = car ? (unsigned char *)(car + CAR_WALLRIDE) : NULL;
+    if (!f || !readable(f, 1) || *f == (unsigned char)(on != 0)) return;
+    *f = (unsigned char)(on != 0);
+    say("vehicle %d wheels: ground along %s", k, on ? "car -up" : "world -Y");
 }
 
 static void remember(char *self, int k, float gx, float gy, float gz, int bent);
@@ -264,6 +291,7 @@ static void __stdcall gravity(char *self)
             ext[3] = ext[4] = ext[5] = 0.f;                 /* torque: written by v2 / v3 */
         }
         if (k < 32) applied[k] = on && ext;
+        car_wallride(self, k, on && ext);
         if (k < 32 && inside != in_zone_last[k]) {
             in_zone_last[k] = inside;
             say("vehicle %d %s zone at (%.0f, %.0f, %.0f), %.0f km/h, up (%.2f, %.2f, %.2f)", k,
