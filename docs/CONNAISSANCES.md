@@ -3473,6 +3473,11 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   L'hypothèse du raccord trop serré (essai v8) était fausse : c'était la contrainte. À faire : transition plus douce,
   DLL liée à la carte (aujourd'hui zones et `b2gravity.bin` de Marina actifs sur toutes les cartes, en coordonnées
   du monde), essais avec les IA (tracés, zones de réapparition, zones roulables).
+- **Gravité v11 (2026-11-18, compilée, à installer quand Blur est fermé)** : zones liées à la carte. Ligne
+  `start -435 473 60` (grille officielle de Marina, rayon 60 m) : après un chargement (première vue ou saut de plus
+  de 300 m), la DLL attend que la voiture du joueur soit immobile et n'arme les zones que si elle est à moins de 60 m
+  de ce point ; journal « map check: … zones ARMED / off (other map) ». Sans ligne `start` : comportement d'avant.
+  Une seule carte par copie de la DLL (fichiers par carte quand une 2e route de Dubaï sera portée).
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

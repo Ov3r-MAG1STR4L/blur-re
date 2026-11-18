@@ -35,3 +35,5 @@ mph_max 35
 # v9 : reorientation par la normale devant la voiture (turn = vitesse de rotation max en rad/s, 0 = coupe ; ahead = distance de lecture en secondes de trajet)
 turn 4
 ahead 0.15
+# v11 : zones actives seulement si le joueur part pres de cette grille (x z rayon en m) = Marina
+start -435 473 60

@@ -402,6 +402,28 @@ static void car_constraint_off(char *self, int k, int on)
     }
 }
 
+/* v11: zones only on their own map. The zones and b2gravity.bin are in world coordinates, so on another track
+   they would bend gravity wherever that track crosses the same coordinates. "start x z r" in b2gravity.txt:
+   the player's car must stand still within r m of (x, z) after a load (first sight, or a jump > 300 m) for
+   the zones to be armed; elsewhere nothing of ours runs. No "start" line: always armed (old behaviour).
+   ponytail: one map per dll copy; per-map files (b2gravity_<map>.txt/.bin) when a second Dubai route exists. */
+static int armed = -1, gate_pending = 1, have_start = 0;
+static float start_xz[2], start_r = 30.f, gate_last[3];
+
+static void map_gate(const float *p, float speed)
+{
+    float dx = p[0] - gate_last[0], dy = p[1] - gate_last[1], dz = p[2] - gate_last[2];
+    if (dx * dx + dy * dy + dz * dz > 300.f * 300.f) gate_pending = 1;
+    gate_last[0] = p[0]; gate_last[1] = p[1]; gate_last[2] = p[2];
+    if (!gate_pending || speed > 0.5f) return;
+    gate_pending = 0;
+    if (!have_start) { armed = 1; return; }
+    dx = p[0] - start_xz[0]; dz = p[2] - start_xz[1];
+    armed = dx * dx + dz * dz < start_r * start_r;
+    say("map check: player stands at (%.0f, %.0f, %.0f), %.0f m from the zones' start -> zones %s", p[0], p[1], p[2],
+        sqrtf(dx * dx + dz * dz), armed ? "ARMED" : "off (other map)");
+}
+
 /* wheels look for ground under the car (on) or under the world (off) */
 static void car_wallride(char *self, int k, int on)
 {
@@ -426,7 +448,8 @@ static void __stdcall gravity(char *self)
         float speed = sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
         float len = sqrtf(up[0] * up[0] + up[1] * up[1] + up[2] * up[2]);
         int z, inside = 0;
-        for (z = 0; z < nzones && !inside; z++)
+        if (k == 0) map_gate(p, speed);
+        for (z = 0; z < nzones && !inside && armed == 1; z++)
             inside = p[0] >= zones[z][0] && p[1] >= zones[z][1] && p[2] >= zones[z][2]
                   && p[0] <= zones[z][3] && p[1] <= zones[z][4] && p[2] <= zones[z][5];
         float n[3], t = (speed * 2.23694f - mph_min) / (mph_max - mph_min), d[3];
@@ -689,6 +712,9 @@ static void load_zones(void)
         if (sscanf_s(line, "press %f", &s) == 1) { press_k = s; continue; }
         if (sscanf_s(line, "mph_min %f", &s) == 1) { mph_min = s; continue; }
         if (sscanf_s(line, "turn %f", &s) == 1) { turn_rate = s; continue; }
+        if (sscanf_s(line, "start %f %f %f", b, b + 1, b + 2) == 3) {
+            start_xz[0] = b[0]; start_xz[1] = b[1]; start_r = b[2]; have_start = 1; continue;
+        }
         if (sscanf_s(line, "ahead %f", &s) == 1) { ahead_s = s; continue; }
         if (sscanf_s(line, "mph_max %f", &s) == 1) { mph_max = s; continue; }
         if (nzones < MAX_ZONES && sscanf_s(line, "%f %f %f %f %f %f", b, b + 1, b + 2, b + 3, b + 4, b + 5) == 6) {
@@ -700,6 +726,8 @@ static void load_zones(void)
     if (mph_max <= mph_min + 1.f) mph_max = mph_min + 1.f;
     say("%d zone(s), gravity %.0f..%.0f mph, align %.2f damp %.2f press %.2f, rail turn %.1f rad/s ahead %.2f s",
         nzones, mph_min, mph_max, align_k, align_d, press_k, turn_rate, ahead_s);
+    if (have_start) say("zones only when the player starts within %.0f m of (%.0f, %.0f)", start_r, start_xz[0], start_xz[1]);
+    else say("no start line: zones active on every map");
 }
 
 static void patch(void)
