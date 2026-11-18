@@ -3419,6 +3419,19 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
 - **Gravité v8 (2026-11-18, installée, à essayer)** : dans une zone, sur une surface et au-dessus de 1 m/s, Fix2 coupé
   et roues « car −up » **à toute vitesse** (`wallon[]`) ; gravité / couple / appui progressifs entre `mph_min 15` et
   `mph_max 35` (réglables dans `b2gravity.txt`, avant 40 / 70 de Blur 2). Ancienne DLL : `b2gravity_v7.dll.bak`.
+- **Essai v8 (2026-11-18) : la tenue sur le mur à haute vitesse fonctionne ; c'est l'entrée qui échoue (Confirmé,
+  journal)**. Monté sur le mur à 26 km/h (haut ≈ normale), puis Nitro : à 153-170 km/h la voiture **reste collée**,
+  haut.y 0,12-0,27, aligné à ±0,05 sur la normale (n.y 0,17-0,33), couple faible (1,5-4 kN·m), appui redirigé 12 kN.
+  Le seul échec est le **passage route → mur** au-dessus de ~20 mph.
+- **Cause : le raccord de la surface de collision est trop serré (Fort, `b2gravity.bin`)**. Coupes du premier mur
+  (z = 320 / 380 / 440) : sol à y ≈ 2, plateau à y ≈ 15-17, banquette à ~35° (n.y 0,82-0,87), puis paroi presque
+  verticale (n.y 0,0-0,2) ; le passage de ~35° à ~80° se fait sur **2 à 5 m**. Pour suivre une courbe de rayon
+  R ≈ 4 m, il faut une accélération v²/R : à 25 km/h ≈ 1,2 g (ça passe), à 180 km/h ≈ 64 g (impossible pour les
+  ressorts : la voiture tape le raccord et reste à l'angle de la banquette, deux roues). Le seuil observé (~20 mph =
+  9 m/s → v²/R ≈ 2 g) colle. Unity (Blur 2) franchit ce raccord avec son rayon `CeilingRidingControl` qui réoriente
+  la voiture, pas par le contact physique.
+  Pistes : (a) adoucir le raccord dans la collision générée (congé de grand rayon) ; (b) dans la DLL, réorienter la
+  voiture et sa vitesse d'après la normale **devant** elle (comme le rayon de Blur 2) — offsets du corps à trouver.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
