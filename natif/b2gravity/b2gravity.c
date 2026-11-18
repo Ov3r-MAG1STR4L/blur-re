@@ -441,6 +441,37 @@ static void map_gate(const float *p, float speed)
         sqrtf(best), armed ? "ARMED" : "off (other map)");
 }
 
+/* v14: respawns on the circuit (essai 2026-11-18: the routes 1-3 traces are the main line only, a secondary path
+   is "off spline" -> HandOfGod puts the car back after 1.5 s; also on walls). "Vehicle.Components.HandOfGod.Enabled"
+   (Debug::Bool object 0x1129D98, value byte +0x24, tested by the HandOfGod component at 0x455BE7 and 0x45651F):
+   off while the zones are armed (a Dubai map), EXCEPT as a safety net (the user: "not under the map, no softlock"):
+   back on while the player's car is below HOG_FLOOR m or has been almost still (< 1 m/s) for HOG_STUCK_MS, until
+   it drives again (> 5 m/s). Global: AI cars lose their respawn too while it is off. Restored on another map. */
+#define HOG_ON 0x1129DBC
+#define HOG_FLOOR -2.f
+#define HOG_STUCK_MS 4000
+static int hog_saved = -1, hog_safety = 0;
+static DWORD still_since = 0;
+
+static void hog_update(const float *p, float speed)
+{
+    unsigned char *sw = (unsigned char *)HOG_ON;
+    DWORD now = GetTickCount();
+    int want_off;
+    if (speed < 1.f) { if (!still_since) still_since = now; } else still_since = 0;
+    if (!hog_safety && (p[1] < HOG_FLOOR || (still_since && now - still_since > HOG_STUCK_MS))) {
+        hog_safety = 1;
+        say("respawn safety: HandOfGod back on (car at (%.0f, %.0f, %.0f), %s)", p[0], p[1], p[2],
+            p[1] < HOG_FLOOR ? "below the map" : "stuck");
+    } else if (hog_safety && speed > 5.f && p[1] >= HOG_FLOOR) {
+        hog_safety = 0;
+        say("respawn safety over: car driving again");
+    }
+    want_off = armed == 1 && !hog_safety;
+    if (want_off && hog_saved < 0) { hog_saved = *sw; *sw = 0; say("HandOfGod respawn off on this map (was %d)", hog_saved); }
+    else if (!want_off && hog_saved >= 0) { *sw = (unsigned char)hog_saved; hog_saved = -1; say("HandOfGod respawn back on"); }
+}
+
 /* wheels look for ground under the car (on) or under the world (off) */
 static void car_wallride(char *self, int k, int on)
 {
@@ -465,7 +496,7 @@ static void __stdcall gravity(char *self)
         float speed = sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
         float len = sqrtf(up[0] * up[0] + up[1] * up[1] + up[2] * up[2]);
         int z, inside = 0;
-        if (k == 0) map_gate(p, speed);
+        if (k == 0) { map_gate(p, speed); hog_update(p, speed); }
         for (z = 0; z < nzones && !inside && armed == 1; z++)
             inside = p[0] >= zones[z][0] && p[1] >= zones[z][1] && p[2] >= zones[z][2]
                   && p[0] <= zones[z][3] && p[1] <= zones[z][4] && p[2] <= zones[z][5];

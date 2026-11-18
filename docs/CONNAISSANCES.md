@@ -3583,7 +3583,19 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   `construction`, `marina` ; les anciens fichiers de Marina à la racine y sont déplacés). `b2gravity_zones.py` écrit
   maintenant le fichier complet : zones, réglages (`SETTINGS`), points `track` du tracé (embranchements compris).
 - **Installation** : `b2install.py N` = map dans l'emplacement `flat_earth` (installateur de l'éditeur) + zones de la
-  route dans `amax\dlls` ; refuse si Blur est ouvert. Les 4 routes se remplacent l'une l'autre.
+  route dans `amax\dlls` ; refuse si Blur est ouvert. Les 4 routes se remplacent l'une l'autre. Copie aussi
+  `natif\b2gravity\b2gravity.dll` si elle diffère (l'ancienne en `b2gravity.dll.precedente.bak`). Lanceur :
+  `Jeux_WII\Installer route Dubai.bat` (`b2install.py --etat` = route installée).
+- **Réapparitions sur le circuit (essai 2026-11-18)** : cause probable, les tracés des routes 1-3 n'ont que la ligne
+  principale → un chemin secondaire est « hors tracé » (`OffSpline`, 1,5 s) ; aussi sur les murs. Conseil de la
+  communauté : couper HandOfGod (le système de réapparition). **Interrupteur (Confirmé, exe)** :
+  `Vehicle.Components.HandOfGod.Enabled` (`Debug::Bool` persistant, objet `0x1129D98`, valeur **`0x1129DBC`**,
+  testée par HandOfGod en `0x455BE7` et `0x45651F`). Critères de la source (`VLC_HandOfGod.h`) : Crashed, Tumbled,
+  Stuck, StuckOffGround, OffSpline, NotFacingForwards, Flipped.
+- **Gravité v14 (compilée, installée par `b2install.py`)** : HandOfGod coupé tant que les zones sont armées (une
+  map de Dubaï), sauf **filet de sécurité** : remis tant que la voiture du joueur est sous y = −2 ou quasi immobile
+  (< 1 m/s) depuis 4 s, jusqu'à ce qu'elle roule de nouveau (> 5 m/s) ; journal « respawn safety ». Global : les IA
+  perdent aussi leur réapparition pendant ce temps. Remis à sa valeur d'origine sur une autre map.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

@@ -52,6 +52,12 @@ def main():
     for f in ("b2gravity.txt", "b2gravity.bin"):
         shutil.copy2(os.path.join(src, f), os.path.join(dst, f))
     print("zones de gravité de %s copiées dans %s" % (m["name"], dst))
+    dll, old = os.path.join(HERE, "natif", "b2gravity", "b2gravity.dll"), os.path.join(dst, "b2gravity.dll")
+    if os.path.exists(dll) and (not os.path.exists(old) or open(dll, "rb").read() != open(old, "rb").read()):
+        if os.path.exists(old):
+            shutil.copy2(old, old + ".precedente.bak")
+        shutil.copy2(dll, old)
+        print("DLL de gravité mise à jour (l'ancienne : b2gravity.dll.precedente.bak)")
 
 
 if __name__ == "__main__":
