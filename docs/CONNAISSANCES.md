@@ -3463,6 +3463,16 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   sur une surface de zone → le jeu coupe lui-même la contrainte (échelle 0, chronomètre à 0). Journal
   « 30 deg tilt constraint held off / left to the game ». Après la sortie, le jeu la remet après 2 s au sol.
   Ancienne DLL : `b2gravity_v9.dll.bak`.
+- **Essai v10 (2026-11-18) : LE ROULAGE SUR LES MURS MARCHE dans Blur 1 (Confirmé, en jeu)** — « très prototype »,
+  transition route → mur pas lisse. Ce qui fait coller, ensemble (chaque pièce seule ne suffisait pas) :
+  1. gravité de la voiture tournée vers −normale de la surface, remplacée à la source (v4 : `0x7D202C`, `0x7C5272`) ;
+  2. roues qui cherchent le sol sous la voiture, `m_bEnableWallRiding` Car + 0x12D5 (v5) ;
+  3. anti-mur des contacts « Fix2 » coupé, octet `0x1212A84` (v5, dès 1 m/s en v8) ;
+  4. couple d'alignement sur la normale (v6) et appui aérodynamique retourné vers le mur (v7, `0x7C2F00`) ;
+  5. **contrainte de rotation ±30° coupée** (v10, `m_HeavyCollision`) — le dernier verrou, celui du « deux roues ».
+  L'hypothèse du raccord trop serré (essai v8) était fausse : c'était la contrainte. À faire : transition plus douce,
+  DLL liée à la carte (aujourd'hui zones et `b2gravity.bin` de Marina actifs sur toutes les cartes, en coordonnées
+  du monde), essais avec les IA (tracés, zones de réapparition, zones roulables).
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
