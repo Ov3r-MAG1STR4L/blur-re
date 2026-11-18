@@ -3327,6 +3327,14 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   le fait partir du point de tir avant ; décalé de `rear_offset` (4,5 m) vers l'arrière avant le demi-tour. L'orbe
   arrière du jeu (`@e2afbeba`, maillage `@d016c65a`) n'a pas de traînée et n'exclut pas le rétroviseur ; visibilité au
   rétroviseur toujours à confirmer.
+- **v8 : orbes en mode « Railgun seul » (2026-11-18, Confirmé dans le code et le binaire, installé, à essayer)**. Cause :
+  `PickupPositionActor::GenerateNextPickupType` (**`0xB52D40`**, appelée par `GrantPickup` en `0xB52FB3` quand
+  `mPerksRespawnRandomType`) tire un type puis **échange** `mPickupType` (**+0x1C0**) et `mNextPickupType` (**+0x1C4**).
+  `mNextPickupType` reçoit le type de la carte à l'initialisation (l. 333 : orbe là où la carte en met une, NONE là où le
+  type est coupé) et `SetRandomPickupTypeMpSetup` (tirage au départ) ne change que `mPickupType` : après le premier
+  ramassage, chaque emplacement « orbe » de la carte remontrait **une** orbe (vraie orbe, le plugin coche l'orbe en
+  coulisse). `SetRandomPickupType` = **`0xB5B2A0`** (virtuelle, vtable `0xECA020` +0x4C, `ret 8`). Correctif : en mode seul,
+  les deux lectures de +0x1C4 rendent 10 (hôte `0xB52D85`, client réseau `0xB52D5C` ; drapeaux gardés, testés en `0xB52D97`).
 - **Essai de la v3.1 (2026-11-17, journal par lancement)** : la gravité suit bien la paroi du virage sud-ouest
   jusqu'à 112 m (normale x ≈ 0,9 à 60-100 m), mais la voiture ne pivote pas (haut y ≈ 0,8 : deux roues) et la gravité
   saute par moments (à 47 m : x +4,5 au lieu de −6, surface voisine prise pour la paroi) ; boucle de remises en piste

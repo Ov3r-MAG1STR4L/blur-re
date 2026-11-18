@@ -604,3 +604,4 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
 | 2026-11-18 | Réapparitions sur le circuit : HandOfGod coupé sur les maps de Dubaï (v14, octet `0x1129DBC`) avec filet de sécurité (sous la map ou bloqué 4 s → réapparition remise) ; `b2install` installe aussi la DLL |
 | 2026-11-18 | Murs et routes sans hitbox : 14-26 % des triangles près du tour tournés à l'envers (Unity bloque des deux côtés, Blur d'un seul). `b2collision` les retourne vers le tour (deux faces si le tour passe des deux côtés) ; 4 routes reconstruites |
 | 2026-11-18 | Retour en arrière demandé (« chaotique ») : retournement désactivé (`ORIENT` = 0), 4 routes reconstruites comme avant ; DLL v14 gardée |
+| 2026-11-18 | Railgun v8 : orbes en mode « Railgun seul » = l'échange avec le « type suivant » (`GenerateNextPickupType` 0xB52D40) gardait le type de la carte ; forcé au Railgun en mode seul. Réglages : 150 de dégâts fixes. Installé, à essayer |

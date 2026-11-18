@@ -737,6 +737,38 @@ static __declspec(naked) void shuffle_thunk(void)
     }
 }
 
+/* Railgun only: GenerateNextPickupType (0xB52D40) swaps mPickupType (+0x1C0) with mNextPickupType (+0x1C4).
+   SetRandomPickupTypeMpSetup only redraws mPickupType, so the "next" type stays the level's own (an orb where the
+   map put one, NONE where its type was turned off): after the first pick-up each such position showed it once.
+   Both reads of +0x1C4 (host swap 0xB52D85, network client 0xB52D5C) give the railgun instead. Flags kept: the
+   host path tests them at 0xB52D97. */
+static __declspec(naked) void next_ecx_thunk(void)  /* replaces "mov ecx, [esi+0x1C4]" */
+{
+    __asm {
+        mov ecx, [esi + 0x1C4]
+        pushfd
+        cmp lan_on, 3
+        jne keep
+        mov ecx, 0xA
+    keep:
+        popfd
+        ret
+    }
+}
+static __declspec(naked) void next_eax_thunk(void)  /* replaces "mov eax, [esi+0x1C4]" */
+{
+    __asm {
+        mov eax, [esi + 0x1C4]
+        pushfd
+        cmp lan_on, 3
+        jne keep
+        mov eax, 0xA
+    keep:
+        popfd
+        ret
+    }
+}
+
 /* The game's own pickup sounds (Audio::InterfaceController 0x111D1E8 ::SendMessageToSubsystem 0x535770, thiscall
    (subsystem, message, value, msg*), ret 0x10; 9 = pickups) also play the Bolt's fire / flight / hit sounds for a
    railgun under ours ("muddy, triggered many times"). Messages that carry a railgun's unique id (PickupCreationStruct
@@ -830,6 +862,8 @@ static Patch patches[] = {
     {0x474170, 10, "8b44240450b920321301", JMP, NULL, "VLC GetRLSubTypeLevel: railgun level during its hits"},
     {0xEE1580, 4, "c0e6be00", PTR, NULL, "Bolt vtable: PostDelayInitialise (rear railgun turned around)"},
     {0xBAB5E4, 4, "59afba00", PTR, NULL, "CreatePickup: Bolt case (an AI's railgun)"},
+    {0xB52D85, 6, "8b8ec4010000", CALL, NULL, "GenerateNextPickupType: railgun only, next type = railgun (host)"},
+    {0xB52D5C, 6, "8b86c4010000", CALL, NULL, "GenerateNextPickupType: railgun only, next type = railgun (client)"},
 };
 
 static void unhex(const char *s, unsigned char *out, int n)
@@ -844,7 +878,7 @@ static void apply(void)
     void *to[] = {(void *)spawn_thunk, (void *)shuffle_thunk, (void *)audio_msg_thunk, (void *)pick_thunk, (void *)super_case, (void *)ctor_wrap, (void *)ctor_wrap,
                   (void *)ctor_wrap, (void *)trigger_hook, (void *)trigger_hook, (void *)kill_thunk, (void *)wall_thunk,
                   (void *)dmg_thunk, (void *)base_level_thunk, (void *)vlc_level_thunk, (void *)pdi_hook,
-                  (void *)bolt_case};
+                  (void *)bolt_case, (void *)next_ecx_thunk, (void *)next_eax_thunk};
     unsigned char want[16], put[16];
     int i, n = sizeof patches / sizeof *patches;
     DWORD old;
@@ -939,7 +973,7 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         if (slash) slash[1] = 0;
         sprintf_s(path, sizeof path, "%srailgun.log", dir);
         logfile = _fsopen(path, "w", _SH_DENYNO);   /* readable while the game runs */
-        say("railgun v7 loaded");
+        say("railgun v8 loaded");
         srand(GetTickCount());
         load_settings();
         if (test_mode) say("TEST MODE: every Bolt the player picks up becomes a railgun");
