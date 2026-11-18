@@ -12,3 +12,8 @@ config.local.json
 # Aperçus et enregistrements écartés (images tirées du jeu, essais jetés)
 edits/*_preview.png
 *_discarded.json
+
+# b2viewer.py output (regenerated)
+viewer/*/*.bin
+viewer/*/*.b64.txt
+viewer/*/*.json

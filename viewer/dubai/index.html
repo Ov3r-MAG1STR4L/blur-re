@@ -1,0 +1,277 @@
+<title>Atlas 3D de Dubaï</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Chakra+Petch:wght@600;700&display=swap">
+<style>
+/* Layout: one working screen, the city fills the frame, an instrument panel on the side (bottom sheet on phones). */
+:root {
+  --bg: #eef1f4; --panel: #ffffff; --ink: #18202a; --muted: #5b6676; --line: #d6dce4;
+  --accent: #e2551b; --sky: #dfe6ee;
+  --road: #8f99a6; --walls: #4d5866; --steep: #f08a24; --over: #c42f8f; --other: #b5bcc6;
+  --r1: #2f7de1; --r2: #18a37a; --r3: #c9a100; --r4: #e2551b;
+  --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1419; --panel: #161d25; --ink: #e6ebf1; --muted: #93a0b0; --line: #283240; --sky: #121921;
+  --road: #6f7a87; --walls: #3a4552; --other: #4e5966; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1419; --panel: #161d25; --ink: #e6ebf1; --muted: #93a0b0; --line: #283240; --sky: #121921;
+  --road: #6f7a87; --walls: #3a4552; --other: #4e5966; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); margin: 0; overflow: hidden; }
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 340px; height: 100%; }
+#view { position: relative; min-width: 0; background: var(--sky); }
+#view canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hud { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); top: 12px; font: 12px var(--mono);
+  color: var(--muted); background: color-mix(in srgb, var(--panel) 80%, transparent); padding: 6px 10px; border-radius: 6px; }
+#status { position: absolute; inset: 0; display: grid; place-items: center; font: 14px var(--mono); color: var(--muted); padding: 16px; text-align: center; }
+aside { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; min-width: 0;
+  padding-block: 18px 24px; padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 18px; }
+h1 { font: 700 22px/1.1 var(--display); letter-spacing: .02em; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 13px; line-height: 1.45; margin: 4px 0 0; }
+h2 { font: 600 11px var(--body); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 8px; }
+.routes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.routes button { font: 500 13px var(--body); text-align: left; padding: 8px 10px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--line); background: transparent; color: var(--ink); display: flex; gap: 8px; align-items: center; }
+.routes button[aria-pressed="true"] { border-color: var(--ink); background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.routes button:focus-visible, .layers label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.stats { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 13px; margin: 0 0 10px; }
+.stats dt { color: var(--muted); } .stats dd { margin: 0; text-align: right; }
+.layers { display: flex; flex-direction: column; gap: 4px; }
+.layers label { display: grid; grid-template-columns: auto 12px 1fr auto; gap: 8px; align-items: center; font-size: 13px; padding: 3px 0; cursor: pointer; }
+.layers small { color: var(--muted); font: 12px var(--mono); }
+.sw { width: 12px; height: 12px; border-radius: 3px; }
+#profile { width: 100%; height: 90px; display: block; }
+.note { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 0; }
+.tag { display: inline-block; font: 500 11px var(--mono); padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--steep) 25%, transparent); }
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 55%) minmax(0, 45%); }
+  aside { border-left: 0; border-top: 1px solid var(--line); }
+}
+</style>
+
+<div class="app">
+  <div id="view"><div id="status">Chargement de la collision de Dubaï…</div><div class="hud" id="hud" hidden>glisser : tourner · molette : zoom · clic droit : déplacer</div></div>
+  <aside>
+    <div>
+      <h1>Atlas 3D de Dubaï</h1>
+      <p class="sub">Collision de Blur2DubaiTest (Unity, axes du jeu Blur 1) et tours roulés des 4 routes, pour choisir quoi construire : murs roulables, looping, zones de gravité.</p>
+    </div>
+    <section>
+      <h2>Circuit</h2>
+      <div class="routes" id="routes"></div>
+    </section>
+    <section>
+      <h2 id="rtitle">Ville entière</h2>
+      <dl class="stats" id="stats"></dl>
+      <canvas id="profile" aria-label="Profil de hauteur du circuit"></canvas>
+    </section>
+    <section>
+      <h2>Couches</h2>
+      <div class="layers" id="layers"></div>
+    </section>
+    <p class="note">Surfaces <span class="tag">raides</span> : roulables, pente de plus de 60°, candidates au roulage sur les murs. « Face vers le bas » : dessous de pont <em>ou</em> haut de looping, la collision Unity ne les distingue pas. Les comptes « le long du tracé » prennent les triangles à moins de 15 m du tour roulé.</p>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const LAYER_INFO = {
+  road:    { name: "Route (roulable)", tok: "--road", on: true },
+  steep:   { name: "Surfaces raides", tok: "--steep", on: true },
+  over:    { name: "Face vers le bas", tok: "--over", on: true },
+  walls:   { name: "Murs", tok: "--walls", on: true },
+  other:   { name: "Autres", tok: "--other", on: false },
+  route_1: { name: "Barrières route 1", tok: "--r1", on: false },
+  route_2: { name: "Barrières route 2", tok: "--r2", on: false },
+  route_3: { name: "Barrières route 3", tok: "--r3", on: false },
+  route_4: { name: "Barrières route 4", tok: "--r4", on: false },
+};
+const ROUTE_TOK = { 1: "--r1", 2: "--r2", 3: "--r3", 4: "--r4" };
+let meta, scene, camera, renderer, controls, zones, selected = 0;
+const meshes = {}, laps = {}, centroids = {};
+
+function frame(box) {
+  const c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3());
+  const r = Math.max(s.x, s.z, 200) * 0.75;
+  controls.target.copy(c);
+  camera.position.set(c.x + r * 0.55, c.y + r * 0.8, c.z + r * 0.75);
+  camera.near = r / 500; camera.far = r * 20; camera.updateProjectionMatrix(); controls.update();
+}
+
+function buildRoutes() {
+  const el = document.getElementById("routes");
+  const items = [[0, "Ville entière", "--muted"], ...Object.entries(meta.circuits).map(([k, c]) => [+k, `${k} · ${c.name}`, ROUTE_TOK[k]])];
+  for (const [k, label, tok] of items) {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = "route-" + k;
+    b.innerHTML = `<span class="dot" style="background:var(${tok})"></span>${label}`;
+    b.onclick = () => select(k);
+    el.appendChild(b);
+  }
+}
+
+function addToggle(el, id, name, tok, on, count, onchange) {
+  const lab = document.createElement("label");
+  lab.innerHTML = `<input type="checkbox" id="${id}" ${on ? "checked" : ""}><span class="sw" style="background:var(${tok})"></span><span>${name}</span><small>${count}</small>`;
+  lab.querySelector("input").onchange = e => onchange(e.target.checked);
+  el.appendChild(lab);
+}
+
+function buildLayers() {
+  const el = document.getElementById("layers");
+  for (const L of meta.layers) {
+    const info = LAYER_INFO[L.layer] || { name: L.layer, tok: "--other", on: false };
+    addToggle(el, "layer-" + L.layer, info.name, info.tok, info.on, L.triangles.toLocaleString("fr-FR"), v => { meshes[L.layer].visible = v; });
+  }
+  addToggle(el, "layer-laps", "Tours roulés", "--accent", true, "", v => {
+    Object.values(laps).forEach(l => l.group.visible = v && (!selected || l.k === selected)); });
+  addToggle(el, "layer-zones", "Zones de gravité (Marina)", "--steep", true, meta.gravity_zones.boxes.length, v => { zones.visible = v; });
+}
+
+function nearCount(layer, pts, rad) {
+  const cs = centroids[layer]; if (!cs) return 0;
+  const grid = new Map(), key = (a, b) => a + "," + b;
+  for (const p of pts) { const k = key(Math.floor(p[0] / rad), Math.floor(p[2] / rad)); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(p); }
+  let n = 0;
+  for (let i = 0; i < cs.length; i += 3) {
+    const x = cs[i], y = cs[i + 1], z = cs[i + 2], gx = Math.floor(x / rad), gz = Math.floor(z / rad);
+    let hit = false;
+    for (let dx = -1; dx <= 1 && !hit; dx++) for (let dz = -1; dz <= 1 && !hit; dz++)
+      for (const p of grid.get(key(gx + dx, gz + dz)) || [])
+        if ((p[0] - x) ** 2 + (p[1] - y) ** 2 + (p[2] - z) ** 2 < rad * rad) { hit = true; break; }
+    if (hit) n++;
+  }
+  return n;
+}
+
+function drawProfile(c) {
+  const cv = document.getElementById("profile"), dpr = devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.clientHeight; cv.width = w * dpr; cv.height = h * dpr;
+  const g = cv.getContext("2d"); g.scale(dpr, dpr); g.clearRect(0, 0, w, h);
+  g.font = "11px " + css("--mono"); g.fillStyle = css("--muted");
+  if (!c) { g.fillText("Choisis un circuit pour voir son profil.", 4, h / 2); return; }
+  const pts = c.points, d = [0];
+  for (let i = 1; i < pts.length; i++) d.push(d[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][2] - pts[i - 1][2]));
+  const ys = pts.map(p => p[1]), y0 = Math.min(...ys), y1 = Math.max(...ys), L = d[d.length - 1];
+  const X = s => 4 + s / L * (w - 8), Y = y => h - 16 - (y - y0) / Math.max(1, y1 - y0) * (h - 30);
+  g.strokeStyle = css("--line"); g.lineWidth = 1; g.beginPath(); g.moveTo(4, h - 16); g.lineTo(w - 4, h - 16); g.stroke();
+  g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(X(d[i]), Y(p[1])) : g.moveTo(X(d[i]), Y(p[1])));
+  g.strokeStyle = css(ROUTE_TOK[c.k]); g.lineWidth = 2; g.stroke();
+  g.fillStyle = css("--muted");
+  g.fillText(`${Math.round(y1)} m`, 6, 11); g.fillText(`${Math.round(y0)} m · ${(L / 1000).toFixed(2)} km`, 6, h - 3);
+}
+
+function select(k) {
+  selected = k;
+  document.querySelectorAll(".routes button").forEach(b => b.setAttribute("aria-pressed", String(b.id === "route-" + k)));
+  const lapsOn = document.getElementById("layer-laps").checked;
+  for (const l of Object.values(laps)) l.group.visible = lapsOn && (!k || l.k === k);
+  for (let r = 1; r <= 4; r++) {
+    const m = meshes["route_" + r], box = document.getElementById("layer-route_" + r); if (!m || !box) continue;
+    const on = k ? r === k : box.checked;
+    m.visible = on; box.checked = on;
+  }
+  const st = document.getElementById("stats"), t = document.getElementById("rtitle");
+  if (!k) {
+    t.textContent = "Ville entière";
+    const tri = meta.layers.reduce((a, l) => a + l.triangles, 0);
+    st.innerHTML = `<dt>Triangles (allégés)</dt><dd class="num">${tri.toLocaleString("fr-FR")}</dd>
+      <dt>Grille d'allègement</dt><dd class="num">${meta.grid_m} m</dd>
+      <dt>Circuits connus</dt><dd class="num">${Object.keys(meta.circuits).length} / 4</dd>`;
+    drawProfile(null);
+    frame(new THREE.Box3().setFromObject(meshes.road));
+    return;
+  }
+  const c = meta.circuits[k]; c.k = k;
+  t.textContent = `Route ${k} · ${c.name}`;
+  const ys = c.points.map(p => p[1]), v = c.points.map(p => p[3]);
+  st.innerHTML = `<dt>Longueur du tour</dt><dd class="num">${(c.length_m / 1000).toFixed(2)} km</dd>
+    <dt>Hauteur</dt><dd class="num">${Math.round(Math.min(...ys))} à ${Math.round(Math.max(...ys))} m</dd>
+    <dt>Vitesse max du tour</dt><dd class="num">${Math.max(...v)} km/h</dd>
+    <dt>Surfaces raides le long du tracé</dt><dd class="num">${nearCount("steep", c.points, 15).toLocaleString("fr-FR")}</dd>
+    <dt>Faces vers le bas le long du tracé</dt><dd class="num">${nearCount("over", c.points, 15).toLocaleString("fr-FR")}</dd>
+    <dt>Départ officiel</dt><dd class="num">${meta.starts[k].x} ; ${meta.starts[k].z}</dd>
+    <dt>Tracé</dt><dd>tour roulé</dd>`;
+  drawProfile(c);
+  frame(new THREE.Box3().setFromObject(laps[k].group));
+}
+
+async function main() {
+  // dubai.b64.txt = dubai.bin in base64 (artifacts serve no raw binary)
+  const [mj, b64] = await Promise.all([fetch("dubai.json").then(r => r.json()), fetch("dubai.b64.txt").then(r => r.text())]);
+  const raw = atob(b64.trim()), bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  const bin = bytes.buffer;
+  meta = mj;
+  const view = document.getElementById("view");
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  view.prepend(renderer.domElement);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(50, 1, 1, 20000);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.495;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x404858, 0.85));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.6); sun.position.set(0.4, 1, 0.3); scene.add(sun);
+
+  const [cx, cy, cz] = meta.centre;
+  for (const L of meta.layers) {
+    const q = new Int16Array(bin, L.v_offset, L.vertices * 3), idx = new Uint32Array(bin, L.i_offset, L.triangles * 3);
+    const pos = new Float32Array(q.length);
+    for (let i = 0; i < q.length; i += 3) { pos[i] = cx + q[i] / 10; pos[i + 1] = cy + q[i + 1] / 10; pos[i + 2] = cz + q[i + 2] / 10; }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
+    geo.computeVertexNormals();
+    const info = LAYER_INFO[L.layer] || { tok: "--other", on: false };
+    const barrier = L.layer.startsWith("route_");
+    const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(css(info.tok)), side: THREE.DoubleSide,
+      transparent: barrier, opacity: barrier ? 0.7 : 1, polygonOffset: L.layer === "road", polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+    const m = new THREE.Mesh(geo, mat); m.visible = info.on; meshes[L.layer] = m; scene.add(m);
+    if (L.layer === "steep" || L.layer === "over") {
+      const cs = new Float32Array(L.triangles * 3);
+      for (let t = 0; t < L.triangles; t++) for (let a = 0; a < 3; a++)
+        cs[t * 3 + a] = (pos[idx[t * 3] * 3 + a] + pos[idx[t * 3 + 1] * 3 + a] + pos[idx[t * 3 + 2] * 3 + a]) / 3;
+      centroids[L.layer] = cs;
+    }
+  }
+  for (const [ks, c] of Object.entries(meta.circuits)) {
+    const k = +ks, g = new THREE.Group(), col = new THREE.Color(css(ROUTE_TOK[k]));
+    const curve = new THREE.CatmullRomCurve3(c.points.map(p => new THREE.Vector3(p[0], p[1] + 1.2, p[2])), true);
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, c.points.length * 4, 1.6, 6, true), new THREE.MeshBasicMaterial({ color: col })));
+    const s = meta.starts[k], dist = p => Math.hypot(p[0] - s.x, p[2] - s.z);
+    const near = c.points.reduce((a, p) => dist(p) < dist(a) ? p : a);
+    const pin = new THREE.Mesh(new THREE.ConeGeometry(5, 14, 16), new THREE.MeshBasicMaterial({ color: col }));
+    pin.rotation.x = Math.PI; pin.position.set(s.x, near[1] + 12, s.z); g.add(pin);
+    laps[k] = { k, group: g, col: ROUTE_TOK[k] }; scene.add(g);
+  }
+  zones = new THREE.Group();
+  for (const b of meta.gravity_zones.boxes) {
+    const box = new THREE.Box3(new THREE.Vector3(b[0], b[1], b[2]), new THREE.Vector3(b[3], b[4], b[5]));
+    zones.add(new THREE.Box3Helper(box, new THREE.Color(css("--steep"))));
+  }
+  scene.add(zones);
+
+  buildRoutes(); buildLayers();
+  const resize = () => { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix(); };
+  new ResizeObserver(resize).observe(view); resize();
+  const recolor = () => {
+    scene.background = new THREE.Color(css("--sky"));
+    for (const [k, m] of Object.entries(meshes)) m.material.color.set(css((LAYER_INFO[k] || { tok: "--other" }).tok));
+    if (selected) drawProfile(meta.circuits[selected]);
+  };
+  recolor();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", recolor);
+  new MutationObserver(recolor).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  document.getElementById("status").remove(); document.getElementById("hud").hidden = false;
+  select(1);
+  renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+}
+main().catch(e => { document.getElementById("status").textContent = "Impossible de charger les données : " + e.message; });
+</script>

@@ -3478,6 +3478,23 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   de 300 m), la DLL attend que la voiture du joueur soit immobile et n'arme les zones que si elle est à moins de 60 m
   de ce point ; journal « map check: … zones ARMED / off (other map) ». Sans ligne `start` : comportement d'avant.
   Une seule carte par copie de la DLL (fichiers par carte quand une 2e route de Dubaï sera portée).
+  **Installée** le 2026-11-18 (12 h 18).
+
+## Atlas 3D de Dubaï (2026-11-18, `b2viewer.py` + `viewer/dubai/index.html`, publié en artifact)
+- `b2viewer.py` lit les 29 MeshCollider de Blur2DubaiTest (`b2collision.colliders`, axes du jeu) et classe les
+  triangles : **noms réels** `physics_main_part_NNN_<suffixe>_collision` / `physics_route_N_part_000_<suffixe>_collision`
+  (suffixes `17f` route, `8017f` autre roulable, `15d` murs, `5d` / `15f` / `20000` autres). Roulables séparés par la
+  normale : route (n.y ≥ 0,5), **raides** (|n.y| < 0,5, candidats murs), **face vers le bas** (n.y ≤ −0,5 : dessous de
+  pont **ou** haut de looping, le sens des faces Unity n'est pas fiable). Allègement par regroupement de sommets
+  (grille 1 m) : route 137 562 triangles, raides 56 659, vers le bas 33 232, murs 39 969, barrières des routes 1-4
+  392 / 174 / 60 / 4 342. Sortie `viewer/dubai/dubai.bin` (Int16 xyz en dm autour du centre (−608 ; 255 ; −106),
+  Uint32 index) + `.b64.txt` (même chose en base64 : les artifacts ne servent pas de binaire) + `dubai.json`
+  (couches, tours roulés, grilles officielles, zones de gravité). Données régénérées, non versionnées.
+- Circuits : les 4 routes ont un tour roulé (Business Bay 3,89 km, Dubai Island 3,15, Construction 3,59,
+  Marina 3,55). Pas de tracé « supposé » à faire pour Dubaï ; une ville sans tour demandera le couloir entre ses
+  barrières `physics_route_N`.
+- Page : vue 3D (three.js 0.147), choix du circuit (cadrage + barrières de la route), profil de hauteur, nombre de
+  triangles raides et vers le bas à moins de 15 m du tour (repère murs / looping), couches à afficher.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
