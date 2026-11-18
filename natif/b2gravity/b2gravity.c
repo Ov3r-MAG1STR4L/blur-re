@@ -143,6 +143,94 @@ static float speed_downforce(char *self)
     return m * 9.81f * f;
 }
 
+/* v9: "rail" through the bank -> wall crease (essai v8: the collision turns 35 -> 80 deg within 2-5 m, ~64 g at
+   180 km/h, the car hits the crease and stays on two wheels; on the wall itself it holds at 170 km/h). As Blur 2's
+   CeilingRidingControl ray, the surface normal is read AHEAD of the car, then the car body is turned towards it
+   (at most `turn` rad/s) and the part of its velocity going into that surface is laid along it (speed kept).
+   Body of RacingPhysics::Car at car + 0xC8 (EvaluateDerivative's esi): AX/AY/AZ rows 16 bytes from car + 0xC8
+   (AZ at + 0xE8 read by 0x7C2F00), velocity at car + 0x138 (read by 0x7C2F00); source order momentum,
+   angularMomentum, velocity -> momentum = velocity - 0x20. The layout is CHECKED in game against the vehicle
+   actor (up row, velocity, momentum = mass x velocity) before any write; on a mismatch nothing is written
+   (log "rail: layout ..."). "turn", "ahead" lines in b2gravity.txt; "turn 0" switches the rail off. */
+#define BODY_AX 0xC8
+#define BODY_VEL 0x138
+#define BODY_MOM (BODY_VEL - 0x20)
+static float turn_rate = 4.f, ahead_s = 0.15f;
+static int rail_ok = -1;                                   /* -1 unchecked, 0 mismatch, 1 checked */
+
+static int surface_normal(const float *p, const float *up, float *n);
+
+static void rail_check(unsigned car, char *self)
+{
+    const float *ay = (const float *)(car + BODY_AX + 0x10), *v = (const float *)(car + BODY_VEL);
+    const float *mo = (const float *)(car + BODY_MOM), *aup = (const float *)(self + 0xD8);
+    const float *av = (const float *)(self + 0x13C);
+    float m = *(float *)(car + CAR_MASS), dup, dv, sv, dm;
+    if (!readable((void *)(car + BODY_AX), 0x90)) { rail_ok = 0; say("rail: body not readable"); return; }
+    sv = sqrtf(av[0] * av[0] + av[1] * av[1] + av[2] * av[2]);
+    if (sv < 8.f) return;                                   /* check at speed only */
+    dup = ay[0] * aup[0] + ay[1] * aup[1] + ay[2] * aup[2];
+    dv = sqrtf((v[0] - av[0]) * (v[0] - av[0]) + (v[1] - av[1]) * (v[1] - av[1]) + (v[2] - av[2]) * (v[2] - av[2]));
+    dm = sqrtf((mo[0] - m * v[0]) * (mo[0] - m * v[0]) + (mo[1] - m * v[1]) * (mo[1] - m * v[1])
+             + (mo[2] - m * v[2]) * (mo[2] - m * v[2]));
+    rail_ok = dup > 0.98f && dv < 0.1f * sv && dm < 0.1f * m * sv;
+    say("rail: layout %s (up dot %.3f, velocity diff %.2f of %.1f m/s, momentum diff %.0f of %.0f)",
+        rail_ok ? "OK" : "MISMATCH, rail off", dup, dv, sv, dm, m * sv);
+}
+
+/* rotate v about unit axis a by angle c (cos) / s (sin) */
+static void rot(float *v, const float *a, float c, float s)
+{
+    float d = a[0] * v[0] + a[1] * v[1] + a[2] * v[2], x[3];
+    x[0] = a[1] * v[2] - a[2] * v[1]; x[1] = a[2] * v[0] - a[0] * v[2]; x[2] = a[0] * v[1] - a[1] * v[0];
+    v[0] = v[0] * c + x[0] * s + a[0] * d * (1.f - c);
+    v[1] = v[1] * c + x[1] * s + a[1] * d * (1.f - c);
+    v[2] = v[2] * c + x[2] * s + a[2] * d * (1.f - c);
+}
+
+static void rail(char *self, int k, const float *p, const float *nc, float t)
+{
+    unsigned car = rd((unsigned)self + 0x238);
+    float *ax = (float *)(car + BODY_AX), *v = (float *)(car + BODY_VEL), *mo = (float *)(car + BODY_MOM);
+    float sp, q[3], na[3], *up, axis[3], l, ang, dt = 1.f / 60.f, vn, m;
+    static LARGE_INTEGER last[32];
+    LARGE_INTEGER now, fq;
+    int i;
+    if (!car || turn_rate <= 0.f) return;
+    if (rail_ok < 0) rail_check(car, self);
+    if (rail_ok != 1) return;
+    QueryPerformanceCounter(&now); QueryPerformanceFrequency(&fq);
+    if (k >= 0 && k < 32) {
+        float d = (float)(now.QuadPart - last[k].QuadPart) / (float)fq.QuadPart;
+        if (d > 0.002f && d < 0.1f) dt = d;
+        last[k] = now;
+    }
+    sp = sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    if (sp < 1.f) return;
+    l = sp * ahead_s; if (l < 2.f) l = 2.f; if (l > 15.f) l = 15.f;
+    for (i = 0; i < 3; i++) q[i] = p[i] + v[i] / sp * l;
+    if (!surface_normal(q, nc, na)) { na[0] = nc[0]; na[1] = nc[1]; na[2] = nc[2]; }
+    /* velocity: lay the part going into the surface ahead along it, keep the speed */
+    vn = v[0] * na[0] + v[1] * na[1] + v[2] * na[2];
+    m = *(float *)(car + CAR_MASS);
+    if (vn < 0.f) {
+        float w[3], lw;
+        for (i = 0; i < 3; i++) w[i] = v[i] - vn * t * na[i];
+        lw = sqrtf(w[0] * w[0] + w[1] * w[1] + w[2] * w[2]);
+        if (lw > 1e-3f) for (i = 0; i < 3; i++) { v[i] = w[i] / lw * sp; if (m > 0.f && m < 1e5f) mo[i] = m * v[i]; }
+    }
+    /* orientation: turn the body's up towards na, at most turn_rate * t rad this frame */
+    up = ax + 4;
+    axis[0] = up[1] * na[2] - up[2] * na[1]; axis[1] = up[2] * na[0] - up[0] * na[2]; axis[2] = up[0] * na[1] - up[1] * na[0];
+    l = sqrtf(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+    ang = atan2f(l, up[0] * na[0] + up[1] * na[1] + up[2] * na[2]);
+    if (l > 1e-4f && ang > 0.05f) {
+        float a = ang < turn_rate * t * dt ? ang : turn_rate * t * dt, c = cosf(a), s = sinf(a);
+        for (i = 0; i < 3; i++) axis[i] /= l;
+        rot(ax, axis, c, s); rot(ax + 4, axis, c, s); rot(ax + 8, axis, c, s);
+    }
+}
+
 /* v6: torque rolling the car onto the surface (see align_k) */
 static void align_torque(char *self, int k, float *ext, const float *up, const float *n, float t)
 {
@@ -349,6 +437,7 @@ static void __stdcall gravity(char *self)
                     align_torque(self, k, ext, u, n, t);
                     for (i = 0; i < 3; i++) ext[i] += F * (u[i] - press_k * n[i]);
                     last_press = F;
+                    rail(self, k, p, n, t);
                 }
             }
             if (k < 32 && !applied[k])
@@ -576,6 +665,8 @@ static void load_zones(void)
         if (sscanf_s(line, "damp %f", &s) == 1) { align_d = s; continue; }
         if (sscanf_s(line, "press %f", &s) == 1) { press_k = s; continue; }
         if (sscanf_s(line, "mph_min %f", &s) == 1) { mph_min = s; continue; }
+        if (sscanf_s(line, "turn %f", &s) == 1) { turn_rate = s; continue; }
+        if (sscanf_s(line, "ahead %f", &s) == 1) { ahead_s = s; continue; }
         if (sscanf_s(line, "mph_max %f", &s) == 1) { mph_max = s; continue; }
         if (nzones < MAX_ZONES && sscanf_s(line, "%f %f %f %f %f %f", b, b + 1, b + 2, b + 3, b + 4, b + 5) == 6) {
             memcpy(zones[nzones++], b, sizeof b);
@@ -584,8 +675,8 @@ static void load_zones(void)
     }
     fclose(f);
     if (mph_max <= mph_min + 1.f) mph_max = mph_min + 1.f;
-    say("%d zone(s), gravity %.0f..%.0f mph, align %.2f damp %.2f press %.2f", nzones, mph_min, mph_max, align_k,
-        align_d, press_k);
+    say("%d zone(s), gravity %.0f..%.0f mph, align %.2f damp %.2f press %.2f, rail turn %.1f rad/s ahead %.2f s",
+        nzones, mph_min, mph_max, align_k, align_d, press_k, turn_rate, ahead_s);
 }
 
 static void patch(void)
