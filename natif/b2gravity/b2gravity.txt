@@ -29,3 +29,6 @@ align 1.5
 damp 0.6
 # v7 : appui aerodynamique (croit avec la vitesse) redirige vers le mur, 1 = tout, 0 = comme le jeu
 press 1
+# v8 : vitesses (mph) ou la gravite passe de normale (mph_min) a collee au mur (mph_max)
+mph_min 15
+mph_max 35

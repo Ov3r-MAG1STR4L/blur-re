@@ -3399,6 +3399,14 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   n = normale lissée de la surface. Réglages dans `b2gravity.txt` : `align 1.5`, `damp 0.6` (≈ amortissement
   critique pour une inertie de roulis ~ m × 0,8 m², à régler en jeu). Le journal d'état affiche aussi `n` et le
   couple. Remis à 0 à la sortie (comme avant). Ancienne DLL : `b2gravity_v5.dll.bak`.
+- **Essai v7 (2026-11-18)** : pas d'évolution ; rupture nette vers **20 mph** : en dessous la voiture monte sur le mur
+  (journal : 15-30 km/h, haut.y 0,28-0,33, ~73°) **sans aucune aide de la DLL** (« too slow ») ; au-dessus le jeu la
+  redresse (deux roues). Or la DLL n'agissait qu'au-dessus de 40 mph (t) : entre 20 et 40 mph, l'anti-mur d'origine
+  (Fix2 + roues selon −Y du monde) était encore actif. Le seuil de 20 mph vient sans doute de la courbe
+  `WallRidingSystem` (freinage de Fix2 selon les mph, données de course) — non lue (Plausible).
+- **Gravité v8 (2026-11-18, installée, à essayer)** : dans une zone, sur une surface et au-dessus de 1 m/s, Fix2 coupé
+  et roues « car −up » **à toute vitesse** (`wallon[]`) ; gravité / couple / appui progressifs entre `mph_min 15` et
+  `mph_max 35` (réglables dans `b2gravity.txt`, avant 40 / 70 de Blur 2). Ancienne DLL : `b2gravity_v7.dll.bak`.
 - **Essai v6 (2026-11-18)** : quatre roues sur le mur possibles **à basse vitesse** ; au-dessus, « le jeu force à
   être plat ». Journal : sous 40 mph (t = 0, rien d'appliqué) la voiture tient ~60° (haut.y 0,47-0,55) ; au-dessus,
   malgré 11-13 kN·m de couple, haut.y reste à 0,75-0,86. Cause probable : l'**appui aérodynamique** de Blur 1

@@ -175,7 +175,13 @@ static void align_torque(char *self, int k, float *ext, const float *up, const f
 #define NBUCKET (1 << 18)
 static float *pts = NULL;
 static int npts = 0, *nextp = NULL, head[NBUCKET];
-static float mph_min = 40.f, mph_max = 70.f;          /* Blur 2 nov 10: MinSpeedThresholdMph / MaxSpeedThresholdMph */
+/* Blur 2 nov 10: MinSpeedThresholdMph / MaxSpeedThresholdMph = 40 / 70. v8: 15 / 35 by default ("mph_min" /
+   "mph_max" in b2gravity.txt): essai v7, Blur 1 already flattens the car from ~20 mph, while nothing of ours
+   acted below 40. */
+static float mph_min = 15.f, mph_max = 35.f;
+/* v8: in a zone, on a surface, above 1 m/s: Blur 1's anti-wall-riding is lifted whatever the speed
+   (Fix2 off, wheels along car -up); only the gravity / torque / downforce wait for mph_min. */
+static int wallon[32];
 
 static unsigned bucket(int x, int y, int z)
 {
@@ -281,7 +287,7 @@ static void flag_switch(unsigned addr, int any, int *saved, const char *name)
 static void air_downforce_switch(void)
 {
     int i, any = 0;
-    for (i = 0; i < 32; i++) any |= applied[i];
+    for (i = 0; i < 32; i++) any |= applied[i] | wallon[i];
     flag_switch(AIR_DOWNFORCE_ON, any, &air_saved, "in-flight downforce");
     flag_switch(WALL_FIX2_ON, any, &fix2_saved, "wall-riding fix2");
 }
@@ -314,7 +320,8 @@ static void __stdcall gravity(char *self)
             inside = p[0] >= zones[z][0] && p[1] >= zones[z][1] && p[2] >= zones[z][2]
                   && p[0] <= zones[z][3] && p[1] <= zones[z][4] && p[2] <= zones[z][5];
         float n[3], t = (speed * 2.23694f - mph_min) / (mph_max - mph_min), d[3];
-        int on = inside && t > 0.f && (npts ? surface_normal(p, up, n) : (len > 0.9f && len < 1.1f));
+        int surf = inside && (npts ? surface_normal(p, up, n) : (len > 0.9f && len < 1.1f));
+        int on = surf && t > 0.f;
         float *ext = ground_force(self);
         if (on) {
             float l;
@@ -352,7 +359,8 @@ static void __stdcall gravity(char *self)
             ext[3] = ext[4] = ext[5] = 0.f;                 /* torque: written by v2 / v3 */
         }
         if (k < 32) applied[k] = on && ext;
-        car_wallride(self, k, on && ext);
+        if (k < 32) wallon[k] = surf && speed > 1.f;
+        car_wallride(self, k, surf && speed > 1.f);
         if (k < 32 && inside != in_zone_last[k]) {
             in_zone_last[k] = inside;
             say("vehicle %d %s zone at (%.0f, %.0f, %.0f), %.0f km/h, up (%.2f, %.2f, %.2f)", k,
@@ -567,13 +575,17 @@ static void load_zones(void)
         if (sscanf_s(line, "align %f", &s) == 1) { align_k = s; continue; }
         if (sscanf_s(line, "damp %f", &s) == 1) { align_d = s; continue; }
         if (sscanf_s(line, "press %f", &s) == 1) { press_k = s; continue; }
+        if (sscanf_s(line, "mph_min %f", &s) == 1) { mph_min = s; continue; }
+        if (sscanf_s(line, "mph_max %f", &s) == 1) { mph_max = s; continue; }
         if (nzones < MAX_ZONES && sscanf_s(line, "%f %f %f %f %f %f", b, b + 1, b + 2, b + 3, b + 4, b + 5) == 6) {
             memcpy(zones[nzones++], b, sizeof b);
             say("zone %d: x %.0f..%.0f  y %.0f..%.0f  z %.0f..%.0f", nzones - 1, b[0], b[3], b[1], b[4], b[2], b[5]);
         }
     }
     fclose(f);
-    say("%d zone(s), speed > %.1f m/s, align %.2f damp %.2f press %.2f", nzones, min_speed, align_k, align_d, press_k);
+    if (mph_max <= mph_min + 1.f) mph_max = mph_min + 1.f;
+    say("%d zone(s), gravity %.0f..%.0f mph, align %.2f damp %.2f press %.2f", nzones, mph_min, mph_max, align_k,
+        align_d, press_k);
 }
 
 static void patch(void)
