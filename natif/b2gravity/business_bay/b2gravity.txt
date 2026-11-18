@@ -1,0 +1,45 @@
+# b2gravity zones, Dubai route 1 (b2gravity_zones.py), game axes, y shifted by -0.82
+speed 13.9
+-38.2 -2.4 -191.7 20.8 26.1 -160.0
+111.7 15.3 -165.9 209.6 58.6 -108.7
+190.8 -6.0 -425.2 228.5 27.4 -380.9
+191.5 -3.9 -527.1 237.8 39.8 -427.1
+224.7 -10.2 -580.5 268.7 30.1 -544.1
+243.2 0.3 -538.5 287.7 27.0 -479.1
+284.2 -4.2 -570.8 334.5 28.2 -537.5
+307.5 -1.2 -648.1 360.1 27.7 -599.5
+326.3 -5.9 -87.1 353.9 20.7 -40.4
+345.1 -14.0 -397.9 383.8 11.2 -367.4
+347.6 -11.9 -329.6 373.2 16.4 -289.8
+341.7 -3.1 184.4 390.0 21.5 215.3
+379.6 0.8 -688.2 422.3 29.1 -649.3
+370.8 2.4 -708.7 422.6 177.8 -656.0
+382.3 -5.7 47.1 475.2 52.1 215.9
+398.8 1.2 -639.0 437.1 26.0 -605.7
+413.1 -33.9 -765.9 543.4 216.4 -637.2
+409.8 18.4 -642.0 462.2 182.4 -601.3
+417.2 101.3 -688.0 456.1 164.8 -646.5
+493.8 -11.7 -467.1 522.0 13.3 -439.1
+626.7 -2.4 -879.3 830.4 38.4 -808.3
+638.1 2.0 -500.6 666.1 26.7 -465.0
+678.6 -2.3 -834.5 707.9 22.6 -803.5
+698.6 16.4 -565.3 874.7 100.9 -419.7
+827.0 16.1 -726.6 881.0 101.2 -572.4
+853.1 6.6 -751.8 885.5 32.3 -706.5
+877.2 6.3 -756.9 928.6 33.4 -697.6
+883.6 14.8 -677.9 922.1 40.6 -615.3
+886.6 17.7 -613.9 914.8 42.0 -581.1
+
+# v6 : couple qui tourne la voiture vers la surface (align = raideur, damp = amortissement)
+align 1.5
+damp 0.6
+# v7 : appui aerodynamique (croit avec la vitesse) redirige vers le mur, 1 = tout, 0 = comme le jeu
+press 1
+# v8 : vitesses (mph) ou la gravite passe de normale (mph_min) a collee au mur (mph_max)
+mph_min 15
+mph_max 35
+# v9 : reorientation par la normale devant la voiture (turn = vitesse de rotation max en rad/s, 0 = coupe ; ahead = distance de lecture en secondes de trajet)
+turn 4
+ahead 0.15
+# v11 : zones actives seulement si le joueur part pres de cette grille (x z rayon en m) = Business Bay
+start 90 -174 60

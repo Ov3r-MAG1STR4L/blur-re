@@ -22,6 +22,11 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import config  # noqa: E402
+# Map Builder's paths.py is read once, by the first module that imports it (b2lit -> cpmodel for --decor, before
+# blurmodel_write sets these): installed layout, else ADDON = _mod_project\blender\addon (absent) and the decor
+# step fails with "No module named 'BlurImportExport'" (2026-11-18, route 1 build)
+os.environ.setdefault("BMB_GAME", config.BMB_GAME)
+os.environ.setdefault("BMB_INSTALLED", "1")
 
 STEP = 12.0
 WIDTH = 30

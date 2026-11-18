@@ -3496,6 +3496,30 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
 - Page : vue 3D (three.js 0.147), choix du circuit (cadrage + barrières de la route), profil de hauteur, nombre de
   triangles raides et vers le bas à moins de 15 m du tour (repère murs / looping), couches à afficher.
 
+## Business Bay (Dubaï route 1, le looping) pour Blur 1 (2026-11-18, construite, installation en attente)
+- **Le tour roulé au looping** (`lap_route1_business_bay.csv`, t 526-534) : entrée vers (418 ; −694) en roulant vers
+  −x, montée de 12 à 182 m en 2,5 s (jusqu'à 453 km/h), **décrochage en haut** (66 km/h en (458 ; 182 ; −725)),
+  chute presque verticale sur la descente du looping, sortie par une voie décalée de ~25 m (z ≈ −665) toujours vers
+  −x : looping en tire-bouchon. Le tour ne décrit donc pas la boucle entière.
+- **Tracé `blur2_aid/dubai/dubai_route1_trace.json`** (nouveau) : tour rééchantillonné à 12 m (325 points), la plage
+  du looping (points 240-263, jusqu'à 179 m) remplacée par une ligne au sol de (427 ; 13 ; −701) à (366 ; 17 ; −634)
+  → 308 points, h max 82 m. Sinon Map Builder ferait une rampe de 180 m dans le looping ; la boucle vient de la
+  collision Unity. Risque : la ligne IA / le tube de course restent au sol, la voiture est à 170 m au-dessus en
+  haut de la boucle (~2,5 s) alors que `HandOfGodParameters.OffSplineTimer` = 1,5 s → réapparition possible.
+- **Build** (`make_b2_map --decor --track`, même commande que l'éditeur, sortie
+  `blur_extracted\mods\b2_dubai_business_bay`, journal `build.log`) : 154 fichiers, 102 modèles de décor dans 111
+  places, collision Unity 89 064 triangles (≤ 150 m du tour) → 350 objets, `level.levelphysics` 4,8 Mo ; 44 bonus ;
+  départ `start_m` 3 650. **Bug corrigé** : 1er essai en échec au décor (`No module named 'BlurImportExport'`) :
+  `paths.py` de Map Builder lu par `cpmodel` (via `b2lit`) avant que `blurmodel_write` ne pose `BMB_INSTALLED=1`
+  → `make_b2_map.py` pose `BMB_GAME` / `BMB_INSTALLED` dès son chargement.
+- **Zones de gravité** (`b2gravity_zones.py --route 1`, généralisé : tour `lap_routeN_*.csv`, tracé
+  `dubai_routeN_trace.json`, et **position « sous une surface »** = surface la plus proche à moins de 3 m et
+  au-dessus de la voiture, sans test de sol, pour le haut du looping) : 29 zones, 141 851 points de surface, décalage
+  y −0,82 ; zone du looping x 413..543, y −34..216, z −766..−637. Fichiers `natif/b2gravity/business_bay/b2gravity.txt`
+  / `.bin` avec les réglages de Marina et `start 90 -174 60`. Les fichiers de `natif/b2gravity/` restent ceux de
+  Marina. Une seule map par emplacement `flat_earth` : installer Business Bay remplace Marina (réinstallable depuis
+  `b2_dubai_marina_lot2`).
+
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
 `docs/POWERUPS_DONNEES.md` (généré par `powerups_dump.py`). Découvertes nouvelles :

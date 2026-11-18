@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Wall-ride zones for natif/b2gravity.dll: where the user drove in Blur2DubaiTest on steep surfaces (2026-11-16).
 
-Positions = every journal of blur2_aid/journaux on the route (b2track.drives) + the driven lap. A position is "on a
-wall" when the nearest collision surface (Unity MeshColliders, other routes' barriers out) within REACH m has
-|normal y| < STEEP. Those positions are grouped (cells of CELL m, touching cells merged) and each group becomes a
+Positions = every journal of blur2_aid/journaux on the route (b2track.drives) + the driven lap (lap_routeN_*.csv);
+filter on the route's trace (marina_trace.json, dubai_routeN_trace.json). A position is "on a wall" when the
+nearest collision surface (Unity MeshColliders, other routes' barriers out) within REACH m has |normal y| < STEEP,
+or lies above it (loop top, 2026-11-18). Those positions are grouped (cells of CELL m, touching cells merged) and each group becomes a
 box, MARGIN m wider; y shifted by DY like the whole map (Map Builder: lowest lap point at y = 1).
 Output: lines "minx miny minz maxx maxy maxz" (+ "speed 13.9") for b2gravity.txt.
 
 usage: b2gravity_zones.py OUT.txt [--route 4]
 """
-import argparse, csv, os, struct, sys
+import argparse, csv, glob, os, struct, sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -56,17 +57,22 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out"), ap.add_argument("--route", type=int, default=4)
     a = ap.parse_args()
-    lap = os.path.join(b2track.DUBAI, "lap_route4_marina.csv")
+    lap = glob.glob(os.path.join(b2track.DUBAI, "lap_route%d_*.csv" % a.route))[0]
     L = np.array([(float(r["x"]), float(r["y"]), float(r["z"])) for r in csv.DictReader(open(lap))])
     D = [np.array(d["pts"]).reshape(-1, 3) for d in b2track.drives(a.route)]
     P = np.vstack([L] + D)
     S, N = surface_samples(a.route)
     d, i = cKDTree(S).query(P)
     fd = cKDTree(S[N >= STEEP]).query(P)[0]           # nearest flat surface: beside a wall, not on it
-    wall = P[(d < REACH) & (N[i] < STEEP) & (fd > FLOOR)]
-    print(len(P), "positions,", len(wall), "on steep surfaces (|ny| < %.1f)" % STEEP)
+    steep = (d < REACH) & (N[i] < STEEP) & (fd > FLOOR)
+    # 2026-11-18, loop of route 1: on the loop top the nearest surface is flat but ABOVE the car (the winding of the
+    # Unity faces is not reliable, the height is): no floor test there
+    under = (d < REACH) & (S[i, 1] > P[:, 1] + 0.5)
+    wall = P[steep | under]
+    print(len(P), "positions,", steep.sum(), "on steep surfaces (|ny| < %.1f)," % STEEP, under.sum(), "under a surface")
     import json
-    t = json.load(open(os.path.join(b2track.DUBAI, "marina_trace.json")))
+    tf = os.path.join(b2track.DUBAI, "marina_trace.json" if a.route == 4 else "dubai_route%d_trace.json" % a.route)
+    t = json.load(open(tf))
     T = np.array([(q["x"], q["z"]) for pts in [t["points"]] + [b["points"] for b in t["branches"]] for q in pts])
     near = lambda b: (np.hypot(np.clip(T[:, 0], b[0], b[3]) - T[:, 0], np.clip(T[:, 1], b[2], b[5]) - T[:, 1])
                       < NEAR_TRACK).any()
