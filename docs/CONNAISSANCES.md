@@ -3442,16 +3442,27 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   plus de 8 m/s : haut ≈ haut de l'acteur (+0xD8), vitesse ≈ vitesse de l'acteur (+0x13C), quantité de
   mouvement ≈ masse × vitesse ; journal `rail: layout OK / MISMATCH`. Le calcul statique laissait un doute de
   0x10 (taille de `Axis::Point3_D` avec ses doubles). `turn 0` coupe le rail. Ancienne DLL : `b2gravity_v8.dll.bak`.
-- **Gravité v9 « rail » (2026-11-18, piste b retenue, installée, à essayer)** : normale lue **devant** la voiture
-  (à `vitesse × ahead`, 2-15 m, `ahead 0.15` s), puis sur le corps `RacingPhysics::Car` : haut tourné vers cette
-  normale (au plus `turn 4` rad/s × t, les trois lignes d'axes tournées ensemble) et part de la vitesse qui entre
-  dans la surface couchée le long d'elle (norme gardée, quantité de mouvement = masse × vitesse réécrite).
-  Corps (Plausible, **vérifié en jeu par la DLL avant toute écriture**) : lignes AX/AY/AZ de 16 octets à
-  Car + 0xC8 / 0xD8 / 0xE8 (AZ lue par `0x7C2F00`), vitesse Car + 0x138 (lue par `0x7C2F00`), quantité de
-  mouvement Car + 0x118 (ordre de la source `momentum, angularMomentum, velocity`). Contrôle au premier passage à
-  plus de 8 m/s : haut ≈ haut de l'acteur (+0xD8), vitesse ≈ vitesse de l'acteur (+0x13C), quantité de
-  mouvement ≈ masse × vitesse ; journal `rail: layout OK / MISMATCH`. Le calcul statique laissait un doute de
-  0x10 (taille de `Axis::Point3_D` avec ses doubles). `turn 0` coupe le rail. Ancienne DLL : `b2gravity_v8.dll.bak`.
+- **Essai v9 (2026-11-18)** : `rail: layout MISMATCH, rail off (up dot -0.027, velocity diff 0.07 of 25.4 m/s,
+  momentum diff inf)` → **vitesse confirmée à Car + 0x138**, mais Car + 0xD8 n'est pas l'axe haut et Car + 0x118
+  n'est pas la quantité de mouvement : le rail n'a rien écrit. L'utilisateur : redressement à partir de 20 mph,
+  parfois si brutal que la voiture fait un salto et finit sur le toit.
+- **CAUSE DU REDRESSEMENT À 20 MPH TROUVÉE (Confirmé : source + exe)** : `C_VehicleActor` attache chaque voiture au
+  monde statique par une **contrainte Gravity `RotationalLimit`** (`VehicleActor.cpp:6963-6972`, si `g_ConstraintCar`) :
+  roulis et tangage limités à **±`Vehicle.ConstraintCarAngle` = 30°** (lacet libre, ordre ZXY). C'est l'angle où la
+  voiture restait bloquée depuis la v4 (haut.y ≈ 0,866 = cos 30°). `UpdateConstraint` (`VehicleActor.cpp:1354-1399`,
+  exe **`0x436DB3`**) : échelle 0 si vitesse < **`Constraint.LowSpeedThreshold` = 10 m/s (22 mph)**, ou si
+  `m_FakeVehiclePhysics` / `m_ConstraintFatallyDamaged` / `m_HeavyCollision` ; échelle 1 après
+  **`ConstraintTimeOnGround` = 2 s** avec ≥ 2 roues au sol. Quand elle revient alors que la voiture penche plus de 30°,
+  le solveur la ramène d'un coup : **le salto**. Explique aussi le Nitro (contrainte encore coupée après la montée lente).
+  Exe : objets `Debug::Float` `LowSpeedThreshold` `0x1127950` (valeur `0x1127974`), `ConstraintTimeOnGround`
+  `0x11278F0` (valeur `0x1127914`), `ConstraintCarAngle` `0x1124A80` (valeur `+0x24`) ; acteur : `m_pConstraint`
+  +0x220 (échelle à contrainte +0x40, `SetScale` = vtable +8), `m_GroundedTimer` +0x224,
+  `m_ConstraintFatallyDamaged` +0x376, **`m_HeavyCollision` +0x377** (lu seulement en `0x436E1E`, effacé en
+  `0x436E4E`, initialisé en `0x452CAD`).
+- **Gravité v10 (2026-11-18, installée, à essayer)** : `m_HeavyCollision` = 1 à chaque image tant que la voiture est
+  sur une surface de zone → le jeu coupe lui-même la contrainte (échelle 0, chronomètre à 0). Journal
+  « 30 deg tilt constraint held off / left to the game ». Après la sortie, le jeu la remet après 2 s au sol.
+  Ancienne DLL : `b2gravity_v9.dll.bak`.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
