@@ -23,3 +23,7 @@ speed 13.9
 -367.9 9.6 -228.1 -273.2 88.8 -145.5
 -365.8 6.2 -49.0 -339.3 36.1 -17.3
 -262.4 7.7 91.7 -234.0 34.2 131.6
+
+# v6 : couple qui tourne la voiture vers la surface (align = raideur, damp = amortissement)
+align 1.5
+damp 0.6
