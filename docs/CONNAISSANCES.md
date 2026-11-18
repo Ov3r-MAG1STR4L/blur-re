@@ -3519,6 +3519,17 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   / `.bin` avec les réglages de Marina et `start 90 -174 60`. Les fichiers de `natif/b2gravity/` restent ceux de
   Marina. Une seule map par emplacement `flat_earth` : installer Business Bay remplace Marina (réinstallable depuis
   `b2_dubai_marina_lot2`).
+- **Essai v11 (2026-11-18) : zones jamais armées sur Marina** (« je n'arrivais plus à rouler sur les murs ») :
+  `map check` à (0, 0, 0) (voiture pas encore placée), puis voiture arrêtée en (−641 ; 10 ; 504), à 208 m de
+  `start -435 473`. **La grille de Map Builder n'est pas à `start_m`** : sur Marina la voiture apparaît à 124 m le
+  long du tracé, soit ~270 m après `start_m` 3 454 (tour de 3 603 m). (0 ; 0 ; 0) aussi à écarter.
+- **Gravité v12 (2026-11-18, installée)** : (0, 0, 0) ignoré ; lignes `track x z` (le tracé de la map, un point tous
+  les ~30 m, branches comprises : Marina 136, Business Bay 103) ; zones armées si la voiture arrêtée après le
+  chargement est à moins de 40 m de l'un d'eux. Lignes `start` retirées. Journal « map check: … m from this
+  map's trace ». Ancienne DLL : `b2gravity_v11.dll.bak`.
+- **Installé dans Blur_test (2026-11-18, 14 h)** : Business Bay par l'installateur de l'éditeur (154 fichiers
+  vérifiés ; 159 fichiers de Marina laissés en place, ex. `nfs_102.model`…, plus référencés). Zones de Business Bay
+  dans `amax\dlls\b2gravity.txt` / `.bin` ; celles de Marina rangées dans `amax\dlls\marina\`.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

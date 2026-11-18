@@ -406,22 +406,36 @@ static void car_constraint_off(char *self, int k, int on)
    they would bend gravity wherever that track crosses the same coordinates. "start x z r" in b2gravity.txt:
    the player's car must stand still within r m of (x, z) after a load (first sight, or a jump > 300 m) for
    the zones to be armed; elsewhere nothing of ours runs. No "start" line: always armed (old behaviour).
-   ponytail: one map per dll copy; per-map files (b2gravity_<map>.txt/.bin) when a second Dubai route exists. */
-static int armed = -1, gate_pending = 1, have_start = 0;
-static float start_xz[2], start_r = 30.f, gate_last[3];
+   ponytail: one map per dll copy; per-map files (b2gravity_<map>.txt/.bin) when a second Dubai route exists.
+   v12 (essai v11: zones never armed on Marina): the first check ran at (0, 0, 0) before the car was placed, and
+   Map Builder's grid is not where "start" said (car at (-641, 504), 208 m away: the grid sits ~270 m past
+   start_m along the trace). Now: (0, 0, 0) ignored, and "track x z" lines (the map's trace, one point every
+   ~30 m, written with the zones) arm the zones when the standing car is within TRACK_R m of one of them. */
+#define MAX_TRACK 512
+#define TRACK_R 40.f
+static int armed = -1, gate_pending = 1, have_start = 0, ntrack = 0;
+static float start_xz[2], start_r = 30.f, gate_last[3], track_xz[MAX_TRACK][2];
 
 static void map_gate(const float *p, float speed)
 {
-    float dx = p[0] - gate_last[0], dy = p[1] - gate_last[1], dz = p[2] - gate_last[2];
+    float dx = p[0] - gate_last[0], dy = p[1] - gate_last[1], dz = p[2] - gate_last[2], best = 1e30f;
+    int i;
     if (dx * dx + dy * dy + dz * dz > 300.f * 300.f) gate_pending = 1;
     gate_last[0] = p[0]; gate_last[1] = p[1]; gate_last[2] = p[2];
-    if (!gate_pending || speed > 0.5f) return;
+    if (!gate_pending || speed > 0.5f || p[0] * p[0] + p[1] * p[1] + p[2] * p[2] < 1.f) return;
     gate_pending = 0;
-    if (!have_start) { armed = 1; return; }
-    dx = p[0] - start_xz[0]; dz = p[2] - start_xz[1];
-    armed = dx * dx + dz * dz < start_r * start_r;
-    say("map check: player stands at (%.0f, %.0f, %.0f), %.0f m from the zones' start -> zones %s", p[0], p[1], p[2],
-        sqrtf(dx * dx + dz * dz), armed ? "ARMED" : "off (other map)");
+    if (!have_start && !ntrack) { armed = 1; return; }
+    for (i = 0; i < ntrack; i++) {
+        float ex = p[0] - track_xz[i][0], ez = p[2] - track_xz[i][1];
+        if (ex * ex + ez * ez < best) best = ex * ex + ez * ez;
+    }
+    if (have_start) {
+        dx = p[0] - start_xz[0]; dz = p[2] - start_xz[1];
+        if (dx * dx + dz * dz < best) best = dx * dx + dz * dz;
+    }
+    armed = best < (ntrack ? TRACK_R * TRACK_R : start_r * start_r);
+    say("map check: player stands at (%.0f, %.0f, %.0f), %.0f m from this map's trace -> zones %s", p[0], p[1], p[2],
+        sqrtf(best), armed ? "ARMED" : "off (other map)");
 }
 
 /* wheels look for ground under the car (on) or under the world (off) */
@@ -712,6 +726,10 @@ static void load_zones(void)
         if (sscanf_s(line, "press %f", &s) == 1) { press_k = s; continue; }
         if (sscanf_s(line, "mph_min %f", &s) == 1) { mph_min = s; continue; }
         if (sscanf_s(line, "turn %f", &s) == 1) { turn_rate = s; continue; }
+        if (sscanf_s(line, "track %f %f", b, b + 1) == 2) {
+            if (ntrack < MAX_TRACK) { track_xz[ntrack][0] = b[0]; track_xz[ntrack][1] = b[1]; ntrack++; }
+            continue;
+        }
         if (sscanf_s(line, "start %f %f %f", b, b + 1, b + 2) == 3) {
             start_xz[0] = b[0]; start_xz[1] = b[1]; start_r = b[2]; have_start = 1; continue;
         }
@@ -726,8 +744,9 @@ static void load_zones(void)
     if (mph_max <= mph_min + 1.f) mph_max = mph_min + 1.f;
     say("%d zone(s), gravity %.0f..%.0f mph, align %.2f damp %.2f press %.2f, rail turn %.1f rad/s ahead %.2f s",
         nzones, mph_min, mph_max, align_k, align_d, press_k, turn_rate, ahead_s);
-    if (have_start) say("zones only when the player starts within %.0f m of (%.0f, %.0f)", start_r, start_xz[0], start_xz[1]);
-    else say("no start line: zones active on every map");
+    if (ntrack) say("zones only when the player starts within %.0f m of this map's trace (%d points)", TRACK_R, ntrack);
+    else if (have_start) say("zones only when the player starts within %.0f m of (%.0f, %.0f)", start_r, start_xz[0], start_xz[1]);
+    else say("no start or track line: zones active on every map");
 }
 
 static void patch(void)
