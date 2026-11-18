@@ -3442,6 +3442,16 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   plus de 8 m/s : haut ≈ haut de l'acteur (+0xD8), vitesse ≈ vitesse de l'acteur (+0x13C), quantité de
   mouvement ≈ masse × vitesse ; journal `rail: layout OK / MISMATCH`. Le calcul statique laissait un doute de
   0x10 (taille de `Axis::Point3_D` avec ses doubles). `turn 0` coupe le rail. Ancienne DLL : `b2gravity_v8.dll.bak`.
+- **Gravité v9 « rail » (2026-11-18, piste b retenue, installée, à essayer)** : normale lue **devant** la voiture
+  (à `vitesse × ahead`, 2-15 m, `ahead 0.15` s), puis sur le corps `RacingPhysics::Car` : haut tourné vers cette
+  normale (au plus `turn 4` rad/s × t, les trois lignes d'axes tournées ensemble) et part de la vitesse qui entre
+  dans la surface couchée le long d'elle (norme gardée, quantité de mouvement = masse × vitesse réécrite).
+  Corps (Plausible, **vérifié en jeu par la DLL avant toute écriture**) : lignes AX/AY/AZ de 16 octets à
+  Car + 0xC8 / 0xD8 / 0xE8 (AZ lue par `0x7C2F00`), vitesse Car + 0x138 (lue par `0x7C2F00`), quantité de
+  mouvement Car + 0x118 (ordre de la source `momentum, angularMomentum, velocity`). Contrôle au premier passage à
+  plus de 8 m/s : haut ≈ haut de l'acteur (+0xD8), vitesse ≈ vitesse de l'acteur (+0x13C), quantité de
+  mouvement ≈ masse × vitesse ; journal `rail: layout OK / MISMATCH`. Le calcul statique laissait un doute de
+  0x10 (taille de `Axis::Point3_D` avec ses doubles). `turn 0` coupe le rail. Ancienne DLL : `b2gravity_v8.dll.bak`.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

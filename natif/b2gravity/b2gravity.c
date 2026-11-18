@@ -380,6 +380,28 @@ static void air_downforce_switch(void)
     flag_switch(WALL_FIX2_ON, any, &fix2_saved, "wall-riding fix2");
 }
 
+/* v10: THE 20 mph straightening (essai v9: "from 20 mph the car rights itself, sometimes so hard it flips").
+   C_VehicleActor ties every car to the static world with a Gravity RotationalLimit constraint (VehicleActor.cpp
+   6963-6972): roll and pitch limited to +-Vehicle.ConstraintCarAngle = 30 deg, yaw free. UpdateConstraint
+   (VehicleActor.cpp 1354-1399, Blur.exe 0x436DB3) switches it off below Constraint.LowSpeedThreshold = 10 m/s
+   (22 mph) and back on after 2 s with >= 2 wheels on the ground -> on a wall above 22 mph the car is pulled back
+   to 30 deg (two wheels), and when it comes on while the car leans more, it snaps the car back (flip).
+   Actor fields (Confirmed, 0x436E1E..0x436EB1): m_pConstraint +0x220 (scale at constraint +0x40, SetScale =
+   vtable +8), m_GroundedTimer +0x224, m_ConstraintFatallyDamaged +0x376, m_HeavyCollision +0x377. The game itself
+   sets scale 0 and clears the timer when m_HeavyCollision is set, then clears it; nothing else reads it
+   (0x436E1E / 0x436E4E / init 0x452CAD). Set every frame while the car is on a zone surface. */
+#define ACTOR_HEAVY_COLLISION 0x377
+static int constraint_off[32];
+
+static void car_constraint_off(char *self, int k, int on)
+{
+    if (on) *(unsigned char *)(self + ACTOR_HEAVY_COLLISION) = 1;
+    if (k >= 0 && k < 32 && constraint_off[k] != on) {
+        constraint_off[k] = on;
+        say("vehicle %d: 30 deg tilt constraint %s", k, on ? "held off" : "left to the game");
+    }
+}
+
 /* wheels look for ground under the car (on) or under the world (off) */
 static void car_wallride(char *self, int k, int on)
 {
@@ -450,6 +472,7 @@ static void __stdcall gravity(char *self)
         if (k < 32) applied[k] = on && ext;
         if (k < 32) wallon[k] = surf && speed > 1.f;
         car_wallride(self, k, surf && speed > 1.f);
+        car_constraint_off(self, k, surf);
         if (k < 32 && inside != in_zone_last[k]) {
             in_zone_last[k] = inside;
             say("vehicle %d %s zone at (%.0f, %.0f, %.0f), %.0f km/h, up (%.2f, %.2f, %.2f)", k,
