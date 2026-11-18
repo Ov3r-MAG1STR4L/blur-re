@@ -3399,6 +3399,18 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   n = normale lissée de la surface. Réglages dans `b2gravity.txt` : `align 1.5`, `damp 0.6` (≈ amortissement
   critique pour une inertie de roulis ~ m × 0,8 m², à régler en jeu). Le journal d'état affiche aussi `n` et le
   couple. Remis à 0 à la sortie (comme avant). Ancienne DLL : `b2gravity_v5.dll.bak`.
+- **Essai v6 (2026-11-18)** : quatre roues sur le mur possibles **à basse vitesse** ; au-dessus, « le jeu force à
+  être plat ». Journal : sous 40 mph (t = 0, rien d'appliqué) la voiture tient ~60° (haut.y 0,47-0,55) ; au-dessus,
+  malgré 11-13 kN·m de couple, haut.y reste à 0,75-0,86. Cause probable : l'**appui aérodynamique** de Blur 1
+  (`car.cpp:731-737`), `−AxisY × m × 9,81 × f(vitesse)` tant qu'une roue avant touche, qui croît avec la vitesse et
+  plaque la voiture sur ses deux roues (Fort, déduit du code et du journal).
+  Exe (Confirmé) : `f` = `Car::CalculateSpeedDependentDownforceFactor` **`0x7C2F00`** (thiscall, sans argument, ne
+  lit que la voiture, résultat dans st0, `ret`) ; appelée en `0x7D20DD` ; masse utilisée = `[Car + 0x740]`
+  (`0x7D20B1`). `m_step` commence à Car + 0x12D8.
+- **Gravité v7 (2026-11-18, installée, à essayer)** : la DLL appelle `0x7C2F00` et ajoute à `externalForce`
+  `F × (haut − press × n)` (F = m × 9,81 × f × t) : l'appui est retourné vers la surface, un « aimant » qui croît avec
+  la vitesse. Réglage `press 1` dans `b2gravity.txt` (0 = comme le jeu). Journal d'état : `press … N`. Limite :
+  compensé aussi quand les roues avant décollent (le jeu ne l'applique alors pas). Ancienne DLL : `b2gravity_v6.dll.bak`.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

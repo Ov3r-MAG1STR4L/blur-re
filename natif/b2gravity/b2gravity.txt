@@ -27,3 +27,5 @@ speed 13.9
 # v6 : couple qui tourne la voiture vers la surface (align = raideur, damp = amortissement)
 align 1.5
 damp 0.6
+# v7 : appui aerodynamique (croit avec la vitesse) redirige vers le mur, 1 = tout, 0 = comme le jeu
+press 1

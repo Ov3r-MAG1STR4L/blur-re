@@ -48,7 +48,7 @@ static float nprev[32][3];
    (essai v5). Torque = t * m * 9.81 * (align * (up x n) - damp * w), w = angular velocity from the change of
    up between two frames (only its part across up). "align" / "damp" lines in b2gravity.txt
    (ponytail: tuned by hand in game; per-car inertia from the exe if one value does not fit every car). */
-static float align_k = 1.5f, align_d = 0.6f;
+static float align_k = 1.5f, align_d = 0.6f, last_press = 0.f;
 static float upprev[32][3];
 static LARGE_INTEGER tprev[32];
 
@@ -121,6 +121,26 @@ static void wall_force(char *self, float *ext, const float *d, float g)
     /* cancel the world gravity and the world-vertical downforce, push the same amounts along d */
     for (i = 0; i < 3; i++)
         ext[i] = c * (cd[i] + d[i]);              /* v4: gravity itself replaced at the source, only the downforce here */
+}
+
+/* v7: the speed-dependent downforce (car.cpp:731-737: force -AxisY * m * 9.81 * f(speed) while a front wheel is
+   on the ground; f = Car::CalculateSpeedDependentDownforceFactor, 0x7C2F00, thiscall, no argument, only reads
+   the car, result in st0; m = [car + 0x740] as at 0x7D20B1) grows with speed and, with the car on two wheels,
+   pins it flat (essai v6: ~60 deg below 40 mph with nothing applied, stuck at 30 deg above). Here it is turned
+   along -n (into the surface): ext += F * (up - press * n). "press" line in b2gravity.txt.
+   ponytail: compensates even when the front wheels are off the ground (the game then skips it); short hops only. */
+typedef float (__fastcall *speed_df_fn)(void *car, void *unused);
+static float press_k = 1.f;
+
+static float speed_downforce(char *self)
+{
+    unsigned car = rd((unsigned)self + 0x238);
+    float m, f;
+    if (!car || !readable((void *)(car + 0x740), 4)) return 0.f;
+    m = *(float *)(car + 0x740);
+    f = ((speed_df_fn)0x7C2F00)((void *)car, NULL);
+    if (!(m > 0.f && m < 1e5f) || !(f >= 0.f && f < 100.f)) return 0.f;
+    return m * 9.81f * f;
 }
 
 /* v6: torque rolling the car onto the surface (see align_k) */
@@ -316,7 +336,13 @@ static void __stdcall gravity(char *self)
             if (ext) {
                 float u[3] = {up[0] / len, up[1] / len, up[2] / len};
                 wall_force(self, ext, d, g);
-                if (len > 0.5f) align_torque(self, k, ext, u, n, t);
+                if (len > 0.5f) {
+                    float F = speed_downforce(self) * t;
+                    int i;
+                    align_torque(self, k, ext, u, n, t);
+                    for (i = 0; i < 3; i++) ext[i] += F * (u[i] - press_k * n[i]);
+                    last_press = F;
+                }
             }
             if (k < 32 && !applied[k])
                 say("vehicle %d bent at (%.0f, %.0f, %.0f) %.0f km/h: surface normal (%.2f, %.2f, %.2f), t %.2f",
@@ -335,11 +361,11 @@ static void __stdcall gravity(char *self)
         if (k == 0 && inside && GetTickCount() - last_status > 500) {          /* player: state every 0.5 s */
             last_status = GetTickCount();
             say("  v0 (%.0f, %.0f, %.0f) %.0f km/h up (%.2f, %.2f, %.2f) %s t %.2f g (%.1f, %.1f, %.1f)"
-                " n (%.2f, %.2f, %.2f) torque %.0f",
+                " n (%.2f, %.2f, %.2f) torque %.0f press %.0f N",
                 p[0], p[1], p[2], speed * 3.6f, up[0], up[1], up[2],
                 on ? "surface" : (t > 0.f ? "NO SURFACE within 4 m" : "too slow"), t, gx, gy, gz,
                 on ? n[0] : 0.f, on ? n[1] : 0.f, on ? n[2] : 0.f,
-                (on && ext) ? sqrtf(ext[3] * ext[3] + ext[4] * ext[4] + ext[5] * ext[5]) : 0.f);
+                (on && ext) ? sqrtf(ext[3] * ext[3] + ext[4] * ext[4] + ext[5] * ext[5]) : 0.f, on ? last_press : 0.f);
         }
     }
     out[0] = gx; out[1] = gy; out[2] = gz;
@@ -540,13 +566,14 @@ static void load_zones(void)
         if (sscanf_s(line, "speed %f", &s) == 1) { min_speed = s; continue; }
         if (sscanf_s(line, "align %f", &s) == 1) { align_k = s; continue; }
         if (sscanf_s(line, "damp %f", &s) == 1) { align_d = s; continue; }
+        if (sscanf_s(line, "press %f", &s) == 1) { press_k = s; continue; }
         if (nzones < MAX_ZONES && sscanf_s(line, "%f %f %f %f %f %f", b, b + 1, b + 2, b + 3, b + 4, b + 5) == 6) {
             memcpy(zones[nzones++], b, sizeof b);
             say("zone %d: x %.0f..%.0f  y %.0f..%.0f  z %.0f..%.0f", nzones - 1, b[0], b[3], b[1], b[4], b[2], b[5]);
         }
     }
     fclose(f);
-    say("%d zone(s), speed > %.1f m/s, align %.2f damp %.2f", nzones, min_speed, align_k, align_d);
+    say("%d zone(s), speed > %.1f m/s, align %.2f damp %.2f press %.2f", nzones, min_speed, align_k, align_d, press_k);
 }
 
 static void patch(void)
