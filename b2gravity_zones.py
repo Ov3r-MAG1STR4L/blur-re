@@ -86,6 +86,14 @@ def main():
             b = b + [0, dy, 0, 0, dy, 0]
             f.write("%.1f %.1f %.1f %.1f %.1f %.1f\n" % tuple(b))
             print("zone x %.0f..%.0f  y %.0f..%.0f  z %.0f..%.0f" % (b[0], b[3], b[1], b[4], b[2], b[5]))
+        f.write(SETTINGS)
+        f.write("# v12 : la map est reconnue si la voiture arretee au depart est a moins de 40 m d'un de ces points du "
+                "trace (%s)\n" % os.path.basename(tf))
+        last = None
+        for q in [q for pts in [t["points"]] + [b["points"] for b in t["branches"]] for q in pts]:
+            if last is None or np.hypot(q["x"] - last[0], q["z"] - last[1]) >= 30:
+                f.write("track %.0f %.0f\n" % (q["x"], q["z"]))
+                last = (q["x"], q["z"])
     inside = [(b[:3] <= wall).all(1) & (wall <= b[3:]).all(1) for b in B]
     print(len(B), "zones; steep positions covered: %.0f %%" % (100 * np.any(inside, 0).mean() if B else 0))
     pts = surface_points(a.route, B)
@@ -97,6 +105,19 @@ def main():
 
 
 SPACING = 1.5      # m between surface points (the DLL takes the nearest one, like Blur 2's raycast)
+# b2gravity.dll settings written after the zones (values tuned in game on Marina, 2026-11-18)
+SETTINGS = """# v6 : couple qui tourne la voiture vers la surface (align = raideur, damp = amortissement)
+align 1.5
+damp 0.6
+# v7 : appui aerodynamique (croit avec la vitesse) redirige vers le mur, 1 = tout, 0 = comme le jeu
+press 1
+# v8 : vitesses (mph) ou la gravite passe de normale (mph_min) a collee au mur (mph_max)
+mph_min 15
+mph_max 35
+# v9 : reorientation par la normale devant la voiture (turn = vitesse de rotation max en rad/s, 0 = coupe)
+turn 4
+ahead 0.15
+"""
 
 
 def surface_points(route, B, margin=6.0):

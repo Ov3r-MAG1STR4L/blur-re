@@ -29,7 +29,6 @@ speed 13.9
 877.2 6.3 -756.9 928.6 33.4 -697.6
 883.6 14.8 -677.9 922.1 40.6 -615.3
 886.6 17.7 -613.9 914.8 42.0 -581.1
-
 # v6 : couple qui tourne la voiture vers la surface (align = raideur, damp = amortissement)
 align 1.5
 damp 0.6
@@ -38,7 +37,7 @@ press 1
 # v8 : vitesses (mph) ou la gravite passe de normale (mph_min) a collee au mur (mph_max)
 mph_min 15
 mph_max 35
-# v9 : reorientation par la normale devant la voiture (turn = vitesse de rotation max en rad/s, 0 = coupe ; ahead = distance de lecture en secondes de trajet)
+# v9 : reorientation par la normale devant la voiture (turn = vitesse de rotation max en rad/s, 0 = coupe)
 turn 4
 ahead 0.15
 # v12 : la map est reconnue si la voiture arretee au depart est a moins de 40 m d'un de ces points du trace (dubai_route1_trace.json)
@@ -71,9 +70,9 @@ track 305 156
 track 337 173
 track 369 189
 track 403 199
-track 436 186
-track 457 157
-track 462 122
+track 433 186
+track 455 156
+track 461 124
 track 443 93
 track 415 71
 track 388 48
@@ -89,7 +88,7 @@ track 360 -266
 track 375 -298
 track 397 -327
 track 423 -351
-track 449 -376
+track 448 -373
 track 476 -400
 track 502 -425
 track 533 -444
@@ -97,15 +96,15 @@ track 567 -444
 track 599 -432
 track 634 -437
 track 670 -436
-track 706 -433
-track 741 -440
+track 707 -434
+track 743 -441
 track 775 -453
-track 805 -474
-track 829 -500
-track 846 -531
-track 858 -565
-track 868 -600
-track 864 -635
+track 804 -473
+track 828 -500
+track 846 -532
+track 873 -565
+track 867 -600
+track 862 -637
 track 852 -669
 track 832 -699
 track 817 -732
@@ -133,15 +132,15 @@ track 239 -525
 track 223 -493
 track 214 -458
 track 212 -423
-track 211 -387
-track 211 -351
-track 210 -315
-track 211 -279
-track 218 -243
-track 221 -208
-track 212 -173
-track 188 -147
-track 158 -128
-track 123 -123
-track 88 -133
-track 56 -149
+track 212 -374
+track 212 -339
+track 210 -303
+track 213 -267
+track 220 -231
+track 220 -196
+track 205 -164
+track 178 -140
+track 147 -128
+track 110 -124
+track 78 -138
+track 44 -152

@@ -599,3 +599,4 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
 | 2026-11-18 | v13 essayée : zones OK, mais traversée d'une paroi (collision sans épaisseur, solide d'un seul côté, voiture plaquée à ~2,3 g). `b2collision` : 2e couche 1 m derrière les surfaces raides et plafonds ; Business Bay reconstruite et installée |
 | 2026-11-18 | **Priorités (décision de l'utilisateur)** : gravité, maps et IA d'abord ; reflets et transparences de Dubaï mis de côté (uKER a déjà un bon rendu) |
 | 2026-11-18 | Traversée du mur et réapparition sous la map : le tracé de Business Bay montait sur le mur (route Map Builder en l'air, percutée). Tracé remis au sol (points 85-94), Business Bay reconstruite |
+| 2026-11-18 | Les 4 routes de Dubaï : vérification de réapparition (0 point sans sol après recollage, embranchements de Marina compris), tracés des routes 2-3 générés au sol, zones de gravité par route, `b2install.py N` (map + zones). Construction des 4 en cours |

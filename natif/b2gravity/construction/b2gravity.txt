@@ -1,0 +1,139 @@
+# b2gravity zones, Dubai route 3 (b2gravity_zones.py), game axes, y shifted by -4.35
+speed 13.9
+-579.7 41.4 -1029.0 -543.4 72.4 -986.7
+-574.7 41.4 -997.1 -545.4 73.4 -959.6
+-576.9 85.5 -1123.2 -552.1 133.8 -1099.1
+-516.4 34.4 -830.1 -474.0 79.8 -798.8
+-495.3 34.4 -754.0 -443.1 79.4 -704.1
+-470.6 16.2 -688.6 -426.8 75.8 -646.2
+-448.0 42.9 -627.1 -410.4 69.4 -571.4
+-440.0 4.5 -1143.3 -407.6 28.9 -1092.6
+-438.6 28.6 -1144.7 -414.0 54.6 -1120.5
+-426.0 11.8 -1159.9 -380.1 42.9 -1135.5
+-418.5 60.9 -1147.8 -391.9 89.7 -1098.7
+-395.0 46.1 -403.7 -355.8 78.8 -373.6
+-383.8 38.2 -424.1 -358.8 64.1 -395.9
+-382.2 6.7 -278.4 -264.1 102.2 -143.6
+-371.9 -2.2 -293.4 -308.6 21.9 -251.7
+-372.9 25.9 -1156.2 -317.3 56.1 -1126.8
+-376.6 49.7 -299.5 -337.4 79.9 -267.2
+-353.2 -3.8 -470.6 -327.8 21.0 -444.7
+-319.1 0.7 -1185.7 -264.1 49.9 -1139.4
+-269.0 4.8 -1181.8 -233.9 43.0 -1144.6
+-117.6 -7.3 -1221.2 -68.7 17.2 -1164.2
+-56.8 -11.6 -134.8 -23.0 15.2 -100.3
+-45.3 -2.8 -207.1 -13.9 23.0 -165.8
+-18.3 -7.2 -1225.2 6.5 17.0 -1200.1
+164.8 -7.2 -702.4 192.8 21.6 -675.4
+228.5 -6.8 -793.7 264.8 17.1 -753.7
+226.5 2.5 -1319.5 341.4 62.9 -1213.0
+335.9 8.7 -1279.5 376.2 38.0 -1254.4
+# v6 : couple qui tourne la voiture vers la surface (align = raideur, damp = amortissement)
+align 1.5
+damp 0.6
+# v7 : appui aerodynamique (croit avec la vitesse) redirige vers le mur, 1 = tout, 0 = comme le jeu
+press 1
+# v8 : vitesses (mph) ou la gravite passe de normale (mph_min) a collee au mur (mph_max)
+mph_min 15
+mph_max 35
+# v9 : reorientation par la normale devant la voiture (turn = vitesse de rotation max en rad/s, 0 = coupe)
+turn 4
+ahead 0.15
+# v12 : la map est reconnue si la voiture arretee au depart est a moins de 40 m d'un de ces points du trace (dubai_route3_trace.json)
+track 267 -833
+track 247 -803
+track 231 -771
+track 216 -738
+track 201 -705
+track 186 -672
+track 171 -640
+track 157 -607
+track 144 -573
+track 138 -538
+track 134 -502
+track 125 -467
+track 113 -434
+track 86 -411
+track 61 -385
+track 40 -356
+track 13 -332
+track -17 -313
+track -42 -287
+track -49 -252
+track -41 -217
+track -29 -183
+track -27 -148
+track -48 -120
+track -82 -111
+track -111 -132
+track -135 -159
+track -155 -188
+track -174 -219
+track -207 -225
+track -234 -201
+track -260 -176
+track -297 -173
+track -334 -198
+track -348 -232
+track -347 -267
+track -353 -303
+track -361 -338
+track -369 -373
+track -377 -420
+track -386 -455
+track -394 -491
+track -402 -526
+track -410 -561
+track -425 -594
+track -425 -631
+track -434 -666
+track -457 -727
+track -473 -754
+track -488 -786
+track -499 -820
+track -511 -854
+track -522 -889
+track -533 -923
+track -544 -957
+track -557 -991
+track -569 -1024
+track -574 -1060
+track -565 -1095
+track -541 -1121
+track -508 -1134
+track -472 -1136
+track -427 -1142
+track -388 -1139
+track -352 -1142
+track -305 -1140
+track -269 -1156
+track -234 -1162
+track -198 -1168
+track -163 -1174
+track -127 -1180
+track -91 -1182
+track -56 -1177
+track -21 -1171
+track 15 -1171
+track 51 -1178
+track 84 -1192
+track 112 -1215
+track 138 -1239
+track 165 -1262
+track 192 -1286
+track 223 -1304
+track 258 -1286
+track 282 -1263
+track 305 -1243
+track 316 -1205
+track 315 -1174
+track 302 -1135
+track 294 -1100
+track 284 -1065
+track 273 -1031
+track 269 -995
+track 290 -968
+track 317 -948
+track 310 -914
+track 293 -882
+track 275 -851

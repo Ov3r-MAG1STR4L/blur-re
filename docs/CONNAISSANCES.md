@@ -3561,6 +3561,30 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   (profils réguliers) et restent. Essais écartés : sol le plus haut par centres de triangles à 4 m (faux sur les
   longues rampes : 50 m de trou), rayon vertical seul (dents de scie autour du mur).
 
+## Les 4 routes de Dubaï : tracés sûrs pour la réapparition (2026-11-18, `b2trace.py`, `b2install.py`)
+- **Vérification de réapparition** (`b2trace.py N --check TRACE`, demande de l'utilisateur : « pas sous la map ni
+  bloqué ») : chaque point du tracé (ligne principale **et embranchements**) est un endroit où le jeu peut remettre
+  la voiture ; il lui faut un sol réel (triangles |n.y| > 0,7, rayon vertical) à ±3 m. Avant correction : route 1
+  64 / 308 points à risque (dont **ma correction manuelle 85-94 à h 3,5 : aucun sol à 3,5 m là**, sol à 11,6 ou
+  41,6 m), route 2 30 / 263, route 3 48 / 300, Marina 49 / 276 + 2 sur ses embranchements (51 / 337).
+- **Recollage** (`b2trace.py N --snap TRACE`, en place, `.bak` gardé) : chaque point posé sur le sol sous lui le plus
+  proche en hauteur (≤ 6 m) ; sans sol (la course passe **sur** le mur : virage sud-ouest de Marina jusqu'à 74 m,
+  chute de Business Bay) → déplacé sur le sol le plus proche à 40 m en 3D (pied du mur), champ `moved_m`. Résultat :
+  **0 point à risque sur les 4 routes** ; déplacés : route 1 54 (max 29 m), route 2 17 (10 m), route 3 32 (29 m),
+  Marina 39 + embranchements (34 m). Limite : la ligne de course s'écarte de la paroi aux endroits déplacés.
+- **Tracés des routes 2 et 3** générés par `b2trace.py N` depuis le tour roulé : points hors route (mur, sous une
+  surface, en l'air) remplacés par la ligne entre les points de route autour, puis recollés. Route 2 : 14 passages
+  corrigés ; route 3 : 24. Route 1 garde le tracé manuel (au looping, la ligne entre rampe d'entrée h 20 et rampe
+  de sortie h 38 passerait en l'air dans la boucle), recollé. Marina garde le sien (retouché dans l'éditeur),
+  recollé.
+- **Chemins secondaires** : seule Marina en a (6 embranchements, 61 points : IA officielle X360 + éditeur). Routes
+  1 à 3 : ligne principale seule (pas d'IA officielle pour elles) ; à tracer dans l'éditeur ou à rouler.
+- **Zones de gravité par route** : `natif/b2gravity/<route>/b2gravity.txt` + `.bin` (`business_bay`, `dubai_island`,
+  `construction`, `marina` ; les anciens fichiers de Marina à la racine y sont déplacés). `b2gravity_zones.py` écrit
+  maintenant le fichier complet : zones, réglages (`SETTINGS`), points `track` du tracé (embranchements compris).
+- **Installation** : `b2install.py N` = map dans l'emplacement `flat_earth` (installateur de l'éditeur) + zones de la
+  route dans `amax\dlls` ; refuse si Blur est ouvert. Les 4 routes se remplacent l'une l'autre.
+
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
 `docs/POWERUPS_DONNEES.md` (généré par `powerups_dump.py`). Découvertes nouvelles :
