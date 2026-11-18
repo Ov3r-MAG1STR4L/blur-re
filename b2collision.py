@@ -66,6 +66,15 @@ def lap_points(paths):
     return np.array(pts)
 
 
+# 2026-11-18 (Business Bay, b2gravity): a triangle only collides while the car's centre is in FRONT of it
+# (gravity ConvexTriangle.inl: early exit when the hull centre is behind the plane) and these surfaces have no
+# thickness, so a car pressed onto a wall (gravity + downforce turned to the wall, ~2.3 g) that gets its centre past
+# the plane after a knock goes through and falls. Steep (n.y < 0.5) and downward triangles get a copy BACKSTOP m
+# behind, same side: a centre past the first plane is still in front of the second one, which pushes it back out.
+# ponytail: one layer at a fixed depth; thicker or several layers if cars still get through.
+BACKSTOP = 1.0
+
+
 def build(cols, base, route, laps, radius, dy=0.0):
     """dy: height shift (a Map Builder map puts the route's lowest point 1 m above its floor: dy = 1 - lowest y)"""
     from scipy.spatial import cKDTree
@@ -77,8 +86,13 @@ def build(cols, base, route, laps, radius, dy=0.0):
         v = v + (0, dy, 0)
         c = v[t].mean(1)
         d, k = near.query(c[:, [0, 2]])
+        T = v[t]
+        n = np.cross(T[:, 1] - T[:, 0], T[:, 2] - T[:, 0])
+        n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-12
         for i in np.where(d < radius)[0]:
-            tris.append((k[i], v[t[i]]))
+            tris.append((k[i], T[i]))
+            if BACKSTOP and n[i, 1] < 0.5:              # steep or facing down: a second layer behind
+                tris.append((k[i], T[i] - n[i] * BACKSTOP))
     tris.sort(key=lambda x: x[0])                      # along the route: compact objects
     objs, verts, idx, key = [], [], [], {}
     for _, tri in tris:

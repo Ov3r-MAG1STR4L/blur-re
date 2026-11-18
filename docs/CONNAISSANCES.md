@@ -3535,6 +3535,20 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   des véhicules), puis plus rien : la grille est à moins de 300 m de ce point, seuil de nouveau contrôle de la v11.
 - **Gravité v13 (installée)** : nouveau contrôle à chaque arrêt dès que la voiture est à plus de 30 m du dernier
   endroit contrôlé (menu, grille, réapparition). Ancienne DLL : `b2gravity_v12.dll.bak`.
+- **Essai v13 (2026-11-18, Business Bay)** : contrôle OK (menu refusé 3 fois, grille (80 ; 10 ; −143) acceptée à
+  13 m du tracé), roulage sur la paroi de la zone x 382..475 / z 47..216 (haut aligné sur la normale à 181 km/h),
+  mais **traversée du mur** : à (432 ; 21 ; 189) choc (181 → 134 km/h, couple 28,7 kN·m) au pli de la paroi
+  (normale qui tourne de ~15°), puis haut de la voiture opposé à la normale (passée derrière), chute jusqu'au sol de
+  secours de Map Builder (y = −5, `NFS_FLOOR_Y`). Triangles de la paroi bien orientés vers la voiture à cet endroit
+  (vérifié : +0,9 m du bon côté). **Cause (Fort)** : collision sans épaisseur et solide d'un seul côté — Gravity
+  ignore un triangle dès que le centre de la voiture est derrière son plan (`ConvexTriangle.inl` l. 97, sortie
+  anticipée) ; plaquée par ~2,3 g (gravité + appui redirigé), la voiture passe après un choc. Pas la v13. Le
+  `HandleTunneling` du jeu (joueur seulement : rayon ancienne → nouvelle position, recalage sur la normale du
+  triangle touché) n'a pas suffi.
+- **Correction (`b2collision.py`, `BACKSTOP` = 1 m)** : chaque triangle raide ou tourné vers le bas (n.y < 0,5) reçoit
+  une copie 1 m derrière, même sens : un centre passé derrière le premier plan est encore devant le second, qui le
+  repousse. Business Bay reconstruite avec et **installée** (2026-11-18) : 137 533 triangles (89 064 + ~48 000 de
+  couche arrière), 732 objets, `level.levelphysics` 10,2 Mo (Marina : 12,8 Mo, accepté par le jeu). À essayer.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
