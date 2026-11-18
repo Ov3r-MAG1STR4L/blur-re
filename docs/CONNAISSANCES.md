@@ -3596,6 +3596,18 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   map de Dubaï), sauf **filet de sécurité** : remis tant que la voiture du joueur est sous y = −2 ou quasi immobile
   (< 1 m/s) depuis 4 s, jusqu'à ce qu'elle roule de nouveau (> 5 m/s) ; journal « respawn safety ». Global : les IA
   perdent aussi leur réapparition pendant ce temps. Remis à sa valeur d'origine sur une autre map.
+- **« Des murs et des routes sans hitbox, contrairement à Unity » (2026-11-18, Confirmé)** : les `MeshCollider`
+  Unity bloquent des deux côtés, les triangles de Blur seulement du côté de leur normale ; or **14 % (Business Bay)
+  à 26 % (Marina) des triangles à moins de 20 m du tour lui tournent le dos** (routes `17f` 11-25 %, murs `15d`
+  29-45 %, `8017f` 46 % sur Marina) → traversables depuis la route. Autres causes possibles mais secondaires :
+  collision coupée à 150 m du tour, barrières des autres routes retirées.
+- **Correction (`b2collision.py`, `ORIENT` 60 m, `ORIENT_BOTH` 20 m)** : chaque triangle à moins de 60 m du tour (3D,
+  décalage y compris) est retourné vers le point du tour le plus proche ; si le tour passe des deux côtés à moins
+  de 20 m (mur fin entre deux routes, pont avec une route dessous), les deux faces sont gardées ; la couche arrière
+  (`BACKSTOP`) ne s'ajoute qu'aux surfaces à une seule face, après le retournement. Le journal du build donne
+  « orientation: N triangles turned…, M kept with both faces ». Les 4 routes reconstruites avec (2026-11-18) :
+  route 1 8 780 retournés / 1 146 à deux faces (10,4 Mo), route 2 12 461 / 1 019 (8,3 Mo), route 3 36 781 / 2 879
+  (15,3 Mo), Marina 38 048 / 3 517 (14,3 Mo). À essayer (installer avec `Installer route Dubai.bat`).
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

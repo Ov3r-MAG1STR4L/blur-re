@@ -75,11 +75,28 @@ def lap_points(paths):
 BACKSTOP = 1.0
 
 
+# 2026-11-18 ("walls and roads with no hitbox, unlike Unity"): Unity's MeshColliders block from both sides, Blur's
+# triangles from their normal's side only, and 14 % (Business Bay) to 26 % (Marina) of the triangles within 20 m
+# of the lap face AWAY from it (roads 17f 11-25 %, walls 15d 29-45 %). Within ORIENT m of the lap, a triangle is
+# turned to face the lap; when the lap passes on both sides of it (within ORIENT_BOTH m: thin wall between two
+# roads, bridge deck with a road under it) it is kept with both faces.
+ORIENT, ORIENT_BOTH = 60.0, 20.0
+
+
+def lap_points_3d(paths, dy):
+    pts = []
+    for p in paths:
+        pts += [(float(r["x"]), float(r["y"]) + dy, float(r["z"])) for r in csv.DictReader(open(p))]
+    return np.array(pts)
+
+
 def build(cols, base, route, laps, radius, dy=0.0):
     """dy: height shift (a Map Builder map puts the route's lowest point 1 m above its floor: dy = 1 - lowest y)"""
     from scipy.spatial import cKDTree
     near = cKDTree(lap_points(laps))
-    tris = []
+    L3 = lap_points_3d(laps, dy)
+    lap3 = cKDTree(L3)
+    tris, flipped, both = [], 0, 0
     for name, (v, t) in cols.items():
         if name.startswith("physics_route_") and not name.startswith("physics_route_%d_" % route):
             continue                                   # another route's barriers
@@ -90,9 +107,25 @@ def build(cols, base, route, laps, radius, dy=0.0):
         n = np.cross(T[:, 1] - T[:, 0], T[:, 2] - T[:, 0])
         n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-12
         for i in np.where(d < radius)[0]:
-            tris.append((k[i], T[i]))
-            if BACKSTOP and n[i, 1] < 0.5:              # steep or facing down: a second layer behind
-                tris.append((k[i], T[i] - n[i] * BACKSTOP))
+            tri, nn, two = T[i], n[i], False
+            idx = lap3.query_ball_point(c[i], ORIENT)
+            if idx:
+                s = (L3[idx] - c[i]) @ nn                  # lap points in front (> 0) / behind (< 0)
+                dist = np.linalg.norm(L3[idx] - c[i], axis=1)
+                front = (s > 0.3) & (dist < ORIENT_BOTH)
+                back = (s < -0.3) & (dist < ORIENT_BOTH)
+                if front.any() and back.any():
+                    two = True                             # the lap on both sides: both faces
+                elif s[np.argmin(dist)] < 0:               # nearest lap point behind: face it
+                    tri, nn = tri[[0, 2, 1]], -nn
+                    flipped += 1
+            tris.append((k[i], tri))
+            if two:
+                tris.append((k[i], tri[[0, 2, 1]]))
+                both += 1
+            elif BACKSTOP and nn[1] < 0.5:              # steep or facing down: a second layer behind
+                tris.append((k[i], tri - nn * BACKSTOP))
+    print("orientation: %d triangles turned to face the lap, %d kept with both faces" % (flipped, both))
     tris.sort(key=lambda x: x[0])                      # along the route: compact objects
     objs, verts, idx, key = [], [], [], {}
     for _, tri in tris:
