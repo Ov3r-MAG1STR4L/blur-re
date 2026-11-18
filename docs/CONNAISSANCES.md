@@ -3530,6 +3530,11 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
 - **Installé dans Blur_test (2026-11-18, 14 h)** : Business Bay par l'installateur de l'éditeur (154 fichiers
   vérifiés ; 159 fichiers de Marina laissés en place, ex. `nfs_102.model`…, plus référencés). Zones de Business Bay
   dans `amax\dlls\b2gravity.txt` / `.bin` ; celles de Marina rangées dans `amax\dlls\marina\`.
+- **Essai v12 (2026-11-18, Business Bay) : zones jamais armées** : un seul contrôle, sur une voiture arrêtée en
+  (276 ; 93 ; 41), à 93 m du tracé et à 93 m de haut (probablement la voiture du menu / garage, déjà dans la liste
+  des véhicules), puis plus rien : la grille est à moins de 300 m de ce point, seuil de nouveau contrôle de la v11.
+- **Gravité v13 (installée)** : nouveau contrôle à chaque arrêt dès que la voiture est à plus de 30 m du dernier
+  endroit contrôlé (menu, grille, réapparition). Ancienne DLL : `b2gravity_v12.dll.bak`.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

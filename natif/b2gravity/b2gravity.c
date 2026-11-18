@@ -416,14 +416,17 @@ static void car_constraint_off(char *self, int k, int on)
 static int armed = -1, gate_pending = 1, have_start = 0, ntrack = 0;
 static float start_xz[2], start_r = 30.f, gate_last[3], track_xz[MAX_TRACK][2];
 
+/* v13 (essai v12 on Business Bay: one check on the menu / garage car at (276, 93, 41), 93 m off the trace, then
+   none: the grid is < 300 m from it): checked again at every standstill once the car is > 30 m from where it was
+   last checked (menu, grid, respawn), gate_last = that last checked spot. */
 static void map_gate(const float *p, float speed)
 {
     float dx = p[0] - gate_last[0], dy = p[1] - gate_last[1], dz = p[2] - gate_last[2], best = 1e30f;
     int i;
-    if (dx * dx + dy * dy + dz * dz > 300.f * 300.f) gate_pending = 1;
-    gate_last[0] = p[0]; gate_last[1] = p[1]; gate_last[2] = p[2];
+    if (dx * dx + dy * dy + dz * dz > 30.f * 30.f) gate_pending = 1;
     if (!gate_pending || speed > 0.5f || p[0] * p[0] + p[1] * p[1] + p[2] * p[2] < 1.f) return;
     gate_pending = 0;
+    gate_last[0] = p[0]; gate_last[1] = p[1]; gate_last[2] = p[2];
     if (!have_start && !ntrack) { armed = 1; return; }
     for (i = 0; i < ntrack; i++) {
         float ex = p[0] - track_xz[i][0], ez = p[2] - track_xz[i][1];
