@@ -3753,11 +3753,75 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v2).
   - Fan Nitro : un Nitro tous les 500 de score ;
   - Nitro Rift : coup NITROUS 2,5 s, 30 m, qui traverse les boucliers.
 - **Shielding Efficiency** (multijoueur) : durée × 1,8, santé +100 (50 → 150). Le bouclier survit à 1 dôme de
-  Shock : c'est l'explication probable de l'exception vue en ligne. **AMAX annonce avoir réduit ce mod (2025-01-04)**,
-  et les valeurs en ligne actuelles sont inconnues.
+  Shock : c'est l'explication de l'exception vue en ligne. *(Corrigé en v3 : la « réduction » d'AMAX était le patch
+  du 1er avril 2025, annulé le 4 avril. AMAX utilise de nouveau les valeurs de 2010.)*
 - **L'explosion d'une Mine est un effet visuel** sans zone de dégâts. Un contact entre deux Mines est sans effet. Une
   Mine lancée qui touche une Mine : dégâts croisés.
-- **Contradiction** : en jeu, le Shock détruit une Mine, mais la source ne contient aucun code pour cela.
+- *(Corrigé en v3 : le Shock et la Mine n'ont **aucune** interaction, ce qu'a confirmé le joueur et ce qui est cohérent
+  avec la source. L'ancienne « contradiction Shock contre Mine » venait d'une mauvaise interprétation.)*
 - **Correction de `POWERUPS.md` §11** : la masse de 10 000 (`C_PickupDoubleShield`) n'est jamais appliquée, car
   la classe n'est jamais créée.
+
+### Comportement des bonus, v3 : recherche communautaire, AMAX, noms des mods (2026-11-17, lecture seule)
+
+Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
+
+- **AMAX = valeurs de 2010.** Le « BLUR AMAZING BALANCE PATCH » était un poisson d'avril, actif du 1er au 4 avril 2025
+  et changé côté serveur (`misc_mod_settings`, `AbilityValue`). AMAX a écrit ensuite : « back to the good old Blur from
+  2010 ».
+- **Shielding Efficiency** : le bouclier bloque 2 dômes de Shock et casse au deuxième. Confirmé par le code, les
+  données, le texte du jeu et deux joueurs en 2010.
+- **Noms internes des mods multijoueur** :
+  - Adaptive Shielding = `SafetyNet` : Shunt, Barge ou Mine arrêtés par le bouclier → le même bonus en réserve ;
+  - Safety Net = `ShieldedBoosters` : réparation ;
+  - Magnetic Field = `RoadSweeper` : rayon de ramassage × 1,3.
+- **Défis officiels = interactions voulues** :
+  - Master Exploder : une Mine lancée détruit une Mine ;
+  - Rear Guard : une Mine, un Bolt ou Shunt arrière, ou une Barge qui arrête un projectile → Bolt contre Bolt prévu ;
+  - une Barge touche jusqu'à 5 voitures.
+- **« Nitro Rift » désigne aussi le Nitro arrière** (frein aérien, défis « reverse Nitro Rift »), à distinguer du mod
+  de Carver.
+- **Réserve pleine** : le bonus est refusé, et le Nitro de Fan Nitro, Front Runner ou Drifter est perdu. Un bonus
+  n'est déposé sur la piste que s'il a toutes ses munitions.
+- **Shock** : un dôme touche une seule voiture, et sa sphère intérieure est désactivée.
+- **Show Down** : Shannon en `Opel_AstraExtreme_Stock_Shannon`, sans mod (données et guide).
+- Pas de mods de carrière en Destruction (source + joueurs de 2010).
+- **Fréquence d'images** : `FakePhysics`, rotation des bonus et Nitro arrière dépendent du FPS sur PC (ébauche
+  fps-unlocker d'aibot) ; BlurRebuilt dit le contraire sur la fréquence de référence (30 ou 60).
+- Aucun mod communautaire public ne modifie les bonus.
+
+## Audit du Railgun et extension des bonus (2026-11-18, lecture seule) → `POWERUP_EXTENSION_ARCHITECTURE.md`
+
+- **Les 17 sites de `railgun.dll` v7** ont leurs octets d'origine dans le `Blur.exe` installé (`dcbd312a…`, exe
+  d'AMAX) **et** dans `Blur_test\Blur.exe` (`cd1d1bdc…`, seul l'octet `LARGE_ADDRESS_AWARE` change). La DLL
+  installée est identique au build du dépôt. Dernier journal : 220 tirs, 106 voitures touchées, 211 murs, 23 boucliers,
+  tir arrière à l'horizontale (Confirmé).
+- **`CreatePickup` borne le type à 10** : `cmp eax,0Ah ; ja 0xBAB5CC` en `0xBAADB0`. Les types 11 à 15 ne créent aucun
+  objet. Dans la table `0xBAB5D8`, les types 6 (Repair), 8 et 9 vont à `0xBAB5CB`, sans objet (Confirmé, désassemblage).
+- **Prototypes coupés** (BlackHole, Bombard, Jump, Magnet, Teleport, Trap, Ghost, Grab, Pulse, Rift) : **non compilés**.
+  Leurs chaînes `Perks.*` sont absentes de `Blur.exe`, alors que celles des classes vivantes (`Perks.BlindfireShotgun.*`,
+  `Perks.DoubleShield.Mass`) y sont. C'est un ancien système (`C_PickupFireX` / `C_PickupHitX`, `mLevels[]`, impulsions
+  réelles) (Confirmé).
+- **La réserve ne garde pas le sous-type** (`PickupStore` : type, tirs, munitions infinies, `mPickupGroupId`,
+  distance ; source). Pour plusieurs bonus personnalisés derrière le type 10, l'identité doit être tenue par la DLL
+  (clé `mPickupGroupId`) ; le HUD (`GetPerkInfo(type, nbTirs, modBolt)`) ne voit pas la case.
+- **Limites du Railgun v7** (code) :
+  - cases `rails[32]` libérées seulement au recyclage du pool ;
+  - dégâts posés dans les données partagées du Bolt pendant `Trigger` ;
+  - un seul joueur local (`is_human`) ;
+  - jamais essayé en réseau.
+
+### Bonus et décor (2026-11-18, lecture seule) → `POWERUP_ENVIRONMENT_INTERACTIONS.md`
+
+- Trois chemins vivants poussent le décor, tous par `C_DynamicObjectApplyImpulseMsg` :
+  - rayon « transparent » des projectiles (Shunt, Bolt, Mine lancée ; `CheckCollisions` `0xBE6200`) ;
+  - sphère de la Barge (`0xBE6970`, au plus 3 objets : `Perks.Barge.MaxObjectsToDamage` `0x123BE94`) ;
+  - sphère de la Shock (`0xBE75D0`, 3 objets : `0x123C038`) (Confirmé pour les adresses).
+- `PerkForceEffects` (`pickups.bin` #868) : toutes les entrées lues ont `DamageScale` 0 → aucun bonus ne casse le
+  décor, ils le poussent et l'électrisent. Les entrées à dégâts (explosions de Mine et de Shunt) ne sont lues que par
+  `C_ActorUtils::RegisterForceEffectWithActors`, sans appelant vivant connu.
+- L'explosion de la Mine ne pousse rien. Le Nitro et le Shield n'ont aucun chemin vers le décor.
+- Poussées calculées localement sur chaque machine, rien n'est trouvé dans le réseau.
+- Barge et Shock poussent l'objet seulement s'il est déjà dans `mDynamicsHit` (`!inserted`) : poussée probablement
+  continue (hypothèse).
 

@@ -1,370 +1,490 @@
 # Étude du comportement des bonus d'origine de Blur
 
-- **v1** (2026-11-17) : première étude, lecture seule.
-- **v2** (2026-11-17) : consolidation après les essais en jeu T1 à T8, les modifications de carrière et multijoueur, et
-  les sources communautaires.
+Versions :
 
-Tout est en **lecture seule** : aucun fichier du jeu, aucune copie, aucun exécutable modifiés. Ce document complète
-**`POWERUPS.md`** (référence technique) et **`POWERUPS_DONNEES.md`** (toutes les valeurs) sans les recopier.
+- **v1** (2026-11-17) : première étude.
+- **v2** (commit `f30d2e3`) : essais en jeu T1 à T8, modifications de carrière et multijoueur.
+- **v3** (2026-11-17) : recherche communautaire, AMAX, mods, mécaniques cachées, correction Shock contre Mine.
 
-## 0. Nouveautés de la v2 (résumé)
+Tout est en **lecture seule** : aucun fichier du jeu, aucune copie de test, aucun exécutable modifiés, aucun mod
+installé. Ce document complète **`POWERUPS.md`** (référence technique) et **`POWERUPS_DONNEES.md`** (toutes les
+valeurs).
 
-1. **Les 8 modifications de carrière sont tracées dans la source et les données.** Ce sont des capacités
-   `Boss_*`. Chaque boss la porte via sa voiture (`AmaxVehicle.BossAbilitySlot`, `amax.bin`), et le joueur via une
-   seule capacité équipée (`mSpEquippedAbility`). Valeurs exactes en §4.
-2. **« Armor Plating » (Talon) s'appelle `BossRepairBonus` dans le code.** Elle réduit de 50 les dégâts de la Barge, du
-   Shunt et de la Mine. Elle ne répare rien.
-3. **`Shielding Efficiency` explique l'exception du bouclier en multijoueur** :
-   - la durée est multipliée par 1,8 et la santé passe de 50 à 150 (`multiplayer.bin`) ;
-   - un dôme de Shock fait 100 de dégâts : avec le mod, le bouclier survit à un dôme et casse au deuxième.
+## 0. Nouveautés de la v3
 
-   **Mais AMAX annonce avoir réduit ce mod** (§5.2) : la valeur jouée en ligne aujourd'hui est inconnue.
-4. **Le Scatter Shot répond à une question ouverte de la v1** : c'est le seul créateur des sous-types `MOD` et
-   `SUB_MOD` du Bolt. Il tire 3 Bolts à −2°, 0° et +2° et vide toute la pile de Bolts d'un coup.
-5. **Le Nitro Rift est un Nitro de type NITROUS.** Il traverse donc les boucliers, comme le Nitro arrière (T1).
-6. **L'explosion d'une Mine n'est qu'un effet visuel** (`Explode()`) : aucune zone de dégâts. Cela explique pourquoi
-   elle ne détruit pas une Mine voisine (observé en jeu).
-7. **Contradiction ouverte** : le Shock détruit une Mine en jeu, mais aucun code de la source ne le fait (§7).
-8. **Correction de `POWERUPS.md` §11** : la masse de 10 000 de `C_PickupDoubleShield` ne s'applique jamais, parce que
-   `CreatePickup` ne crée pas cette classe. La poussée du Titanium Shield vient d'ailleurs (§4.2).
-9. **Pas de nettoyage par joueur** : une Mine dont le poseur part vit ses 60 s (cohérent avec T8).
+1. **Correction : le Shock et la Mine n'interagissent pas** (confirmé par le joueur). La source le disait déjà : le
+   Shock ne cherche que le décor mobile. La « contradiction C1 » et le test N2 de la v2 sont supprimés (§14).
+2. **Le « balance patch » d'AMAX était un poisson d'avril.** Il a duré du 1er au 4 avril 2025, puis a été annulé. AMAX
+   écrit : « now we are back to the good old Blur from 2010 ». La v2 se trompait en disant que `Shielding Efficiency` est
+   réduit aujourd'hui (§6).
+3. **Le bouclier qui survit à un Shock en ligne est expliqué.** `Shielding Efficiency` donne 150 de santé, et un dôme
+   fait 100 de dégâts. Il y a aussi des témoignages indépendants de 2010 sur Xbox 360 (« going through 2 shocks ») et
+   le texte du jeu (« sustain an extra hit from Shock blasts »). La question est close, sans test (§5.2).
+4. **Les noms affichés des mods multijoueur sont reliés aux noms internes** (§5.1). Les noms trompent :
+   - **Adaptive Shielding** = `SafetyNet` dans le code ;
+   - **Safety Net** = `ShieldedBoosters` ;
+   - **Magnetic Field** = `RoadSweeper`.
+5. **Les défis multijoueur officiels prouvent des interactions voulues par les développeurs** (§7.1) :
+   - « Explode a Mine with another Mine » ;
+   - « Block attacks using another Power-up » : une Mine, un Bolt ou un Shunt arrière, ou une Barge qui arrête un
+     projectile.
+6. **Le joueur appelle aussi « Nitro Rift » le Nitro arrière** (frein aérien) : c'est le nom de ses défis. Il ne faut
+   pas le confondre avec le mod de Carver (§7.3).
+7. **Mécaniques cachées** (§9) :
+   - une réserve pleine refuse les bonus ;
+   - un bonus n'est déposé sur la piste que s'il a toutes ses munitions ;
+   - un dôme de Shock ne touche qu'une voiture ;
+   - la sphère intérieure du Shock est désactivée ;
+   - Adaptive Shielding a un plafond ;
+   - restes d'un ancien système d'améliorations (`CollectAnyPerkType`, emplacements de bouclier, `FanPower`).
+8. **Une partie du comportement des bonus dépend de la fréquence d'images sur PC** (`FakePhysics`, rotation des bonus,
+   Nitro arrière), d'après le travail de l'auteur d'AMAX (§7.4).
+9. **Show Down** : le duel final contre Shannon se joue en `Opel_AstraExtreme_Stock_Shannon`. Ce modèle n'a pas de mod
+   (DATA), et le guide dit « no Mod to earn » (§4.3).
 
-## 1. Niveaux de preuve
+## 1. Niveaux de preuve et environnements
 
 | Étiquette | Sens |
 |---|---|
-| **CONFIRMÉ — GAME** | observé en jeu par le joueur |
-| **CONFIRMÉ — SOURCE** | démontré par le code source fuité (juin 2010). Ce **n'est pas une preuve absolue du binaire final** : des retouches `[Blur2PC]` sont possibles |
-| **CONFIRMÉ — DATA** | lu dans les fichiers de données du jeu (`pickups.bin`, `multiplayer.bin`, `amax.bin`, `rldatabase.bin`) |
-| **CONFIRMÉ — COMMUNITY** | décrit par une source communautaire (§11). Ce n'est pas une preuve du fonctionnement |
-| **PROBABLE** | explication cohérente, non démontrée |
-| **À VÉRIFIER** | contradiction ou documentation insuffisante |
+| **CONFIRMÉ — SOURCE OFFICIELLE** | texte du jeu lui-même (description d'un mod, d'un défi) ou annonce de l'éditeur ou d'AMAX sur son propre serveur |
+| **CONFIRMÉ — CODE SOURCE** | code source fuité (juin 2010, `src/` = `blur_source\BlurRebuilt\code\amax\game\`). **Ce n'est pas une preuve absolue du binaire final** |
+| **CONFIRMÉ — FICHIERS DU JEU** | `pickups.bin`, `multiplayer.bin`, `amax.bin`, `rldatabase.bin` lus avec `blurxt.py` |
+| **CONFIRMÉ — GAMEPLAY OBSERVÉ** | vu en jeu par le joueur |
+| **CONFIRMÉ — COMMUNITY** | source communautaire (§16). Plusieurs sites qui recopient le même texte comptent pour **une seule** source |
+| **PROBABLE** | cohérent, non démontré |
+| **NON VÉRIFIÉ** | trop peu documenté |
+| **CONTRADICTOIRE** | sources en désaccord |
 
-Quelques points ont aussi été vérifiés dans `Blur.exe` (v1 et `POWERUPS_HUD.md`). Ils sont notés **EXE**.
+Abréviations utilisées dans les tableaux :
 
-Chemins : `src/` = `blur_source\BlurRebuilt\code\amax\game\`.
+| Abréviation | Niveau |
+|---|---|
+| OFF | SOURCE OFFICIELLE |
+| CODE | CODE SOURCE |
+| DATA | FICHIERS DU JEU |
+| GAME | GAMEPLAY OBSERVÉ |
+| COMM | COMMUNITY |
 
-## 2. Observations en jeu T1 à T8 (CONFIRMÉ — GAME)
+**Environnements**, à ne jamais mélanger :
 
-| Test | Observation du joueur | Explication trouvée | Accord |
-|---|---|---|---|
-| T1 | Un Nitro tiré vers l'arrière traverse un Shield | `AttemptHitByPickup` : `if (mShieldTime > 0 && type != NITROUS)` → le Nitro n'est jamais bloqué (SOURCE) | oui |
-| T2 | Un seul Shock détruit un Shield | dôme : 100 de dégâts contre 50 de santé du bouclier (DATA) ; seule la Shock entame le bouclier (SOURCE) | oui |
-| T3 | Deux Bolts pour détruire une Mine | dégâts croisés : Bolt 50 contre Mine santé 100 (DATA + SOURCE, `PickupProjectileBase.cpp:503`) | oui |
-| T4 | Un Shield activé après le tir d'un Bolt bloque quand même ce Bolt | le bouclier est testé **au moment de l'impact** (`mShieldTime`) | oui |
-| T5 | La Barge détruit Mines, Shunts et Bolts dans sa portée | boucle de l'ellipse : Shunt → `CollideWithPickup`, Bolt et Mine → `KillPickup` (`PickupBarge.cpp:170-206`) | oui |
-| T6 | Un Shunt ou une Mine interrompent un Nitro actif | `DisableActiveNitrous` sur coup de Shunt et de Mine (`VLC_Pickups.cpp` ~1690, ~1935) | oui |
-| T7 | Repair utilisable à tout moment, même avec d'autres effets actifs | la réparation passe par `RegisterHitByPickup` direct, sans test de bouclier ni de réaction (SOURCE) | oui |
-| T8 | Une Mine reste 60 s, même si son poseur est détruit, éliminé ou déconnecté | `Lifespan` 60 (DATA) décompté par la Mine elle-même (`PickupBomb.cpp:181`) ; aucun nettoyage par joueur trouvé (§8) | oui |
-
-Autres observations du joueur, intégrées telles quelles :
-
-| Sujet | Observation (CONFIRMÉ — GAME) | Lecture technique |
+| Environnement | Ce que c'est | Valeurs des bonus |
 |---|---|---|
-| Shield | protège de la Barge, de la Mine et du Shunt | cohérent (bloqué par `AttemptHitByPickup`) |
-| Shield | « Fan » pousse un véhicule protégé | **À VÉRIFIER** : aucun bonus Fan ne pousse dans le code (§3). Piste : effet de type NITROUS (Nitro arrière ou Nitro Rift), qui traverse le bouclier |
-| Shield | exception en multijoueur face au Shock | **PROBABLE** : `Shielding Efficiency` (§5.2) |
-| Repair | utilisable pendant d'autres effets | cohérent |
-| Repair | Repair juste avant un Shock : souvent un mauvais choix, sauf si la santé est presque vide | aucun lien de code trouvé entre Repair et Shock → **INCONNU**. Lecture probable : la réparation est perdue si le Shock arrive juste après. Ce n'est pas une interaction de code |
-| Barge contre Nitro | la Barge l'emporte en général ; le résultat dépend du moment ; on observe une perte de vitesse plutôt qu'une annulation | la Barge n'appelle pas `DisableActiveNitrous`. Sa réaction `ROLL` / `JINK` freine la voiture, mais le Nitro continue (SOURCE) → cohérent |
-| Mine | une explosion de Mine ne détruit pas une autre Mine | `Explode()` = effet visuel seulement (SOURCE) → cohérent |
-| Mine | le Shock détruit une Mine dans sa portée | **CONTRADICTION** avec la source (§7) |
-| Mine | le Shunt peut détruire une Mine | dégâts croisés 100 contre 100 → les deux meurent (SOURCE) |
-| Bolt | ne touche pas plusieurs véhicules | le projectile meurt sur la première voiture touchée (SOURCE) |
-| Bolt | ne change pas de cible | trajectoire droite, pas de guidage (SOURCE) |
-| Bolt | détruit par un mur | `CollideWithEnvironment`, sauf rebond sur un angle rasant (`CheckRebound`, §6.4) |
-| Bolt | aucune collision Bolt contre Bolt observée | voir §6.4 (rare, **PROBABLE**) |
-| Shunt | suit une trajectoire vers sa cible, peut toucher un mur, perdre sa cible à une bifurcation, détruire une Mine | guidage par les tracés `.aid` (§6.5) |
+| **Blur PC d'origine** (2010, patch 1.2) | le jeu installé, solo, écran partagé, LAN | celles des fichiers (`POWERUPS_DONNEES.md`) |
+| **AMAX** | serveur en ligne de remplacement, utilisé par le joueur | **celles de 2010** (OFF, AMAX 2025-04-04), sauf du 1er au 4 avril 2025 (§6) |
+| **Mods communautaires** | BlurRebuilt, déblocage d'images, etc. (§12) | aucun mod public connu ne change les bonus |
 
-## 3. Rappel : Fan et Stopwatch ne sont pas des armes (v1, inchangé)
+## 2. Observations en jeu T1 à T8 (GAMEPLAY OBSERVÉ, v2 conservée)
 
-Le **Fan** (type 8) et le **Stopwatch** (type 9) sont des **pastilles de mode de jeu** : fans des défis, temps des
-points de contrôle. Preuves :
+| Test | Observation du joueur | Explication | Autres sources |
+|---|---|---|---|
+| T1 | Un Nitro arrière traverse un Shield | `AttemptHitByPickup` : `type != NITROUS` → jamais bloqué (CODE) | — |
+| T2 | Un seul Shock détruit un Shield | dôme 100 contre bouclier 50 (DATA) | OFF : wiki Shield ; COMM : guide GameFAQs « will only protect you from one dome » |
+| T3 | 2 Bolts pour une Mine | Bolt 50 contre Mine 100 (DATA + CODE) | COMM : guide GameFAQs « firing 2 Bolt rounds at it » |
+| T4 | Un Shield activé après le tir d'un Bolt bloque ce Bolt | bouclier testé à l'impact (CODE) | — |
+| T5 | La Barge détruit Mines, Shunts et Bolts | ellipse de la Barge (CODE) | COMM : guide ; OFF : défi « Rear Guard » (Barge contre projectile) |
+| T6 | Shunt et Mine interrompent un Nitro | `DisableActiveNitrous` (CODE) | — |
+| T7 | Repair utilisable à tout moment | `RegisterHitByPickup` direct (CODE) | — |
+| T8 | Mine active 60 s, même après le départ de son poseur | `Lifespan` 60, minuterie propre à la Mine (DATA + CODE) | aucune trouvée |
 
-- `HitPickUp` les refuse (SOURCE) ;
-- `GetPerkInfo` rend NULL (EXE) ;
-- ils sont exclus du tirage (EXE) ;
-- seul le joueur 0 peut les ramasser.
+Autres observations du joueur :
 
-Aucun code ne les fait pousser, bloquer ou toucher quoi que ce soit.
+| Sujet | Observation | Lecture |
+|---|---|---|
+| Shield contre Barge, Mine, Shunt | protège | cohérent (CODE, COMM) |
+| **Shock contre Mine** | **aucune collision ni interaction** (correction v3) | cohérent avec le CODE : le Shock ne cherche que le décor mobile (§8.6) |
+| Mine contre Mine | une explosion ne détruit pas une Mine voisine | `Explode()` = effet visuel seulement (CODE) |
+| Barge contre Nitro | perte de vitesse, sans annulation nette, selon le moment | la Barge n'appelle pas `DisableActiveNitrous` (CODE) |
+| Repair juste avant un Shock | souvent un mauvais choix | aucun lien de code → choix tactique, pas une règle (PROBABLE) |
+| Bolt | une seule voiture touchée, pas de nouvelle cible, détruit par un mur | cohérent (CODE, COMM « no homing capabilities ») |
+| Shunt | suit sa cible, peut toucher un mur, perdre sa cible à une bifurcation, détruire une Mine | cohérent (CODE, COMM) |
+| **« Fan » pousse un véhicule protégé** | — | **NON VÉRIFIÉ**, voir §3 |
 
-L'observation « Fan pousse un véhicule protégé » (§2) désigne donc probablement autre chose. À préciser par le joueur
-(test N9).
+## 3. Fan, Stopwatch et l'observation « Fan pousse un véhicule protégé »
+
+Rappel v1 : le **Fan** (type 8) et le **Stopwatch** (type 9) sont des pastilles de mode de jeu, pas des bonus
+utilisables :
+
+- `HitPickUp` les refuse (CODE) ;
+- `GetPerkInfo` rend NULL (exe) ;
+- seul le joueur 0 les ramasse.
+
+Recherches faites :
+
+- wiki Power-Ups et Nitro ;
+- guide GameFAQs ;
+- défis multijoueur ;
+- liste des mods ;
+- recherche de « fan » dans la source.
+
+**Aucune** source ne décrit un Fan qui pousse ou un projectile Fan. Les seuls effets du jeu qui **poussent une voiture
+protégée** sont du type NITROUS, que le bouclier ne bloque pas (CODE) :
+
+- le **Nitro arrière** (frein aérien et sillage « Nitro Rift ») : « If another vehicle slams into yours (or touches
+  the Rift) … they receive damage and are stopped » (COMM, wiki Nitro) ;
+- le **Nitro Rift de Carver** (faille devant soi).
+
+Mods dont le nom contient « Fan » : **Fan Nitro** (Rhymer, donne un Nitro), **Fan Favourite** (fans en plus en fin de
+course). Aucun ne pousse.
+
+Statut : **NON VÉRIFIÉ**. L'observation n'est pas déclarée fausse, mais aucune source ne permet de l'expliquer telle
+quelle. **Question au joueur** (pas un test) : de quel bonus ou effet s'agissait-il (couleur, icône, tiré par qui) ?
+Si c'est un Nitro, l'observation est expliquée.
 
 ## 4. Les huit modifications de carrière (boss)
 
-### 4.1 Mécanisme commun (CONFIRMÉ — SOURCE + DATA)
+### 4.1 Mécanisme (CODE + DATA, v2) et confirmations externes
 
-- **Ce sont des capacités multijoueur `Boss_*`.** Elles utilisent le même système que les mods multijoueur
-  (`C_MultiplayerAbilities`, `UI::E_MultiplayerVehicleAbilities_Boss_*`, `library/Ui/game/Multiplayer/MultiplayerDefines.h:386-393`).
-  Valeurs : `MultiplayerAbility` dans `multiplayer.bin`, emplacement `Slot4`.
-- **Boss IA** : chaque mod est une propriété de la **voiture** du boss (`AmaxVehicle.BossAbilitySlot`, `amax.bin`).
-  Il est activé pour toute voiture IA qui conduit ce modèle (`LevelState.cpp:864-867`), donc **en permanence**, quel
-  que soit son usage des bonus.
-- **Joueur** :
-  - **une seule** capacité équipée (`GameProfile.mSpEquippedAbility`, un seul champ) ;
-  - active seulement dans les épreuves solo de type **course** ou **boss** (`kSP_RaceEvent`, `kSP_BossEvent`), pas
-    dans les épreuves Fan, Checkpoint ou Destruction (`LevelState.cpp:838-852`) ;
-  - aussi dans un « Friend Demand » (défi d'ami) qui impose un mod de boss.
-- **Débloqué en battant le boss** : CONFIRMÉ — COMMUNITY (wiki Career). La récompense est gérée dans `SP_Rewards.cpp`
-  (non lu en détail).
-- **Icône HUD** : l'icône d'activation d'un mod de boss n'apparaît que pour une voiture qui a une vue à l'écran
-  (`canUseBossMod`, `LevelStateMultiplayerAbilities.cpp:118`). L'effet de jeu, lui, ne dépend pas de cette condition.
+- Ce sont des capacités `Boss_*` du système des mods multijoueur, emplacement `Slot4`.
+- **Boss IA** : le mod est porté par la voiture (`AmaxVehicle.BossAbilitySlot`, `amax.bin`).
+- **Joueur** : **un seul** mod (`mSpEquippedAbility`), actif seulement en épreuve solo de **course** ou de **boss**
+  (`LevelState.cpp:838-852`).
+- Confirmations externes :
+  - « Only a single modification can be used in a Single Player event » (COMM, wiki) ;
+  - « MODS do not work in Destruction Mode - Single player » (COMM, 3 joueurs GameFAQs 2010, Xbox 360) ;
+  - la source n'active pas non plus les mods dans les épreuves Fan et Checkpoint (pas de témoignage trouvé sur ces
+    deux-là).
+- Unité : 0,5 pip = 50 points (`HealthIncrement` 100, DATA).
 
-| Boss | Voiture (`amax.bin`) | Nom affiché | Nom interne |
-|---|---|---|---|
-| Shannon | `Renault_MeganeSportR26_Stock_Shannon` | Overbolt | `BossAdditionalBlindfireShots` |
-| Khan | `Foose_Stallion_Stock_Khan` | Titanium Shield | `BossDoubleShield` |
-| Rhymer | `Chevrolet_CamaroSS_Stock_Rymer` | Fan Nitro | `BossFansNitroGift` |
-| Drayke | `Hummer_H2_OffRoad_Drayke` | Super Shunt | `BossShuntDamage` |
-| Natalya | `BMW_1SeriesTii_Race_Natalya` | Quad Shock | `BossAdditionalShockDomes` |
-| Talon | `Corvette_ZR1_Stock_Talon` | Armor Plating | **`BossRepairBonus`** |
-| Ayumi et Harumi | `Nissan_SkylineR34ZTune_Stock_Ayumi` / `_Harumi` | Scatter Shot | `BossShotgunBlindfire` |
-| Carver | `Dodge_ViperGTSR_Stock_Carver` | Nitro Rift | `BossNitroRift` |
+### 4.2 Fiches (code, données et confirmations)
 
-Correspondance boss ↔ capacité : **DATA**. Noms affichés : **COMMUNITY**, cohérents avec la DATA pour les 8 boss.
+| Mod (boss) | Code et données | Texte officiel (OFF) | Témoignages (COMM) | Statut |
+|---|---|---|---|---|
+| **Overbolt** (Shannon) | 3 + 1 = **4 Bolts** (`GetNumShotsAwarded`) | « Gain an extra Bolt round for every Bolt Power-up » | « Bolt gives 4 bolts » (GameFAQs 2010) ; guide « fire 4 shots » | confirmé |
+| **Titanium Shield** (Khan) | bouclier DoubleTap : **12 s**, santé 50 ; poids « Ultra » au contact ; écart `JINK_SHIELD`, sans dégâts | « Increase your Shield Power-up strength and use it to smash opposition out of your way » | guide : « increases the strength » | durée et contact : CODE ; « strength » = durée et poussée, **pas** la santé (CODE) |
+| **Fan Nitro** (Rhymer) | un Nitro tous les 500 de score ; **perdu si la réserve est pleine** (`HitPickUp` sans place libre) | « Gain a Nitro Power-up for every 500 Fans earned » | guide : « As long as you have an empty Power-up slot » | confirmé (CODE + COMM) |
+| **Super Shunt** (Drayke) | Shunt **+50** (100 → 150) ; son à part | « Increase the power of your Shunt Power-ups » | guide : « increases the amount of damage » | confirmé ; aucun changement de guidage (CODE) |
+| **Quad Shock** (Natalya) | **4 dômes** (`numShocksToFire += 1`) | « Gain an extra Shock dome » | wiki Shock | confirmé |
+| **Armor Plating** (Talon), `BossRepairBonus` | **−50** contre Barge, Shunt et Mine ; pas contre Bolt ni Shock | « Reduce the damage sustained from heavy Power-ups » | — | confirmé. Le nom interne est trompeur : rien n'est réparé |
+| **Scatter Shot** (Ayumi et Harumi) | sous-type `MOD` → 3 Bolts `SUB_MOD` en même temps à −2°, 0° et +2° ; pile vidée ; vers l'arrière : `SUB_MOD_REVERSED` | « Fire off all three Bolt Power-up rounds at once » | guide | confirmé |
+| **Nitro Rift** (Carver) | Nitro + faille 2,5 s, 30 m, coup NITROUS qui traverse les boucliers | « Clear a path ahead by firing a rift of energy forward every time you use a Nitro » | — | CODE + OFF ; traverse le bouclier : CODE seulement |
 
-Unité des dégâts : `GetAFractionOfAHealthPipInDamagePoints(v)` = `v × HealthIncrement`. `HealthIncrement` vaut 100
-(`DamageParameters`, `rldatabase.bin`). Donc **0,5 = 50 points de dégâts** (DATA + SOURCE).
+Plateformes : aucune différence trouvée entre PC et consoles. Bugs connus :
 
-### 4.2 Fiches
+- patch PC 1.2 : « Equipping Titanium Armour can make Power-up special effects fade out » (COMM, PCGamingWiki). Il
+  s'agit du mod **multijoueur** Titanium Armor, cohérent avec `g_debugTitaniumArmourIntensity` (CODE) ;
+- wiki Career, note de 2014 : « Modifications do not work in the pc DVD version ». **NON VÉRIFIÉ**, aucune autre
+  source (§14).
 
-| Mod | Ce que fait le code | Valeur (DATA) | Type |
-|---|---|---|---|
-| **Overbolt** | `GetNumShotsAwarded(BLINDFIRE)` = 3 + valeur → **4 Bolts** par bonus ramassé | `AbilityValue` 1 | change le nombre de tirs |
-| **Scatter Shot** | voir ci-dessous | angle 2°, 1 tir de chaque côté (`Perks.BlindfireShotgun.*`, valeurs de débogage par défaut) | change la forme du tir |
-| **Quad Shock** | `numShocksToFire += valeur` (`ShockManager.cpp:175-184`) → **4 dômes** | 1 | ajoute un objet |
-| **Super Shunt** | dégâts du Shunt **+50** (100 → 150) ; son de Shunt propre | 0,5 pip | change les dégâts |
-| **Armor Plating** | dégâts subis **−50** contre Barge, Shunt et Mine (`VLC_Damage.cpp:1328-1336`) ; pas contre Bolt ni Shock | 0,5 pip | défense du véhicule |
-| **Titanium Shield** | voir ci-dessous | niveau DoubleTap : 12 s, santé 50 | change le bouclier |
-| **Fan Nitro** | voir ci-dessous | 500 | donne un bonus |
-| **Nitro Rift** | voir ci-dessous | `RiftTime` 2,5 s, `RiftRadius` 30 m, `RiftAngleRange` 0,1 | ajoute un effet |
-
-**Scatter Shot** :
-
-- le Bolt passe en sous-type `MOD`, ou `MOD_REVERSED` vers l'arrière (`VLC_Pickups.cpp:1501-1514`) ;
-- `C_PickupBlindfireShotgun` crée **3 Bolts `SUB_MOD` en même temps**, à −2°, 0° et +2° (`Mods/PickupBlindfireShotgun.cpp`) ;
-- la pile de Bolts est **entièrement consommée** en un tir (`hasShotgun`, `VLC_Pickups.cpp:1076-1081`) ;
-- les Bolts créés sont des Bolts normaux : mêmes dégâts, même santé.
-
-**Titanium Shield** :
-
-- le Bouclier passe en sous-type DoubleTap (`VLC_Pickups.cpp:1422-1426`) et lit les réglages DoubleTap : **12 s au
-  lieu de 6**, **santé 50, inchangée**. Un Shock le casse donc toujours (PROBABLE, dérivé du code) ;
-- pendant sa durée, la voiture compte comme **classe de poids « Ultra »** dans les chocs entre voitures
-  (`RaceLogicLayer.cpp:1805-1809`) ;
-- une voiture **sans** bouclier renforcé qu'elle percute reçoit un écart scripté `JINK_SHIELD_LEFT/RIGHT`, avec un
-  délai de rechargement (`VLC_Pickups.cpp:2281-2330`). Pas de dégâts : seul le SuperShield en inflige ;
-- correction de `POWERUPS.md` §11 : la masse de 10 000 appartient à `C_PickupDoubleShield`, que `CreatePickup` ne crée
-  jamais. Le Bouclier crée toujours `C_PickupShield` (`PickupsManager.cpp:502-507`).
-
-**Fan Nitro** : un Nitro est offert chaque fois que le score de fans affiché (`mFinalScoreForUI`) dépasse
-500 × (nombre déjà offerts + 1). Le Nitro est donné par `C_GrantPickupMsg` (`VLC_Abilities.cpp:309-323`). Ce qui se
-passe si la réserve est pleine n'est pas connu → **INCONNU**.
-
-**Nitro Rift** :
-
-- le Nitro normal **plus** un objet `C_PickupDoubleNitrous` (`VLC_Pickups.cpp:1443-1450`) ;
-- pendant 2,5 s, chaque voiture à moins de 30 m dont l'angle relatif dépasse 0,1 (devant, **PROBABLE**) reçoit un coup
-  **mineur de type NITROUS** (`Double/PickupDoubleNitrous.cpp`) ;
-- ce coup **traverse un bouclier**, comme le Nitro arrière ;
-- les forces `RiftMinForce` / `RiftMaxForce` (500 à 1 500) existent dans les données, mais ne sont pas lues par cette
-  classe : **INCONNU**.
-
-Effets visuels et sonores : chaque mod déclenche un état « actif » (`SetAbilityFiring`) lu par le HUD et le son. Le
-Super Shunt et le Nitro Rift choisissent un son de sous-type à part (`PickupSubSystem.cpp:580`, `862-870`). L'Armor
-Plating réutilise le son du Titanium Armour multijoueur (`PickupSubSystem.cpp:762-763`). Les modèles du Nitro Rift
-sont `Nitro_Carver.model` et `Rift2.model` (DATA).
-
-### 4.3 Show Down (finale à plusieurs boss)
+### 4.3 Show Down
 
 | Point | Statut |
 |---|---|
-| Les boss y conduisent d'autres voitures, de classe A | CONFIRMÉ — GAME (observation) |
-| Ils n'ont plus leur mod | PROBABLE : le mod est lié au **modèle de voiture**. Seuls les 9 modèles `*_Stock_<boss>` / `*_Race_Natalya` / `*_OffRoad_Drayke` ont un `BossAbilitySlot` (DATA) ; `Opel_AstraExtreme_Stock_Shannon` n'en a pas. Les voitures exactes de la finale ne sont pas vérifiées |
-| Leurs préférences de bonus restent identiques | **INCONNU** : les préférences viennent soit de l'épreuve (`PerkAI` du CSV de difficulté), soit du personnage (`rbChar->preferredPickups`) (`LevelState.cpp:870-897`). Les fichiers de personnages n'ont pas été trouvés dans les `.bin` extraits |
+| 6 courses en classe A contre tous les boss, puis un duel contre Shannon en **Opel Astra Extreme** | COMM (guide GameFAQs, juin 2010) |
+| Shannon n'y a pas de mod | **confirmé** : `Opel_AstraExtreme_Stock_Shannon` n'a pas de `BossAbilitySlot` (DATA), et le guide dit « there is no Mod to earn » (COMM) |
+| Les autres boss n'ont pas de mod dans les 6 courses | PROBABLE : seuls les 9 modèles de boss portent un mod (DATA). Les voitures exactes des boss dans ces courses ne sont pas documentées |
+| Préférences de bonus inchangées | NON VÉRIFIÉ (§11) |
 
-## 5. Modifications multijoueur (système à part)
+## 5. Modifications multijoueur (Blur d'origine)
 
-### 5.1 Ce qui les sépare des mods de carrière (CONFIRMÉ — SOURCE)
+### 5.1 Liste complète : nom affiché, nom interne, valeurs
 
-- Les mods de carrière et les mods multijoueur passent par le **même** système d'exécution (`C_MultiplayerAbilities`).
-- **Multijoueur** :
-  - 3 emplacements (`Slot1` à `Slot3`) remplis par le loadout du joueur (`FillOutLevelStateCar`) ;
-  - en LAN (System Link), des loadouts par défaut séparés (`m_SystemLinkLoadOuts`).
-- **Carrière** : `Slot4`, un seul mod (§4.1).
+Sources :
 
-### 5.2 Shielding Efficiency et le bouclier
+- textes et rangs : wiki Multiplayer et page du wiki communautaire (COMM, recopie du texte du jeu) ;
+- noms internes et valeurs : `multiplayer.bin` (DATA) et code (CODE) ;
+- 3 groupes de couleur, un mod par groupe ; jusqu'à 4 jeux de mods enregistrés (COMM).
 
-| Point | Valeur | Statut |
+Rangs de déblocage : ils viennent du wiki, et les deux pages communautaires ne sont pas d'accord pour Front Runner
+(26 ou 28). Les mods de carrière ne sont pas dans ce système de rangs.
+
+**Groupe 1 (jaune)**
+
+| Nom affiché (rang) | Nom interne | Effet réel (CODE + DATA) |
 |---|---|---|
-| Durée du bouclier × `AbilityValue` | × **1,8** (6 s → 10,8 s) | DATA + SOURCE (`PickupShield.cpp:181-185`) |
-| Santé du bouclier + `shielding_efficiency_extra_health` | +100 → **150** | DATA + SOURCE |
-| Dégâts d'un dôme de Shock | 100 | DATA |
-| Résultat calculé | 1er dôme : bloqué, santé 50 ; 2e dôme : bloqué, santé −50, le bouclier se coupe à l'image suivante ; 3e dôme : touche | PROBABLE (calcul) |
-| Description communautaire | « actif plus longtemps et peut encaisser un coup de Shock en plus » | COMMUNITY (wiki Multiplayer, PSNProfiles) |
-| **AMAX** (serveur utilisé par le joueur) | annonce du 2025-01-04 : bonus de durée **réduit de moitié**, santé en plus **réduite** | COMMUNITY (amax-emu.com/news) ; nouvelles valeurs inconnues |
+| Stable Frame (3) | `StableFrame` | moins de dégâts des chocs (valeur 0,5) ; immunité au Battering Ram |
+| Battering Ram (3) | `BatteringRam` | chocs plus forts (valeur 1) |
+| Showy Flourish (6) | `ShowyFlourish` | fans en plus par coup de bonus (10) |
+| Titanium Armor (13) | `TitaniumArmour` | **−50** contre Barge, Mine et Shunt (`titanium_armour_blocks_*`) ; Bolt et Shock non concernés ; effets atténués |
+| Iron Fist (20) | `IronFist` | **Shunt +50** ; autres types +0 (`iron_fist_*_damage`) |
+| Front Runner (26 ou 28) | `FrontRunner` | Nitro à chaque tour (et au dernier tour), pas au départ ; perdu si la réserve est pleine (COMM) |
+| Drifter (32) | `Drifter` | Nitro par super-dérapage (`drifter_lengths` 100) |
+| Jump The Gun (45) | `JumpTheGun` | réapparition plus rapide (× 0,66), élan 45 ou 60 |
 
-Conclusion : **PROBABLE**. `Shielding Efficiency` est la meilleure explication de l'exception en multijoueur.
-Restent à vérifier (**À VÉRIFIER**) :
+**Groupe 2 (orange)**
 
-- si l'adversaire avait ce mod lors de l'observation ;
-- les valeurs AMAX actuelles : si le bonus de santé est inférieur à 50, le bouclier ne survit plus à un dôme.
-
-Les 3 dômes sont des coups **séparés**. Chacun passe par `AttemptHitByPickup` et teste le bouclier à son tour
-(SOURCE).
-
-### 5.3 Autres mods qui touchent aux bonus (valeurs d'origine, DATA + SOURCE)
-
-| Mod (nom interne) | Effet sur les bonus | Valeurs d'origine |
+| Nom affiché (rang) | Nom interne | Effet réel (CODE + DATA) |
 |---|---|---|
-| `TitaniumArmour` (Titanium Armor) | −50 dégâts contre Barge, Mine et Shunt (pas Bolt ni Shock) ; atténue l'éclat des effets (`g_debugTitaniumArmourIntensity`) | 0,5 pip |
-| `IronFist` | dégâts en plus par type | Shunt +50 ; autres types +0 |
-| `SplashDamage` | ellipse de la Barge agrandie | × 1,2 |
-| `SafetyNet` | coups absorbés par le bouclier → réparation | Mine, Shunt, Barge : oui ; Shock, Bolt : non |
-| `ShieldedBoosters` | dégâts absorbés par type | Barge 100, Bolt 50, Mine 100, Shock 150, Shunt 100 |
-| `Mastermine` | une Mine amorcée par un porteur se change en mini-mines (`MOD`) | amorce 0,3 s |
-| `Scrambler` | bloque la réserve de la victime touchée par un Bolt, une Mine ou un Shunt **arrière**, ou par un Nitro Rift | 5 s |
-| `LastGasp` | une fois détruit, tire un bonus (`MOD`) | type 4 = Barge |
+| Safety Net (3) | **`ShieldedBoosters`** | un coup arrêté par le bouclier **répare** la voiture des dégâts Normal du bonus (`CheckShieldedBoostersAbsorbDamage`) |
+| Adaptive Shielding (3) | **`SafetyNet`** | Shunt, Barge ou Mine arrêtés par le bouclier → **le même bonus est ajouté à la réserve** (`HandleSafetyNetPickupAward`). Bolt et Shock désactivés par les données (`safety_net_absorb_enabled_*`). Plafond : `Multiplayer.Upgrades.SafetyNet.MaxPickupsAbsorbable` = 2, test `>` |
+| Shielding Efficiency (9) | `ShieldingEfficiency` | durée × 1,8 ; santé +100 (§5.2) |
+| Splash Damage (17) | `SplashDamage` | ellipse de la Barge × 1,2 |
+| Scrambler (22) | `Scrambler` | bonus **arrière** (Mine, Bolt, Shunt) et Nitro arrière qui touchent → réserve de la victime bloquée 5 s |
+| Shielded Bay (22) | `ShieldedBay` | immunité au Scrambler et aux leurres |
+| Magnetic Field (35) | **`RoadSweeper`** | rayon de ramassage × 1,3 (`CheckRoadSweeperMultiplier`) |
+| Decoy Drop (40) | `DecoyDrop` | le bonus lâché devient un leurre (sous-type `DECOY`) ; 1 par joueur |
 
-Correspondance avec les noms affichés (Adaptive Shielding, Magnetic Field) : **INCONNU**. Le wiki les cite, mais il n'y
-a pas de lien sûr avec les noms internes. AMAX dit avoir changé « Adaptive Shielding », qui absorbe désormais Shock et
-Bolt : c'est peut-être `ShieldedBoosters` ou `SafetyNet` (**PROBABLE**, non démontré).
+**Groupe 3 (vert)**
 
-## 6. Interactions entre projectiles et objets
+| Nom affiché (rang) | Nom interne | Effet réel (CODE + DATA) |
+|---|---|---|
+| Laser Sight (3) | `LaserSight` | visée du Bolt |
+| Fan Favorite (3) | `FanFavourite` | bonus de fans de fin × 1,25 |
+| ECM (10) | `ECM` | Shunts plus faciles à semer (13 / 20 / 25 m) |
+| Bribe (15) | `Bribe` | bonus au départ et après un wreck (probabilités `bribe_mod_settings`) |
+| Vampiric Wreck (25) | `VampiricWreck` | réparation (5) à chaque adversaire détruit |
+| Mastermine (30) | `Mastermine` | passer près d'une Mine l'amorce (0,3 s), qui se change en mini-mines `MOD` et `MINI` |
+| Last Gasp (38) | `LastGasp` | une fois détruit, tire un bonus `MOD` de type 4 (**Barge**) |
+| Silent Running (47) | `SilentRunning` | invisibilité |
 
-### 6.1 Règle générale (SOURCE)
+**Hors groupes** :
 
-Quand un projectile rencontre une Mine ou un autre projectile (`PickupProjectileBase.cpp:503-560`) :
+- `AdvancedRadar` : présent dans le code et les données, « not currently used » (CODE) ;
+- `Boss_*` : `Slot4`, carrière (§4).
 
-- chacun inflige à l'autre ses dégâts du niveau Normal et perd de la santé ;
-- un objet dont la santé tombe à 0 meurt ;
-- le plus récent des deux est crédité de la destruction.
+**Combinaisons et compatibilités** (CODE) :
 
-Santé / dégâts (DATA) :
+- un mod par groupe ;
+- `ShieldedBoosters` passe **avant** `SafetyNet` dans le chemin du coup arrêté (`VLC_Pickups.cpp:1571`) : avec les
+  deux, la conversion d'Adaptive Shielding ne se déclenche que si `ShieldedBoosters` n'a pas agi (PROBABLE, lecture du
+  `if`) ;
+- Stable Frame annule Battering Ram ;
+- Shielded Bay annule Scrambler et Decoy Drop.
+
+### 5.2 Shielding Efficiency contre Shock : question close
+
+| Élément | Contenu | Niveau |
+|---|---|---|
+| Valeurs | durée × 1,8 (6 → 10,8 s) ; santé 50 + 100 = 150 | DATA + CODE |
+| Un dôme | 100 de dégâts, **un seul coup** (le dôme meurt sur la première voiture touchée, la sphère intérieure est désactivée, §9.3) | CODE |
+| Calcul | 1er dôme : bloqué, il reste 50 ; 2e dôme : bloqué, le bouclier tombe à −50 et se coupe ; 3e dôme : touche | CODE |
+| Texte du jeu | « can sustain an extra hit from Shock blasts » | OFF |
+| Joueurs en 2010 | « the extra shielding one (for going through 2 shocks) » ; « blocks 2 shocks » | COMM, 2 joueurs GameFAQs (Xbox 360) |
+| Giant Bomb | « withstand two shock domes » | COMM (même lecture : deux dômes bloqués) |
+| AMAX aujourd'hui | valeurs de 2010 | OFF (AMAX) |
+| Observation du joueur | exception en multijoueur | GAME |
+
+**Conclusion : CONFIRMÉ.** Avec Shielding Efficiency, le bouclier **bloque deux dômes** et casse au deuxième. Sans le
+mod, il casse au premier. Le test N1 de la v2 n'est plus nécessaire.
+
+Modes : `ApplyShieldModMultipliers` lit le mod de la voiture, quel que soit le mode. Les mods multijoueur ne sont
+remplis qu'en multijoueur ou en LAN (`FillOutLevelStateCar`), donc il n'y a pas de Shielding Efficiency en solo (CODE).
+PC et consoles : aucune différence signalée.
+
+## 6. AMAX (serveur en ligne de remplacement)
+
+| Point | Contenu | Niveau |
+|---|---|---|
+| Projet | serveur de remplacement de Blur en ligne, par « aibot » et des contributeurs | OFF (amax-emu.com, GitHub `Amax-Emu`) |
+| **« BLUR AMAZING BALANCE PATCH »** | annoncé le 1er avril 2025, « patch is already on the server », annulation prévue le 3 avril, oubliée un jour | OFF (news du 2025-04-01 et du 2025-04-04) |
+| Retour aux valeurs d'origine | « now we are back to the good old Blur from 2010 » ; « messing with its balance is a bad, **bad** idea. So I won't » | OFF (2025-04-04) |
+| Contenu du patch (seulement du 1er au 4 avril 2025) | Titanium Armor : bloque aussi Shock et Bolt, −70 % ; Iron Fist : Barge, Bolt, Shunt et Shock ; Front Runner : plus de Nitro au dernier tour ; Drifter : distance × 4 ; Jump the Gun : −60 % ; Adaptive Shielding : absorbe Shock et Bolt ; Shielding Efficiency : bonus de durée / 2, santé en plus réduite ; Splash Damage plus grand ; Scrambler : Shock et Bolt avant, plus long ; Magnetic Field × 5 ; 2 leurres ; Bribe : plus de Nitro, moins de bouclier ; Vampiric Wreck : soin complet ; Last Gasp : dégâts et rayon × 2 ; Silent Running : caché du radar | OFF |
+| **Comment** | changé sur le serveur, sans téléchargement. Chaque ligne correspond à un réglage de `misc_mod_settings` ou à une `AbilityValue` de `multiplayer.bin` (ex. `safety_net_absorb_enabled_shock/bolt` = « absorbs shocks and bolts » ; `iron_fist_*_damage`). AMAX peut donc envoyer la configuration des mods depuis le serveur | correspondance : DATA ; méthode exacte d'envoi : PROBABLE (`TitleManagedStorageSettings`, `PickupParametersStoredOnline` existent dans `multiplayer.bin`) |
+| Valeurs exactes du patch | non publiées (« reduced ») | NON VÉRIFIÉ, sans importance aujourd'hui |
+| Autres changements AMAX | correctif de fréquence d'images en préparation (physique, rotation des bonus) ; statistiques serveur des bonus utilisés ; week-ends double fans ; projet « Blur community patch » (contenu coupé, équilibrage), sans date | OFF |
+
+Conséquence pour l'étude : **toute observation faite sur AMAX en dehors du 1er au 4 avril 2025 utilise les valeurs de
+2010.**
+
+## 7. Découvertes communautaires
+
+### 7.1 Les défis multijoueur montrent les intentions des développeurs (OFF + CODE)
+
+Le texte des défis est celui du jeu, et leur code est dans `VLC_MultiplayerChallenges.cpp:712-840`.
+
+| Défi | Texte | Code | Ce que cela prouve |
+|---|---|---|---|
+| Master Exploder | « Explode a Mine with another Mine » | victime Mine, tueur Mine (pas les siennes) | **une Mine peut en détruire une autre**. C'est forcément une Mine lancée vers l'avant (projectile), puisqu'une explosion n'a pas de zone de dégâts |
+| Minesweeper | « Destroy Mines without taking damage » | tueur Bolt, Shunt ou Barge | les trois détruisent une Mine |
+| Rear Guard | « Block attacks using another Power-up » | 1) **ma Mine** arrête un Shunt ou un Bolt adverse ; 2) **mon Bolt ou Shunt arrière** arrête un Shunt ou un Bolt ; 3) ma **Barge** neutralise un Shunt ou un Bolt (pas celle de Last Gasp) | **Bolt contre Bolt de face** est un cas voulu, comme la Mine qui sert de bouclier arrière |
+| Fully Bolt | « Fully Bolt 10 cars » | 3 Bolts sur la même voiture | — |
+| Hit 3, 4 ou 5 cars with a single Barge | — | — | **une Barge touche plusieurs voitures** |
+| Shock Evader | « Be targeted by Shock and avoid being hit » | `AvoidedAllDomes` | — |
+| Nitro Rift | « Hit opponents with a reverse Nitro Rift » | — | le Nitro **arrière** s'appelle « Nitro Rift » en jeu |
+| Adaptive Shielding / Road Sweeper | « Absorb … Power-ups » / « Collect … with the Magnetic Field Mod » | `SafetyNet` / `RoadSweeper` | confirme les correspondances de noms du §5.1 |
+
+### 7.2 Guide GameFAQs de 91sportsfan (PS3, v1.0, 2010-06-08)
+
+- **Interactions** :
+  - le Shield bloque tout, mais un seul dôme de Shock ;
+  - la Barge détruit un Shunt qui arrive ;
+  - **2 Bolts détruisent un Shunt** ou une Mine ;
+  - une Mine posée détruit un Shunt ;
+  - un Shunt tiré sur une Mine peut tourner vers une voiture au lieu de la toucher.
+
+  Tout cela est cohérent avec le CODE.
+- **Shunt arrière** : « will only travel in a straight path » ; **Bolt** : « no homing capabilities ».
+- **Shock** : « pass through the edges of the domes with no effect ». Lecture CODE : le rayon du dôme **grandit** avec
+  le temps jusqu'à 14 m (`g_debugShockInitialGrowthRate`), et une différence de hauteur minimale est exigée
+  (`HeightDiff` −1,5 m). PROBABLE.
+- **Repair** : « may not restore you to full Health » sur les voitures lourdes. Lecture : `AmaxVehicle` a une santé
+  par voiture, et la réparation fait 400 points. PROBABLE.
+- **Comportement des boss** (COMM, une seule source) :
+  - Khan repousse les Shunts avec la Barge ;
+  - Natalya est défensive et détruit les bonus qui arrivent avec la Barge ;
+  - Talon préfère la course ;
+  - Ayumi et Harumi prennent Repair et Shield.
+
+### 7.3 Deux sens de « Nitro Rift »
+
+1. **Nitro arrière** (tous les joueurs) : frein aérien, sillage qui touche et arrête les voitures qui le percutent.
+   C'est le niveau `Nitrous · Reversed` (`RiftRangeSquared` 100, `ForwardDot` 0,2, dégâts 50, DATA). Défis « reverse
+   Nitro Rift » (OFF), wiki Nitro (COMM).
+2. **Mod de Carver « Nitro Rift »** : faille **devant** soi en plus du Nitro normal (`Nitrous · DoubleTap`,
+   `PickupDoubleNitrous`).
+
+Les deux sont de type NITROUS : **aucun n'est bloqué par un bouclier** (CODE ; GAME pour le Nitro arrière).
+`scrambler_enabled_nitro_rift` désigne le Nitro arrière, puisque le Scrambler ne vise que les tirs arrière.
+
+### 7.4 Fréquence d'images et bonus (COMM, auteur d'AMAX, ébauche du 2025-08-23)
+
+- Le jeu calcule une partie de sa physique **à chaque image**. Les réactions `FakePhysics` (vrille de Mine, salto du
+  Shunt, redressement après un Nitro) sont mises à jour image par image.
+- Au-delà de 30 images par seconde :
+  - la voiture se redresse plus vite après un Nitro (`Perks.FakePhysics.Speed.AccelerateStabilise`, `…Rate`) ;
+  - les bonus posés sur la piste tournent trop vite (`Perks.PickupActor.RotationSpeed`) ;
+  - on peut faire **plus de 360°** pendant un Nitro arrière.
+- Les joueurs compétitifs bloquent le PC à 30 images par seconde pour retrouver la physique PS3.
+- **CONTRADICTOIRE** : le README de BlurRebuilt dit au contraire que le jeu original était « designed around 60 fps ».
+  Conséquence pour l'étude : les durées de réaction et les enchaînements Nitro et dérapage peuvent dépendre de la
+  fréquence d'images. Toute mesure de durée en jeu doit noter le FPS.
+
+## 8. Interactions entre projectiles et objets
+
+### 8.1 Règle générale (CODE)
+
+Quand un projectile rencontre une Mine ou un autre projectile, il y a des dégâts croisés selon santé et dégâts
+(`PickupProjectileBase.cpp:503-560`), et le plus récent est crédité :
 
 | Objet | Santé | Dégâts |
 |---|---|---|
 | Bolt | 50 | 50 |
 | Shunt | 100 | 100 |
 | Mine posée | 100 | 100 |
-| Mine lancée vers l'avant | 100 | 100 |
+| Mine lancée | 100 | 100 |
 | Mini-mine | 25 | 50 |
 
-### 6.2 Mine et Mine : trois situations
+### 8.2 Mine et Mine
 
-| Situation | Mécanisme | Résultat | Statut |
+| Situation | Mécanisme | Résultat | Niveau |
 |---|---|---|---|
-| 1. Une Mine **explose** près d'une autre | `Explode()` = effet visuel seulement, pas de zone de dégâts ; deux mines au contact : `RaceLogicLayer.cpp:2653` traite le contact sans effet | aucune | SOURCE + GAME |
-| 2. Une Mine **lancée vers l'avant** touche une Mine | classe projectile (`PickupBombReverse`) → règle §6.1 : 100 contre 100 | les deux meurent | SOURCE ; **non testé en jeu** |
-| 3. Mine détruite par un autre bonus | Bolt, Shunt : §6.1 ; Barge : `KillPickup` direct ; Shock : voir §7 | Bolt : 2 tirs ; Shunt : 1 ; Barge : 1 | SOURCE + GAME (Shock : **CONTRADICTION**) |
+| 1. Explosion près d'une autre Mine | `Explode()` = effet visuel ; contact entre deux corps de Mine sans effet (`RaceLogicLayer.cpp:2653`) | rien | CODE + GAME |
+| 2. Mine lancée qui touche une Mine | projectile (`C_PickupBombReverse : C_PickupProjectile`) → 100 contre 100 | les deux détruites | CODE + **OFF (Master Exploder)** |
+| 3. Mine détruite par un autre bonus | Bolt (2 tirs), Shunt (1), Barge (1) | détruite | CODE + GAME + OFF (Minesweeper) + COMM |
+| 3 bis. Shock | aucune interaction | rien | CODE + GAME |
+| 4. Voiture | la sphère intérieure déclenche, la sphère extérieure amorce (Mastermine) (`CheckMineCollision`) | explosion | CODE |
+| 4 bis. Décor | les Mines physiques sont poussées par la Barge ; leur collision avec le décor n'a pas été lue | — | NON VÉRIFIÉ |
 
-Les situations 1 et 2 utilisent des mécanismes **différents** : le contact entre deux corps de mines ne fait rien, alors
-qu'un projectile applique des dégâts. La Barge n'utilise pas la santé : elle tue directement les objets.
+### 8.3 Barge
 
-### 6.3 Barge
+- **Détruit** : Shunt, Bolt et Mine dans son ellipse de 7 m (× 1,2 avec Splash Damage).
+- **Pousse** : les Mines (`MinMinePushForce` 50 000) et le décor mobile.
+- **Ignore** : les dômes de Shock et les autres Barges.
+- **Voitures** : touche **plusieurs voitures** à la fois (OFF : défis « Hit 5 cars with a single Barge »), avec 100 de
+  dégâts et une réaction `ROLL` / `JINK`. Bloquée par un bouclier. Contre un Nitro, elle fait perdre de la vitesse
+  sans l'annuler (GAME + CODE).
+- **Différence avec le Titanium Shield** : la Barge est un coup de bonus ; le Titanium Shield est une règle de
+  collision (poids « Ultra », écart, sans dégâts) (§4.2).
 
-| Objet dans l'ellipse (7 m, `IsInsideEllipse`) | Effet | Statut |
+### 8.4 Bolt
+
+- Trajectoire droite à 300, sans guidage (CODE + COMM). Il meurt sur la première voiture, Mine, projectile ou mur
+  touché.
+- Rebond sur un mur seulement à angle rasant (|cos| < 0,1). Sinon il meurt (CODE).
+- **Bolt contre Bolt** : prévu par le défi Rear Guard (OFF + CODE), 50 contre 50 → les deux meurent. Le cas classique
+  est un Bolt **arrière** contre un Bolt qui arrive. Les Bolts d'un même tireur s'ignorent probablement (filtre de
+  groupe, PROBABLE).
+- **Bolt contre Shunt** : 2 Bolts (COMM + CODE). **Bolt contre Mine** : 2 Bolts (GAME + COMM + CODE).
+- **Décor mobile** : poussé, et le Bolt continue (CODE). Aucune source externe.
+- **Overbolt** : 4 tirs séparés. **Scatter Shot** : 3 Bolts en éventail de ±2° en un tir. Avec Overbolt, la pile
+  ferait 4, mais un seul mod est équipé à la fois : pas de combinaison possible.
+
+### 8.5 Shunt
+
+- Cible : la voiture devant, au moment du tir. Il suit les tracés `.aid` de sa cible et peut prendre une autre branche
+  à une bifurcation. Le guidage s'arrête à moins de 10 m (CODE).
+- COMM : un Shunt tiré vers une Mine peut changer de direction (guidage).
+- Shunt arrière : en ligne droite (COMM + CODE).
+- Murs : rebond rasant ou mort (CODE).
+- Objets : Mine (les deux détruites), Shunt (les deux détruits), Bolt (survit à 50) (CODE + COMM).
+- **Super Shunt** : seulement les dégâts.
+
+### 8.6 Shock
+
+- Ne touche que les **voitures**. Il pousse le décor mobile (`CheckDynamicObjects`).
+- **Aucune interaction avec les Mines** (CODE + GAME, correction v3).
+- Chaque dôme ne touche qu'**une** voiture, puis disparaît (`KillPickup` après le premier coup). Il ignore une voiture
+  qu'il a déjà vue protégée (`mVehiclesShielded`) (CODE).
+
+## 9. Variantes peu documentées et mécaniques cachées
+
+### 9.1 Qui crée chaque sous-type (CODE)
+
+| Sous-type | Créé par | Rencontré en jeu ? |
 |---|---|---|
-| Shunt | détruit (`CollideWithPickup`) | SOURCE + GAME |
-| Bolt | détruit (`KillPickup`) | SOURCE + GAME |
-| Mine | détruite (`KillPickup`) et poussée (`MinMinePushForce` 50 000) | SOURCE + GAME |
-| Shock (dôme) | ignoré : les dômes ne sont pas dans la boucle | SOURCE |
-| autre Barge | ignorée : une Barge n'est pas un objet de la liste ; chacune frappe la voiture d'en face | PROBABLE |
-| voiture adverse | coup (réaction `ROLL` / `JINK`, dégâts 100) ; bloqué par un bouclier | SOURCE + GAME |
-| décor mobile | vraie force (`PerkForceEffects`) | SOURCE |
+| `NORMAL` | tir normal | oui |
+| `REVERSED` | tir arrière | oui |
+| `DOUBLE_TAP` | Titanium Shield, Nitro Rift (Carver), Shock (aiguillage interne) ; DoubleTap du joueur coupé | oui, par les mods et la Shock |
+| `REVERSED_DOUBLE_TAP` | DoubleTap arrière (coupé) | non |
+| `DECOY` | Decoy Drop (bonus lâché transformé en leurre) | multijoueur |
+| `MOD` | Scatter Shot (Bolt) ; Mastermine (Mine convertie) ; Last Gasp (Barge) | carrière et multijoueur |
+| `MOD_REVERSED` | Scatter Shot arrière | carrière |
+| `SUB_MOD` | les 3 Bolts du Scatter Shot | carrière |
+| `SUB_MOD_REVERSED` | les 3 Bolts du Scatter Shot arrière (`PickupBlindfireShotgunReverse.cpp:59`) | carrière |
+| `MINI` | fragments de Mastermine | multijoueur |
 
-**Barge et Titanium Shield sont différents** :
+### 9.2 Réserve de bonus (CODE, sauf mention)
 
-- la Barge est un **coup de bonus** : dégâts 100, réaction scriptée, bloqué par un bouclier ;
-- le Titanium Shield est une **règle de collision** : contact physique, poids « Ultra », écart `JINK_SHIELD`, sans
-  dégâts.
+| Mécanique | Détail |
+|---|---|
+| Capacité | `NumPickupSlots`, venu du profil (3 hors ligne, `OfflineValues`) et envoyé en réseau (`m_PickupSlots`). 3 : COMM (wiki) |
+| **Réserve pleine** | `HitPickUp` refuse le bonus : rien n'est remplacé. Fan Nitro, Front Runner et Drifter sont **perdus** si la réserve est pleine (CODE + COMM, guide et wiki Nitro) |
+| Restes d'un système coupé | `CollectAnyPerkType` : si faux, on ne pouvait ramasser **que le même type** que le premier emplacement (toujours vrai en jeu). `mShieldsTiedToPickups` / `mFanPower` : ancien bouclier lié aux ramassages (« Craig's new shield system »). Champs d'améliorations jamais remplis (`mFansViral`, `mRepairBoostLevel2/3`, `mShuntUpgrade`…) |
+| Dépôt sur la piste | un bonus n'est déposé que s'il lui reste **toutes** ses munitions (`HandleDropPickupOnTrack`) : un Bolt entamé n'est jamais déposé |
+| Pile de Bolts | 3 tirs (4 avec Overbolt). Le Scatter Shot vide la pile d'un coup |
+| Après un wreck | aucun vidage de la réserve dans `ResetAfterWrecked` (seulement le Bribe). Vidage trouvé au départ (`InitialiseImpl`) → **NON VÉRIFIÉ** |
+| Pause entre deux tirs | 0,75 s (0,05 s entre deux Bolts) (v1) |
 
-### 6.4 Bolt
+### 9.3 Shock (CODE)
 
-- Trajectoire droite à 300, sans guidage. Il meurt au premier contact avec une voiture, une Mine, un projectile ou un
-  mur (SOURCE).
-- **Murs** : `CheckRebound` laisse le Bolt rebondir sur un angle rasant : rebond si |cos(normale du mur, direction)| < 0,1
-  (`Perks.Projectile.ReboundAngle`, valeur par défaut). Sinon il meurt (`CollideWithEnvironment`).
-- **Objets destructibles** (décor mobile) : ils sont dans la couche « transparente » du rayon. Le Bolt les **pousse**
-  (`m_Blindfire.m_MaxForce`) **sans s'arrêter** (`PickupProjectileBase.cpp:597-645`) (SOURCE ; à voir en jeu, N5).
-- **Bolt contre Bolt** : le code le permet (règle §6.1 → 50 contre 50, les deux meurent). Le filtre des rayons porte
-  l'identifiant de groupe du tireur, ce qui **écarte probablement les Bolts d'un même tireur** (PROBABLE). Deux Bolts
-  adverses de face (rayon 0,2) se croisent rarement, ce qui explique qu'on ne l'ait jamais observé.
-- **Cible détruite avant l'impact** : le Bolt n'a pas de cible, il continue tout droit (SOURCE).
-- **Overbolt** : un tir de plus en réserve, mêmes Bolts.
-- **Scatter Shot** : 3 Bolts en éventail de ±2° tirés en même temps (§4.2).
+- La sphère intérieure (`InnerRadius` 7) est **désactivée** : il n'y a qu'un coup mineur, dans la sphère extérieure
+  qui grandit.
+- Les dégâts du Shock sont lus au niveau Normal (v1).
 
-### 6.5 Shunt
+### 9.4 Adaptive Shielding (`SafetyNet`)
 
-D'après la source :
+- Plafond de conversions par vie (`MaxPickupsAbsorbable` 2, test `>`) ;
+- les Bolts comptent par 3 ;
+- un Shock n'active la conversion qu'une fois (« hit by both spheres of a shock only activates once », commentaire du
+  code).
 
-- la cible est choisie au tir : la voiture devant (`mTargetIdx`). Pas de changement de cible trouvé ;
-- le Shunt suit les **tracés `.aid`** : il cherche la route de sa cible (`UpdateTargetRoute`, `UpdateCurrentRoute`).
-  À une **bifurcation**, il peut prendre une autre branche que sa cible, ce qui est cohérent avec l'observation ;
-- il abandonne le guidage à moins de 10 m (`Perks.Shunt.LoseHomingDist`). La portée de visée est de 75 m
-  (`TargettingCutOffRange`) ;
-- l'ECM fait dévier le Shunt de sa cible (distances 13, 20 et 25 m, DATA) ;
-- **murs** : même règle que le Bolt (rebond rasant ou mort) ;
-- **objets** : il détruit les Mines (100 contre 100). Contre un autre Shunt, les deux meurent ;
-- **décor mobile** : il le pousse ;
-- **Super Shunt** : dégâts seulement, le guidage ne change pas (aucun autre code ne lit ce mod).
+## 10. Mines : durée de vie et propriété après déconnexion
 
-### 6.6 Shock
+- **CODE** : la Mine décompte elle-même ses 60 s. Aucun nettoyage par joueur n'a été trouvé (seulement
+  `KillAllPickups`). Elle garde `mFiringIdx`. C'est la machine de la **victime** qui la déclenche.
+- **GAME** : elle reste après le wreck, l'élimination ou la déconnexion de son poseur (T8).
+- **COMM** : **rien trouvé** sur ce sujet (forums, wiki, AMAX). Pas de différence connue entre LAN et AMAX : AMAX ne
+  sert que de serveur de mise en relation, et les parties restent entre joueurs (OFF, architecture « master server »).
+  PROBABLE pour la partie réseau.
+- **NON VÉRIFIÉ** : à qui sont crédités le wreck et les points quand le poseur est parti, et si son indice de voiture
+  peut être réutilisé.
 
-- Ne touche que les **voitures** : 3 dômes, 4 avec Quad Shock, placés par l'hôte.
-- Pousse le **décor mobile** (`CheckDynamicObjects`, filtre `kbDynamicObject`, `PickupShock.cpp:290-340`).
-- **Aucune** référence aux Mines (voir §7).
+## 11. IA et boss
 
-## 7. Contradictions
+- **Règles générales** : `cPerkSkillUsage` et profils `air.bin` (`POWERUPS.md` §8) (CODE).
+- **Par adversaire** : `PerkAI` dans l'épreuve (`PreferredPickups`, `CharactersNeverTargetted`, `MaxPerkLevel`,
+  `PerkToGrant` avec `GrantTimeMin/Max`). À défaut, les valeurs du personnage (CODE). Fichiers non trouvés dans
+  `gamedata\xt` → NON VÉRIFIÉ.
+- **Comportement des boss observé par la communauté** : §7.2 (une seule source).
+- **Mod du boss** : lié à la voiture, permanent ; absent en Show Down pour Shannon (§4.3).
 
-| # | Sujet | Source / données | Jeu / communauté | Pistes |
-|---|---|---|---|---|
-| C1 | Le Shock détruit une Mine | rien dans `C_PickupShock` / `C_ShockManager` : la recherche de corps ne garde que le décor mobile ; les Mines sont d'un autre type (`MineInner` / `MineOuter`) | GAME : la Mine disparaît | a) une voiture ralentie par le Shock a déclenché la Mine ; b) Mastermine ; c) la Mine était à la fin de ses 60 s ; d) changement du binaire final ou d'AMAX. **Test N2** |
-| C2 | Bouclier et Shock en multijoueur | code d'origine : `Shielding Efficiency` donne 150 de santé → survit à 1 dôme | GAME : exception ; AMAX : mod réduit | §5.2, **test N1** |
-| C3 | Fan pousse un véhicule protégé | aucun Fan qui pousse | GAME | §3, **test N9** |
-| C4 | Masse 10 000 du bouclier DoubleTap (`POWERUPS.md` §11) | classe jamais créée | — | corrigé ici (§4.2) |
-| C5 | « Modifications do not work in the pc DVD version » | — | wiki Career (note du 28/12/2014) | **À VÉRIFIER** : contredit l'usage rapporté par le joueur ; peut dépendre du patch ou de la version |
+## 12. Modifications communautaires
 
-## 8. Durée de vie et propriété des objets après déconnexion
+| Nom | Auteur | Version et date | Plateforme | URL | Effet sur les bonus | AMAX |
+|---|---|---|---|---|---|---|
+| Amax Emu | aibot et contributeurs | en cours (news 2023-2025) | PC | https://amax-emu.com | aucun en temps normal ; patch du 1er avril 2025, temporaire (§6) | — |
+| Blur fps unlocker | Amax-Emu (aibot) | ébauche du 2025-08-23, dépôt mis à jour le 2025-04-15 | PC | https://github.com/Amax-Emu/blur-fps-unlocker | corrige `FakePhysics` et la rotation des bonus au-delà de 30 FPS | prévu pour AMAX |
+| BlurRebuilt | uKER | v1.6 (2026-11-02) | PC (DX11) | https://github.com/uKER/BlurRebuilt | aucun changement de gameplay annoncé (rendu, FPS, audio) | non précisé |
+| NO-HUD-NO-EFFECTS | — | — | PC | https://www.nexusmods.com/blur/videos/1 | masque le HUD et les effets (visuel) | non précisé |
+| Xenia game patches | communauté Xenia | — | Xbox 360 (émulateur) | https://github.com/xenia-canary/game-patches | rendu | sans objet |
+| Sahin | 7tg | — | PS5 (jailbreak) | https://github.com/7tg/sahin | portage de la version PC | non précisé |
+| Blur community patch | AMAX | annoncé, sans date | — | news AMAX | contenu coupé, nouveautés, équilibrage | — |
+| Greffons AMI | Tobii et aibot | — | PC | news AMAX | points d'accroche C pour les mods | — |
 
-D'après la source :
+**Aucun mod public modifiant les bonus** (dégâts, vitesses, projectiles, IA) n'a été trouvé. Les travaux de ce dépôt
+(Railgun, HUD, bonus posé sur la piste) semblent être les premiers à le faire. Le seul précédent est le patch serveur
+d'AMAX d'avril 2025, fait par « Timber » (timberstalker), dont les outils ne sont pas publics.
 
-- **Durée** : la Mine décompte elle-même ses 60 s (`mTimer`, `PickupBomb.cpp:181`). Rien ne dépend de l'état de son
-  poseur.
-- **Nettoyage** : aucune fonction de nettoyage des bonus d'un joueur n'a été trouvée. Seul `KillAllPickups` existe, en
-  fin de course. Cela explique T8, mais l'absence de code n'est pas une preuve complète : le code réseau n'a pas été lu
-  en entier.
-- **Propriétaire** : la Mine garde l'indice de voiture du poseur (`mFiringIdx`) jusqu'à sa mort.
-- **Qui décide d'un déclenchement** : la machine de la **victime** (`CheckMineCollision` → `Trigger`). Le mécanisme
-  ne dépend donc pas de la présence du poseur : une Mine dont le poseur est parti peut encore toucher, et a priori
-  provoquer un wreck (PROBABLE).
-
-Reste **INCONNU** :
-
-- l'attribution des points ou du wreck quand le poseur n'est plus là ;
-- la réutilisation de son indice de voiture par un nouveau joueur ;
-- d'éventuelles différences entre modes de jeu.
-
-## 9. IA et boss
-
-D'après la source et les données :
-
-- **Deux couches**, à ne pas confondre :
-  1. les **règles générales** d'usage : `cPerkSkillUsage`, profils `air.bin` (`AIPerkSkillz`, `AIPerkPrefs`) choisis
-     par le CSV de difficulté (`POWERUPS.md` §8) ;
-  2. la **personnalisation par adversaire** dans l'épreuve (`PerkAI`, `GameEventData.cpp:91-99`, `LevelState.cpp:870-897`).
-- **Champs de `PerkAI`** :
-  - `PreferredPickups` : bonus préférés. À défaut, ceux du personnage (`rbChar->preferredPickups`) ;
-  - `CharactersNeverTargetted` : personnages jamais visés ;
-  - `MaxPerkLevel` ;
-  - `PerkToGrant`, `GrantTimeMin`, `GrantTimeMax` : un bonus **offert** à cet adversaire sur minuterie.
-- **Mod du boss** : lié à la voiture (§4.1), indépendant des préférences.
-- **Valeurs par boss** (préférences, bonus offerts) : **INCONNU**. Les données d'épreuves et de personnages ne sont pas
-  dans les `.bin` lus (`gamedata\xt`). Prochaine recherche : les données solo (`SP_*`, épreuves de boss).
-- **Show Down** : voir §4.3.
-
-## 10. Matrice d'interactions (v2)
+## 13. Matrice d'interactions (v3)
 
 Ligne = ce qui agit ; colonne = la cible ou la situation. Légende :
 
@@ -374,99 +494,140 @@ Ligne = ce qui agit ; colonne = la cible ou la situation. Légende :
 | **B** | bloque |
 | **T** | traverse |
 | **R** | repousse |
-| **I** | annule ou interrompt |
+| **I** | interrompt |
 | **Dg** | inflige des dégâts |
-| **0** | sans effet observé ou lu |
+| **0** | aucun effet |
 | **NT** | non testé |
 
-Source de chaque case : G = GAME, S = SOURCE, D = DATA, P = PROBABLE, C = contradiction.
+Niveaux : C = CODE, G = GAME, O = OFF, M = COMM, P = PROBABLE.
 
-| Agit sur → | Voiture avec bouclier | Nitro actif | Mine posée | Shunt en vol | Bolt en vol | Décor mobile |
+| Agit sur → | Bouclier | Nitro actif | Mine posée | Shunt en vol | Bolt en vol | Décor mobile |
 |---|---|---|---|---|---|---|
-| **Shunt** | B (G, S) | I (G, S) | D, et meurt (G, S) | D mutuel (S) | D le Bolt, survit à 50 (S) | R (S) |
-| **Bolt** | B (G, S) | 0 (S) | Dg 50, 2 tirs pour D (G, S) | Dg 50 (S) | D mutuel si adverse (S), NT | R sans s'arrêter (S), NT |
-| **Mine** (déclenchée) | B (G, S) | I (G, S) | 0 (G, S) | — | — | — |
-| **Mine lancée** | B (S) | I (S, P) | D mutuel (S), NT | D mutuel (S) | — | R (S) |
-| **Shock** | B puis casse le bouclier (G, S) ; avec Shielding Efficiency : survit à 1 dôme (D, P) | 0 (S) | 0 (S) contre D (G) → C1 | 0 (S) | 0 (S) | R (S) |
-| **Barge** | B (G, S) | Dg + réaction, perte de vitesse, sans I (G, S) | D + R (G, S) | D (G, S) | D (G, S) | R (S) |
-| **Nitro arrière** | **T** (G, S) | ralentit (S) | 0 (S) | 0 (S) | 0 (S) | NT |
-| **Nitro Rift** | **T** (S, P) | NT | 0 (S) | 0 (S) | 0 (S) | NT |
-| **Titanium Shield** (contact) | 0 contre un autre bouclier renforcé (S) | NT | 0 (S) | NT | NT | collision normale |
-| **Repair** | soigne même sous bouclier (G, S) | 0 (S) | — | — | — | — |
-| **Fan / Stopwatch** | sans objet (S) ; observation « pousse » : C3 | — | — | — | — | — |
+| **Shunt** | B (G, C, M) | I (G, C) | D, et meurt (G, C, M) | D mutuel (C) | D le Bolt, survit (C) | R (C) |
+| **Bolt** | B (G, C) | 0 (C) | Dg ; 2 tirs = D (G, C, M) | Dg ; 2 tirs = D (C, M) | D mutuel (C, O) | R sans s'arrêter (C) |
+| **Mine** (déclenchée) | B (G, C) | I (G, C) | 0 (G, C) | D le Shunt (C, M, O) | D le Bolt, survit (C, O) | — |
+| **Mine lancée** | B (C) | I (C, P) | D mutuel (C, O) | D mutuel (C) | — | R (C) |
+| **Shock** | B puis casse ; avec Shielding Efficiency : 2 dômes bloqués (G, C, D, O, M) | 0 (C) | **0 (C, G)** | 0 (C) | 0 (C) | R (C) |
+| **Barge** | B (G, C, M) | Dg, perte de vitesse, pas I (G, C) | D + R (G, C, M) | D (G, C, M, O) | D (G, C, O) | R (C) |
+| **Nitro arrière** (« Nitro Rift ») | **T** (G, C) | — | 0 (C) | 0 (C) | 0 (C) | NT |
+| **Nitro Rift de Carver** | **T** (C) | NT | 0 (C) | 0 (C) | 0 (C) | NT |
+| **Titanium Shield** (contact) | 0 contre un autre bouclier renforcé (C) | NT | 0 (C) | NT | NT | collision |
+| **Repair** | soigne même sous bouclier (G, C) | 0 (C) | — | — | — | — |
+| **Fan / Stopwatch** | aucun effet connu ; « pousse » : NON VÉRIFIÉ (§3) | — | — | — | — | — |
 
-## 11. Sources communautaires consultées
+## 14. Contradictions
 
-| Source | URL | Ce qu'elle confirme | Date | Désaccord |
+### 14.1 Résolues
+
+| # | Sujet | Résolution | Sources |
+|---|---|---|---|
+| C1 (v2) | « Le Shock détruit une Mine » | **interprétation erronée, retirée.** Il n'y a aucune interaction, ce qui est cohérent avec le code | GAME (correction du joueur) + CODE |
+| C2 (v2) | Bouclier qui survit à un Shock en ligne | Shielding Efficiency, valeurs de 2010 ; AMAX est revenu aux valeurs d'origine | DATA, CODE, OFF, COMM ×2 |
+| C4 (v2) | Masse 10 000 du bouclier DoubleTap | classe jamais créée (correction de `POWERUPS.md` §11) | CODE |
+| v2 §5.2 | « AMAX a réduit Shielding Efficiency » | vrai seulement du 1er au 4 avril 2025 (poisson d'avril) | OFF |
+| v2 §5.3 | Noms d'Adaptive Shielding et de Magnetic Field | `SafetyNet` et `RoadSweeper` ; Safety Net = `ShieldedBoosters` | CODE + DATA + OFF (défis) |
+| v2 Q4 | Show Down | Shannon en Opel Astra, sans mod | DATA + COMM |
+| v2 Q7 | Fan Nitro avec une réserve pleine | Nitro perdu | CODE + COMM |
+| v2 Q10 | Mods de carrière par type d'épreuve | course et boss seulement ; pas en Destruction | CODE + COMM |
+
+### 14.2 Encore ouvertes
+
+| # | Sujet | Sources en désaccord | Statut |
+|---|---|---|---|
+| C3 | « Fan pousse un véhicule protégé » | GAME contre CODE et COMM, qui ne connaissent pas de Fan qui pousse | NON VÉRIFIÉ ; question au joueur (§3) |
+| C5 | « Modifications do not work in the pc DVD version » | wiki (2014) contre l'usage rapporté par le joueur et le CODE | NON VÉRIFIÉ, source unique, non datée |
+| C6 | 30 ou 60 FPS, fréquence de référence du jeu PC | fps-unlocker (aibot) contre README BlurRebuilt (uKER) | CONTRADICTOIRE (§7.4) |
+| C7 | Rang de Front Runner (26 ou 28) | deux pages communautaires | CONTRADICTOIRE, sans enjeu |
+
+## 15. Tableau de suivi des recherches
+
+| Question | Résultat | Sources | Code | Statut |
 |---|---|---|---|---|
-| Blur Wiki : Modifications (Career) | https://blur.fandom.com/wiki/Modifications_(Career) | noms, boss et descriptions des 8 mods ; un seul mod par épreuve solo | non affichée ; note du 28/12/2014 | « ne marche pas sur la version PC DVD » (C5) ; écrit « Drake » pour Drayke |
-| Blur Wiki : Modifications (Multiplayer) | https://blur.fandom.com/wiki/Modifications_(Multiplayer) | Shielding Efficiency : durée plus longue et un Shock de plus ; Titanium Armor : demi-dégâts des attaques standard ; Iron Fist : dégâts du Shunt | non affichée | noms affichés ≠ noms internes (Adaptive Shielding, Magnetic Field) |
-| Blur Wiki : Shock | https://blur.fandom.com/wiki/Shock | un bouclier est coupé par un seul dôme ; Quad Shock = un dôme de plus ; le tireur peut être touché | non affichée (ébauche) | — |
-| Giant Bomb : Blur | https://giantbomb.com/wiki/Games/Blur | Scatter Shot (3 Bolts à la fois) ; Titanium Shield ; Shielding Efficiency « résiste à deux dômes » | non affichée | « deux dômes » : le calcul §5.2 donne 1 dôme encaissé puis cassé au 2e. La formulation est ambiguë |
-| GameFAQs : guide de 91sportsfan | https://gamefaqs.gamespot.com/ps3/959892-blur/faqs/60150 | Khan → Titanium Shield | non affichée | — |
-| PSNProfiles : trophée Modder | https://psnprofiles.com/trophy/321-blur/46-modder | texte de Shielding Efficiency | — | — |
-| PCGamingWiki : Blur | https://www.pcgamingwiki.com/wiki/Blur | patch 1.2 : Titanium Armour peut atténuer les effets visuels | — | cohérent avec `g_debugTitaniumArmourIntensity` |
-| AMAX Emu : news | https://amax-emu.com/news | Shielding Efficiency réduit (durée de bonus divisée par 2, santé en plus réduite) ; Adaptive Shielding absorbe Shock et Bolt | 2025-01-04 | change les valeurs d'origine → C2 |
+| A. Shield contre Shock | 1 dôme sans mod, 2 avec Shielding Efficiency ; AMAX = 2010 | wiki Shield, wiki Multiplayer, GameFAQs ×2, Giant Bomb, AMAX news | `PickupShield.cpp:173-205`, `PickupShock.cpp:246-272` | **résolu** |
+| B. Fan contre Shield | aucun Fan qui pousse dans aucune source ; seuls les Nitro traversent | wiki Nitro, Power-Ups, guide, défis | `HitPickUp`, `AttemptHitByPickup` | ouvert (question au joueur) |
+| C. Mine contre Mine | explosion : rien ; Mine lancée : D mutuel ; autres bonus : D ; Shock : rien | défis Master Exploder et Minesweeper, guide | `PickupBomb::Explode`, `PickupProjectileBase`, `RaceLogicLayer:2653` | **résolu** (sauf Mine contre décor) |
+| D. Mine après déconnexion | aucune source externe | — | §10 | partiel (attribution inconnue) |
+| E. Bolt | collisions et Overbolt / Scatter détaillés | défis Rear Guard et Fully Bolt, guide | §8.4 | **résolu** |
+| F. Shunt | guidage `.aid`, arrière en ligne droite, 2 Bolts pour le détruire | guide, GameFAQs | §8.5 | **résolu** |
+| G. Barge | détruit, pousse, ignore ; plusieurs voitures | défis, guide | §8.3 | **résolu** |
+| Mods de carrière | 8 confirmés, Show Down, épreuves | wiki Career, guide, GameFAQs | §4 | **résolu** |
+| Mods multijoueur | liste complète avec noms internes | wikis, défis, `multiplayer.bin` | §5 | **résolu** |
+| AMAX | valeurs de 2010 ; patch du 1er avril 2025 | amax-emu.com/news | — | **résolu** |
+| Mods communautaires | aucun mod public sur les bonus | Nexus, GitHub | — | **résolu** |
 
-Non consultés dans cette passe : SuperCheats, Neoseeker, les pages Bolt, Shield et One-on-One du wiki. Les points
-qu'ils couvriraient sont déjà tranchés par la source et les données.
+## 16. Sources
 
-## 12. Questions ouvertes
+| Source | URL | Date | Ce qu'elle apporte | Fiabilité |
+|---|---|---|---|---|
+| AMAX Emu : news | https://amax-emu.com/news | 2025-04-01, 2025-04-04, 2025-12-31 | patch d'avril, annulation, projets | **officielle pour AMAX** |
+| GitHub Amax-Emu | https://github.com/Amax-Emu | 2023-2026 | dépôts (fps-unlocker, binlog…) | officielle AMAX |
+| Ébauche « Blur fps unlocker » (aibot) | https://github.com/Aib0t/write-ups/blob/main/blur-fps-unlock/readme.md | 2025-08-23 | FPS et `FakePhysics`, rotation des bonus, Nitro arrière | bonne (rétro-ingénierie avec code) |
+| Wiki communautaire (sauvegarde Git de wiki.blurthegame.net) | https://github.com/Aib0t/blur-community-wiki (`mechanics/mods.html`) | ~2021 | textes, rangs et notes des mods multijoueur | bonne (texte du jeu recopié) |
+| Blur Wiki : Modifications (Career), (Multiplayer), Shield, Shock, Nitro, Challenges, Power-Ups | https://blur.fandom.com/wiki/ | non datées | textes du jeu ; notes de joueurs | moyenne (recopies du jeu = fiables ; notes = à vérifier) |
+| GameFAQs : guide de 91sportsfan (PS3) | https://gamefaqs.gamespot.com/ps3/959892-blur/faqs/60150 | v1.0, 2010-06-08 | interactions, boss, Show Down | bonne (une seule personne) |
+| GameFAQs : « What mod do you use? » | https://gamefaqs.gamespot.com/boards/959893-blur/55173979 | 2010 | Overbolt 4 Bolts ; 2 dômes avec Shielding Efficiency | témoignages (Xbox 360) |
+| GameFAQs : « mods not working in career mode ?? » | https://gamefaqs.gamespot.com/boards/959893-blur/55288264 | 2010 | pas de mods en Destruction | témoignages ×3 |
+| Giant Bomb : Blur | https://giantbomb.com/wiki/Games/Blur | non datée | descriptions des mods | moyenne |
+| PCGamingWiki : Blur | https://www.pcgamingwiki.com/wiki/Blur | — | patch 1.2 : Titanium Armour, Motormash et Nitros | bonne |
+| BlurRebuilt (README) | https://github.com/uKER/BlurRebuilt | v1.6, 2026-11-02 | rendu et FPS ; « designed around 60 fps » | bonne pour son projet |
+| PSNProfiles : trophée Modder | https://psnprofiles.com/trophy/321-blur/46-modder | — | texte de Shielding Efficiency | recopie |
 
-1. **C1** : pourquoi la Mine disparaît-elle avec un Shock ?
-2. **AMAX** : valeurs actuelles de Shielding Efficiency. Le serveur peut-il changer `multiplayer.bin` ou les
-   paramètres en ligne (`PickupParametersStoredOnline`) ?
-3. Ce que le joueur appelle « Fan » qui pousse un véhicule protégé (C3).
-4. Show Down : quelles voitures, et quelles préférences (`PerkAI`) pour les boss ?
-5. Fichiers de personnages et d'épreuves solo (préférences des boss, `PerkToGrant`).
-6. Nitro Rift : qui applique la force (500 à 1 500) ? Le seuil `RiftAngleRange` 0,1 désigne-t-il bien l'avant ?
-7. Fan Nitro avec une réserve pleine.
-8. Mine dont le poseur est parti : attribution du wreck et des points.
-9. Mods de carrière en écran partagé : la source ne les active que dans les épreuves solo (course ou boss). Le
-    joueur rapporte un usage en écran partagé : **À VÉRIFIER**.
-10. v1, toujours ouvert : `do_charging` forcé à `false` dans l'exe ? Formules de chaque `cPerk*`.
+Non consultés, ou sans résultat utile :
 
-Question v1 **résolue** : qui crée `SUB_MOD` → le Scatter Shot (§4.2).
+- Reddit : les recherches ne renvoyaient que d'autres jeux nommés « Blur » ;
+- SuperCheats, Neoseeker : pas lus ;
+- vidéos YouTube (vitrine des mods solo `C_rcvb0Dbs0`, tutoriel `e80jPSXb65s`) : repérées, pas regardées ;
+- Steam Community : rien trouvé sur les bonus.
 
-## 13. Tests en jeu proposés (à ne lancer qu'après accord)
+## 17. Questions ouvertes et tests vraiment nécessaires
 
-Priorité aux tests qui départagent deux explications.
+### 17.1 Questions ouvertes
 
-| # | Prio | 1er bonus → 2e bonus ou cible | Mode | Mod nécessaire | Attendu selon les hypothèses | Ce que chaque résultat permet de conclure |
-|---|---|---|---|---|---|---|
-| N1 | 1 | Shield → Shock (3 dômes) | LAN ou en ligne sur AMAX, 2 joueurs | un essai sans mod, un essai avec Shielding Efficiency | sans mod : cassé au 1er dôme ; avec le mod (valeurs d'origine) : survit au 1er, cassé au 2e | survit au 1er → C2 expliqué ; cassé au 1er malgré le mod → AMAX a baissé la santé sous +50 ; survit à tout → autre règle |
-| N2 | 1 | Mine posée → Shock dont le dôme couvre la Mine, **sans voiture à proximité** | course perso, IA lointaine | aucun | la Mine reste (source) | la Mine disparaît sans voiture → C1 confirmé (le binaire diffère de la source) ; elle reste → la disparition observée venait d'une voiture |
-| N3 | 2 | Mine lancée vers l'avant → Mine posée | course perso | aucun | les deux explosent | aucune n'explose → le cas 2 (§6.2) diffère de la source |
-| N4 | 2 | Barge → Nitro de l'adversaire, à 3 moments (avant, pendant, juste après le Nitro) | LAN | aucun | perte de vitesse, Nitro jamais coupé net | Nitro coupé → il existe un `DisableActiveNitrous` non lu |
-| N5 | 3 | Bolt → objet destructible (barrière, cône) | course perso | aucun | l'objet est poussé, le Bolt continue | le Bolt s'arrête → couche « transparente » mal comprise |
-| N6 | 3 | Bolt contre Bolt de face (un tireur devant, un derrière, Bolts croisés) | LAN | aucun | les deux disparaissent | ils se croisent → filtre de groupe entre joueurs aussi |
-| N7 | 3 | Boss en course normale puis en Show Down | carrière | aucun | mod visible en course (4 dômes chez Natalya, Scatter chez Ayumi), absent en Show Down | mod présent en Show Down → le slot ne dépend pas que de la voiture |
-| N8 | 3 | Mine posée → poseur qui quitte (LAN), puis une 3e voiture passe dessus | LAN, 3 machines | aucun | explosion, wreck possible | noter qui reçoit les points |
-| N9 | 3 | Clarifier « Fan pousse un véhicule protégé » | — | — | — | le joueur précise le bonus en cause ; si c'est un Nitro (arrière ou Rift) → déjà expliqué (T1) |
-| N10 | 4 | Titanium Shield → percuter une IA | carrière (Khan battu) | Titanium Shield | IA écartée (`JINK_SHIELD`), pas de dégâts, 12 s | dégâts → confusion avec le SuperShield |
-| N11 | 4 | Armor Plating : encaisser un Bolt, puis un Shunt | carrière | Armor Plating | Bolt : dégâts pleins ; Shunt : 50 au lieu de 100 | réduit aussi le Bolt → la liste des types diffère |
+1. **C3** : de quel effet s'agit-il quand « Fan pousse un véhicule protégé » ? **Question au joueur**, pas un test.
+2. La réserve est-elle conservée après un wreck ? La source ne la vide pas, aucune source externe n'en parle.
+3. Mods de carrière en écran partagé : la source ne les active qu'en épreuve solo de course ou de boss.
+4. Attribution d'un wreck par une Mine dont le poseur est parti.
+5. Préférences de bonus des boss (`PerkAI`) : fichiers non trouvés.
+6. Collision des Mines avec le décor.
+7. Hérités de la v1 :
+   - `do_charging` forcé à `false` dans l'exe ;
+   - formules de chaque `cPerk*` ;
+   - force de la faille de Carver (`RiftMin/MaxForce`, non lus par la classe).
 
-## 14. Statut des informations de la v1
+### 17.2 Tests en jeu encore utiles (à ne lancer qu'après accord)
 
-Les conclusions de la v1 sont conservées et confirmées en jeu par T1 à T8 :
+Tests de la v2 retirés :
 
-- le bouclier bloque tout sauf le Nitro ;
-- seul le Shock casse le bouclier ;
-- 2 Bolts par Mine ;
-- la Barge détruit les projectiles et les mines ;
-- le Shunt et la Mine coupent le Nitro ;
-- la Réparation passe sous le bouclier.
+| Test v2 | Raison |
+|---|---|
+| N1 | résolu par plusieurs sources (§5.2) |
+| N2 | Shock contre Mine : l'interaction n'existe pas |
+| N3 | Mine contre Mine : défi Master Exploder |
+| N4 | Barge contre Nitro : déjà observé, cohérent avec le code |
+| N5, N6 | Bolt : défi Rear Guard et code |
+| N9 | devient une question au joueur |
+| N10, N11 | code, données et descriptions concordent |
 
-Corrections :
+| # | Question | Hypothèses | Pourquoi les sources ne suffisent pas | Protocole | Résultats possibles |
+|---|---|---|---|---|---|
+| R1 | La réserve survit-elle à un wreck ? | a) conservée (aucun vidage dans le code) ; b) vidée par un chemin non lu | aucune source externe ; code incomplet | course perso, ramasser 3 bonus, se faire détruire (mur à pleine vitesse ou bonus adverses), regarder le carrousel à la réapparition | conservée → a) ; vide → chercher le chemin de vidage |
+| R2 | Mods de carrière en écran partagé ? | a) inactifs (code : épreuve solo seulement) ; b) actifs (rapport du joueur) | contradiction entre le code et le rapport | écran partagé, Overbolt équipé en carrière, ramasser un Bolt | 3 tirs → a) ; 4 → b), il existe un autre chemin d'activation |
+| R3 | Les autres boss ont-ils leur mod dans les 6 courses du Show Down ? | a) non (mod lié à la voiture) ; b) oui | voitures des boss non documentées | Show Down, observer Natalya (3 ou 4 dômes) et Ayumi / Harumi (Bolts en éventail ou non) | 3 dômes et Bolts séparés → a) |
+| R4 | (facultatif) Mine dont le poseur est parti : qui marque ? | a) le poseur, même absent ; b) personne | aucune source | LAN à 3, poser une Mine, quitter, une 3e voiture passe dessus, lire le tableau de fin | — |
 
-- v1 §11 Q6 (`SUB_MOD`) : résolue (§4.2) ;
-- v1 §5.2 « Shock et Mines : aucune interaction, **DÉDUCTION** forte » : devient **CONTRADICTION** C1 après
-  l'observation en jeu.
+Toute mesure de durée (réactions, Nitro) doit noter le **FPS** (§7.4).
 
-Anomalies de la v1 (§10 v1) inchangées :
+## 18. Statut des versions précédentes
 
-- `FansToGain` et `TimeToGain` jamais lus ;
-- IA de `pickups.bin` coupée ;
-- aiguillage DoubleTap de la Shock ;
-- `case BOMB` sans `break` dans la Barge ;
-- texte « touché par… » coupé.
+- **v1** : conclusions conservées, confirmées par T1 à T8 et par les sources externes (§2).
+- **v2** : conclusions conservées, avec ces corrections :
+  - Shock contre Mine (retiré) ;
+  - AMAX et Shielding Efficiency (le patch était temporaire) ;
+  - noms des mods multijoueur ;
+  - Show Down.
+- **Anomalies v1** inchangées :
+  - `FansToGain` et `TimeToGain` jamais lus ;
+  - IA de `pickups.bin` coupée ;
+  - aiguillage DoubleTap de la Shock ;
+  - `case BOMB` sans `break` dans la Barge ;
+  - texte « touché par… » coupé.

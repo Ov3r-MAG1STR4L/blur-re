@@ -297,7 +297,8 @@ la source (**Fort**) et leur nom est **Confirmé** dans l'exe.
 
 - Normal #809 : `Lifetime` 6 s, `Health` 50. DoubleTap #748 : `Lifetime` 12 s.
 - Relancer un bouclier actif le **redémarre** (`Restart`), sans cumul.
-- Mods : SafetyNet (absorbe des Bolts, rend un bonus), Shielded Boosters.
+- Mods : SafetyNet (absorbe des Bolts, rend un bonus), Shielded Boosters. *(Précision 2026-11-17 : `SafetyNet` est affiché
+  **Adaptive Shielding** en jeu, et `ShieldedBoosters` est affiché **Safety Net**. Voir `POWERUP_BEHAVIOUR_STUDY.md` §5.1.)*
 
 **SuperShield** (Normal #553)
 
