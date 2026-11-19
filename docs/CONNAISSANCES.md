@@ -3825,3 +3825,19 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
 - Barge et Shock poussent l'objet seulement s'il est déjà dans `mDynamicsHit` (`!inserted`) : poussée probablement
   continue (hypothèse).
 
+### Extension des bonus : mort d'objet, HUD par case et Barge (2026-11-19, lecture seule) → `POWERUP_EXTENSION_ARCHITECTURE.md`
+
+- **Mort d'un objet (libération du pool)** : `0xBA9D00` (`C_PickupsManager::Delete(C_PickupBase* pPickup)`, Confirmé).
+  Calling convention `__thiscall`, saut selon `mClassType = [pPickup+4]`. Point d'accroche direct pour libérer un
+  bonus personnalisé dès sa destruction sans attendre la réutilisation mémoire.
+- **HUD et identité par case** : `0xC59293` dans `UIPerks2::Render` (appel `call 0xC554C0`, Confirmé). À cet endroit,
+  l'adresse de la case `&m_pPickupInfo->mPickupStore[i]` est calculée dans `eax`, avec son identifiant `mPickupGroupId`
+  à `[eax+0x10]`. Hookable pour renvoyer un `C_UIPerkInfo` sur-mesure par case.
+- **Barge (`C_PickupBarge`)** :
+  - VTable `0xEE0D58` (18 méthodes virtuelles) ;
+  - Constructeur `0xBE9230` (appelé en `0xBAB0BE` dans `CreatePickup`) ;
+  - `Update` `0xBE8360` (méthode 6) ;
+  - Test d'ellipse `IsInsideEllipse` `0xBE6FB0` (rayons en `[barge+0x14C]` et `[barge+0x150]`) ;
+  - Poussée du décor `0xBE6970` (`CheckDynamicObjects`).
+
+

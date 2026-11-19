@@ -502,18 +502,38 @@ Points d'injection : ceux du §4.1 marqués « oui », plus deux à trouver : la
 
 On ne crée de nouveaux crochets que pour un **nouveau parent**. Le réseau reste à part.
 
-## 14. Questions encore ouvertes
+## 14. Questions résolues (2026-11-19, lecture seule)
 
-1. Adresse et appelants de la **mort d'un objet** (libération du pool) dans l'exe.
-2. `UIPerks2::Render` (`0xC58130`) : où lit-il la case pour appeler `GetPerkInfo` ? Peut-on y connaître
-   `mPickupGroupId` ?
-3. Vtables et champs de la Barge, de la Mine et du Shunt dans l'exe.
-4. Fonctions d'impulsion sur les corps de voiture dans l'exe.
-5. Comportement en LAN de deux machines avec la DLL (identité, dégâts, bouclier, tirages).
-6. Écran partagé et Railgun.
-7. Occupation réelle des poignées libres du type 10 dans `pickups.bin` (DoubleTap, Reversed, ReversedDoubleTap,
+1. **Mort d'un objet (libération du pool)** : **`0xBA9D00`** (`C_PickupsManager::Delete(C_PickupBase* pPickup)`, CONFIRMÉ — CODE).
+   - Calling convention `__thiscall` (`ecx = C_PickupsManager*`, `[esp + 4] = pPickup`).
+   - Lit `mClassType = [pPickup + 4]`, borne à `0x13` (19 classes), table de saut à `0xBA9EA4`.
+   - Chaque cas prend le pool dans `mpPickupPools = [ecx + 0xA70]` et appelle sa méthode `Free` (ex. BlindfireProjectile à `0xBA9D83`, Barge à `0xBA9DD7`).
+   - **Point d'accroche direct** : hooker `0xBA9D00` permet à la DLL d'être notifiée instantanément de la destruction de n'importe quel pickup et de libérer son slot dans `rails[32]` ou le registre d'instances.
+
+2. **HUD et identité par case** : **`0xC59293`** dans `UIPerks2::Render` (CONFIRMÉ — CODE).
+   - À `0xC59273`-`0xC59287`, `esi` est `UIPerks2*`, `[esi + 0x1D8]` est `m_pPickupInfo` (`VehiclePickupInfo*`), `[edx + 0x10]` est le tableau `mPickupStore`.
+   - À `0xC59287`, `add eax, ecx` calcule l'adresse exacte de la case `&m_pPickupInfo->mPickupStore[i]`.
+   - Dans `PickupStore` (24 octets) : `+0x00` type (10), `+0x08` nombre de tirs, et **`+0x10` est `mPickupGroupId`** !
+   - À `0xC59293`, l'appel `call 0xC554C0` (`UIPerks2::GetPerkInfo`) est exécuté.
+   - **Point d'accroche direct** : en remplaçant ce call par une fonction hook, la DLL lit `[eax + 0x10]` (`mPickupGroupId`) et retourne le `C_UIPerkInfo` propre à ce bonus personnalisé, résolvant complètement le problème d'icône et de couleur distinctes par case.
+
+3. **VTable et fonctions de la Barge (`C_PickupBarge`)** (CONFIRMÉ — CODE) :
+   - VTable : **`0xEE0D58`** (18 méthodes virtuelles).
+   - Constructeur : **`0xBE9230`** (appelé lors de `CreatePickup` à `0xBAB0BE` pour le type 4).
+   - `Update` (boucle par image) : **`0xBE8360`** (entrée 6 de la vtable).
+   - `IsInsideEllipse` : **`0xBE6FB0`** (test de zone elliptique, 3 appels dans `Update`).
+   - `CheckDynamicObjects` (décor) : **`0xBE6970`** (au plus 3 objets).
+   - Champs majeurs : `[barge + 0x144]` `mpBargeData`, `[barge + 0x148]` `mSizeMultiplier`, `[barge + 0x14C]` `mMajorRadius`, `[barge + 0x150]` `mMinorRadius`, `[barge + 0x154]` `mTimer`, `[barge + 0x158]` `mFixedPosition`.
+
+## 15. Questions encore ouvertes
+
+1. Vtables et champs de la Mine et du Shunt dans l'exe.
+2. Fonctions d'impulsion sur les corps de voiture dans l'exe.
+3. Comportement en LAN de deux machines avec la DLL (identité, dégâts, bouclier, tirages).
+4. Écran partagé et Railgun.
+5. Occupation réelle des poignées libres du type 10 dans `pickups.bin` (DoubleTap, Reversed, ReversedDoubleTap,
    Mini).
-8. BlurRebuilt : compile-t-il un exe compatible avec AMAX ?
+6. BlurRebuilt : compile-t-il un exe compatible avec AMAX ?
 
 **Tests en jeu à prévoir** (proposés, non lancés) :
 
@@ -524,7 +544,7 @@ On ne crée de nouveaux crochets que pour un **nouveau parent**. Le réseau rest
 | T-R3 | LAN | 2 machines avec la même DLL : chacun tire sur l'autre ; noter les dégâts, le bouclier, ce que voit l'autre |
 | T-R4 | Overbolt et Railgun | carrière, Shannon armée d'un Railgun : nombre de tirs |
 
-## 15. Sources techniques
+## 16. Sources techniques
 
 - `natif/railgun/railgun.c` (v7, commit `1ba253c`), `railgun.txt`, `railgun.lua`, `build.bat`, `railgun_install.py`,
   `railgun_fx.py`, `b2pickups.py`.
