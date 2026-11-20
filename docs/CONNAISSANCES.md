@@ -1692,6 +1692,39 @@ Demande de la communauté : afficher le titre quand la musique change. Deux ques
 - **À vérifier en jeu** : moment du premier morceau (`FIRST_START` = 4 s estimé), dérive de la minuterie, pause,
   épave, accents dans la police. Pack : `gamedata.pak` désormais mis de côté aussi (non retesté hors jeu).
 
+### musicctl 0.5 : retours de joueurs (2026-11-20, testé hors jeu seulement)
+- **Fichier audio illisible** (un faux `.mp3` : page web ou vidéo renommée, téléchargement coupé) : `pcm48` cherchait
+  la ligne `I: … LUFS` de ffmpeg (`IndexError`). Désormais `make_music.Unreadable` : le morceau est sauté avec le
+  message de ffmpeg, la préparation continue.
+- **Fin de morceau dans le graphe (Probable, lu dans les données)** : chaque objet son `InGameMusicNN` (type 60) a en
+  mot 12 l'index de `InGameLicensedMusicNextTrackScript` (mot 13 = 0x10000) : le script appelé à la fin du son.
+  `MusicTypeResetScript` arrête la piste sans le déclencher (un skip ne joue pas deux morceaux). Sémantique de `cmp`
+  (0x1317) : saut si **égal** (`RaceStartScript` : MusicType = 0 → muet ; morceau déjà en lecture → rien).
+- **Décalage bandeau / son en lecture continue** : le plugin suivait les fins par minuterie `os.time` (secondes
+  entières), départ estimé (`FIRST_START`), enchaînement du graphe non observable : l'écart s'accumulait, le skip
+  remettait à zéro. Correctif : `make_music.managed_chain` remplace ce mot 12 par `InGameMusicEndedScript`
+  (MusicType = 1 → morceau suivant comme avant ; sinon `InGameMusicPlayingVariable` = 0, silence) et le plugin fait
+  lui-même chaque changement comme un skip (0 puis p + 2) à la fin calculée : bandeau et son changent ensemble,
+  l'erreur ne porte que sur un morceau (fin coupée ou court silence). Horloge = somme des temps d'image passés à
+  `FrameUpdate_Wrapper(delta)` (secondes : `GuiBank.lua` les retranche à `automation_timer`).
+- **Départ forcé** : `make_music.force_start` : `MusicType` = 1000 + p → `RaceStartScript` arrête ce qui joue et lance
+  la position p (tests placés avant « déjà en lecture »). Utilisé en début de course pour un nouveau morceau ; un
+  morceau qui continue (plus de 20 s restantes) garde p + 2.
+- **Double musique en destruction / chrono de carrière** : ces épreuves ont leur graphe (`music_destruction`,
+  `music_checkpoint`) ; la valeur p + 2 posée par le plugin relançait la playlist par-dessus. Le plugin reste en dehors
+  quand `Amax.SP_IsDestructionRace / SP_IsDestructionFD / SP_IsCheckpointRace / SP_IsCheckpointFD` (lus dans
+  `HUD.lua`) répond vrai, puis repart sur un morceau connu (départ forcé) à la course suivante. Boss : non vu.
+- **Volume musique à 0** (`OptionsTable.music_vol`, indépendant de `music_type` : `Options_Audio.lua`, 0 = Off,
+  1 = On) : pas de bandeau ni de pochette (demande du joueur).
+- **Autre bug trouvé** : depuis la pause, `Shared\Options|Help|GarageMini` et les popups n'ont pas le préfixe
+  `ingame\` : le plugin croyait la course finie et en recommençait une au retour. Désormais suspendue (option rendue
+  au joueur pour l'écran Options) puis reprise au retour d'un écran `ingame\`. `TUNE` (touches 1-8 qui déplaçaient la
+  pochette) coupé dans la version des joueurs.
+- Vérifié hors jeu : construction (simulations `force_check`, `position_check`, `ended_check`), plugin compilé et
+  exécuté par le `lua5.1.dll` d'AMAX avec une fausse API (course, fins de morceaux, skip, volume 0, pause → Options,
+  destruction, course suivante). **À essayer en jeu** : silence ou fin coupée aux changements, `FIRST_START`,
+  destruction / chrono, retour d'Options.
+
 ### Animation « message de fans » (popup qui s'ouvre au centre et se referme) — 2026-11-16, **confirmé (ui.json)**
 
 - Popup des fans gagnés (percuter, détruire une voiture…) : `bra_FanRoot` (TopCentre, y −35) → `dmy_FanDummy` →

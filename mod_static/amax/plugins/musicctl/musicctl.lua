@@ -8,13 +8,19 @@
 --    the title in a banner (HUD templates Pos_Backing + Position_Title cloned under HUD.ViewportId3d).
 --  - Next track: L3 twice, or the keys ç / à (AZERTY: CMN_9 / CMN_0): music_type 0 then p + 2 (crossing the graph's
 --    0.5 gate restarts the music at position p).
+--  - 0.5 (2026-11-20, player reports): the plugin drives every track change in a race, like a skip, at the end it
+--    computes (make_music.managed_chain: a track that ends no longer starts the next while MusicType is ours), so
+--    the banner and the sound always change together (the old timer drifted from the graph's own chain); a race starts
+--    either on the track still playing (enough of it left) or on a new one with MusicType FORCE + p
+--    (make_music.force_start); career destruction / checkpoint events have their own music: the plugin stays out;
+--    music volume 0 = no banner; clock = the frame times the game passes (os.time counted whole seconds).
 -- Two rules learnt the hard way: never create at load time a table a hook fills (AMAX's lua5.1.dll and the game's
 -- own Lua are two Lua copies: crash), and keep a gadget's z when moving it.
 local M = {
 	info = {
 		name = "MusicCtl",
 		description = "Race music: next track key (L3 x2, ç / à) and a now-playing banner",
-		version = 0.4,
+		version = 0.5,
 	},
 }
 
@@ -26,9 +32,11 @@ local NEXT_KEY1, NEXT_KEY2 = "CMN_9", "CMN_0"
 local SFX_NEXT = "MotorMashCount"         -- its ingameui.baf wave is our next-track sound (make_music.music_key_sounds)
 local COOLDOWN = 2.0                      -- s between two skips
 local DOUBLE_PRESS = 0.5                  -- s: L3 twice within this = next
-local SWITCH_FRAMES = 45                  -- frames between music_type 0 and p + 2 (> the graph's 0.5 s gate delay)
+local SWITCH_TIME = 0.75                  -- s between music_type 0 and p + 2 (> the graph's 0.5 s gate delay)
 local SKIP_START = 1.5                    -- s from a skip to the new track's start (switch 0.75 + RaceStartDelay 0.5)
-local FIRST_START = 4.0                   -- s from the race HUD to the first track (estimate: countdown)
+local FIRST_START = 4.0                   -- s from the race intro to the first track (estimate: countdown)
+local FORCE = 1000                        -- music_type FORCE + p: the race starts position p, whatever played (make_music.FORCE_BASE)
+local KEEP_MIN = 20.0                     -- s: a track with less than this left is not carried into the next race
 
 -- banner (player's design and placement, 2026-11-13; HUD units, parent HUD.ViewportId3d)
 local POS_X, POS_Y = -4.5, 8.0
@@ -53,7 +61,7 @@ local HOLD, SLIDE, SLIDE_DIST = 3.5, 0.6, 14.0
 local ART_X, ART_Y, ART_SIZE = 4.2, 8.1, 7.7    -- cover centre and side (HUD units, parent ViewportId3d, BottomLeft)
 local ART_GAP = 0.6                              -- text shift right = ART_SIZE + ART_GAP
 local ART_PANEL = 7.5                            -- backing middle height with a cover (the panel grows upward)
-local TUNE = true                                -- test build: keys 1-8 move the layout (log: read_luamarks.py MCALL)
+local TUNE = false                               -- test build only: keys 1-8 move the layout (log: read_luamarks.py MCALL)
 local ART_GREY = 200                             -- a little below white: the HUD bloom (covers are levelled at build)
 local ART_OPEN, ART_CELL = 0.19, 0.25            -- s to open / close (fan_message keys); cell size in UV (4 x 4)
 local ART_HOLD = 4.1                             -- s the cover stays open after a track starts (then closes on itself)
@@ -69,19 +77,17 @@ local FLICKER = { 0.0, 0.0, 0.05, 0.7, 0.10, 0.05, 0.18, 0.9, 0.22, 0.1, 0.35, 0
 
 local in_race = false
 local on_value = nil                      -- the player's Music option at race start (0 = off)
-local clock = 0                           -- s, frames / 60 (the race runs at 60 fps): animations
-local pending = nil                       -- { frames, music_type } (created in hooks)
+local own_music = false                   -- career destruction / checkpoint: the game's own music, the plugin stays out
+local suspended = false                   -- in a Shared\ screen from the pause menu (Options, Help, garage)
+local shuffled = false                    -- the session's random start is drawn
+local clock = 0                           -- s: sum of the frame times the game passes to FrameUpdate (1/60 if none)
+local pending = nil                       -- { time, music_type } (created in hooks)
 local last_action, last_l3, last_key = -100, -100, ""
-local pos, track_start, shown = 0, nil, false   -- shuffle position playing, its start (now()), its banner shown
+local pos, track_start, shown = 0, nil, false   -- shuffle position playing, its start (clock), its banner shown
 local banner = nil
 local hud_ready = false                   -- the race HUD screen is up (gadgets made under the intro sit elsewhere)
 local n_log = 0
 local wrapped_frame, wrapped_msg = false, false
-
-local function now()                      -- real seconds when os.time exists (frame drops), else the frame clock
-	if os and os.time then return os.time() end
-	return clock
-end
 
 local function log(text)
 	n_log = n_log + 1
@@ -313,9 +319,14 @@ local function art_tick()                               -- opens from its centre
 	UIButtons.ChangeAlpha(b.art, a)
 end
 
-local function banner_show(p)
+local function banner_show(p)                           -- true once dealt with (shown, or hidden on purpose)
 	local track = TRACKS[p + 1]
-	if not track or not hud_ready then return end
+	if not track or not hud_ready then return false end
+	local t = options()
+	if t and tonumber(t.music_vol) == 0 then              -- music volume 0: no banner (player, 2026-11-20)
+		banner_hide()
+		return true
+	end
 	local ok, err = pcall(function()
 		banner = banner or banner_build()
 		if not banner then return end
@@ -353,6 +364,7 @@ local function banner_show(p)
 		log("banner failed: " .. tostring(err))
 		banner = nil
 	end
+	return true
 end
 
 local function banner_tick()
@@ -380,73 +392,133 @@ end
 
 -- music --------------------------------------------------------------------------------------------------------------
 local function music_on()
-	return on_value ~= nil and on_value ~= 0 and #TRACKS > 0
+	return on_value ~= nil and on_value ~= 0 and #TRACKS > 0 and not own_music
+end
+
+local function own_music_event()                         -- career events with their own music graph (music_destruction,
+	for _, f in ipairs({ "SP_IsDestructionRace", "SP_IsDestructionFD", "SP_IsCheckpointRace", "SP_IsCheckpointFD" }) do
+		local ok, yes = pcall(Amax[f])                   -- music_checkpoint): names read in HUD.lua
+		if ok and yes == true then return f end
+	end
+	return nil
+end
+
+local function switch_to(p)                              -- like a skip: 0 crosses the gate (the graph stops the track),
+	pos = p                                              -- then p + 2 once the value is back starts position p
+	set_music(0)
+	pending = { clock + SWITCH_TIME, pos + 2 }
+	track_start = clock + SKIP_START
+	shown = banner_show(pos)
 end
 
 local function next_track()
 	if clock - last_action < COOLDOWN or not music_on() then return end
 	last_action = clock
-	pos = (pos + 1) % #TRACKS
-	set_music(0)                                         -- crosses the gate: the graph stops the track...
-	pending = { SWITCH_FRAMES, pos + 2 }                 -- ...and starts position pos once the value is back
-	track_start, shown = now() + SKIP_START, true
+	switch_to((pos + 1) % #TRACKS)
 	pcall(function() UISystem.PlaySound(UIEnums.SoundEffect[SFX_NEXT]) end)
-	banner_show(pos)
 	log("next: position " .. pos)
 end
 
+local function catch_up()                                -- tracks the graph chained by itself while MusicType was 1
+	while clock - track_start >= TRACKS[pos + 1][2] do
+		track_start = track_start + TRACKS[pos + 1][2]
+		pos = (pos + 1) % #TRACKS
+	end
+end
+
 local function race_start()
+	suspended = false
 	local t = options()
 	on_value = t and t.music_type or nil
 	if on_value ~= nil and on_value >= 2 then on_value = 1 end   -- a value of ours left by a crash
 	shown = false                                        -- the title in play is shown once the HUD is up
-	if not music_on() then log("race, music off or no track list") return end
-	if track_start then
-		-- the game lets the previous race's track go on into the next race (its RaceStartScript ends at once when a
-		-- track plays: player, 2026-11-13): keep following it, catching up with the tracks that ended meanwhile
-		while now() - track_start >= TRACKS[pos + 1][2] do
-			track_start = track_start + TRACKS[pos + 1][2]
-			pos = (pos + 1) % #TRACKS
-		end
-		set_music(pos + 2)                               -- if the game restarts the music after all: the same track
-		log("race, music goes on at position " .. pos)
+	own_music = false
+	if on_value == nil or on_value == 0 or #TRACKS == 0 then log("race, music off or no track list") return end
+	local event = own_music_event()
+	if event then
+		-- the game plays its own music here; a value of ours would start the playlist on top of it (player,
+		-- 2026-11-20): leave the option alone, and start a known track at the next race
+		own_music, track_start = true, nil
+		log("race, " .. event .. ": the game's own music")
 		return
 	end
-	math.randomseed(now())
-	pos = math.random(0, #TRACKS - 1)
-	set_music(pos + 2)                                   -- 1 -> p + 2 does not cross the gate: read by RaceStartScript
-	track_start = now() + FIRST_START
+	if track_start then
+		-- the previous race's track goes on into this race (RaceStartScript keeps a track that plays); in menus the
+		-- graph chains the tracks itself (MusicType 1): catch up with the ones that ended meanwhile
+		catch_up()
+		if TRACKS[pos + 1][2] - (clock - track_start) > KEEP_MIN then
+			set_music(pos + 2)                           -- 1 -> p + 2: no gate crossing, the track goes on
+			log("race, music goes on at position " .. pos)
+			return
+		end
+		pos = (pos + 1) % #TRACKS                        -- almost over (or the timer is off after the menus): a new one
+	elseif shuffled then
+		pos = (pos + 1) % #TRACKS                        -- after a destruction / checkpoint event: the order goes on
+	else
+		math.randomseed(os and os.time and os.time() or 0)
+		pos = math.random(0, #TRACKS - 1)
+		shuffled = true
+	end
+	set_music(FORCE + pos)                               -- RaceStartScript stops whatever plays and starts position pos
+	track_start = clock + FIRST_START
 	log("race, start position " .. pos .. " of " .. #TRACKS)
 end
 
-local function race_end()
+-- pause -> Options / Help / garage (Shared\...) or a popup (Popups\...): still the race. Before 0.5 these screens ended the race and the HUD
+-- started a new one (a forced start mid-race does nothing: lost track). The option goes back to the player's value
+-- (the Options screen shows it), the graph chains by itself meanwhile, and the race resumes on the HUD.
+local function suspend()
+	suspended, hud_ready = true, false
+	banner_drop()
+	-- ponytail: a skip half-way (0 sent, p + 2 pending) is resolved by the graph's own path (MusicType 1)
 	pending = nil
+	if music_on() then set_music(on_value) end
+	log("race suspended (" .. tostring(pos) .. ")")
+end
+
+local function resume()
+	suspended, shown = false, false
+	local t = options()
+	on_value = t and t.music_type or on_value            -- the player may have changed it in Options
+	if on_value ~= nil and on_value >= 2 then on_value = 1 end
+	if music_on() and track_start then
+		catch_up()
+		set_music(pos + 2)                               -- 1 -> p + 2: no gate crossing
+	end
+	log("race resumed at position " .. pos)
+end
+
+local function race_end()
+	pending, suspended = nil, false
 	banner_hide()
-	if on_value ~= nil then set_music(on_value) end      -- p + 2 -> 1: no gate crossing, the music goes on
+	if on_value ~= nil and not own_music then set_music(on_value) end   -- ours -> 1: no gate crossing, the music goes on
 	log("race over (position " .. pos .. " goes on)")    -- track_start kept: the track plays on into the next race
 end
 
-local function tick()
-	clock = clock + 1 / 60
-	if not in_race then return end
-	if pending then
-		pending[1] = pending[1] - 1
-		if pending[1] <= 0 then
-			local v = pending[2]
-			pending = nil
-			set_music(v)
-		end
+local function tick(dt)
+	-- the frame time the game passes: seconds (GuiBank.lua), milliseconds accepted in case; else 1/60
+	-- ponytail: a frame longer than 0.25 s (loading) counts 1/60: the timer may lag after menus (wrong title on a
+	-- carried-over track); the next switch_to puts it right. Add os.time() for long frames if players see it.
+	dt = tonumber(dt)
+	if dt and dt > 0 and dt < 0.25 then
+		clock = clock + dt
+	elseif dt and dt >= 4 and dt < 250 then
+		clock = clock + dt / 1000
+	else
+		clock = clock + 1 / 60
 	end
-	if track_start and music_on() and now() >= track_start then
-		if not shown and hud_ready then                   -- the first track has started and the HUD is up
-			shown = true
-			banner_show(pos)
+	if not in_race or suspended then return end
+	if pending and clock >= pending[1] then
+		local v = pending[2]
+		pending = nil
+		set_music(v)
+	end
+	if track_start and music_on() and clock >= track_start then
+		if not shown and hud_ready then                   -- the track has started and the HUD is up
+			shown = banner_show(pos)
 		end
-		local track = TRACKS[pos + 1]
-		if now() - track_start >= track[2] then          -- the graph went on to the next position by itself
-			track_start = track_start + track[2]
-			pos = (pos + 1) % #TRACKS
-			banner_show(pos)
+		if not pending and clock - track_start >= TRACKS[pos + 1][2] then
+			switch_to((pos + 1) % #TRACKS)                -- its end by our clock: we start the next one ourselves
 			log("track end: position " .. pos)
 		end
 	end
@@ -500,7 +572,7 @@ local function wrap()
 		local org = FrameUpdate_Wrapper
 		FrameUpdate_Wrapper = function(...)
 			local r = org(...)
-			pcall(tick)
+			pcall(tick, ...)                              -- FrameUpdate_Wrapper(delta): GuiBank.lua uses it as seconds
 			return r
 		end
 	end
@@ -519,15 +591,20 @@ function M.GoScreen(screen, _opts)
 	local s = string.lower(tostring(screen))
 	local ingame = string.sub(s, 1, 7) == "ingame\\"     -- HUD, pause, wrecked...: all part of the race
 	local start = s == "ingame\\introrace.lua" or s == "ingame\\hud.lua"
+	-- Options, Help, garage, popups (quit?): reached from the pause menu too, the race is not over
+	local shared = string.sub(s, 1, 7) == "shared\\" or string.sub(s, 1, 7) == "popups\\"
 	if start and not in_race then
 		banner_hide()
 		banner = nil
 		in_race, hud_ready = true, false
 		race_start()                                      -- at the intro if possible: before RaceStartScript runs
+	elseif shared and in_race then
+		if not suspended then suspend() end
 	elseif not ingame and in_race then
 		in_race, hud_ready = false, false
 		race_end()
 	end
+	if ingame and in_race and suspended then resume() end   -- back to the pause menu or the HUD
 	if s == "ingame\\hud.lua" and in_race and not hud_ready then
 		banner_drop()                                     -- built under the race HUD only: under the intro's view it
 		hud_ready = true                                  -- sat top-left, off-screen (2026-11-13)

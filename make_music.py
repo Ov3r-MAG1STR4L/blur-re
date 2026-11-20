@@ -36,6 +36,10 @@ GROUP_MAX = 32
 LUFS = -9.0           # added tracks: a bit above the originals (median -10.2, full tracks -12.2 .. -8.7) to cut through engines
 
 
+class Unreadable(Exception):
+    """An audio file ffmpeg cannot decode: build() skips it."""
+
+
 def f32(v):
     return struct.unpack("<I", struct.pack("<f", v))[0]
 
@@ -44,6 +48,8 @@ def pcm48(src):
     """48 kHz stereo int16 of src, gain set to LUFS integrated loudness (limiter at -1 dBFS)."""
     m = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", src, "-af", "ebur128", "-f", "null", "-"],
                        capture_output=True, encoding="utf-8", errors="replace").stderr   # file names like 『BLUR』
+    if "I:" not in m:      # not audio ffmpeg can read: broken download, renamed web page or video (player, 2026-11-20)
+        raise Unreadable(m.strip().splitlines()[-1] if m.strip() else "ffmpeg found no audio")
     gain = LUFS - float(m.rsplit("I:", 1)[1].split("LUFS")[0])
     print(f"  volume {gain:+.1f} dB -> {LUFS} LUFS")
     with tempfile.TemporaryDirectory() as d:
@@ -672,6 +678,87 @@ def position_check(j, n):
     return out
 
 
+FORCE_BASE = 1000      # MusicType FORCE_BASE + p (set by musicctl): RaceStartScript stops what plays and starts position p
+
+
+def managed_chain(j):
+    """A race track that ends no longer starts the next one by itself while the plugin drives the music: each track
+    sound object calls, at its end, InGameLicensedMusicNextTrackScript (word 12 of the object, read in the data);
+    it now calls a new InGameMusicEndedScript: if MusicType = 1 (the option's own "on": menus, no plugin, plugin
+    passive) -> the next track as before; else (plugin in a race: p + 2, FORCE_BASE + p, 0 during a skip) -> playing = 0
+    and silence until the plugin starts the next track itself (a skip at the end it computed: the banner and the sound
+    always change together; the old chain drifted from the plugin's timer, player 2026-11-20). Returns the objects."""
+    nt = obj_index(j, "InGameLicensedMusicNextTrackScript")
+    mt, playing = obj_index(j, "MusicType"), obj_index(j, "InGameMusicPlayingVariable")
+    code = [0x1317, mt << 16, F1, 0x1101, 10, 0x1004, 0, 0x1002, playing << 16, 0x1202, 0x1200, nt << 16, 0x1202]
+    ended = j.count
+    j.w += [189, j.name("InGameMusicEndedScript"), len(code)] + code
+    j.count += 1
+    bank = j.name("InGameMusic")
+    hits = [i for i in range(len(j.w) - 13) if j.w[i] == 60 and j.w[i + 2] == bank and j.w[i + 12] == nt]
+    for i in hits:
+        assert j.w[i + 13] == 0x10000, (i, j.w[i:i + 14])
+        j.w[i + 12] = ended
+    return hits
+
+
+def ended_check(j):
+    """Simulation of InGameMusicEndedScript: {MusicType: 'next' or 'stop'} (check)."""
+    _, code = j.code("InGameMusicEndedScript")
+    nt, playing = obj_index(j, "InGameLicensedMusicNextTrackScript"), obj_index(j, "InGameMusicPlayingVariable")
+    out = {}
+    for v in (0.0, 1.0, 2.0, 7.0, float(FORCE_BASE)):
+        assert code[0] == 0x1317 and code[3] == 0x1101, code
+        p = code[4] if struct.unpack("<f", struct.pack("<I", code[2]))[0] == v else 5
+        if code[p:p + 2] == [0x1200, nt << 16]:
+            out[v] = "next"
+        elif code[p:p + 4] == [0x1004, 0, 0x1002, playing << 16]:
+            out[v] = "stop"
+    return out
+
+
+def force_start(j, n):
+    """RaceStartScript: if MusicType = FORCE_BASE + p, stop the track that plays (even one the previous race left
+    going: the normal path keeps it) and start position p: playing = 1, started = 1, index = p, call play. Tests go
+    right before the "already playing" test, after the volumes are set. The plugin uses it to start a race on a track
+    it knows for sure (a new track, or after a destruction / checkpoint event where it stays out)."""
+    mt, playing = obj_index(j, "MusicType"), obj_index(j, "InGameMusicPlayingVariable")
+    stop = obj_index(j, "InGameLicensedMusicStopScript")
+    var, started, play = j.shuffle_ids
+    s, rs = j.code("RaceStartScript")
+    at = [p for p, op in script_ops(rs) if rs[p:p + 3] == [0x1317, playing << 16, F1]]
+    assert len(at) == 1, at
+    ins = at[0]
+    new = list(rs)
+    for p, op in script_ops(rs):
+        if op == 0x1101 and rs[p + 1] >= ins:
+            new[p + 1] = rs[p + 1] + 5 * n
+    body0 = len(rs) + 5 * n
+    new[ins:ins] = sum(([0x1317, mt << 16, f32(FORCE_BASE + p), 0x1101, body0 + 17 * p] for p in range(n)), [])
+    new += sum(([0x1200, stop << 16, 0x1004, F1, 0x1002, playing << 16, 0x1004, F1, 0x1002, started << 16,
+                 0x1004, f32(p), 0x1002, var << 16, 0x1200, play << 16, 0x1202] for p in range(n)), [])
+    j.set_code(s, rs, new)
+
+
+def force_check(j, n):
+    """Simulation of RaceStartScript for MusicType FORCE_BASE + p: the index each sets, after a stop (check)."""
+    mt, playing = obj_index(j, "MusicType"), obj_index(j, "InGameMusicPlayingVariable")
+    stop = obj_index(j, "InGameLicensedMusicStopScript")
+    var, started, play = j.shuffle_ids
+    _, rs = j.code("RaceStartScript")
+    fl = lambda w: struct.unpack("<f", struct.pack("<I", w))[0]
+    test = next(q for q, op in script_ops(rs) if rs[q:q + 3] == [0x1317, playing << 16, F1])
+    out = []
+    for p in range(n):
+        q = next(q for q, op in script_ops(rs) if rs[q:q + 3] == [0x1317, mt << 16, f32(FORCE_BASE + p)])
+        assert q < test, "forced start after the 'already playing' test"
+        b = rs[rs[q + 4]:rs[q + 4] + 17]
+        assert b[:2] == [0x1200, stop << 16] and b[4:6] == [0x1002, playing << 16] and b[8:10] == [0x1002, started << 16]
+        assert b[12:16] == [0x1002, var << 16, 0x1200, play << 16] and b[16] == 0x1202, b
+        out.append(fl(b[11]))
+    return out
+
+
 def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
     """Bank + controller + final mix for the chosen playlist folders. Returns a summary.
     shuffle: Spotify-like looping shuffle (new order at each build), else independent random picks.
@@ -701,16 +788,23 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
             if key not in seen:
                 seen.add(key)
                 files.append(path)
-    for k, path in enumerate(files):
+    k = 0
+    for path in files:
+        try:
+            data, samples = encoded(path, pcm16)
+        except Unreadable as e:
+            print(f"  SKIPPED, unreadable audio file: {path}\n    ffmpeg: {e}\n"
+                  "    (play it in VLC: if it does not play, download or convert it again, or remove it)")
+            continue
         name = wave_name(path, used)
         print("track", "InGameMusic%02d" % (23 + k), "=", os.path.basename(path))
-        data, samples = encoded(path, pcm16)
         if pcm16:
             bank = blurbaf.add_pcm_wave(bank, name, np.frombuffer(data, "<i2").reshape(-1, 2), 48000)
         else:
             bank = blurbaf.add_wave(bank, name, None, 48000, data=data, samples=samples)
         objs.append(add_track(j, "%02d" % (23 + k), name))
         info[objs[-1]] = (track_lines(path), samples / 48000, path)
+        k += 1
     if not objs:
         raise SystemExit("empty playlist: no track chosen")
     if shuffle:
@@ -719,6 +813,11 @@ def build(folders, out=OUT, shuffle=True, effects=True, pcm16=False):
         mode = "looping shuffle, new order at each build"
         position_start(j, len(order))
         assert position_check(j, len(order)) == [float(p) for p in range(len(order))], "simulation du départ par position"
+        force_start(j, len(order))
+        assert force_check(j, len(order)) == [float(p) for p in range(len(order))], "simulation du départ forcé"
+        assert position_check(j, len(order)) == [float(p) for p in range(len(order))], "départ par position après"
+        assert len(managed_chain(j)) >= len(order), "objets morceaux sans fin de morceau connue"
+        assert ended_check(j) == {0.0: "stop", 1.0: "next", 2.0: "stop", 7.0: "stop", float(FORCE_BASE): "stop"}
         tracks = [info[o][:2] for o in order]
         covers = [info[o][2] for o in order]
     else:
