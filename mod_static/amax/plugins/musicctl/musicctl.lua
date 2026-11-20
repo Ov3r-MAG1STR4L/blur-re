@@ -586,8 +586,12 @@ local function wrap()
 	end
 end
 
-function M.GoScreen(screen, _opts)
+function M.GoScreen(screen, context)
 	wrap()
+	-- a screen in a context of its own (SpWrecked: HUD.lua opens it with UIEnums.Context.SpWrecked) sits over the HUD,
+	-- which stays: nothing to do. Seen as leaving the HUD, the banner never came back after a wreck (player, 2026-11-20)
+	local ctx = type(UIEnums) == "table" and UIEnums.Context
+	if context ~= nil and type(ctx) == "table" and context ~= ctx.Main then return end
 	local s = string.lower(tostring(screen))
 	local ingame = string.sub(s, 1, 7) == "ingame\\"     -- HUD, pause, wrecked...: all part of the race
 	local start = s == "ingame\\introrace.lua" or s == "ingame\\hud.lua"

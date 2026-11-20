@@ -1720,6 +1720,12 @@ Demande de la communauté : afficher le titre quand la musique change. Deux ques
   `ingame\` : le plugin croyait la course finie et en recommençait une au retour. Désormais suspendue (option rendue
   au joueur pour l'écran Options) puis reprise au retour d'un écran `ingame\`. `TUNE` (touches 1-8 qui déplaçaient la
   pochette) coupé dans la version des joueurs.
+- **Bandeau perdu après une épave** : `HUD.lua` ouvre `Ingame\SpWrecked.lua` dans un contexte à lui
+  (`GoScreen(écran, UIEnums.Context.SpWrecked)`), par-dessus le HUD qui reste, et la fermeture ne repasse pas par
+  `GoScreen` : le plugin le prenait pour une sortie du HUD (`hud_ready` faux jusqu'à la course suivante). Un écran
+  ouvert avec un contexte autre que `Main` est maintenant ignoré. La pause, elle, passe par `GoScreen` sans contexte.
+- **Pack 1.2.2** (branche `pack-1.2.2`, depuis `610a8ad` = 1.2.1) : ces seuls correctifs, sans les pochettes ni le
+  nettoyage des titres (plugin 0.31 = 0.3 + correctifs).
 - Vérifié hors jeu : construction (simulations `force_check`, `position_check`, `ended_check`), plugin compilé et
   exécuté par le `lua5.1.dll` d'AMAX avec une fausse API (course, fins de morceaux, skip, volume 0, pause → Options,
   destruction, course suivante). **À essayer en jeu** : silence ou fin coupée aux changements, `FIRST_START`,
