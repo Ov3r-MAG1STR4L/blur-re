@@ -1153,6 +1153,21 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     d'aide de braquage à VA `0x4C2B7A`, voiture remplacée par la voiture drift de sa classe) est écrit mais **en
     attente** (son code compare le numéro d'IA à 0 au lieu de 2). Utile pour notre projet IA : points d'entrée du
     réglage et de la conduite des IA.
+    **Posé chez nous le 2026-11-23** dans `Jeux_WII\Blur_test_hud\Blur REBORN.exe` (sha256 d'origine `3dad11a7…`,
+    les 7 zones avaient bien les anciens octets ; sauvegarde `Blur REBORN.exe.avant_aimods`) avec
+    `ai_mods_patch.py` (octets lus dans `vendor/GameTweaks.cs`, `check` / `on` / `off`). **Pas encore essayé en jeu.**
+- **Limite des 20 voitures : pourquoi elle tient (code source, 2026-11-23, Fort)**. 20 est une constante de
+  compilation, pas une donnée : `RaceLogic::MAX_VEHICLES` = 20 (`RLDefinitions.h`, 31 fichiers), `MAX_RACELOGIC_VEHICLES`,
+  `MAX_LEVELSTATE_CARS`, `MAX_LEVELRESULT_CARS`, `MAX_NUMBER_AUDIO_CARS`, `PickupPositionActor::MAX_VEHICLES` = 20,
+  `MP_CUSTOM_RACE_MAX_PLAYERS` = 20 (`CustomRace.cpp`). Elle fixe la taille de tableaux dans des structures et des
+  statiques : état de course, résultats, journal envoyé au serveur (`GameLoggingManager`), états réseau compressés et
+  en-têtes des replays, sons de proximité (8 tableaux), colonnes de lumière, classement (`VLC_PlayerRubberBanding`,
+  `RaceModeDestruction`). S'y ajoutent les 20 places de départ des niveaux et les 20 colonnes des CSV de difficulté.
+  `MAX_MULTIPLAYER_VEHICLES` = 50 ne concerne que le garage. Conséquence : passer à plus de 20 dans `Blur.exe` voudrait dire
+  déplacer et agrandir des dizaines de tableaux et réécrire tous les accès (décalages compilés) : impraticable par
+  patch. Voies réalistes : **recompiler** (BlurRebuilt d'uKER, constantes à changer, et alors plus compatible avec le
+  multi AMAX) ; en données, ajouter des places de départ aux niveaux et des colonnes aux CSV. Le réglage
+  `max_ai_per_console` ne sert à rien au-delà de 19 (déjà testé : coupé à 20).
   - Icônes de bonus perso (2.6.2, `PowerupIcons.cs`) : image rendue en blanc pur, teintée par le jeu, Bolt en 3
     variantes (3, 2, 1 tirs) ; **mises en attente** dans le code dès la 2.6.1 (« mal affichées en jeu »).
   - Textures nettes au loin (2.7.0) : Blur n'active jamais le filtrage anisotrope ; Md installe `aniso_fix.dll`
