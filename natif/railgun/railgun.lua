@@ -75,11 +75,11 @@ local function wrap()
 			if s and s.powerups and s.powerups[k] then any = true end
 		end
 		if on and not any and s and s.powerups then
-			-- railgun only: the game turns every power-up off when the 8 of its own are off (CustomRace.cpp:
-			-- mPickupsEnabled), so the Bolt goes on behind the scenes, every position draws (random power-ups), and
-			-- the dll refuses every type but the railgun. The menu keeps the user's choice.
+			-- railgun only: keep all vanilla powerups off so no native Bolt is serialized to LAN clients.
+			-- Random power-ups is forced to 1 so positions draw, and the dll enforces Railgun on all positions.
+			-- The DLL's init_actor_thunk auto-detects railgun-only via prob_data and forces mPickupsEnabled=true.
 			local bolt, random = s.powerups.bolt, s.random_powerups
-			s.powerups.bolt, s.random_powerups = true, 1
+			s.powerups.bolt, s.random_powerups = false, 1
 			tell_dll("only")
 			local r = { org_setup(s, ...) }
 			s.powerups.bolt, s.random_powerups = bolt, random

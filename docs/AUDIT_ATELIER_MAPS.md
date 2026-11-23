@@ -96,7 +96,7 @@ map en mémoire.
 
 ## Scène Blender (2026-11-23)
 `b2blender.py` : `python b2blender.py` exporte, puis `blender -b --python b2blender.py` construit
-`Jeux_WIIlur_blender\dubai.blend` (refuse d'écraser un `.blend` existant). Repère : colliders Unity en axes du
+`Jeux_WII\blur_blender\dubai.blend` (refuse d'écraser un `.blend` existant). Repère : colliders Unity en axes du
 jeu, sans le décalage de chaque route (Blender X, Y, Z = jeu x, −z, y). Les captures et les zones sont ramenées
 dans ce repère (y − dy de leur route). Collections : `REFERENCE` (49 objets, un par collider et par classe, nom
 d'origine, non sélectionnable), `REPERES` (tracés, embranchements, tours roulés, grilles, zones de gravité
