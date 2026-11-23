@@ -3,7 +3,7 @@
 
 Touches (lues en arrière-plan avec GetAsyncKeyState : le jeu garde le focus, pas de pause) :
   Inser  capturer la voiture du joueur          (bip aigu = enregistré, bip grave = pas en course / erreur)
-  Début  dernière capture = « bloquant »    Fin = « traversable »    Pg.Préc = « anormal »
+  Suppr  dernière capture = « bloquant »    / = « traversable »    * = « anormal »   (/ et * du pavé numérique)
   (F9 et F5-F7 servent déjà dans Blur ; touches à changer dans KEYS)
 Les commentaires s'ajoutent après coup (le jeu se met en pause dès qu'on clique ailleurs, ce n'est pas grave) :
   poscapture.py                       écoute (lancé par « Capturer position.bat »)
@@ -34,7 +34,7 @@ TRACES = {1: "dubai_route1_trace.json", 2: "dubai_route2_trace.json", 3: "dubai_
           4: "marina_trace.json"}
 UNKNOWN = "Non_identifie"
 PRES = 60.0                                                            # m (x, z) du tracé pour identifier
-KEYS = {0x2D: "capture", 0x24: "bloquant", 0x23: "traversable", 0x21: "anormal"}   # Inser, Début, Fin, Pg.Préc
+KEYS = {0x2D: "capture", 0x2E: "bloquant", 0x6F: "traversable", 0x6A: "anormal"}   # Inser, Suppr, / et * du pavé numérique
 RESULTS = ("bloquant", "traversable", "anormal", "inconnu")
 
 
@@ -216,7 +216,7 @@ def listen():
     arc, last = Archive(), None
     get = ctypes.windll.user32.GetAsyncKeyState
     down = {k: False for k in KEYS}
-    print("Capture de position : Inser capturer | Début bloquant, Fin traversable, Pg.Préc anormal (dernière capture)")
+    print("Capture de position : Inser capturer | Suppr bloquant, / traversable, * anormal (dernière capture)")
     print("Dossier :", ROOT, "\nCtrl+C pour arrêter.")
     while True:
         for k, what in KEYS.items():

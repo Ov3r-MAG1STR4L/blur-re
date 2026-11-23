@@ -66,7 +66,7 @@ Le matériau n'y est pour rien : tous nos triangles reçoivent le même drapeau 
 ## 4. Proposition d'ordre
 
 **Étape 1 faite (2026-11-23, à valider en jeu)** : `poscapture.py` + `Jeux_WII\Capturer position.bat`.
-- **Inser** capture (F9 sert déjà dans Blur ; touches lues par `GetAsyncKeyState`, le jeu garde le focus) ; Début / Fin / Pg.Préc = bloquant / traversable /
+- **Inser** capture (F9 sert déjà dans Blur ; touches lues par `GetAsyncKeyState`, le jeu garde le focus) ; Suppr / `/` / `*` (pavé numérique) = bloquant / traversable /
   anormal sur la dernière capture. Commentaires : `poscapture.py annoter <chemin> <résultat> <texte>`.
 - Données : x, y, z, cap (degrés, depuis l'axe avant +0xE4), les 3 axes de la voiture, vitesse (vecteur et km/h),
   date, identifiant unique, circuit et statut d'identification, exe du jeu, nombre de voitures.
