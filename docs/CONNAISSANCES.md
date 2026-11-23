@@ -3769,6 +3769,16 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
 - **Tracés et `Routes_17f`** : les tracés viennent des tours roulés, nettoyés par `b2trace` avec toutes les surfaces
   (critère d'inclinaison, sans distinguer `17f`). Points sur une route `17f` (≤ 4 m) : Business Bay 91 %, Dubai
   Island 89 %, Marina 88 %, Construction 77 % (8 % sans surface à 4 m : en l'air ou hors route).
+- **Recalage des tracés (2026-11-23, `b2recale.py`, hors jeu, rien construit ni installé)** : chaque point posé sur
+  le sol de route (`17f` / `8017f`, n.y ≥ 0,5) au niveau le plus proche du **tour roulé Unity** (choix de l'étage :
+  pont, rampe, route dessous), puis centré entre les bords de la bande de route qui contient la position du tour
+  (balayage en travers ±40 m, même niveau ±3 m), lissage 3 points. Sorties à côté des tracés actuels
+  (`*_trace_recale.json`, champ `controle` par point). Déplacement médian 3,8-4,8 m, max 17-19 m (le tour suit la
+  trajectoire de course, à la corde, le recalage la remet au milieu). Points signalés : sans route 19 / 4 / 4 / 1
+  (routes 1-4 : looping et mur de Business Bay surtout), déplacés > 8 m 66-89 par route, zones trop larges pour
+  trouver les bords (places, parkings : point laissé) 7 / 3 / 38 / 18. Largeur mesurée médiane 22-44 m : peut
+  inclure des trottoirs au même niveau, à vérifier. Vérification : `blur_blender/traces_recalees.blend`
+  (`blender -b --python b2blender.py -- recale`), à ajouter à `dubai.blend` par Fichier > Ajouter > Collection.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

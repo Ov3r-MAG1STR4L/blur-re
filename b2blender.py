@@ -212,5 +212,71 @@ def build():
     print("scène écrite :", BLEND)
 
 
+def build_recale():
+    """blender -b --python b2blender.py -- recale : blur_blender/traces_recalees.blend (régénérable, réécrit) avec,
+    par route : tracé actuel (cyan), tracé recalé de b2recale (vert), tour roulé Unity (blanc), et un repère par point
+    signalé (rouge sans_route, orange deplace, jaune zone_large ; propriétés : drapeaux, déplacement, largeur).
+    Même repère que dubai.blend : Fichier > Ajouter (Append) > Collection pour le superposer à la collision."""
+    import bpy
+    import csv
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    sc = bpy.context.scene
+    aid = os.path.join(JEUX, "blur2_aid", "dubai")
+
+    def curve(name, pts, coll, rgba, closed, r):
+        cu = bpy.data.curves.new(name, "CURVE")
+        cu.dimensions, cu.bevel_depth = "3D", r
+        s = cu.splines.new("POLY")
+        s.points.add(len(pts) - 1)
+        s.use_cyclic_u = closed
+        for i, p in enumerate(pts):
+            s.points[i].co = (*B(p), 1)
+        m = bpy.data.materials.new(name)
+        m.diffuse_color = rgba
+        cu.materials.append(m)
+        coll.objects.link(bpy.data.objects.new(name, cu))
+
+    COLORS = {"sans_route": (1, 0.1, 0.1, 1), "deplace": (1, 0.5, 0, 1), "zone_large": (1, 0.9, 0.1, 1)}
+    for r, (nom, lap, trace, _, _) in ROUTES.items():
+        rec = os.path.join(aid, trace.replace(".json", "_recale.json"))
+        if not os.path.exists(rec):
+            continue
+        L = [(float(x["x"]), float(x["y"]), float(x["z"])) for x in csv.DictReader(open(os.path.join(aid, lap)))]
+        low = min(p[1] for p in L)
+        old, new = json.load(open(os.path.join(aid, trace), encoding="utf-8")), json.load(open(rec, encoding="utf-8"))
+        c = bpy.data.collections.new("Recalage_" + nom)
+        sc.collection.children.link(c)
+
+        def line(pts):
+            return [(p["x"], p["h"] + low, p["z"]) for p in pts]
+        curve("Trace_actuelle_" + nom, line(old["points"]), c, (0, 0.9, 1, 1), True, 0.5)
+        curve("Trace_recalee_" + nom, line(new["points"]), c, (0.1, 1, 0.2, 1), True, 0.8)
+        curve("Tour_roule_" + nom, L[::2], c, (1, 1, 1, 1), True, 0.25)
+        for bi, (ob, nb) in enumerate(zip(old.get("branches") or [], new.get("branches") or [])):
+            curve("Embr%d_actuel_%s" % (bi + 1, nom), line(ob["points"]), c, (0, 0.6, 0.7, 1), False, 0.4)
+            curve("Embr%d_recale_%s" % (bi + 1, nom), line(nb["points"]), c, (0.1, 0.7, 0.2, 1), False, 0.6)
+        groups = [("", new["points"], new.get("controle", []))] + [
+            ("embr%d_" % (bi + 1), b["points"], b.get("controle", [])) for bi, b in enumerate(new.get("branches") or [])]
+        for pre, pts, ctrl in groups:
+            for k in ctrl:
+                f = [x for x in k["drapeaux"] if x in COLORS]
+                if not f:
+                    continue
+                p = pts[k["i"]]
+                e = bpy.data.objects.new("Point_%s%s_%03d_%s" % (pre, nom, k["i"], f[0]), None)
+                e.empty_display_type, e.empty_display_size = "SPHERE", 2.0
+                e.location = B((p["x"], p["h"] + low, p["z"]))
+                e.color, e.show_in_front = COLORS[f[0]], True
+                e["drapeaux"], e["deplacement_m"] = ", ".join(k["drapeaux"]), k["deplacement_m"]
+                e["largeur_m"] = k["largeur_m"] or 0.0
+                c.objects.link(e)
+    out = os.path.join(OUT, "traces_recalees.blend")
+    bpy.ops.wm.save_as_mainfile(filepath=out)
+    print("écrit :", out)
+
+
 if __name__ == "__main__":
-    build() if IN_BLENDER else export()
+    if IN_BLENDER:
+        build_recale() if "recale" in sys.argv else build()
+    else:
+        export()
