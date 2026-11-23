@@ -1121,6 +1121,61 @@ complet (route, collisions, tracé IA, objets, lumière, surfaces, partage `.blu
 - Le remplacement de voiture (2.5) annonce « votre voiture visible en ligne » : seulement chez le joueur, avec des paks
   modifiés ; compatibilité avec AMAX à faire confirmer par Md.
 
+### Map Builder 2.6.0 à 2.7.1 (notes de version + source au commit `bdff03ec`, lu le 2026-11-23, rien exécuté)
+
+Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21/11). Fichiers : `Blur.Map.Builder.exe`
+(~62 Mo) et `Blur.Map.Tester.exe` (inchangé depuis la 2.5.0). Niveau de confiance : **Fort** pour ce qui vient du code,
+**Annoncé** pour ce qui vient des seules notes de version ; rien essayé chez nous.
+- **Partage (2.6.0)** : fichiers `.blurmap` (carte + objets, paysage, surfaces, modèles importés, éclairage et ciel du
+  lieu), `.blurcar` (carrosserie, sons, logo), `.blurskin` (tous les skins d'une voiture), `.blurpowerups` (2.6.2).
+  « Build + install » choisit ce qu'il installe (cartes, voitures, skins).
+- **Voitures perso** : tous les sons de conduite remplaçables (compresseur, turbo, rapports, retours de flamme,
+  pneus, freins…), import mp3 / m4a / flac converti en wav ; flammes d'échappement placées à la main ; largeur avant
+  et arrière séparée ; logo perso ; **export d'une voiture du jeu en `.glb`** (2.6.2 : une pièce par objet avec les
+  noms du jeu : capot, portes, rétros, pare-chocs, feux, vitres, et par roue pneu / jante / disque / étrier).
+  2.7.x : vitres vraiment transparentes sur les carrosseries importées, intérieurs peu réfléchissants (d'après le nom
+  ou le matériau des pièces), badges à transparence posés sur la couleur voisine ; peinture des carrosseries
+  importées désactivée (en cours). Voitures perso en ligne (2.6.1) : chaque voiture reçoit un **numéro fixe** pour
+  que le jeu de l'autre joueur retrouve la même (sinon « Downloadable Content »), les deux joueurs doivent avoir le
+  même `.blurcar`.
+- **Onglet « Game tweaks » (2.6.1, Blur REBORN seulement)**, `GameTweaks.cs` :
+  - Plus d'IA : `MultiplayerConfig.max_ai_per_console` (dans `multiplayer.bin` du pak de REBORN) passé de 6 à 19.
+    Même levier que notre essai (plus haut : 49 → le jeu coupe à 20 voitures) ; Md vise directement 19. Son
+    commentaire : nombre d'IA = le plus petit de (places libres, réglage « Add AI », joueurs × `max_ai_per_console`).
+    En réseau, chaque jeu conduit une partie des IA : tous les joueurs doivent avoir les mêmes réglages.
+  - IA plus dures : réécrit `gamedata/events/multiplayer_hard.csv` (sections de 9 lignes : vitesse max de piste à
+    1,0, vitesse min ≥ 0,65, modèle de compétence = **70**, celui du boss le plus dur `bossbattlet5_hard`).
+  - **IA avec mods** (patch de `Blur REBORN.exe`) : l'appel `OfflineValues` du réglage des IA (fichier `0x7F9502`)
+    renvoie vers du code posé dans un trou d'`int3` (VA `0xDF3B20`) qui donne à chaque IA Front Runner + un mod parmi
+    Splash Damage / Decoy Drop / Shielding Efficiency + un parmi Silent Running / Mastermine / ECM, tiré d'une table
+    fixe par numéro d'IA (même résultat sur chaque PC). Compteurs et réglages dans de la mémoire libre après le modèle
+    TLS (VA `0x1259F00..`). Un mode « Drifter » (2 IA qui dérapent : coup de frein à main en virage via l'appel
+    d'aide de braquage à VA `0x4C2B7A`, voiture remplacée par la voiture drift de sa classe) est écrit mais **en
+    attente** (son code compare le numéro d'IA à 0 au lieu de 2). Utile pour notre projet IA : points d'entrée du
+    réglage et de la conduite des IA.
+  - Icônes de bonus perso (2.6.2, `PowerupIcons.cs`) : image rendue en blanc pur, teintée par le jeu, Bolt en 3
+    variantes (3, 2, 1 tirs) ; **mises en attente** dans le code dès la 2.6.1 (« mal affichées en jeu »).
+  - Textures nettes au loin (2.7.0) : Blur n'active jamais le filtrage anisotrope ; Md installe `aniso_fix.dll`
+    (source `assets\aniso_fix.c`) dans `amax\dlls` (chargé par AMAX dans Blur **et** REBORN), Anisotropy 16. Activé
+    par défaut, purement local. La DLL vérifie le code du jeu et ne fait rien sur un exe inconnu.
+  - Sauter les vidéos de démarrage (2.7.1) : renomme `UI\movies\atvi.bik` et `BizarreSplash.bik` en `*.bmb_off` ; le
+    jeu saute une vidéo qu'il ne peut pas ouvrir. **Touche aussi le Blur normal** (même dossier) : à ne pas activer
+    dans notre dossier d'origine.
+- **Objets animés (2.7.0)**, `AnimExport.cs` : uniquement des pièces que les villes du jeu utilisent déjà, types
+  ajoutés au pack d'acteurs (copie de celui de Haruna) depuis les packs des villes :
+  `DynamicObjActor` + `SplineMovementComponent` (métro de NY, bateaux de Long Beach), `TriggerRegion` →
+  `ActivateMessage` → `MessageScript` → `MovementSplineMessage` (voitures de police de LA Downtown),
+  `SpinnerMovementComponent` + `MovementSpinUpYAxis` (gyrophares de LA River). Constats de Md en jeu (2026-11-19) :
+  le déplaceur sur chemin avance **par l'arrière** de l'objet (+180° à ajouter) ; un objet avec `EnableRespawn` 1 /
+  `AnimStartTimer` 0,3 (les cônes de Haruna) ignore le message de départ tant qu'une voiture ne l'a pas touché (les 47
+  objets mobiles des 7 villes ont 0 / 0,0) ; un script lancé par une zone a `RestartWhenFinished` = 0 (la boucle se
+  fait avec deux scripts qui se relancent) ; la position d'une `TriggerRegion` est son coin bas, son centre =
+  position + demi-taille. Tangentes des chemins : Catmull-Rom × 0,6 comme le jeu.
+- **Route (2.7.0)** : texture d'asphalte 1K (au lieu de 256), route et sol plus auto-éclairés (lumière du lieu),
+  image d'asphalte et de rustines perso.
+- **Tests** : démarrage rapide (plugin de quick start) corrigé en 2.7.1 ; Play et Build ne regardent que le Blur de
+  leur propre dossier (deux copies du jeu sur un PC marchent, 2.6.1).
+
 
 ## Projet J : circuit de NFS Hot Pursuit Wii vers Blur (2026-10-26, premier test hors jeu)
 
@@ -1813,6 +1868,9 @@ Demande de la communauté : afficher le titre quand la musique change. Deux ques
 - À suivre : d'après l'utilisateur, MD a mis à jour Blur Map Builder avec une intégration de modèles de véhicules
   (reprenant les caractéristiques des voitures du jeu) et une caméra avec enregistrement des courses. Notre copie
   locale de Map Builder (v1.0.0) n'en contient rien : récupérer la nouvelle version.
+  Mise à jour 2026-11-23 : intégration de voitures confirmée par les notes de version (voitures perso depuis la 1.0.8,
+  remplacement 2.5.0, export `.glb` 2.6.0 ; voir « Map Builder 2.6.0 à 2.7.1 ») ; **aucune caméra d'enregistrement
+  de course** dans les notes de 1.0.0 à 2.7.1.
 
 ### Prototype Blur 2 du 10/11/2010 (2026-11-09, liste de l'archive et du gamedata.pak)
 - `Downloads\Blur 2 (Nov 10, 2010 prototype).rar` : 3,6 Go, 287 fichiers, `Kanzen_Release.xex` + `Kanzen_Speed.xex`.
