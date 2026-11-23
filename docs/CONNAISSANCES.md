@@ -4053,3 +4053,9 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
 - Taille des cartes construites : collision Business Bay 113 460 triangles / 519 objets, Dubai Island 108 978 / 533,
   Construction 214 310 / 945, Marina 193 743 / 804 (au plus 255 triangles par objet). Décor : jusqu'à 32 000
   triangles par modèle (Dubai Island 141 modèles, Construction 177).
+- Gravité « qui ne s'active plus au même endroit » (2026-11-23, journal b2gravity.log) : `map_gate` revérifie la carte
+  à chaque arrêt de la voiture (après plus de 30 m parcourus) ; à plus de 40 m de tous les points `track`, les zones
+  sont coupées jusqu'au prochain arrêt près du tracé. Arrêt dans le looping de Business Bay, à 52 m du tracé
+  principal → « zones off (other map) ». Les `track` venaient de l'ancien tracé, sans chemins secondaires.
+  `b2gravity_zones.py` lit maintenant le tracé v2 : 224 points `track` au lieu de 103 pour Business Bay, et quelques
+  zones en plus sur les chemins secondaires (29→32, 11→13, 28→30, 27→28).

@@ -1,16 +1,18 @@
 # b2gravity zones, Dubai route 2 (b2gravity_zones.py), game axes, y shifted by -2.99
 speed 13.9
 -690.0 5.6 466.1 -644.2 44.0 495.2
--681.0 4.6 524.3 -615.8 51.6 558.8
+-681.0 3.6 524.3 -615.8 51.6 558.8
 -656.7 -10.0 726.6 -623.3 14.0 751.0
 -621.4 18.5 466.8 -582.4 62.3 517.9
 -571.4 12.9 442.4 -530.8 47.9 470.3
 -566.6 11.4 505.2 -512.7 51.0 534.8
+-299.8 -4.6 908.2 -274.3 26.0 935.5
 -284.5 2.3 890.5 -257.7 27.7 916.5
 -232.9 -0.1 917.8 -202.3 27.5 953.7
 -142.8 -4.5 966.9 -87.4 28.2 1008.0
 -54.5 -7.1 448.5 -1.3 17.1 528.8
 -7.8 -7.1 516.6 33.6 17.0 540.9
+68.9 -9.8 381.0 97.5 16.5 432.6
 # v6 : couple qui tourne la voiture vers la surface (align = raideur, damp = amortissement)
 align 1.5
 damp 0.6
@@ -22,92 +24,155 @@ mph_max 35
 # v9 : reorientation par la normale devant la voiture (turn = vitesse de rotation max en rad/s, 0 = coupe)
 turn 4
 ahead 0.15
-# v12 : la map est reconnue si la voiture arretee au depart est a moins de 40 m d'un de ces points du trace (dubai_route2_trace.json)
-track -394 448
-track -367 425
-track -354 392
-track -358 357
-track -364 321
-track -367 286
-track -361 251
-track -343 220
-track -314 199
-track -280 186
-track -245 178
-track -210 170
-track -175 164
-track -139 159
-track -103 160
-track -67 164
-track -32 172
-track -1 190
-track 24 216
-track 39 248
-track 46 283
-track 46 319
-track 36 354
-track 17 384
-track -7 411
-track -29 438
-track -33 469
-track -20 499
-track 5 524
-track 30 548
-track 51 577
-track 61 612
-track 60 648
-track 54 683
-track 60 718
-track 78 749
-track 91 783
-track 92 819
-track 87 854
-track 75 888
-track 57 920
-track 36 948
-track 12 975
-track -17 993
-track -47 1007
-track -81 1002
-track -113 985
-track -145 970
-track -178 954
-track -209 937
-track -239 917
-track -270 898
-track -303 884
-track -336 869
-track -370 857
-track -404 846
-track -438 835
-track -473 824
-track -506 812
-track -536 801
-track -573 784
-track -606 769
-track -640 758
-track -675 756
-track -711 761
-track -745 772
-track -779 782
-track -815 783
-track -850 775
-track -880 756
-track -897 724
-track -895 689
-track -880 656
-track -861 626
-track -837 599
-track -810 575
-track -779 557
-track -745 545
-track -709 542
-track -674 544
-track -638 538
-track -615 514
-track -593 485
-track -567 461
-track -532 457
-track -496 461
-track -460 461
-track -425 454
+# v12 : la map est reconnue si la voiture arretee au depart est a moins de 40 m d'un de ces points du trace (dubai_route2_trace_v2.json)
+track -467 472
+track -431 460
+track -394 454
+track -371 429
+track -359 399
+track -360 369
+track -364 333
+track -369 297
+track -370 260
+track -360 221
+track -330 195
+track -296 175
+track -258 170
+track -221 174
+track -185 166
+track -150 160
+track -114 157
+track -78 160
+track -43 165
+track -8 177
+track 19 201
+track 35 232
+track 40 265
+track 49 301
+track 50 338
+track 33 371
+track 11 400
+track -19 421
+track -36 454
+track -28 491
+track -3 517
+track 25 540
+track 54 563
+track 68 599
+track 69 636
+track 62 672
+track 57 707
+track 74 739
+track 94 769
+track 97 805
+track 95 841
+track 87 876
+track 69 907
+track 45 935
+track 17 958
+track -6 983
+track -34 1005
+track -64 1003
+track -104 1003
+track -131 984
+track -161 970
+track -196 964
+track -226 943
+track -256 930
+track -289 925
+track -321 909
+track -354 894
+track -387 879
+track -418 862
+track -447 840
+track -478 823
+track -512 808
+track -545 796
+track -579 783
+track -613 773
+track -649 763
+track -686 761
+track -723 766
+track -756 782
+track -790 796
+track -825 793
+track -855 776
+track -886 758
+track -890 722
+track -882 688
+track -872 653
+track -865 616
+track -847 583
+track -818 558
+track -784 543
+track -747 533
+track -708 524
+track -674 536
+track -640 540
+track -613 518
+track -595 490
+track -569 465
+track -540 482
+track -500 482
+track -467 472
+track 48 296
+track 58 331
+track 65 366
+track 74 401
+track 83 436
+track 94 473
+track 103 508
+track 107 544
+track 116 579
+track 119 615
+track 118 652
+track 100 684
+track 71 710
+track -632 767
+track -667 759
+track -704 759
+track -738 772
+track -773 780
+track -809 789
+track -847 782
+track -876 756
+track -890 718
+track -880 680
+track -869 646
+track -860 608
+track -836 578
+track -806 552
+track -750 536
+track -712 525
+track -689 497
+track -660 478
+track -625 486
+track -593 502
+track -562 520
+track -528 516
+track -498 495
+track -470 471
+track 45 289
+track 59 325
+track 92 345
+track 121 367
+track 151 387
+track 174 417
+track 185 453
+track 178 492
+track 145 512
+track 109 520
+track 76 535
+track 61 570
+track 68 607
+track -149 985
+track -181 968
+track -214 951
+track -246 930
+track -267 904
+track -290 879
+track -329 869
+track -364 861
+track -397 847
+track -432 839
+track -467 830

@@ -72,7 +72,9 @@ def main():
     print(len(P), "positions,", steep.sum(), "on steep surfaces (|ny| < %.1f)," % STEEP, under.sum(), "under a surface")
     import json
     tf = os.path.join(b2track.DUBAI, "marina_trace.json" if a.route == 4 else "dubai_route%d_trace.json" % a.route)
-    t = json.load(open(tf))
+    if os.path.exists(tf[:-5] + "_v2.json"):     # 2026-11-23: v2 has the driven branches (the old route 1 had none:
+        tf = tf[:-5] + "_v2.json"                # a car stopped in a branch loop, 52 m off the main line, disarmed)
+    t = json.load(open(tf, encoding="utf-8"))
     T = np.array([(q["x"], q["z"]) for pts in [t["points"]] + [b["points"] for b in t["branches"]] for q in pts])
     near = lambda b: (np.hypot(np.clip(T[:, 0], b[0], b[3]) - T[:, 0], np.clip(T[:, 1], b[2], b[5]) - T[:, 1])
                       < NEAR_TRACK).any()

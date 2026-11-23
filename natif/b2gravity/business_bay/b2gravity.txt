@@ -3,7 +3,7 @@ speed 13.9
 -38.2 -2.4 -191.7 20.8 26.1 -160.0
 111.7 15.3 -165.9 209.6 58.6 -108.7
 190.8 -6.0 -425.2 228.5 27.4 -380.9
-191.5 -3.9 -527.1 237.8 39.8 -427.1
+191.5 -3.9 -538.7 242.7 44.1 -427.1
 224.7 -10.2 -580.5 268.7 30.1 -544.1
 243.2 0.3 -538.5 287.7 27.0 -479.1
 284.2 -4.2 -570.8 334.5 28.2 -537.5
@@ -11,24 +11,27 @@ speed 13.9
 326.3 -5.9 -87.1 353.9 20.7 -40.4
 345.1 -14.0 -397.9 383.8 11.2 -367.4
 347.6 -11.9 -329.6 373.2 16.4 -289.8
-341.7 -3.1 184.4 390.0 21.5 215.3
+341.7 -3.1 184.4 390.3 21.5 215.4
 379.6 0.8 -688.2 422.3 29.1 -649.3
 370.8 2.4 -708.7 422.6 177.8 -656.0
 382.3 -5.7 47.1 475.2 52.1 215.9
 398.8 1.2 -639.0 437.1 26.0 -605.7
 413.1 -33.9 -765.9 543.4 216.4 -637.2
-409.8 18.4 -642.0 462.2 182.4 -601.3
+409.8 18.4 -642.0 462.2 182.4 -600.6
 417.2 101.3 -688.0 456.1 164.8 -646.5
+473.3 -2.8 -759.2 505.6 23.6 -725.7
 493.8 -11.7 -467.1 522.0 13.3 -439.1
 626.7 -2.4 -879.3 830.4 38.4 -808.3
 638.1 2.0 -500.6 666.1 26.7 -465.0
 678.6 -2.3 -834.5 707.9 22.6 -803.5
-698.6 16.4 -565.3 874.7 100.9 -419.7
-827.0 16.1 -726.6 881.0 101.2 -572.4
+698.6 16.4 -565.3 874.7 100.9 -419.6
+826.7 16.1 -727.4 881.0 101.2 -572.4
 853.1 6.6 -751.8 885.5 32.3 -706.5
 877.2 6.3 -756.9 928.6 33.4 -697.6
 883.6 14.8 -677.9 922.1 40.6 -615.3
 886.6 17.7 -613.9 914.8 42.0 -581.1
+915.1 14.4 -686.8 943.7 39.1 -656.3
+921.5 15.7 -668.3 959.0 41.7 -604.8
 # v6 : couple qui tourne la voiture vers la surface (align = raideur, damp = amortissement)
 align 1.5
 damp 0.6
@@ -40,107 +43,228 @@ mph_max 35
 # v9 : reorientation par la normale devant la voiture (turn = vitesse de rotation max en rad/s, 0 = coupe)
 turn 4
 ahead 0.15
-# v12 : la map est reconnue si la voiture arretee au depart est a moins de 40 m d'un de ces points du trace (dubai_route1_trace.json)
-track 37 -155
-track 1 -152
-track -34 -143
-track -68 -132
-track -102 -121
-track -135 -105
-track -164 -84
-track -187 -57
-track -201 -24
-track -205 12
-track -197 47
-track -176 76
-track -147 97
-track -115 113
-track -81 125
-track -46 132
-track -10 131
-track 25 124
-track 61 118
-track 97 115
-track 133 113
-track 169 114
-track 204 117
-track 239 126
-track 273 139
-track 305 156
-track 337 173
-track 369 189
-track 403 199
-track 433 186
-track 455 156
-track 461 124
-track 443 93
-track 415 71
-track 388 48
-track 368 18
-track 356 -16
-track 351 -52
-track 348 -88
-track 346 -123
-track 345 -159
-track 345 -195
-track 351 -231
-track 360 -266
-track 375 -298
-track 397 -327
-track 423 -351
-track 448 -373
-track 476 -400
-track 502 -425
-track 533 -444
-track 567 -444
-track 599 -432
-track 634 -437
-track 670 -436
-track 707 -434
-track 743 -441
-track 775 -453
-track 804 -473
-track 828 -500
-track 846 -532
-track 873 -565
-track 867 -600
-track 862 -637
-track 852 -669
-track 832 -699
-track 817 -732
-track 804 -765
-track 788 -797
-track 764 -824
-track 734 -843
-track 699 -845
-track 675 -819
-track 644 -801
-track 611 -786
-track 577 -776
-track 543 -765
-track 510 -749
-track 479 -732
-track 448 -714
-track 420 -692
-track 397 -667
-track 374 -642
-track 347 -619
-track 319 -597
-track 290 -576
-track 263 -552
-track 239 -525
-track 223 -493
-track 214 -458
-track 212 -423
-track 212 -374
-track 212 -339
-track 210 -303
-track 213 -267
-track 220 -231
-track 220 -196
-track 205 -164
-track 178 -140
-track 147 -128
-track 110 -124
-track 78 -138
-track 44 -152
+# v12 : la map est reconnue si la voiture arretee au depart est a moins de 40 m d'un de ces points du trace (dubai_route1_trace_v2.json)
+track 15 -159
+track -21 -140
+track -56 -127
+track -93 -124
+track -125 -106
+track -161 -94
+track -188 -68
+track -199 -30
+track -204 6
+track -197 41
+track -177 71
+track -150 93
+track -118 110
+track -84 120
+track -50 126
+track -14 125
+track 22 125
+track 58 116
+track 94 123
+track 130 121
+track 166 121
+track 202 120
+track 239 123
+track 275 132
+track 312 142
+track 339 170
+track 370 186
+track 399 203
+track 432 189
+track 448 158
+track 463 127
+track 443 101
+track 422 77
+track 392 54
+track 367 25
+track 356 -10
+track 353 -47
+track 353 -83
+track 351 -119
+track 350 -155
+track 350 -190
+track 350 -226
+track 351 -262
+track 362 -298
+track 386 -327
+track 423 -341
+track 445 -370
+track 469 -398
+track 500 -421
+track 534 -437
+track 570 -449
+track 609 -454
+track 646 -441
+track 681 -433
+track 717 -433
+track 751 -444
+track 784 -458
+track 812 -481
+track 834 -509
+track 850 -541
+track 862 -575
+track 868 -610
+track 861 -645
+track 851 -680
+track 839 -714
+track 815 -741
+track 805 -776
+track 796 -812
+track 795 -843
+track 764 -862
+track 729 -867
+track 694 -857
+track 668 -832
+track 644 -807
+track 610 -788
+track 579 -768
+track 548 -751
+track 516 -736
+track 478 -730
+track 446 -714
+track 416 -695
+track 390 -671
+track 423 -693
+track 457 -705
+track 480 -733
+track 455 -703
+track 428 -679
+track 410 -645
+track 377 -629
+track 351 -602
+track 323 -579
+track 289 -565
+track 257 -549
+track 230 -525
+track 214 -493
+track 208 -458
+track 209 -422
+track 209 -386
+track 209 -350
+track 219 -313
+track 218 -275
+track 216 -245
+track 214 -208
+track 212 -172
+track 190 -144
+track 160 -128
+track 124 -141
+track 100 -165
+track 62 -174
+track 32 -159
+track 272 130
+track 309 138
+track 337 163
+track 366 185
+track 403 187
+track 434 167
+track 448 132
+track 439 96
+track 413 70
+track 352 -260
+track 354 -296
+track 346 -331
+track 360 -367
+track 398 -373
+track 433 -382
+track 466 -400
+track 495 -420
+track 528 -435
+track 558 -445
+track 593 -454
+track 627 -472
+track 656 -491
+track 690 -503
+track 724 -514
+track 758 -526
+track 791 -538
+track 825 -548
+track 859 -560
+track 893 -571
+track 925 -596
+track 921 -637
+track 909 -672
+track 897 -706
+track 880 -738
+track 858 -767
+track 828 -785
+track 797 -792
+track 777 -822
+track 747 -849
+track 706 -846
+track 674 -824
+track 643 -807
+track 611 -789
+track 578 -769
+track 553 -741
+track 532 -714
+track 515 -681
+track 490 -655
+track 459 -635
+track 428 -617
+track 458 -643
+track 486 -664
+track 491 -696
+track 501 -746
+track 521 -714
+track 522 -678
+track 493 -661
+track 521 -681
+track 489 -655
+track 459 -635
+track 429 -616
+track 459 -638
+track 491 -656
+track 518 -673
+track 482 -672
+track 452 -652
+track 421 -635
+track 390 -616
+track 360 -596
+track 327 -581
+track 299 -557
+track 275 -529
+track 252 -501
+track 233 -469
+track 224 -433
+track 220 -396
+track 217 -360
+track 218 -324
+track 219 -288
+track 218 -252
+track 219 -216
+track -24 126
+track 11 125
+track 47 118
+track 83 117
+track 119 122
+track 155 121
+track 190 120
+track 226 122
+track 261 127
+track 297 137
+track 331 154
+track 357 179
+track 393 203
+track 419 180
+track 447 163
+track 462 132
+track 443 103
+track 425 79
+track 397 58
+track 751 -443
+track 784 -458
+track 808 -483
+track 783 -464
+track 752 -456
+track 786 -470
+track 813 -494
+track 834 -525
+track 848 -558
+track 855 -595
+track 850 -632
+track 840 -667
+track 829 -701
+track 817 -735
