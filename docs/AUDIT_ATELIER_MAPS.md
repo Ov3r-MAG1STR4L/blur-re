@@ -65,6 +65,19 @@ Le matériau n'y est pour rien : tous nos triangles reçoivent le même drapeau 
 
 ## 4. Proposition d'ordre
 
+**Étape 1 faite (2026-11-23, à valider en jeu)** : `poscapture.py` + `Jeux_WII\Capturer position.bat`.
+- F9 capture (touches lues par `GetAsyncKeyState`, le jeu garde le focus) ; F5 / F6 / F7 = bloquant / traversable /
+  anormal sur la dernière capture. Commentaires : `poscapture.py annoter <chemin> <résultat> <texte>`.
+- Données : x, y, z, cap (degrés, depuis l'axe avant +0xE4), les 3 axes de la voiture, vitesse (vecteur et km/h),
+  date, identifiant unique, circuit et statut d'identification, exe du jeu, nombre de voitures.
+- Rangement : `blur_tools/captures/<Circuit>/session_AAAA-MM-JJ_HH-MM-SS/capture_NNN.json`, une session par
+  circuit et par lancement, création exclusive (jamais d'écrasement), numérotation reprise après redémarrage.
+  Circuit = route installée dans la copie qui tourne + voiture à ≤ 60 m de son tracé, sinon `Non_identifie` (avec
+  la route supposée et la distance) ; `poscapture.py classer` la range plus tard (session `_reclassement`).
+- Export `captures/captures_toutes.csv` (`;`, UTF-8 pour Excel) : à l'arrêt (Ctrl+C) ou avec `export`.
+- Refuse un jeu lancé depuis `Program Files (x86)\Activision` (installation d'origine). Lecture mémoire = chaîne
+  de `blur_live.chain`. Auto-test hors jeu : `poscapture.py test`.
+
 1. **Capture de position** (`Capturer position.bat` + `poscapture.py`) : touche F9 en jeu, CSV `captures.csv`
    (n°, date, map, x, y, z, cap, vitesse, résultat, commentaire), lecture seule de la mémoire. Petit, utile tout de
    suite, sans risque.
