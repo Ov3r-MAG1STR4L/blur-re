@@ -107,6 +107,27 @@ BACKSTOP = 1.0
 ORIENT, ORIENT_BOTH = 60.0, 20.0
 
 
+# 2026-11-23 (Business Bay loop, part_003_17f, triangles of 58-71 m2): the car going down the wall-ride at ~34 m/s got
+# behind these huge faces and stuck there / fell under the map. Steep triangles (n.y < 0.5) larger than SPLIT m2 are
+# cut in 4 (edge midpoints, same plane, same winding) until all are below it.
+SPLIT = 8.0
+
+
+def split_steep(T):
+    """(m, 3, 3) triangles -> same surface, steep ones cut to <= SPLIT m2"""
+    out = []
+    while len(T):
+        n = np.cross(T[:, 1] - T[:, 0], T[:, 2] - T[:, 0])
+        a = np.linalg.norm(n, axis=1) / 2
+        big = (a > SPLIT) & (n[:, 1] < 0.5 * 2 * a)
+        out.append(T[~big])
+        B = T[big]
+        m01, m12, m20 = (B[:, 0] + B[:, 1]) / 2, (B[:, 1] + B[:, 2]) / 2, (B[:, 2] + B[:, 0]) / 2
+        T = np.concatenate([np.stack(s, 1) for s in ((B[:, 0], m01, m20), (m01, B[:, 1], m12),
+                                                      (m20, m12, B[:, 2]), (m01, m12, m20))]) if len(B) else B
+    return np.concatenate(out)
+
+
 def lap_points_3d(paths, dy):
     pts = []
     for p in paths:
@@ -124,10 +145,9 @@ def build(cols, base, route, laps, radius, dy=0.0):
     for name, (v, t) in cols.items():
         if name.startswith("physics_route_") and not name.startswith("physics_route_%d_" % route):
             continue                                   # another route's barriers
-        v = v + (0, dy, 0)
-        c = v[t].mean(1)
+        T = split_steep(v[t] + (0, dy, 0))
+        c = T.mean(1)
         d, k = near.query(c[:, [0, 2]])
-        T = v[t]
         n = np.cross(T[:, 1] - T[:, 0], T[:, 2] - T[:, 0])
         n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-12
         for i in np.where(d < radius)[0]:
