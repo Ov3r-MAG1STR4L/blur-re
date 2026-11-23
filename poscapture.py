@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Capture de position en jeu (F9), lecture seule de la mémoire de Blur. Ne modifie aucune donnée du jeu.
+"""Capture de position en jeu (touche Inser), lecture seule de la mémoire de Blur. Ne modifie aucune donnée du jeu.
 
 Touches (lues en arrière-plan avec GetAsyncKeyState : le jeu garde le focus, pas de pause) :
-  F9  capturer la voiture du joueur          (bip aigu = enregistré, bip grave = pas en course / erreur)
-  F5  dernière capture = « bloquant »    F6 = « traversable »    F7 = « anormal »
+  Inser  capturer la voiture du joueur          (bip aigu = enregistré, bip grave = pas en course / erreur)
+  Début  dernière capture = « bloquant »    Fin = « traversable »    Pg.Préc = « anormal »
+  (F9 et F5-F7 servent déjà dans Blur ; touches à changer dans KEYS)
 Les commentaires s'ajoutent après coup (le jeu se met en pause dès qu'on clique ailleurs, ce n'est pas grave) :
   poscapture.py                       écoute (lancé par « Capturer position.bat »)
   poscapture.py liste                 sessions et captures
@@ -33,7 +34,7 @@ TRACES = {1: "dubai_route1_trace.json", 2: "dubai_route2_trace.json", 3: "dubai_
           4: "marina_trace.json"}
 UNKNOWN = "Non_identifie"
 PRES = 60.0                                                            # m (x, z) du tracé pour identifier
-KEYS = {0x78: "capture", 0x74: "bloquant", 0x75: "traversable", 0x76: "anormal"}   # F9, F5, F6, F7
+KEYS = {0x2D: "capture", 0x24: "bloquant", 0x23: "traversable", 0x21: "anormal"}   # Inser, Début, Fin, Pg.Préc
 RESULTS = ("bloquant", "traversable", "anormal", "inconnu")
 
 
@@ -215,7 +216,7 @@ def listen():
     arc, last = Archive(), None
     get = ctypes.windll.user32.GetAsyncKeyState
     down = {k: False for k in KEYS}
-    print("Capture de position : F9 capturer | F5 bloquant, F6 traversable, F7 anormal (dernière capture)")
+    print("Capture de position : Inser capturer | Début bloquant, Fin traversable, Pg.Préc anormal (dernière capture)")
     print("Dossier :", ROOT, "\nCtrl+C pour arrêter.")
     while True:
         for k, what in KEYS.items():
