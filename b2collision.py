@@ -37,8 +37,22 @@ def world_matrix(tr):
     return m
 
 
-def colliders(data_dir):
-    """{name: (world vertices (n, 3) in GAME axes, triangles (m, 3))} of every MeshCollider of the build"""
+COMPLEMENTS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "blur2_aid", "dubai",
+                           "complements_collision.npz")      # b2visfill : collision tirée des meshes visibles
+
+
+def colliders(data_dir, complements=True):
+    """{name: (world vertices (n, 3) in GAME axes, triangles (m, 3))} of every MeshCollider of the build, plus the
+    b2visfill complements (visible meshes with no collider: « complement_<mesh>_<k>_17f_collision », drivable)"""
+    out = _unity_colliders(data_dir)
+    if complements and os.path.exists(COMPLEMENTS):
+        d = np.load(COMPLEMENTS)
+        for k, name in enumerate(d["names"]):
+            out["complement_%s_%d_17f_collision" % (name, k)] = (d["v%d" % k].astype(float), d["t%d" % k].astype(int))
+    return out
+
+
+def _unity_colliders(data_dir):
     import UnityPy
     from UnityPy.helpers.MeshHelper import MeshHandler
     env = UnityPy.load(data_dir)

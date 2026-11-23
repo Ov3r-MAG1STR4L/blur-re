@@ -87,7 +87,7 @@ def load_data(m):
         low = 0.0
         bg = np.load(m["npz"])["points"]
     if os.path.exists(m["track"]):
-        t = json.load(open(m["track"]))
+        t = json.load(open(m["track"], encoding="utf-8"))
     else:                                              # first time: lap, one point / 12 m, 30 m wide (or empty)
         t = {"points": [{"x": round(x, 2), "z": round(z, 2), "w": make_b2_map.WIDTH, "h": round(y - low, 2)}
                         for x, y, z in pts], "branches": []}

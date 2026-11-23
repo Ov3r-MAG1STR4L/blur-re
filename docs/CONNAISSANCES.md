@@ -3796,6 +3796,25 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   La route haute visible continue donc sans collider dans les données Unity elles-mêmes : la collision manque dès
   la source (pas une perte de notre conversion). Correctif possible : pansement `ROUTE` dans Blender, ou collision
   tirée de ce mesh visible.
+- **Collision tirée des meshes visibles (2026-11-23, `b2visfill.py`)** : dans une zone donnée, triangles visibles
+  tournés vers le haut (|n.y| > 0,6, aire ≤ 1 500 m²) sans collider à 2 m -> `blur2_aid/dubai/complements_collision.npz`,
+  ajoutés par `b2collision.colliders()` sous le nom `complement_<mesh>_<k>_17f_collision` (route roulable pour toute
+  la chaîne : build, `b2recale`, `b2blender`). Zone de Dubai Island (x −200..−20, z 930..1060) : 10 morceaux
+  (`draws_d0036` route au sol y ≈ 10,4, `d0084` / `d0085` structure à étages, `d0088` / `d0090` y ≈ 17-18,6,
+  `d0093`, `d0086`…). Vérifié sur le journal : les remises (R) à (−35 ; 1028) et (−26 ; 1029) tombaient sur
+  `draws_d0036` sans collision, maintenant couvert (sol à y 10,3-10,6). Le 1er décrochage (bout de la route haute,
+  x −56..−79, z 1015..1023) passe au-dessus d'une zone **sans aucune surface, même visible** : vraie sortie de route.
+  Pas encore construit ni essayé en jeu.
+- **Grilles de départ (2026-11-23, Fort : code de Map Builder + mesure)** : la case 0 officielle (journaux Unity
+  « spawned at route N at decoded StartPosition slot 0 », = les valeurs `STARTS` déjà connues) n'était pas sur
+  nos tracés : 26 m (Business Bay), 18 m (Dubai Island), 11 m (Marina), **127 m sur Construction** (la grille est sur
+  une autre route, un chemin secondaire). Et Map Builder (1.0.0 : `gen_aid.race_lines`, `gen_actorpack.move_grid`)
+  prend `start_m` sur **sa** route lissée (pas de 4 m, Catmull-Rom), dont les distances diffèrent des nôtres, et pose
+  la 1re rangée `NFS_GRID_GAP` = 8 m **derrière** la ligne, en 2 colonnes à ±5 m, rangées de 8 m. Corrections :
+  `b2paths` tire le tracé principal vers la case 0 (raccord en cosinus sur ±120 m ; sur Construction, le chemin
+  secondaire qui passe par la grille devient le principal) ; `make_b2_map.mb_start_m` mesure `start_m` sur la route
+  de Map Builder (point le plus proche de la case 0 + 8 m) et `mb_branch_m` remesure `from_m` / `to_m` des chemins
+  secondaires de la même façon. Vérifié hors jeu : milieu de la 1re rangée à 0,5-1,0 m de la case 0 sur les 4 maps.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans

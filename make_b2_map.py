@@ -354,14 +354,38 @@ def extra_actors(files, models, k0, salt0):
     print(len(models), "scenery actors added to list", lst[0])
 
 
+def mb_start_m(mp, grid):
+    """start_m mesuré sur la route de Map Builder elle-même (lissée : ses distances ne sont pas celles de nos points ;
+    avant le 2026-11-23 la 1re rangée tombait 8-20 m, voire 270 m, à côté). Map Builder pose la 1re rangée
+    NFS_GRID_GAP m (8) derrière la ligne : ligne = point de sa route le plus proche de la case 0 officielle + 8 m."""
+    sys.path.insert(0, os.path.join(config.MAP_BUILDER_DIR, "flat_earth"))
+    import road as mb_road
+    r = mb_road.for_map(dict(mp, laps=mp.get("laps") or 3))
+    C = np.array(r.centre)
+    i = int(np.argmin(np.hypot(*(C - np.asarray(grid)).T)))
+    gap = float(os.environ.get("NFS_GRID_GAP", 8.0))
+    return int(round((r.dist[i] + gap) % r.length))
+
+
+def mb_branch_m(mp):
+    """from_m / to_m des chemins secondaires remesurés sur la route de Map Builder (bouts projetés sur sa route)"""
+    import road as mb_road                              # chemin posé par mb_start_m
+    r = mb_road.for_map(dict(mp, laps=mp.get("laps") or 3))
+    C = np.array(r.centre)
+    for b in mp.get("branches") or []:
+        i0, i1 = (int(np.argmin(np.hypot(*(C - (b["points"][k]["x"], b["points"][k]["z"])).T))) for k in (0, -1))
+        fm, tm = r.dist[i0], r.dist[i1]
+        b["from_m"], b["to_m"] = int(round(fm)), int(round(tm + r.length if tm < fm else tm))
+
+
 def track(mp, path, low, grid, route, out_dir):
     """--track: main road and branches from the editor (b2track.py), instead of --edges / --drive; start_m again
     from the grid (the points moved), one CSV per branch (x, y, z: collision and scenery) + a top view check image"""
-    t = json.load(open(path))
+    t = json.load(open(path, encoding="utf-8"))
     mp["points"], mp["branches"] = t["points"], t["branches"]
     P = np.array([(q["x"], q["z"]) for q in mp["points"]])
-    cum = np.r_[0, np.cumsum(np.linalg.norm(np.diff(P, axis=0), axis=1))]
-    mp["start_m"] = mp["finish_m"] = int(cum[np.argmin(np.hypot(*(P - grid).T))])
+    mp["start_m"] = mp["finish_m"] = mb_start_m(mp, grid)
+    mb_branch_m(mp)
     lines = [mp["points"]] + [b["points"] for b in mp["branches"]]
     mp["width"] = max(TUBE, max(q["w"] for pts in lines for q in pts) + 10)
     os.makedirs(out_dir, exist_ok=True)

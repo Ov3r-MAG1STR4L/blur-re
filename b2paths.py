@@ -88,6 +88,78 @@ def branches(a, main, s, e):
     return found
 
 
+def spawn(log):
+    """case 0 de la grille officielle (« spawned at route N at decoded StartPosition slot 0: (x, y, z) », axes Unity)
+    -> (x, y, z) en axes du jeu"""
+    import re
+    for line in open(log, encoding="utf-8", errors="replace"):
+        m = re.search(r"StartPosition slot 0: \(([-\d.]+), ([-\d.]+), ([-\d.]+)\)", line)
+        if m:
+            x, y, z = map(float, m.groups())
+            return -x, y, -z
+    return None
+
+
+GRID_PULL, GRID_SWAP = 120.0, 40.0       # m de tracé de part et d'autre pour rejoindre la grille ; au-delà : autre route
+
+
+def _xz(pts):
+    return np.array([(q["x"], q["z"]) for q in pts])
+
+
+def grid_align(out, g, F, low):
+    """Map Builder centre sa grille sur le tracé (start_m) : le tracé principal doit passer par la grille officielle.
+    Grille sur une autre route (> GRID_SWAP m du principal, un chemin secondaire y passe) : ce chemin devient le
+    principal et l'ancienne portion devient un chemin secondaire. Puis le principal est tiré vers la case 0 sur
+    ±GRID_PULL m (raccord en cosinus). Les from_m / to_m de tous les chemins sont recalculés à la fin."""
+    if g is None:
+        return {"methode": "pas de grille dans le journal"}
+    gx = np.array([g[0], g[2]])
+    P = _xz(out["points"])
+    d0 = float(np.hypot(*(P - gx).T).min())
+    how = []
+    if d0 > GRID_SWAP:
+        best = min(range(len(out["branches"])), key=lambda k: np.hypot(*(_xz(out["branches"][k]["points"]) - gx).T).min(),
+                   default=None)
+        if best is not None and np.hypot(*(_xz(out["branches"][best]["points"]) - gx).T).min() <= GRID_SWAP:
+            b = out["branches"].pop(best)
+            n = len(P)
+            i0 = int(np.argmin(np.hypot(*(P - _xz(b["points"][:1])).T)))
+            i1 = int(np.argmin(np.hypot(*(P - _xz(b["points"][-1:])).T)))
+            seq = [(i1 + k) % n for k in range((i0 - i1) % n + 1)]          # i1 -> i0 en avançant
+            old = [(i0 + k) % n for k in range((i1 - i0) % n + 1)]          # l'ancienne portion i0 -> i1
+            pts, ctrl = out["points"], out["controle"]
+            out["branches"].append(dict(b, points=[pts[i] for i in old], controle=[ctrl[i] for i in old],
+                                        longueur_m=round(cumlen(P[old])[-1])))
+            out["points"] = b["points"] + [pts[i] for i in seq[1:-1]]
+            out["controle"] = b["controle"] + [ctrl[i] for i in seq[1:-1]]
+            how.append("chemin secondaire %d devenu principal (la grille est sur sa route)" % (best + 1))
+            P = _xz(out["points"])
+    i = int(np.argmin(np.hypot(*(P - gx).T)))
+    delta = gx - P[i]
+    cum = cumlen(P)
+    total = cum[-1] + float(np.hypot(*(P[0] - P[-1])))
+    for k, q in enumerate(out["points"]):
+        s = abs(cum[k] - cum[i])
+        s = min(s, total - s)
+        if s < GRID_PULL:
+            w = 0.5 * (1 + np.cos(np.pi * s / GRID_PULL))
+            x, z = q["x"] + delta[0] * w, q["z"] + delta[1] * w
+            y = F.level(x, z, q["h"] + low, 6.0)
+            q.update(x=round(float(x), 2), z=round(float(z), 2), h=round(float((y if y is not None else q["h"] + low) - low), 2))
+    how.append("tracé tiré de %.1f m vers la case 0 sur ±%.0f m" % (float(np.hypot(*delta)), GRID_PULL))
+    P = _xz(out["points"])
+    cum = cumlen(P)
+    total = cum[-1] + float(np.hypot(*(P[0] - P[-1])))
+    for b in out["branches"]:                                      # from_m / to_m sur le nouveau principal
+        bp = _xz(b["points"])
+        i0, i1 = (int(np.argmin(np.hypot(*(P - bp[k]).T))) for k in (0, -1))
+        fm, tm = float(cum[i0]), float(cum[i1])
+        b["from_m"], b["to_m"] = round(fm), round(tm + total if tm < fm else tm)
+    return {"case0": [round(v, 2) for v in g], "distance_avant_m": round(d0, 1),
+            "distance_apres_m": round(float(np.hypot(*(P - gx).T).min()), 1), "methode": " ; ".join(how)}
+
+
 def main(route, log):
     import b2collision, b2track, make_b2_map
     tf, lf = b2recale.ROUTES[route]
@@ -132,8 +204,9 @@ def main(route, log):
     for b in bs:
         bp, bc = b2recale.recale_line(F, b["points"], low, lap_all, closed=False)
         out["branches"].append(dict(b, points=bp, controle=bc))
+    out["grille"] = grid_align(out, spawn(log), F, low)
     out["note"] = ("b2paths %s : tour principal %.0f m (positions %d-%d), %d chemins secondaires, recalés sur les "
-                   "routes 17f" % (os.path.basename(log), length, s, e, len(bs)))
+                   "routes 17f ; grille : %s" % (os.path.basename(log), length, s, e, len(bs), out["grille"]["methode"]))
     dst = os.path.join(b2recale.AID, tf.replace(".json", "_v2.json"))
     json.dump(out, open(dst, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     allc = rc + [c for b in out["branches"] for c in b["controle"]]
