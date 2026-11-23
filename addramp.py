@@ -72,10 +72,12 @@ def ramp_object(bottom, top, width, steps=12, kicker=False):
     return mesh_object(verts, tris)
 
 
-def mesh_object(verts, tris, template=TEMPLATE):
+def mesh_object(verts, tris, template=TEMPLATE, keep=False):
     """bytes of a type-0 road mesh object (template: the first object of a levelphysics, LA River by default; its
     surface table is copied whole: a small one keeps the object small) for verts [(x, y, z)] (<= 256) and
-    triangles [(a, b, c)] (<= 255), wound so that cross(b - a, c - a) points up like the template's floor"""
+    triangles [(a, b, c)] (<= 255), wound so that cross(b - a, c - a) points up like the template's floor.
+    keep=True (2026-11-23): no re-winding, the face (blocking side) of each triangle is cross(b - a, c - a) as given.
+    Re-winding up turned near-vertical walls to a random side and wall-ride surfaces over the car (loop) away from it."""
     t = open(template, "rb").read()
     m = lp.read_mesh(template)
     body, _ = lp.find_chunk(t, "Main")
@@ -106,7 +108,11 @@ def mesh_object(verts, tris, template=TEMPLATE):
     out += lp.GROUP.pack(g[0], g[1], g[2], g[3], len(tris))
     for a, bb, c in tris:
         n = np.cross(verts[bb] - verts[a], verts[c] - verts[a])
-        if n[1] * sign < 0:
+        if keep:
+            if sign < 0:                          # template wound the other way: same face = reversed order
+                bb, c = c, bb
+                n = -n
+        elif n[1] * sign < 0:
             bb, c = c, bb
             n = -n
         out += lp.TRI.pack(a, bb, c, pack_normal(n * sign), flags)

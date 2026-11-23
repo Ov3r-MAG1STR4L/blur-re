@@ -74,8 +74,10 @@ def lap_points(paths):
 # ponytail: one layer at a fixed depth; thicker or several layers if cars still get through.
 # 2026-11-23: switched OFF at the user's request ("mal appliquée, pas sur les bons éléments"): addramp.mesh_object
 # re-winds every triangle to face up, so the copy did not sit behind the face the car meets; and the first
-# position captures (Business Bay) are on drivable 17f wall-ride surfaces, not 15d walls. Set 1.0 to use it again.
-BACKSTOP = 0.0
+# position captures (Business Bay) are on drivable 17f wall-ride surfaces, not 15d walls.
+# 2026-11-23 (later, user's go-ahead): back ON now that the face is kept (mesh_object keep=True): the copy sits behind
+# the face turned to the lap, only for oriented one-sided triangles with n.y < 0.5 (walls, wall-ride, overhangs).
+BACKSTOP = 1.0
 
 
 # 2026-11-18 ("walls and roads with no hitbox, unlike Unity"): Unity's MeshColliders block from both sides, Blur's
@@ -83,9 +85,12 @@ BACKSTOP = 0.0
 # of the lap face AWAY from it (roads 17f 11-25 %, walls 15d 29-45 %). Within ORIENT m of the lap, a triangle is
 # turned to face the lap; when the lap passes on both sides of it (within ORIENT_BOTH m: thin wall between two
 # roads, bridge deck with a road under it) it is kept with both faces.
-# Switched OFF the same day at the user's request ("it became a bit chaotic", back to the build just before): set
-# ORIENT to 60.0 to use it again.
-ORIENT, ORIENT_BOTH = 0.0, 20.0
+# Switched OFF the same day at the user's request ("it became a bit chaotic", back to the build just before).
+# 2026-11-23: that try never reached the game: addramp.mesh_object re-wound every triangle up afterwards (and the
+# "both faces" copy became a duplicate). Back ON with keep=True, for n.y < 0.5 only (walls, wall-ride surfaces,
+# overhangs, loop tops); floors (n.y >= 0.5) keep facing up. Faces the nearest lap point clearly off the plane
+# (|s| > 0.3 m). Triangles with no lap point within ORIENT m: faced up as before.
+ORIENT, ORIENT_BOTH = 60.0, 20.0
 
 
 def lap_points_3d(paths, dy):
@@ -112,23 +117,29 @@ def build(cols, base, route, laps, radius, dy=0.0):
         n = np.cross(T[:, 1] - T[:, 0], T[:, 2] - T[:, 0])
         n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-12
         for i in np.where(d < radius)[0]:
-            tri, nn, two = T[i], n[i], False
-            idx = lap3.query_ball_point(c[i], ORIENT) if ORIENT > 0 else []
-            if idx:
-                s = (L3[idx] - c[i]) @ nn                  # lap points in front (> 0) / behind (< 0)
-                dist = np.linalg.norm(L3[idx] - c[i], axis=1)
-                front = (s > 0.3) & (dist < ORIENT_BOTH)
-                back = (s < -0.3) & (dist < ORIENT_BOTH)
-                if front.any() and back.any():
-                    two = True                             # the lap on both sides: both faces
-                elif s[np.argmin(dist)] < 0:               # nearest lap point behind: face it
-                    tri, nn = tri[[0, 2, 1]], -nn
-                    flipped += 1
+            tri, nn, two, oriented = T[i], n[i], False, False
+            if nn[1] < 0.5 and ORIENT > 0:              # wall, wall-ride, overhang: face the lap
+                idx = lap3.query_ball_point(c[i], ORIENT)
+                if idx:
+                    s = (L3[idx] - c[i]) @ nn              # lap points in front (> 0) / behind (< 0)
+                    dist = np.linalg.norm(L3[idx] - c[i], axis=1)
+                    clear = np.abs(s) > 0.3
+                    if clear.any():
+                        oriented = True
+                        front = (s > 0.3) & (dist < ORIENT_BOTH)
+                        back = (s < -0.3) & (dist < ORIENT_BOTH)
+                        if front.any() and back.any():
+                            two = True                     # the lap on both sides: both faces
+                        elif s[clear][np.argmin(dist[clear])] < 0:   # nearest clear lap point behind: face it
+                            tri, nn = tri[[0, 2, 1]], -nn
+                            flipped += 1
+            if not oriented and nn[1] < 0:                 # floors and far triangles: up, as before
+                tri, nn = tri[[0, 2, 1]], -nn
             tris.append((k[i], tri))
             if two:
                 tris.append((k[i], tri[[0, 2, 1]]))
                 both += 1
-            elif BACKSTOP and nn[1] < 0.5:              # steep or facing down: a second layer behind
+            elif BACKSTOP and oriented and nn[1] < 0.5:  # a second layer behind the face the car meets
                 tris.append((k[i], tri - nn * BACKSTOP))
     print("orientation: %d triangles turned to face the lap, %d kept with both faces" % (flipped, both))
     tris.sort(key=lambda x: x[0])                      # along the route: compact objects
@@ -137,7 +148,7 @@ def build(cols, base, route, laps, radius, dy=0.0):
         ks = [tuple(np.round(p, 3)) for p in tri]
         new = [k for k in dict.fromkeys(ks) if k not in key]
         if len(idx) >= 255 or len(verts) + len(new) > 256:
-            objs.append(addramp.mesh_object(verts, idx, base))
+            objs.append(addramp.mesh_object(verts, idx, base, keep=True))
             verts, idx, key = [], [], {}
             new = list(dict.fromkeys(ks))
         for k in new:
@@ -145,7 +156,7 @@ def build(cols, base, route, laps, radius, dy=0.0):
             verts.append(k)
         idx.append(tuple(key[k] for k in ks))
     if idx:
-        objs.append(addramp.mesh_object(verts, idx, base))
+        objs.append(addramp.mesh_object(verts, idx, base, keep=True))
     return addramp.insert_objects(open(base, "rb").read(), b"".join(objs)), len(tris), len(objs)
 
 

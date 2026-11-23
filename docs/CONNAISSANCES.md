@@ -3751,6 +3751,24 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   à 1 m posée sur le mauvais côté à cause du réenroulement, et sur des éléments mal choisis). Business Bay
   reconstruite sans elle ; l'ancienne collision est gardée dans
   `blur_extracted/mods/b2_dubai_business_bay/level.levelphysics.avec_backstop.bak`.
+- **Écrivain corrigé et parois orientées (2026-11-23, accord de l'utilisateur ; Business Bay reconstruite et installée,
+  à essayer en jeu)** : `addramp.mesh_object(..., keep=True)` garde le sens donné (plus de réenroulement vers le
+  haut ; les autres appelants gardent l'ancien comportement). `b2collision` : `ORIENT` 60 m réactivé **pour n.y < 0,5
+  seulement** (murs `15d`, parois roulables, surplombs, haut du looping), tourné vers le point du tour le plus proche
+  à plus de 0,3 m du plan, deux faces si le tour passe des deux côtés à moins de 20 m ; sols (n.y ≥ 0,5) et triangles
+  sans tour à moins de 60 m : vers le haut comme avant. `BACKSTOP` 1 m remis, derrière la face orientée seulement.
+  Vérifié hors jeu (simulation de l'écriture) : parois et surplombs à moins de 30 m du tour de Business Bay tournés
+  vers lui à **97 %** (95-99 % à toutes les hauteurs, looping compris ; 43-82 % avant) ; à la capture 4, voiture devant
+  100 % des triangles (38 % avant). Build : 5 535 triangles retournés, 815 à deux faces, 110 291 triangles,
+  494 objets, 6,9 Mo. Retour : `level.levelphysics.sans_backstop.bak` (couche arrière retirée, ancienne écriture) ou
+  `.avec_backstop.bak` dans `blur_extracted/mods/b2_dubai_business_bay/`.
+- **Murs `15d` (même cause)** : ancienne écriture 38-56 % du bon côté ; un même objet partagé par plusieurs routes
+  passe là où ses triangles sont petits (000_15d sur Business Bay : aucun > 10 m²) et casse là où ils sont grands
+  (004_15d sur Construction : 442 triangles > 10 m², 001_15d sur Dubai Island : 127). La nouvelle écriture les oriente
+  aussi. Autre cause de « murs inexistants » : collision écrite seulement à ≤ 150 m du tour (orientée à ≤ 60 m).
+- **Tracés et `Routes_17f`** : les tracés viennent des tours roulés, nettoyés par `b2trace` avec toutes les surfaces
+  (critère d'inclinaison, sans distinguer `17f`). Points sur une route `17f` (≤ 4 m) : Business Bay 91 %, Dubai
+  Island 89 %, Marina 88 %, Construction 77 % (8 % sans surface à 4 m : en l'air ou hors route).
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
