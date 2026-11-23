@@ -72,7 +72,10 @@ def lap_points(paths):
 # the plane after a knock goes through and falls. Steep (n.y < 0.5) and downward triangles get a copy BACKSTOP m
 # behind, same side: a centre past the first plane is still in front of the second one, which pushes it back out.
 # ponytail: one layer at a fixed depth; thicker or several layers if cars still get through.
-BACKSTOP = 1.0
+# 2026-11-23: switched OFF at the user's request ("mal appliquée, pas sur les bons éléments"): addramp.mesh_object
+# re-winds every triangle to face up, so the copy did not sit behind the face the car meets; and the first
+# position captures (Business Bay) are on drivable 17f wall-ride surfaces, not 15d walls. Set 1.0 to use it again.
+BACKSTOP = 0.0
 
 
 # 2026-11-18 ("walls and roads with no hitbox, unlike Unity"): Unity's MeshColliders block from both sides, Blur's

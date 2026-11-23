@@ -1,0 +1,42 @@
+{
+ "id": "8b696ee9444e4cb288dc0d87926b3a6a",
+ "date": "2026-11-23T13:32:55",
+ "circuit": "Business_Bay",
+ "statut_circuit": "identifie",
+ "detail_circuit": "route installée 1, 9 m du tracé",
+ "circuit_suppose": "Business_Bay",
+ "jeu": "C:\\Users\\sanqu\\Jeux_WII\\Blur_test\\Blur.exe",
+ "x": 461.255,
+ "y": 27.633,
+ "z": 162.405,
+ "cap_deg": 23.4,
+ "axes": {
+  "lateral": [
+   0.5263,
+   0.187,
+   -0.8295
+  ],
+  "haut": [
+   -0.8407,
+   0.2609,
+   -0.4746
+  ],
+  "avant": [
+   0.1277,
+   0.9471,
+   0.2945
+  ]
+ },
+ "vitesse_kmh": 85.0,
+ "vitesse_ms": [
+  -0.233,
+  7.818,
+  22.273
+ ],
+ "vehicules": 1,
+ "index_joueur": 0,
+ "resultat": "traversable",
+ "commentaire": "",
+ "numero": 2,
+ "session": "session_2026-11-23_13-32-14"
+}

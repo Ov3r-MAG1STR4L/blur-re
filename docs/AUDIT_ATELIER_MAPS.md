@@ -93,3 +93,13 @@ Le matériau n'y est pour rien : tous nos triangles reçoivent le même drapeau 
 
 À rechercher avant l'édition : joueur / IA dans la grille, drapeaux de surface Blur 1, sens de `8017f`, nom de la
 map en mémoire.
+
+## Scène Blender (2026-11-23)
+`b2blender.py` : `python b2blender.py` exporte, puis `blender -b --python b2blender.py` construit
+`Jeux_WIIlur_blender\dubai.blend` (refuse d'écraser un `.blend` existant). Repère : colliders Unity en axes du
+jeu, sans le décalage de chaque route (Blender X, Y, Z = jeu x, −z, y). Les captures et les zones sont ramenées
+dans ce repère (y − dy de leur route). Collections : `REFERENCE` (49 objets, un par collider et par classe, nom
+d'origine, non sélectionnable), `REPERES` (tracés, embranchements, tours roulés, grilles, zones de gravité
+masquées, captures colorées selon le résultat), `PANSEMENTS` (MUR, ROUTE, PAROI, TRACE, ZONE, vides). Sens des
+faces = sens Unity (overlay « Face Orientation »). Vérifié : les 4 captures de Business Bay sont à 0,2-7 m d'une
+paroi roulable `17f`. Pas encore de relecture des pansements vers la map.

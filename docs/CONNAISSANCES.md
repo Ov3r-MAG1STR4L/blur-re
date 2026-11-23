@@ -3738,6 +3738,19 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   le signe d'une inclinaison minuscule : murs `15d` de Business Bay face au tour à 51 % une fois écrits (73 % dans
   Unity). Les barrières `physics_route_N` (n.y = 0, gardées telles quelles) restent bonnes à 89-100 %. Hypothèse pour
   la différence Marina / Business : barrières contre murs `15d`. Détail et plan : `docs/AUDIT_ATELIER_MAPS.md`.
+- **Premières captures en jeu (2026-11-23, Business Bay, `poscapture.py`, 4 captures « traversable »)**,
+  comparées aux colliders Unity à moins de 8 m (décalage y −0,82) : **toutes sur des surfaces roulables `17f` en
+  paroi** (wall-ride), aucune sur un mur `15d`. Capture 4 (805 ; 51 ; −473), 187 km/h, sur `physics_main_part_003_17f` :
+  dans le sens Unity, la voiture est devant 100 % des 13 triangles, et leur normale suit l'axe haut de la voiture ;
+  **dans le sens écrit (réenroulé vers le haut), seulement 38 %** → la voiture est derrière 62 % des triangles et
+  passe au travers. Captures 2 et 3 (461 ; 28 ; 162 / 462 ; 23 ; 147) : voiture déjà derrière la paroi `17f`
+  (capturée après la traversée). Capture 1 : aucune surface à moins de 8 m (déjà tombée). **Fort** : la cause est le
+  réenroulement de `addramp.mesh_object`, pas une propriété du moteur. Les captures sont dans
+  `blur_tools/captures/Business_Bay/session_2026-11-23_13-32-14/`.
+- **Couche arrière retirée (2026-11-23, demande de l'utilisateur)** : `BACKSTOP` = 0 dans `b2collision.py` (copie
+  à 1 m posée sur le mauvais côté à cause du réenroulement, et sur des éléments mal choisis). Business Bay
+  reconstruite sans elle ; l'ancienne collision est gardée dans
+  `blur_extracted/mods/b2_dubai_business_bay/level.levelphysics.avec_backstop.bak`.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
