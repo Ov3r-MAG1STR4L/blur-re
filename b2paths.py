@@ -205,6 +205,9 @@ def main(route, log):
         bp, bc = b2recale.recale_line(F, b["points"], low, lap_all, closed=False)
         out["branches"].append(dict(b, points=bp, controle=bc))
     out["grille"] = grid_align(out, spawn(log), F, low)
+    for c_list in [out["controle"]] + [b["controle"] for b in out["branches"]]:   # numéros après un échange de chemins
+        for k, c in enumerate(c_list):
+            c["i"] = k
     out["note"] = ("b2paths %s : tour principal %.0f m (positions %d-%d), %d chemins secondaires, recalés sur les "
                    "routes 17f ; grille : %s" % (os.path.basename(log), length, s, e, len(bs), out["grille"]["methode"]))
     dst = os.path.join(b2recale.AID, tf.replace(".json", "_v2.json"))
