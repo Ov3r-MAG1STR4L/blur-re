@@ -238,7 +238,7 @@ def build_recale():
 
     COLORS = {"sans_route": (1, 0.1, 0.1, 1), "deplace": (1, 0.5, 0, 1), "zone_large": (1, 0.9, 0.1, 1)}
     for r, (nom, lap, trace, _, _) in ROUTES.items():
-        rec = os.path.join(aid, trace.replace(".json", "_recale.json"))
+        rec = os.path.join(aid, trace.replace(".json", SUFFIX + ".json"))
         if not os.path.exists(rec):
             continue
         L = [(float(x["x"]), float(x["y"]), float(x["z"])) for x in csv.DictReader(open(os.path.join(aid, lap)))]
@@ -252,8 +252,9 @@ def build_recale():
         curve("Trace_actuelle_" + nom, line(old["points"]), c, (0, 0.9, 1, 1), True, 0.5)
         curve("Trace_recalee_" + nom, line(new["points"]), c, (0.1, 1, 0.2, 1), True, 0.8)
         curve("Tour_roule_" + nom, L[::2], c, (1, 1, 1, 1), True, 0.25)
-        for bi, (ob, nb) in enumerate(zip(old.get("branches") or [], new.get("branches") or [])):
+        for bi, ob in enumerate(old.get("branches") or []):
             curve("Embr%d_actuel_%s" % (bi + 1, nom), line(ob["points"]), c, (0, 0.6, 0.7, 1), False, 0.4)
+        for bi, nb in enumerate(new.get("branches") or []):
             curve("Embr%d_recale_%s" % (bi + 1, nom), line(nb["points"]), c, (0.1, 0.7, 0.2, 1), False, 0.6)
         groups = [("", new["points"], new.get("controle", []))] + [
             ("embr%d_" % (bi + 1), b["points"], b.get("controle", [])) for bi, b in enumerate(new.get("branches") or [])]
@@ -270,10 +271,18 @@ def build_recale():
                 e["drapeaux"], e["deplacement_m"] = ", ".join(k["drapeaux"]), k["deplacement_m"]
                 e["largeur_m"] = k["largeur_m"] or 0.0
                 c.objects.link(e)
-    out = os.path.join(OUT, "traces_recalees.blend")
+        for k, ch in enumerate(new.get("chutes", [])):           # b2paths : chutes de la partie roulée
+            e = bpy.data.objects.new("Chute_%s_%d" % (nom, k + 1), None)
+            e.empty_display_type, e.empty_display_size = "CONE", 4.0
+            e.location = B(ch["depart"])
+            e.color, e.show_in_front = (0.8, 0, 1, 1), True
+            c.objects.link(e)
+    out = os.path.join(OUT, "traces%s.blend" % ("_recalees" if SUFFIX == "_recale" else SUFFIX))
     bpy.ops.wm.save_as_mainfile(filepath=out)
     print("écrit :", out)
 
+
+SUFFIX = next((a for a in sys.argv if a.startswith("_")), "_recale")   # -- recale _v2 : tracés de b2paths
 
 if __name__ == "__main__":
     if IN_BLENDER:

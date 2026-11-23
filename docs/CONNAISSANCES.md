@@ -3779,6 +3779,23 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
   trouver les bords (places, parkings : point laissé) 7 / 3 / 38 / 18. Largeur mesurée médiane 22-44 m : peut
   inclure des trottoirs au même niveau, à vérifier. Vérification : `blur_blender/traces_recalees.blend`
   (`blender -b --python b2blender.py -- recale`), à ajouter à `dubai.blend` par Fichier > Ajouter > Collection.
+- **Parties roulées du 2026-11-23 (chemins secondaires)** : journaux `blur2_aid/journaux/Player_2026-11-23_15-16-57`
+  (route 1), `15-24-23` (2), `15-32-17` (3), `15-38-09` (4) ; 3 à 4 tours par route, chacun par un chemin
+  différent (pas « un tour puis les détours »). `b2paths.py ROUTE LOG` : tour principal = celui qui recouvre le
+  mieux le tour d'origine (route 1 : 3 964 m, 2 : 3 229, 3 : 3 514, 4 : 3 567), chemins secondaires = morceaux des
+  autres tours à plus de 15 m (3D) du principal, entre deux retours à moins de 6 m, ≥ 80 m, sans doublon : 6 / 5 /
+  10 / 7. Tout recalé sur les routes 17f (`b2recale`). Sortie `*_trace_v2.json` (pas encore utilisée par les
+  builds), vue `blur_blender/traces_v2.blend` (`-- recale _v2`). À vérifier : la règle des 15 m en 3D peut prendre
+  pour un chemin secondaire un passage sur une paroi au-dessus de la route ; beaucoup de points « sans route »
+  (99 / 19 / 79 / 82 : parois, looping, ponts).
+- **Chute de Dubai Island (Confirmé, journal + colliders)** : la voiture monte sur la route haute `17f` (y 11 → 19,
+  vers (20 ; 967) → (−49 ; 1012)), la collision s'arrête vers x −50 / z 1012, la voiture tombe vers (−65 ; 1018) puis
+  plusieurs remises (R) entre x −66 et −25, z 1024-1029 : **aucune collision, d'aucun type, à 6 m**. Dans les
+  meshes visibles d'Unity, `draws_d0084` (nom repris par plusieurs objets) a une structure à étages sans
+  collision juste à l'ouest (x −157..−90, z 950..1023, niveaux y 12,8 / 17,8 / 27,2, 1 275 m² de surfaces plates).
+  La route haute visible continue donc sans collider dans les données Unity elles-mêmes : la collision manque dès
+  la source (pas une perte de notre conversion). Correctif possible : pansement `ROUTE` dans Blender, ou collision
+  tirée de ce mesh visible.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
