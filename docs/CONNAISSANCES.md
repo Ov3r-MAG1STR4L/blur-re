@@ -3731,6 +3731,13 @@ pour tout le monde quand quelqu'un tire, Railgun introuvable seul, tir arrière 
 - **Retour en arrière (2026-11-18, demande de l'utilisateur : « c'est devenu chaotique »)** : retournement des faces
   **désactivé** (`ORIENT` = 0, le code reste) et 4 routes reconstruites comme juste avant (tracé sûr, couche arrière,
   pas de retournement). La DLL v14 reste. Le comportement en jeu du retournement n'a pas été décrit en détail.
+- **Correction de l'analyse ci-dessus (2026-11-23, Fort : code + simulation, pas encore vu en jeu)** :
+  `addramp.mesh_object` **réenroule chaque triangle écrit pour que sa normale pointe vers le haut**. Le sens Unity
+  n'arrive donc pas dans le jeu. Le retournement `ORIENT` était défait à l'écriture, la copie « deux faces » devenait
+  un doublon de même sens, et `BACKSTOP` est réenroulé lui aussi. Pour un mur presque vertical, la face gardée suit
+  le signe d'une inclinaison minuscule : murs `15d` de Business Bay face au tour à 51 % une fois écrits (73 % dans
+  Unity). Les barrières `physics_route_N` (n.y = 0, gardées telles quelles) restent bonnes à 89-100 %. Hypothèse pour
+  la différence Marina / Business : barrières contre murs `15d`. Détail et plan : `docs/AUDIT_ATELIER_MAPS.md`.
 
 ## Système de bonus : étude complète (2026-11-17, lecture seule) → `POWERUPS.md`
 Référence complète des bonus dans **`docs/POWERUPS.md`** (19 parties), valeurs et effets de chaque niveau dans
