@@ -616,3 +616,8 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
 | 2026-11-23 | Tracés recalés sur les routes 17f d'après les tours roulés Unity (`b2recale.py`, fichiers `*_recale.json` à côté des actuels, `traces_recalees.blend` pour vérifier). Rien construit : à valider par l'utilisateur après son essai de Business Bay |
 | 2026-11-23 | Parties roulées (4 routes) : `b2paths.py` extrait tour principal + chemins secondaires (6 / 5 / 10 / 7), recalés sur 17f (`*_trace_v2.json`, `traces_v2.blend`), à vérifier. Chute de Dubai Island : route haute visible sans collider dans les données Unity (x −50..−160, z 950..1030) |
 | 2026-11-23 | Collision tirée des meshes visibles (`b2visfill.py`, zone de Dubai Island : route au sol `draws_d0036` couverte). Grilles : tracés v2 tirés vers la case 0 officielle (Construction : chemin secondaire devenu principal), `start_m` et chemins secondaires mesurés sur la route de Map Builder ; 1re rangée à < 1 m de la case 0 (hors jeu). Rien reconstruit |
+- 2026-11-23 (soir) : les 4 cartes reconstruites avec les tracés v2. Limite de 64 morceaux de route de Map Builder :
+  chemins retirés automatiquement, mais la collision tient compte de tous. Grille de Dubai Island avancée de 80 m.
+  Tests utilisateur : les murs corrigés tiennent. Reste à faire : murs autour des routes encore traversables, sol
+  manquant dans la zone orange de Dubai Island, gravité du semi-looping de départ et des tubes de Dubai Island (en
+  attente des captures de position).

@@ -386,11 +386,19 @@ def track(mp, path, low, grid, route, out_dir):
     P = np.array([(q["x"], q["z"]) for q in mp["points"]])
     mp["start_m"] = mp["finish_m"] = mb_start_m(mp, grid)
     mb_branch_m(mp)
+    # Map Builder: 64 road models per map at most (road_mesh.uids, one uid block); each branch also adds raised-edge
+    # models. Too many -> drop the shortest branch until it fits (2026-11-23: Business Bay v2 73, Marina v2 83).
+    import build as mb_fe, road_mesh as mb_mesh
+    every = list(mp["branches"])                       # the collision still faces ALL of them (a dropped branch's
+    while mp["branches"] and mb_mesh.model_count(mb_fe, dict(mp, laps=mp.get("laps") or 3)) > 64:
+        b = min(mp["branches"], key=lambda b: len(b["points"]))
+        mp["branches"].remove(b)
+        print("branch %d-%d m dropped (Map Builder: 64 road models at most)" % (b["from_m"], b["to_m"]))
     lines = [mp["points"]] + [b["points"] for b in mp["branches"]]
     mp["width"] = max(TUBE, max(q["w"] for pts in lines for q in pts) + 10)
     os.makedirs(out_dir, exist_ok=True)
     csvs = []
-    for k, b in enumerate(mp["branches"]):
+    for k, b in enumerate(every):                      # loop / tube: no lap inside -> its faces turned away)
         f = os.path.join(out_dir, "branch_%02d.csv" % k)
         with open(f, "w", newline="") as fh:
             w = csv.writer(fh)

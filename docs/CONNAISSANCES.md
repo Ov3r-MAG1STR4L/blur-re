@@ -4037,3 +4037,19 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
   - Poussée du décor `0xBE6970` (`CheckDynamicObjects`).
 
 
+
+### Map Builder : 64 morceaux de route par carte ; orientation et chemins retirés (2026-11-23, vérifié)
+- Map Builder accepte au plus **64 modèles de route par carte** (`road_mesh.uids`, `assert k < 64`). Chaque chemin
+  secondaire ajoute ses morceaux de route et ses bordures. Avec les chemins v2 : Business Bay 73, Marina 83,
+  Construction 62, Dubai Island 49. `make_b2_map.track()` retire les chemins les plus courts jusqu'à 64 : 3 pour
+  Business Bay, 4 pour Marina. Seule la route de Map Builder et le chemin de l'IA disparaissent ; le décor visible
+  Blur 2 reste.
+- Piège (vérifié en jeu, Business Bay, fin de looping, (490 ; 0,5 ; −683)) : si un chemin retiré l'est aussi pour la
+  collision, l'orientation ne voit plus de tracé dans le looping. Les faces sont tournées vers la route principale :
+  86 murs 15d et 33 surfaces 17f à l'envers. La voiture traverse et reste coincée entre la face et le BACKSTOP
+  (1 m). Correction : les CSV de collision couvrent **tous** les chemins, même ceux retirés de Map Builder.
+- Grille Dubai Island : la route 17f s'arrête environ 16 m derrière la case 0 officielle, donc les rangées 3 et
+  suivantes tombaient dans le vide. Grille avancée de 80 m, vers (−464,5 ; 471,5) : sol vérifié sous les 20 places.
+- Taille des cartes construites : collision Business Bay 113 460 triangles / 519 objets, Dubai Island 108 978 / 533,
+  Construction 214 310 / 945, Marina 193 743 / 804 (au plus 255 triangles par objet). Décor : jusqu'à 32 000
+  triangles par modèle (Dubai Island 141 modèles, Construction 177).
