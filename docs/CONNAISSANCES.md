@@ -4059,3 +4059,7 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
   principal → « zones off (other map) ». Les `track` venaient de l'ancien tracé, sans chemins secondaires.
   `b2gravity_zones.py` lit maintenant le tracé v2 : 224 points `track` au lieu de 103 pour Business Bay, et quelques
   zones en plus sur les chemins secondaires (29→32, 11→13, 28→30, 27→28).
+- Kanzen LA River (communauté, uKER, vidéo https://www.youtube.com/watch?v=-clKkHBjQ5A, signalé 2026-11-23,
+  Probable) : carte inédite de Blur 2, version « déchets toxiques, post-apocalyptique » de LA River, avec de très
+  nombreux chemins alternatifs. uKER la montre en mouvement : il a donc un moyen de l'afficher (à demander : une
+  version Unity comme Blur2DubaiTest ?). Archive X360 d'août : `kanzen_la_river`, 91 Mo, rendu non décodé chez nous.
