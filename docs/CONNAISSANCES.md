@@ -1211,7 +1211,7 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
 ## Voitures de NFS Most Wanted (2005) vers Blur : `mwgeom.py` (2026-11-24, Confirmé hors jeu sur la Ryback Vulcan)
 
 Source : conversion « Split/Second Ryback Vulcan » pour NFS MW (Dynamitechips, Paradoz ; export Split/Second d'Elysium ;
-redistribution interdite : usage perso/LAN seulement, rien dans le dépôt). Fichiers dans `Jeux_WIIirestorm_src`.
+redistribution interdite : usage perso/LAN seulement, rien dans le dépôt). Fichiers dans `Jeux_WII/firestorm_src`.
 - `GEOMETRY.BIN` (écrit par NFS-CarToolkit) : conteneur `0x80134000`, table `0x00134004` (24 o : hachage, position,
   taille compressée, taille), une pièce (« solid ») par bloc **JDLZ** (LZ maison de Black Box, décodé dans `mwgeom.jdlz`).
   Pièce : `0x134011` (nom à +0xA0), `0x134012` (hachages de textures, 8 o chacun), `0x134B02` (groupes de 104 o après
