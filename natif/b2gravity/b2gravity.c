@@ -451,7 +451,8 @@ static void map_gate(const float *p, float speed)
 #define HOG_FLOOR -90.f   /* Blur 2 loop exits dip to y -20 (2026-11-24) */
 #define HOG_STUCK_MS 4000
 static int hog_saved = -1, hog_safety = 0;
-static DWORD still_since = 0;
+static DWORD still_since = 0, hog_key_until = 0;
+#define HOG_KEY_MS 3000
 
 static void hog_update(const float *p, float speed)
 {
@@ -470,7 +471,12 @@ static void hog_update(const float *p, float speed)
         hog_safety = 0;
         say("respawn safety over: car driving again");
     }
-    want_off = armed == 1 && !hog_safety;
+    if (GetAsyncKeyState(VK_END) & 0x8000) {            /* v15: End = respawn on demand (game's HandOfGod, 3 s) */
+        if (!hog_key_until) say("End pressed: HandOfGod on for %d ms", HOG_KEY_MS);
+        hog_key_until = now + HOG_KEY_MS;
+    }
+    if (hog_key_until && now > hog_key_until) hog_key_until = 0;
+    want_off = armed == 1 && !hog_safety && !hog_key_until;
     if (want_off && hog_saved < 0) { hog_saved = *sw; *sw = 0; say("HandOfGod respawn off on this map (was %d)", hog_saved); }
     else if (!want_off && hog_saved >= 0) { *sw = (unsigned char)hog_saved; hog_saved = -1; say("HandOfGod respawn back on"); }
 }
@@ -486,6 +492,12 @@ static void car_wallride(char *self, int k, int on)
 }
 
 static void remember(char *self, int k, float gx, float gy, float gz, int bent);
+
+#define FLIP_MS 1500       /* still and turned over this long -> righted (v15) */
+#define FLIP_K 4.f         /* torque, in align_torque units (mass x g x t) */
+#define FLIP_LIFT 0.9f     /* upward force while righting, x weight */
+static DWORD flip_since[32];
+static int righting[32];
 
 static void __stdcall gravity(char *self)
 {
@@ -542,6 +554,29 @@ static void __stdcall gravity(char *self)
         } else if (ext && k < 32 && applied[k]) {
             ext[0] = ext[1] = ext[2] = 0.f;                 /* back to the game's own forces */
             ext[3] = ext[4] = ext[5] = 0.f;                 /* torque: written by v2 / v3 */
+        }
+        if (!on && ext && k < 32 && armed == 1) {          /* v15: turned over and still -> rolled back on its wheels */
+            float uy = len > 0.5f ? up[1] / len : 1.f;      /* (per car: HandOfGod is off on these maps, 2026-11-24) */
+            DWORD now = GetTickCount();
+            unsigned car = rd((unsigned)self + 0x238);
+            float m = car ? *(float *)(car + CAR_MASS) : 0.f;
+            if (uy < 0.3f && speed < 2.f) { if (!flip_since[k]) flip_since[k] = now; }
+            else if (uy > 0.8f || speed > 4.f) flip_since[k] = 0;
+            if (flip_since[k] && now - flip_since[k] > FLIP_MS && m > 0.f && m < 1e5f && len > 0.5f) {
+                const float *ax = (const float *)(self + 0xCC);    /* + some lateral axis: no zero torque on the roof */
+                float u[3] = {up[0] / len, up[1] / len, up[2] / len}, w[3] = {0.5f * ax[0], 1.f + 0.5f * ax[1],
+                              0.5f * ax[2]}, l = sqrtf(w[0] * w[0] + w[1] * w[1] + w[2] * w[2]);
+                w[0] /= l; w[1] /= l; w[2] /= l;
+                align_torque(self, -1, ext, u, w, FLIP_K);
+                ext[0] = ext[2] = 0.f; ext[1] = m * 9.81f * FLIP_LIFT;          /* weight off the roof */
+                if (!righting[k]) say("vehicle %d turned over at (%.0f, %.0f, %.0f): rolling it back", k, p[0], p[1], p[2]);
+                righting[k] = 1;
+            } else if (righting[k]) {
+                int i;
+                for (i = 0; i < 6; i++) ext[i] = 0.f;
+                righting[k] = 0;
+                say("vehicle %d back on its wheels (up y %.2f)", k, uy);
+            }
         }
         if (k < 32) applied[k] = on && ext;
         if (k < 32) wallon[k] = surf && speed > 1.f;
