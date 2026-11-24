@@ -4108,3 +4108,24 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
   lissé (vers le haut de la voiture dans une zone, retour vers y monde à la sortie), caméra du joueur seulement.
   Adresse de `GetLookQuat` dans `Blur.exe` à trouver (constante 1.0 et produit vectoriel ; appelée depuis la
   fonction qui lit `Camera2.Chase2.Tilt`).
+- **Adresses dans `Blur.exe` (Confirmé, désassemblage, même jour)** : `C_ChaseCamera2::OnUpdate` = **`0x590440`**
+  (thiscall, esi = caméra ; trouvée par la lecture du booléen `Camera2.Chase2.DeferredRaytrace`, objet `0x11429D8`,
+  valeur `0x11429FC`, en `0x591085`). `C_Camera::GetLookQuat` = **`0x58B4D0`**, cdecl `(quat *sortie, vec3 *dir)`,
+  rend `sortie` ; n'appelle que `_copysign` (import `0xE53328`) et lit 4 constantes. Seul appel de la caméra de
+  poursuite : **`0x590F2B`**. Caméra : objet suivi (position, puis orientation) en +8, orientation `m_Orient` +0x38
+  et `m_Shaken` +0x48, `m_Safe` +0x134, `m_Want` +0x140, handle de rayon +0x130. Copie des réglages
+  (`GetParam` `0x58D8C0`) sur la pile en `[esp + 0xB0]` : `distance, height, fov, tilt, …`, hauteur lue en
+  `[esp + 0xB4]` (`0x590FE1`). Le rayon anti-mur part de `0x591071`.
+- **Caméra v16 (`b2gravity.c`, compilée, installée dans Blur_test, à essayer en jeu)** : appel `0x590F2B` redirigé ;
+  par caméra, un « haut caméra » qui tourne vers le haut de la voiture suivie quand elle est sur une surface de zone
+  (`veh_on`, même règle que les roues), retour vers y monde sinon, en douceur (part `1 − exp(−dt / cam_tau)` de
+  l'angle par image). Orientation reconstruite avec ce haut (axe latéral de l'image précédente gardé si la visée
+  est parallèle au haut : plus de bascule en haut du looping) ; `m_Want += height × (haut − Y)` en `0x591071` (les
+  16 octets remplacés sont rejoués par le stub). En y monde, c'est la fonction du jeu qui tourne (rien ne change
+  hors des murs). Patchs posés seulement s'il y a des zones. Réglages `cam <0..1>` (part du haut de la voiture,
+  0 = coupé) et `cam_tau <s>` (0,3) dans `b2gravity.txt` ; journal « camera: … ». Convention du quaternion
+  vérifiée au premier appel contre la fonction du jeu (sinon caméra laissée au jeu).
+- **Vérification hors jeu (Confirmé)** : `natif/b2gravity/test_cam.c` copie le vrai `GetLookQuat` de `Blur.exe` et
+  compare : même quaternion que le jeu sur 2 000 directions (convention trouvée), haut caméra sur un mur, axe
+  latéral gardé en haut de looping, lissage (suivi, haut opposé, retour). Tout passe. Ancienne DLL :
+  `b2gravity_v15.dll.bak`. Non vérifié : le rendu en jeu, l'écran partagé (une caméra par joueur, 4 au plus).

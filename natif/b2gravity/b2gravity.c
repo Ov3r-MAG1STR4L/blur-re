@@ -270,6 +270,9 @@ static float mph_min = 15.f, mph_max = 35.f;
 /* v8: in a zone, on a surface, above 1 m/s: Blur 1's anti-wall-riding is lifted whatever the speed
    (Fix2 off, wheels along car -up); only the gravity / torque / downforce wait for mph_min. */
 static int wallon[32];
+/* v16 camera: each vehicle's position / up / "on a surface" this frame, read by the chase camera hook */
+static float veh_pos[32][3], veh_up[32][3];
+static int veh_on[32];
 
 static unsigned bucket(int x, int y, int z)
 {
@@ -580,6 +583,11 @@ static void __stdcall gravity(char *self)
         }
         if (k < 32) applied[k] = on && ext;
         if (k < 32) wallon[k] = surf && speed > 1.f;
+        if (k < 32) {
+            veh_pos[k][0] = p[0]; veh_pos[k][1] = p[1]; veh_pos[k][2] = p[2];
+            if (len > 0.5f) { veh_up[k][0] = up[0] / len; veh_up[k][1] = up[1] / len; veh_up[k][2] = up[2] / len; }
+            veh_on[k] = surf && speed > 1.f;
+        }
         car_wallride(self, k, surf && speed > 1.f);
         car_constraint_off(self, k, surf);
         if (k < 32 && inside != in_zone_last[k]) {
@@ -761,6 +769,276 @@ static __declspec(naked) void stub_push(void)
     }
 }
 
+/* ---- v16 (2026-11-24): chase camera "up" follows the car on wall / loop surfaces ---------------------------
+   Source (mercury camera2): C_ChaseCamera2::OnUpdate (Blur.exe 0x590440, ecx = esi = camera) orients the camera
+   with C_Camera::GetLookQuat (0x58B4D0, cdecl (quat *out, vec3 *dir), returns out) whose up is the WORLD Y, and
+   raises it by param.height along world Y: m_Want (camera + 0x140) = lookPos + (0, height, 0) + offset. On a wall
+   the horizon stays flat and the camera goes into the wall; at the top of a loop the view is vertical and the
+   frame flips. Checked in the exe (2026-11-24): the call at 0x590F2B is the only GetLookQuat of the chase camera;
+   param copy on the stack at [esp + 0xB0] (GetParam 0x58D8C0), height = + 4 (read at 0x590FE1); camera object
+   (followed car: position, then orient) at camera + 8; m_Safe + 0x134 and m_Want + 0x140 used by the ray trace
+   from 0x591071 on.
+   Here: per camera, a "camera up" eased (cam_tau s) towards the followed car's up while that car is on a zone
+   surface, back to world Y otherwise; GetLookQuat rebuilt with it, and m_Want += height * (up - Y). At world Y the
+   game's own GetLookQuat runs (no change off the walls). Quaternion convention checked at the first call against
+   the game's function (log "camera: quaternion ..."); no match -> camera left to the game.
+   "cam <0..1>" (share of the car's up, 0 = off) and "cam_tau <s>" in b2gravity.txt. */
+#define CAM_LOOK_CALL 0x590F2B
+#define GETLOOKQUAT   0x58B4D0
+#define CAM_WANT_SITE 0x591071
+#define CAM_PARAM_H   0xB4
+#define CAM_WANT      0x140
+#define MAX_CAMS 4
+static const unsigned char ORIGINAL_LOOKCALL[5] = {0xE8, 0xA0, 0xA5, 0xFF, 0xFF};
+static const unsigned char ORIGINAL_WANT[16] = {0x8B, 0x8E, 0x1C, 0x01, 0x00, 0x00, 0xC7, 0x86, 0x30, 0x01, 0x00, 0x00,
+                                                0xFF, 0xFF, 0xFF, 0xFF};
+typedef float *(__cdecl *lookquat_fn)(float *out, const float *dir);
+static unsigned getlookquat = GETLOOKQUAT;      /* variable so that test_cam.c can point it at a relocated copy */
+static float cam_follow = 1.f, cam_tau = 0.3f;
+static int quat_conv = -1;                  /* -1 unchecked, 0 no match (camera left to the game), 1 rows, 2 columns */
+static unsigned cam_id[MAX_CAMS];
+static float cam_up[MAX_CAMS][3], cam_x[MAX_CAMS][3];
+static LARGE_INTEGER cam_t[MAX_CAMS];
+static int cam_k[MAX_CAMS];
+
+static void norm3(float *v)
+{
+    float l = sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    if (l > 1e-6f) { v[0] /= l; v[1] /= l; v[2] /= l; }
+}
+
+static void cross3(const float *a, const float *b, float *c)
+{
+    c[0] = a[1] * b[2] - a[2] * b[1]; c[1] = a[2] * b[0] - a[0] * b[2]; c[2] = a[0] * b[1] - a[1] * b[0];
+}
+
+/* rotation matrix (column-vector convention) of q = (x, y, z, w) */
+static void quat_mat(const float *q, float R[3][3])
+{
+    float x = q[0], y = q[1], z = q[2], w = q[3];
+    R[0][0] = 1 - 2 * (y * y + z * z); R[0][1] = 2 * (x * y - z * w); R[0][2] = 2 * (x * z + y * w);
+    R[1][0] = 2 * (x * y + z * w); R[1][1] = 1 - 2 * (x * x + z * z); R[1][2] = 2 * (y * z - x * w);
+    R[2][0] = 2 * (x * z - y * w); R[2][1] = 2 * (y * z + x * w); R[2][2] = 1 - 2 * (x * x + y * y);
+}
+
+/* frame (AX, AY, AZ rows as the game's HMat33) -> quaternion, in the convention found by quat_calibrate */
+static void frame_quat(const float *ax, const float *ay, const float *az, int conv, float *q)
+{
+    float R[3][3], t;
+    int i;
+    for (i = 0; i < 3; i++) {
+        if (conv == 1) { R[0][i] = ax[i]; R[1][i] = ay[i]; R[2][i] = az[i]; }   /* AX = row 0 */
+        else { R[i][0] = ax[i]; R[i][1] = ay[i]; R[i][2] = az[i]; }               /* AX = column 0 */
+    }
+    t = R[0][0] + R[1][1] + R[2][2];
+    if (t > 0.f) {
+        float s = sqrtf(t + 1.f) * 2.f;
+        q[3] = 0.25f * s; q[0] = (R[2][1] - R[1][2]) / s; q[1] = (R[0][2] - R[2][0]) / s; q[2] = (R[1][0] - R[0][1]) / s;
+    } else if (R[0][0] > R[1][1] && R[0][0] > R[2][2]) {
+        float s = sqrtf(1.f + R[0][0] - R[1][1] - R[2][2]) * 2.f;
+        q[3] = (R[2][1] - R[1][2]) / s; q[0] = 0.25f * s; q[1] = (R[0][1] + R[1][0]) / s; q[2] = (R[0][2] + R[2][0]) / s;
+    } else if (R[1][1] > R[2][2]) {
+        float s = sqrtf(1.f + R[1][1] - R[0][0] - R[2][2]) * 2.f;
+        q[3] = (R[0][2] - R[2][0]) / s; q[0] = (R[0][1] + R[1][0]) / s; q[1] = 0.25f * s; q[2] = (R[1][2] + R[2][1]) / s;
+    } else {
+        float s = sqrtf(1.f + R[2][2] - R[0][0] - R[1][1]) * 2.f;
+        q[3] = (R[1][0] - R[0][1]) / s; q[0] = (R[0][2] + R[2][0]) / s; q[1] = (R[1][2] + R[2][1]) / s; q[2] = 0.25f * s;
+    }
+}
+
+/* game's frame for dir with up U: AZ = dir, AX = U x AZ, AY = AZ x AX (GetLookQuat with U = Y) */
+static int look_frame(const float *dir, const float *U, const float *xprev, float *ax, float *ay, float *az)
+{
+    float l;
+    az[0] = dir[0]; az[1] = dir[1]; az[2] = dir[2];
+    l = sqrtf(az[0] * az[0] + az[1] * az[1] + az[2] * az[2]);
+    if (l < 1e-6f) return 0;
+    az[0] /= l; az[1] /= l; az[2] /= l;
+    cross3(U, az, ax);
+    l = sqrtf(ax[0] * ax[0] + ax[1] * ax[1] + ax[2] * ax[2]);
+    if (l < 0.05f) {                                 /* looking along the up: keep last frame's side axis */
+        float d;
+        if (!xprev) return 0;
+        d = xprev[0] * az[0] + xprev[1] * az[1] + xprev[2] * az[2];
+        ax[0] = xprev[0] - d * az[0]; ax[1] = xprev[1] - d * az[1]; ax[2] = xprev[2] - d * az[2];
+        l = sqrtf(ax[0] * ax[0] + ax[1] * ax[1] + ax[2] * ax[2]);
+        if (l < 1e-3f) return 0;
+    }
+    ax[0] /= l; ax[1] /= l; ax[2] /= l;
+    cross3(az, ax, ay);
+    return 1;
+}
+
+/* which rows/columns convention gives back the game's quaternion (both ways: game q -> frame, frame -> q) */
+static void quat_calibrate(void)
+{
+    static const float Y[3] = {0.f, 1.f, 0.f}, dir[3] = {0.31f, -0.22f, 0.92f};
+    float q[4], R[3][3], ax[3], ay[3], az[3], e[2] = {0.f, 0.f}, q2[4], dq;
+    int c, i;
+    ((lookquat_fn)getlookquat)(q, dir);
+    look_frame(dir, Y, NULL, ax, ay, az);
+    quat_mat(q, R);
+    for (i = 0; i < 3; i++) {
+        e[0] += fabsf(R[0][i] - ax[i]) + fabsf(R[1][i] - ay[i]) + fabsf(R[2][i] - az[i]);
+        e[1] += fabsf(R[i][0] - ax[i]) + fabsf(R[i][1] - ay[i]) + fabsf(R[i][2] - az[i]);
+    }
+    c = e[0] < 1e-3f ? 1 : e[1] < 1e-3f ? 2 : 0;
+    if (c) {
+        frame_quat(ax, ay, az, c, q2);
+        dq = fabsf(q[0] * q2[0] + q[1] * q2[1] + q[2] * q2[2] + q[3] * q2[3]);
+        if (dq < 0.9999f) c = 0;
+    }
+    quat_conv = c;
+    say("camera: game quaternion (%.4f, %.4f, %.4f, %.4f), error rows %.5f columns %.5f -> %s", q[0], q[1], q[2], q[3],
+        e[0], e[1], c == 1 ? "rows, camera up active" : c == 2 ? "columns, camera up active" : "NO MATCH, camera left to the game");
+}
+
+static int cam_slot(unsigned cam)
+{
+    int i;
+    for (i = 0; i < MAX_CAMS; i++) if (cam_id[i] == cam) return i;
+    for (i = 0; i < MAX_CAMS; i++) if (!cam_id[i]) {
+        cam_id[i] = cam; cam_up[i][0] = 0.f; cam_up[i][1] = 1.f; cam_up[i][2] = 0.f; cam_k[i] = -2;
+        cam_t[i].QuadPart = 0;
+        say("camera %d: chase camera 0x%X", i, cam);
+        return i;
+    }
+    return -1;
+}
+
+/* ease the camera's up towards its car's up (on a zone surface) or world Y; per frame, from the camera hook */
+static void cam_ease(int s, const float *obj)
+{
+    float target[3] = {0.f, 1.f, 0.f}, best = 8.f * 8.f, dt = 1.f / 60.f, axis[3], l, ang, a;
+    int k, kk = -1;
+    LARGE_INTEGER now, fq;
+    for (k = 0; k < 32; k++) {                       /* the car followed = the vehicle at the camera object */
+        float dx = veh_pos[k][0] - obj[0], dy = veh_pos[k][1] - obj[1], dz = veh_pos[k][2] - obj[2];
+        float d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 < best) { best = d2; kk = k; }
+    }
+    if (kk >= 0 && veh_on[kk] && armed == 1 && cam_follow > 0.f) {
+        int i;
+        for (i = 0; i < 3; i++) target[i] = (i == 1 ? 1.f - cam_follow : 0.f) + cam_follow * veh_up[kk][i];
+        norm3(target);
+    }
+    k = (kk >= 0 && veh_on[kk] && armed == 1) ? kk : -1;
+    if (k != cam_k[s]) {
+        cam_k[s] = k;
+        if (k >= 0) say("camera %d follows the up of vehicle %d", s, k);
+        else say("camera %d back to world up", s);
+    }
+    QueryPerformanceCounter(&now); QueryPerformanceFrequency(&fq);
+    if (cam_t[s].QuadPart) {
+        float d = (float)(now.QuadPart - cam_t[s].QuadPart) / (float)fq.QuadPart;
+        if (d > 0.f && d < 0.1f) dt = d;
+    }
+    cam_t[s] = now;
+    /* turn cam_up towards target by a share 1 - exp(-dt / tau) of the angle */
+    cross3(cam_up[s], target, axis);
+    l = sqrtf(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+    ang = atan2f(l, cam_up[s][0] * target[0] + cam_up[s][1] * target[1] + cam_up[s][2] * target[2]);
+    a = cam_tau > 0.f ? ang * (1.f - expf(-dt / cam_tau)) : ang;
+    if (ang < 1e-3f || a >= ang) { cam_up[s][0] = target[0]; cam_up[s][1] = target[1]; cam_up[s][2] = target[2]; return; }
+    if (l < 1e-4f) {                                 /* opposite: turn about the side axis, or any perpendicular */
+        static const float X[3] = {1.f, 0.f, 0.f}, Z[3] = {0.f, 0.f, 1.f};
+        float d = cam_x[s][0] * cam_up[s][0] + cam_x[s][1] * cam_up[s][1] + cam_x[s][2] * cam_up[s][2];
+        int i;
+        for (i = 0; i < 3; i++) axis[i] = cam_x[s][i] - d * cam_up[s][i];
+        l = sqrtf(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+        if (l < 1e-3f) {
+            cross3(cam_up[s], fabsf(cam_up[s][0]) < 0.9f ? X : Z, axis);
+            l = sqrtf(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+        }
+    }
+    axis[0] /= l; axis[1] /= l; axis[2] /= l;
+    rot(cam_up[s], axis, cosf(a), sinf(a));
+    norm3(cam_up[s]);
+}
+
+static int world_up(int s)
+{
+    return fabsf(cam_up[s][0]) < 1e-5f && fabsf(cam_up[s][2]) < 1e-5f && cam_up[s][1] > 0.f;
+}
+
+static float *__stdcall cam_look(unsigned cam, float *out, const float *dir)
+{
+    float ax[3], ay[3], az[3];
+    int s;
+    if (quat_conv < 0) quat_calibrate();
+    s = quat_conv > 0 ? cam_slot(cam) : -1;
+    if (s < 0) return ((lookquat_fn)getlookquat)(out, dir);
+    cam_ease(s, (const float *)(cam + 8));
+    if (world_up(s) || !look_frame(dir, cam_up[s], cam_x[s], ax, ay, az)) {
+        float *r = ((lookquat_fn)getlookquat)(out, dir);
+        static const float Y[3] = {0.f, 1.f, 0.f};
+        if (look_frame(dir, Y, cam_x[s], ax, ay, az)) { cam_x[s][0] = ax[0]; cam_x[s][1] = ax[1]; cam_x[s][2] = ax[2]; }
+        return r;
+    }
+    cam_x[s][0] = ax[0]; cam_x[s][1] = ax[1]; cam_x[s][2] = ax[2];
+    frame_quat(ax, ay, az, quat_conv, out);
+    return out;
+}
+
+/* m_Want: the height along the camera up instead of world Y (gesp = the game's esp at 0x591071) */
+static void __stdcall cam_want(unsigned cam, unsigned gesp)
+{
+    float h, *want;
+    int i, s;
+    for (s = 0; s < MAX_CAMS && cam_id[s] != cam; s++) ;
+    if (s >= MAX_CAMS || world_up(s)) return;
+    h = *(float *)(gesp + CAM_PARAM_H);
+    if (!(h > -50.f && h < 50.f)) return;
+    want = (float *)(cam + CAM_WANT);
+    for (i = 0; i < 3; i++) want[i] += h * (cam_up[s][i] - (i == 1 ? 1.f : 0.f));
+}
+
+static __declspec(naked) void stub_look(void)
+{
+    __asm {                                  /* [esp] return, [esp+4] out, [esp+8] dir; esi = camera; caller cleans */
+        push dword ptr [esp + 8]
+        push dword ptr [esp + 8]
+        push esi
+        call cam_look                        /* stdcall, eax = out as GetLookQuat */
+        ret
+    }
+}
+
+static __declspec(naked) void stub_want(void)
+{
+    __asm {
+        pushad
+        pushfd
+        sub esp, 128
+        movups [esp], xmm0
+        movups [esp + 16], xmm1
+        movups [esp + 32], xmm2
+        movups [esp + 48], xmm3
+        movups [esp + 64], xmm4
+        movups [esp + 80], xmm5
+        movups [esp + 96], xmm6
+        movups [esp + 112], xmm7
+        lea eax, [esp + 168]                 /* the game's esp at 0x591071 */
+        push eax
+        push esi
+        call cam_want
+        movups xmm0, [esp]
+        movups xmm1, [esp + 16]
+        movups xmm2, [esp + 32]
+        movups xmm3, [esp + 48]
+        movups xmm4, [esp + 64]
+        movups xmm5, [esp + 80]
+        movups xmm6, [esp + 96]
+        movups xmm7, [esp + 112]
+        add esp, 128
+        popfd
+        popad
+        mov ecx, dword ptr [esi + 0x11C]     /* the 16 bytes replaced */
+        mov dword ptr [esi + 0x130], 0FFFFFFFFh
+        ret
+    }
+}
+
 static int patch_bytes(unsigned addr, const unsigned char *orig, int len, void *target, unsigned resume)
 {
     unsigned char *site = (unsigned char *)addr;
@@ -806,6 +1084,8 @@ static void load_zones(void)
             start_xz[0] = b[0]; start_xz[1] = b[1]; start_r = b[2]; have_start = 1; continue;
         }
         if (sscanf_s(line, "ahead %f", &s) == 1) { ahead_s = s; continue; }
+        if (sscanf_s(line, "cam_tau %f", &s) == 1) { cam_tau = s; continue; }
+        if (sscanf_s(line, "cam %f", &s) == 1) { cam_follow = s < 0.f ? 0.f : s > 1.f ? 1.f : s; continue; }
         if (sscanf_s(line, "mph_max %f", &s) == 1) { mph_max = s; continue; }
         if (nzones < MAX_ZONES && sscanf_s(line, "%f %f %f %f %f %f", b, b + 1, b + 2, b + 3, b + 4, b + 5) == 6) {
             memcpy(zones[nzones++], b, sizeof b);
@@ -860,6 +1140,11 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         patch();
         patch_bytes(SITE_GRAV, ORIGINAL_GRAV, 102, stub_grav, SITE_GRAV_END);
         patch_bytes(SITE_PUSH, ORIGINAL_PUSH, 5, stub_push, 0);
+        if (nzones) {                        /* v16: chase camera up (only where there are wall zones) */
+            say("camera: follow %.2f, tau %.2f s", cam_follow, cam_tau);
+            patch_bytes(CAM_LOOK_CALL, ORIGINAL_LOOKCALL, 5, stub_look, 0);
+            patch_bytes(CAM_WANT_SITE, ORIGINAL_WANT, 16, stub_want, 0);
+        }
     }
     return TRUE;
 }
