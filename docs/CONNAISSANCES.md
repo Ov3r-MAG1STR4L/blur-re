@@ -1279,6 +1279,14 @@ redistribution interdite : usage perso/LAN seulement, rien dans le dépôt). Fic
   (rapport final 5,72, frottement de l'air 0,82, couple/kg 1,70) ; mais la pente de la classe A est **positive** pour
   le frottement de l'air et le rapport final : monter la stat « vitesse » au-delà raccourcit la boîte et freine plus
   dans l'air. La liste exacte de Map Builder (`Pick`) peut différer du CSV.
+  **Cause de la marche arrière (confirmée, lue dans `rebrn/gamedata.pak` construit)** : `RP_CarDynamics`
+  `BMB_Ryback_Vulkan_S_physics` a `gears.finalRatio` = **−0,77** (Vulkan normale, vitesse 9 : 3,5575). Avec la liste
+  de Map Builder, chaque point de « vitesse » au-dessus de 9 fait −1,4425 sur le rapport final et +0,1325 sur
+  `friction.airFriction` (0,4925 → 0,89 à 12) : la stat vitesse ne peut pas dépasser 10 (rapport 2,115 ; 11 donne 0,673).
+  L'accélération extrapole sans danger (couple `engineTorque_Rpm.yScale` 1 137 → 2 471 à 12). Nouvelle S :
+  `Ryback Vulkan S v2.blurcar` (vitesse 10, accélération 12, glisse 3, adhérence 6). Pour dépasser la vitesse de pointe
+  de la classe, il faudrait réécrire après Map Builder `GameplayTopSpeed` (`amax.bin`), `finalRatio` et `airFriction`
+  (`racingphysics.bin`) dans le pak de REBORN.
 - Map Builder 2.7.1 dans une copie aux paks renommés `.off` : il exige `cache\gamedata.pak` et `root.pak` (sinon
   « A game file is missing ») et écrit `amax\plugins\plugins.lua` (refus si le fichier est en lecture seule).
 

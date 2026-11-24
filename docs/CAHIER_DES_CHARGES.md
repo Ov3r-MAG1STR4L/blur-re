@@ -642,3 +642,4 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
 - 2026-11-24 : Vulcan découpée en pièces de Blur (`mw2glb_blender.py --split`) ; Map Builder 2.7.1 de `Blur_test_hud` débloqué (paks remis par l'utilisateur, `plugins.lua` en écriture)
 - 2026-11-24 : découpe de la Vulcan avec feux et vitres ; bug des textures noires corrigé (`.glb` refaits) ; `.blurcar` lu (zip + `car.json`), `Ryback Vulkan v2` et `v2 peinture` (`paint_body`) produits, à essayer
 - 2026-11-24 : Vulcan « classe S » (`Ryback Vulkan S.blurcar`, stats extrapolées au-delà de la classe A), à essayer en jeu ; réglages de l'utilisateur vérifiés dans l'aperçu (roues, échappements)
+- 2026-11-24 : Vulkan S recule = rapport final négatif (−0,77) par extrapolation de la stat vitesse ; S v2 (vitesse 10, accélération 12) produite
