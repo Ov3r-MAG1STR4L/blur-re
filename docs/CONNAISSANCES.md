@@ -1244,6 +1244,22 @@ redistribution interdite : usage perso/LAN seulement, rien dans le dépôt). Fic
   `e_door_left/right` (3 140), `e_mirror_frontleft/right` (1 808), reste `e_exterior` / `e_interior`. La conversion NFS
   **double** des pièces (même forme en peinture et en noir `DOOR_HANDLE`) : doublons noirs retirés (−7 500 tri.).
   `ryback_vulcan_13k_pieces.glb` = objets à ces noms ; Map Builder 2.7.1 les fusionne encore dans `e_exterior`.
+  Ajout le 2026-11-24 : feux et vitres (`e_HeadLight_FrontLeft/Right`, `e_HeadLightCover_frontLeft/Right`,
+  `e_BrakeLight_Left/Right`, `e_RearLight_Left/Right`, `e_window_front`, `e_window_frontleft/right`). **Bug corrigé** :
+  renommer les matériaux en parcourant `bpy.data.materials` les retrie, certains repassaient et devenaient
+  `black_trim` (textures perdues dans les premiers `.glb`) ; parcours sur `list(...)`.
+- **Phares et vitres dans Map Builder 2.7.1 (source, Fort)** : vitre = matériau à transmission > 0,05, ou `BLEND` avec
+  alpha < 0,95, ou nom contenant « glass » (pas « mask ») ; posée dans les verres de phares de la Bowler
+  (`e_headlightcover*`, `veh_glass`) s'ils ont la place. `HideLights` **enterre tous les feux de la Bowler** (20 m sous
+  le sol, boîtes des traînées comprises) : une voiture importée n'a ni phares allumés, ni feux stop, ni traînées.
+- **Fichier `.blurcar`** = zip : `body/<glb>`, `logo/<png>`, `car.json`, `info.json`. Champs de `car.json` : `name`,
+  `class` (0 = A), `base`, `icon`, `stats` (speed, acceleration, drift, grip, strength), `paint`, `net_id`,
+  `body_glb`, `glb_fit` (turn, size, fwd, up, wb, track, track_r), `exhaust` (points x, y, z), `logo`, `wheels`,
+  `sound`, `sound_own` / `sounds` / `sound_rpm`, `mini_icon`, `replace`, et des options cachées : **`paint_body`**
+  (peinture du joueur sur les triangles de matériau « paint », désactivée dans l'interface « en cours »),
+  `decal_alpha`, `clear_glass`. Les stats ne sont ramenées dans la fourchette de la classe (`Fair`) que sur une
+  modification dans l'interface ; la tenue de route est interpolée par stat entre les voitures de la classe
+  (`Handling`, sans borne : une stat hors fourchette serait extrapolée, non essayé).
 - Map Builder 2.7.1 dans une copie aux paks renommés `.off` : il exige `cache\gamedata.pak` et `root.pak` (sinon
   « A game file is missing ») et écrit `amax\plugins\plugins.lua` (refus si le fichier est en lecture seule).
 

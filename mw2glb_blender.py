@@ -22,7 +22,7 @@ def build():
             bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index not in slot], context='FACES')
             bm.to_mesh(o.data); bm.free()
     pngs = {os.path.basename(p)[:8]: p for p in glob.glob(os.path.join(texdir, '*.png'))}
-    for m in bpy.data.materials:
+    for m in list(bpy.data.materials):   # list() : renommer retrie la collection (sinon un matériau repasse et devient noir)
         h = m.name.replace('tex_', '')[:8]
         m.use_nodes = True; bsdf = m.node_tree.nodes.get('Principled BSDF')
         if h == PAINT:
@@ -49,10 +49,25 @@ def build():
 # Découpe en pièces aux noms des éléments d'une voiture de Blur (ceux de la Bowler Nemesis).
 # Repère de la voiture NFS : +x avant, +y gauche, z haut, en mètres.
 # ponytail: boîtes réglées sur la Ryback Vulcan ; une autre voiture demande ses propres boîtes.
-def blur_part(mats, mn, mx):
+def blur_part(mats, mn, mx, interior=False):
     c = [(a + b) / 2 for a, b in zip(mn, mx)]
     side = 'left' if c[1] > 0 else 'right'
+    Side = side.capitalize()
     paint = 'paint' in mats
+    ymin = min(abs(mn[1]), abs(mx[1]))
+    has = lambda s: any(s in m for m in mats)
+    if interior:   # vitres de l'habitacle : pare-brise au centre, vitres latérales sur les côtés
+        if 'glass' in mats: return 'e_window_front' if abs(c[1]) < 0.4 else 'e_window_front' + side
+        return None
+    # feux (noms et casse de la Bowler : e_HeadLight_FrontLeft, e_HeadLightCover_frontLeft, e_BrakeLight_Left...)
+    if 'glass' in mats and mn[0] >= 1.5 and ymin >= 0.5:
+        return 'e_HeadLightCover_front' + Side
+    if has('headlight') or (has('misc') and mn[0] >= 1.55 and mx[0] <= 1.9 and ymin >= 0.6 and 0.3 <= mn[2] and mx[2] <= 0.5):
+        return 'e_HeadLight_Front' + Side
+    if has('brakelight') and mx[0] <= -1.5:
+        return 'e_BrakeLight_' + Side
+    if has('misc') and mx[0] <= -1.5 and mn[0] >= -1.9 and ymin >= 0.3 and mn[2] >= 0.44:
+        return 'e_RearLight_' + Side
     if 0.6 <= mn[0] and mx[0] <= 1.0 and min(abs(mn[1]), abs(mx[1])) > 0.75 and 0.55 <= mn[2] and mx[2] <= 0.75:
         return 'e_mirror_front' + side
     if paint and mn[0] >= 1.0 and mn[2] >= 0.25 and max(abs(mn[1]), abs(mx[1])) <= 0.75:
@@ -87,7 +102,7 @@ def split_blur():
         target = {}
         for fs, mn, mx, mats in comps:
             if 'paint' not in mats and (len(fs), tuple(round(x, 2) for x in mn + mx)) in painted: continue
-            name = blur_part(mats, mn, mx) if base == 'e_exterior' else None
+            name = blur_part(mats, mn, mx, interior=(base == 'e_interior'))
             for i in fs: target[i] = name or base
         bm.free()
         for name in set(target.values()):
