@@ -1270,6 +1270,15 @@ redistribution interdite : usage perso/LAN seulement, rien dans le dépôt). Fic
   Fichier : `Ryback Vulkan S.blurcar` (vitesse 12, accélération 12, glisse 3, adhérence 6, solidité 5). Fourchettes de
   la classe A (`blur_voitures.csv`, voitures utilisables) : vitesse 8-10, accélération 9-10, glisse 0-5,
   adhérence 1-5, 188-246 mph.
+- **1er essai en jeu de la Vulcan (2026-11-24, retour de l'utilisateur)** : installée (REBORN). Défauts d'affichage
+  sur la carrosserie (cause probable : doublons NFS peinture/noir gardés dans les `.glb` non découpés, surfaces
+  superposées), **phares invisibles, seuls leurs halos** (texture à transparence : Map Builder n'en garde rien sur une
+  carrosserie importée), **la voiture recule quand on accélère** (voiture concernée à confirmer). Corrigé dans
+  `mw2glb_blender.py` : doublons toujours retirés, transparence gardée seulement pour `neon` / `sidelight`.
+  Simulation de `Handling` sur `blur_voitures.csv` (10 voitures A utilisables) : aucune valeur négative pour la S
+  (rapport final 5,72, frottement de l'air 0,82, couple/kg 1,70) ; mais la pente de la classe A est **positive** pour
+  le frottement de l'air et le rapport final : monter la stat « vitesse » au-delà raccourcit la boîte et freine plus
+  dans l'air. La liste exacte de Map Builder (`Pick`) peut différer du CSV.
 - Map Builder 2.7.1 dans une copie aux paks renommés `.off` : il exige `cache\gamedata.pak` et `root.pak` (sinon
   « A game file is missing ») et écrit `amax\plugins\plugins.lua` (refus si le fichier est en lecture seule).
 

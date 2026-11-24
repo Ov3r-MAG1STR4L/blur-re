@@ -37,13 +37,14 @@ def build():
             name = os.path.basename(pngs[h])[9:-4].lower()
             m.name = name
             if 'interior' in name: bsdf.inputs['Roughness'].default_value = 0.9
-            if img.depth == 32 or 'light' in name or 'neon' in name:
+            # seuls les halos gardent leur transparence : un phare transparent disparaît dans Map Builder (essai du 2026-11-24)
+            if 'neon' in name or 'sidelight' in name:
                 m.node_tree.links.new(tn.outputs['Alpha'], bsdf.inputs['Alpha']); m.surface_render_method = 'BLENDED'
         else:
             m.name = 'black_trim'; bsdf.inputs['Base Color'].default_value = (0.02, 0.02, 0.02, 1)
     for o in bpy.data.objects:   # noms parlants pour Map Builder (intérieur mat d'après le nom)
         if 'INTERIOR' in o.name: o.name = 'interior'
-    if SPLIT: split_blur()
+    split_blur()   # retire toujours les doublons NFS (surfaces superposées qui clignotent) ; découpe seulement avec --split
     return sum(len(o.data.polygons) for o in bpy.data.objects)
 
 # Découpe en pièces aux noms des éléments d'une voiture de Blur (ceux de la Bowler Nemesis).
@@ -102,7 +103,7 @@ def split_blur():
         target = {}
         for fs, mn, mx, mats in comps:
             if 'paint' not in mats and (len(fs), tuple(round(x, 2) for x in mn + mx)) in painted: continue
-            name = blur_part(mats, mn, mx, interior=(base == 'e_interior'))
+            name = blur_part(mats, mn, mx, interior=(base == 'e_interior')) if SPLIT else None
             for i in fs: target[i] = name or base
         bm.free()
         for name in set(target.values()):
