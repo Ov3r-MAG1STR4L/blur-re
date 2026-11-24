@@ -624,3 +624,7 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
 - 2026-11-24 : Atlas dans Blender (grille de 20 places + bonus, vrais modèles, export lu par make_b2_map) ; sol de
   secours à −100 ; transparents noirs (b2bake). À faire : essayer l'Atlas dans Blender (panneau, export), puis
   une route reconstruite avec l'atlas en jeu.
+- 2026-11-24 (soir) : caméra de poursuite v16 dans b2gravity (haut de la caméra qui suit la voiture sur les murs et
+  dans les loopings, `GetLookQuat` 0x58B4D0 / appel 0x590F2B), vérifiée hors jeu contre la fonction du jeu
+  (`test_cam.c`), installée dans Blur_test. À faire : l'essayer en jeu (Marina virage sud-ouest, looping de Business
+  Bay), régler `cam_tau`.
