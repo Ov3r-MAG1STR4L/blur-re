@@ -4197,3 +4197,17 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
   sous le projectile (même nuage de points `b2gravity.bin` que la gravité) : rayon le long de −normale, recalage le
   long de la normale, direction gardée tangente à la surface, « mur » jugé par rapport à cette normale. Hors zone :
   code du jeu inchangé. Mine posée : à poser sur la surface sous la voiture, pas 5 m plus bas.
+- **Nitro sur un mur (Fort, source + exe)** : l'utilisateur, « un Nitro en descente verticale fait décoller du mur ».
+  Le Nitro passe par `FakeVehicleSpeedState::Update` (`FakePhysics.cpp:720-747`, **`0x488B20`**, thiscall (acteur
+  voiture, dt, corps), eax = corps). Poussée = AZ × `Perks.FakePhysics.Speed.AccelerateForce` (**300**, valeur
+  `0x112E8AC`) × masse × (2 sous la moitié de la vitesse cible), **puis composante y mise à 0** ; stabilisation
+  latérale = AX × −(vitesse latérale × `AccelerateStabiliseRate` 10, `0x112E91C`) × masse, y à 0 aussi. En
+  descente sur une paroi, AZ est presque vertical : une fois y retiré, il ne reste que sa petite part horizontale,
+  soit **30 à 60 g vers l'extérieur du mur** dès que le nez s'en écarte (gravité de mur : 1 g). Dans l'exe, la force
+  n'est ajoutée qu'en x (corps + 0x124) et en z (+ 0x12C) ; AX au corps + 0, AZ + 0x18, masse + 0x13C ; blocs
+  `0x488D3E..0x488D9B` (poussée) et `0x488DAC..0x488E00` (stabilisation ; `0x488E00` sert aussi d'arrivée à la
+  branche de freinage, gardée).
+- **v18 (compilée, octets vérifiés contre l'exe dans `test_cam.c`, installée dans Blur_test, à essayer)** : les deux
+  blocs passent par la DLL. Pour une voiture courbée sur une surface de zone, on retire la composante **le long de la
+  normale de la surface** au lieu de y : la poussée reste le long du mur. Toute autre voiture : y retiré, comme le
+  jeu. Journal « nitro: vehicle N boosted on a surface… ». Ancienne DLL : `b2gravity_v17d.dll.bak`.

@@ -1103,6 +1103,134 @@ static __declspec(naked) void stub_want(void)
     }
 }
 
+/* ---- v18 (2026-11-24): Nitro on walls ----------------------------------------------------------------------
+   The user: "a Nitro while going straight down a wall throws the car off it". Source FakePhysics.cpp:720-747
+   (FakeVehicleSpeedState::Update, Blur.exe 0x488B20, thiscall (self = vehicle actor, dt, rb), eax = rb): the
+   accelerate force = AZ x Perks.FakePhysics.Speed.AccelerateForce (300) x mass x (2 below half the target speed),
+   then force.Y(0); the side stabiliser = AX x -(hrzSpeed x AccelerateStabiliseRate (10) x mass), force.Y(0).
+   Going down a wall, AZ is almost vertical: what is left once Y is dropped is its small horizontal part, i.e. a
+   30-60 g push OUT of the wall as soon as the nose tips away from it (wall gravity: 1 g). Checked in the exe: the
+   force is added to rb + 0x124 (x) and + 0x12C (z) only (y re-stored unchanged), AX at rb + 0, AZ at rb + 0x18,
+   mass rb + 0x13C; blocks 0x488D3E..0x488D9B (accelerate) and 0x488DAC..0x488E00 (stabiliser; 0x488E00 itself is
+   also the brake branch's landing, kept: the stub leaves xmm0 = rb[0x12C] so its store changes nothing).
+   Here: for a car bent onto a zone surface, the part along the surface normal is removed instead of Y (the push
+   stays along the surface); any other car: Y removed, exactly as the game. */
+#define NITRO_ACC       0x488D3E
+#define NITRO_ACC_END   0x488D9B
+#define NITRO_STAB      0x488DAC
+#define NITRO_STAB_END  0x488E00
+#define NITRO_FORCE     0x112E8AC   /* Perks.FakePhysics.Speed.AccelerateForce value */
+#define NITRO_STAB_RATE 0x112E91C   /* Perks.FakePhysics.Speed.AccelerateStabiliseRate value */
+static const unsigned char ORIGINAL_NITRO_ACC[NITRO_ACC_END - NITRO_ACC] = {
+    0xf3,0x0f,0x10,0x80,0x3c,0x01,0x00,0x00,0xd9,0x80,0x28,0x01,0x00,0x00,0xf3,0x0f,0x59,0x05,0xac,0xe8,0x12,0x01,
+    0xf3,0x0f,0x10,0x68,0x18,0xf3,0x0f,0x59,0xc2,0xf3,0x0f,0x10,0x50,0x20,0xd9,0x98,0x28,0x01,0x00,0x00,0x0f,0x28,
+    0xd8,0xf3,0x0f,0x59,0xd0,0xf3,0x0f,0x10,0x80,0x24,0x01,0x00,0x00,0xf3,0x0f,0x59,0xdd,0xf3,0x0f,0x58,0xc3,0xf3,
+    0x0f,0x11,0x80,0x24,0x01,0x00,0x00,0xf3,0x0f,0x10,0x80,0x2c,0x01,0x00,0x00,0xf3,0x0f,0x58,0xc2,0xf3,0x0f,0x11,
+    0x80,0x2c,0x01,0x00,0x00};
+static const unsigned char ORIGINAL_NITRO_STAB[NITRO_STAB_END - NITRO_STAB] = {
+    0xf3,0x0f,0x10,0x05,0x1c,0xe9,0x12,0x01,0xd9,0x80,0x28,0x01,0x00,0x00,0xf3,0x0f,0x10,0x50,0x08,0xf3,0x0f,0x59,
+    0xc1,0xf3,0x0f,0x59,0x80,0x3c,0x01,0x00,0x00,0x0f,0x57,0x05,0x40,0x3c,0xe6,0x00,0xf3,0x0f,0x10,0x08,0xd9,0x98,
+    0x28,0x01,0x00,0x00,0xf3,0x0f,0x59,0xc8,0xf3,0x0f,0x58,0x88,0x24,0x01,0x00,0x00,0xf3,0x0f,0x59,0xd0,0xf3,0x0f,
+    0x10,0x80,0x2c,0x01,0x00,0x00,0xf3,0x0f,0x11,0x88,0x24,0x01,0x00,0x00,0xf3,0x0f,0x58,0xc2};
+static int nitro_bent_logged[32], nitro_unknown_logged;
+
+/* rb force += F x axis, without its part along the bent car's surface normal (or without Y, as the game) */
+static void nitro_force(unsigned self, float *rb, const float *axis, float F)
+{
+    float f[3] = {axis[0] * F, axis[1] * F, axis[2] * F};
+    int k = vehicle_index(self);
+    if (k >= 0 && k < 32 && applied[k]) {
+        const float *n = nprev[k];
+        float d = f[0] * n[0] + f[1] * n[1] + f[2] * n[2];
+        f[0] -= d * n[0]; f[1] -= d * n[1]; f[2] -= d * n[2];
+        if (!nitro_bent_logged[k]) {
+            nitro_bent_logged[k] = 1;
+            say("nitro: vehicle %d boosted on a surface, push kept along it (normal (%.2f, %.2f, %.2f))", k, n[0], n[1], n[2]);
+        }
+    } else {
+        if (k < 0 && !nitro_unknown_logged) { nitro_unknown_logged = 1; say("nitro: vehicle actor 0x%X not in the race list: game rule", self); }
+        f[1] = 0.f;
+    }
+    rb[0x124 / 4] += f[0]; rb[0x128 / 4] += f[1]; rb[0x12C / 4] += f[2];
+}
+
+static void __stdcall nitro_acc(unsigned self, float *rb, float adjust)
+{
+    nitro_force(self, rb, rb + 0x18 / 4, rb[0x13C / 4] * *(float *)NITRO_FORCE * adjust);   /* AZ */
+}
+
+static void __stdcall nitro_stab(unsigned self, float *rb, float hrz)
+{
+    nitro_force(self, rb, rb, -(*(float *)NITRO_STAB_RATE * hrz * rb[0x13C / 4]));        /* AX */
+}
+
+static __declspec(naked) void stub_nitro_acc(void)
+{
+    __asm {                                  /* eax = rb, xmm2 = adjust, [esp+8] = vehicle actor (game's [esp+4]) */
+        pushad
+        pushfd
+        sub esp, 128
+        movups [esp], xmm0
+        movups [esp + 16], xmm1
+        movups [esp + 32], xmm2
+        movups [esp + 48], xmm3
+        movups [esp + 64], xmm4
+        movups [esp + 80], xmm5
+        movups [esp + 96], xmm6
+        movups [esp + 112], xmm7
+        push dword ptr [esp + 32]            /* adjust (xmm2 low float) */
+        push eax                             /* rb */
+        push dword ptr [esp + 180]           /* self: 128 + 4 + 32 + 4 (ret) + 4 (game arg 1) + 8 (our 2 pushes) */
+        call nitro_acc
+        movups xmm0, [esp]
+        movups xmm1, [esp + 16]
+        movups xmm2, [esp + 32]
+        movups xmm3, [esp + 48]
+        movups xmm4, [esp + 64]
+        movups xmm5, [esp + 80]
+        movups xmm6, [esp + 96]
+        movups xmm7, [esp + 112]
+        add esp, 128
+        popfd
+        popad
+        ret                                  /* then the patch jumps to 0x488D9B */
+    }
+}
+
+static __declspec(naked) void stub_nitro_stab(void)
+{
+    __asm {                                  /* eax = rb, xmm1 = hrzSpeed */
+        pushad
+        pushfd
+        sub esp, 128
+        movups [esp], xmm0
+        movups [esp + 16], xmm1
+        movups [esp + 32], xmm2
+        movups [esp + 48], xmm3
+        movups [esp + 64], xmm4
+        movups [esp + 80], xmm5
+        movups [esp + 96], xmm6
+        movups [esp + 112], xmm7
+        push dword ptr [esp + 16]            /* hrz (xmm1 low float) */
+        push eax
+        push dword ptr [esp + 180]
+        call nitro_stab
+        movups xmm0, [esp]
+        movups xmm1, [esp + 16]
+        movups xmm2, [esp + 32]
+        movups xmm3, [esp + 48]
+        movups xmm4, [esp + 64]
+        movups xmm5, [esp + 80]
+        movups xmm6, [esp + 96]
+        movups xmm7, [esp + 112]
+        add esp, 128
+        popfd
+        popad
+        movss xmm0, dword ptr [eax + 0x12C]  /* 0x488E00 stores xmm0 there: same value */
+        ret                                  /* then the patch jumps to 0x488E00 */
+    }
+}
+
 static int patch_bytes(unsigned addr, const unsigned char *orig, int len, void *target, unsigned resume)
 {
     unsigned char *site = (unsigned char *)addr;
@@ -1209,6 +1337,9 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
             say("camera: follow %.2f, tau %.2f s, height x %.2f while following", cam_follow, cam_tau, cam_h);
             patch_bytes(CAM_LOOK_CALL, ORIGINAL_LOOKCALL, 5, stub_look, 0);
             patch_bytes(CAM_WANT_SITE, ORIGINAL_WANT, 16, stub_want, 0);
+            /* v18: Nitro push kept along the surface for a bent car */
+            patch_bytes(NITRO_ACC, ORIGINAL_NITRO_ACC, NITRO_ACC_END - NITRO_ACC, stub_nitro_acc, NITRO_ACC_END);
+            patch_bytes(NITRO_STAB, ORIGINAL_NITRO_STAB, NITRO_STAB_END - NITRO_STAB, stub_nitro_stab, NITRO_STAB_END);
         }
     }
     return TRUE;

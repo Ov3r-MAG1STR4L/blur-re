@@ -39,6 +39,19 @@ int main(int argc, char **argv)
         printf("GetLookQuat copied from %p, %d absolute operands redirected\n", (void *)src, patched);
     }
 
+    {   /* every patched site: the bytes the dll expects are the exe's */
+        static const struct { unsigned a; const unsigned char *b; int n; const char *what; } sites[] = {
+            {CAM_LOOK_CALL, ORIGINAL_LOOKCALL, 5, "camera GetLookQuat call"},
+            {CAM_WANT_SITE, ORIGINAL_WANT, 16, "camera m_Want"},
+            {NITRO_ACC, ORIGINAL_NITRO_ACC, NITRO_ACC_END - NITRO_ACC, "nitro accelerate block"},
+            {NITRO_STAB, ORIGINAL_NITRO_STAB, NITRO_STAB_END - NITRO_STAB, "nitro stabiliser block"}};
+        int si;
+        for (si = 0; si < 4; si++) {
+            char what[96];
+            sprintf_s(what, sizeof what, "exe bytes match: %s", sites[si].what);
+            check(!memcmp((unsigned char *)m + (sites[si].a - 0x400000u), sites[si].b, sites[si].n), what);
+        }
+    }
     quat_calibrate();
     check(quat_conv > 0, "convention found against the game's GetLookQuat");
     if (quat_conv <= 0) return 1;
