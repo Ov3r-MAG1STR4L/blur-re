@@ -1287,6 +1287,15 @@ redistribution interdite : usage perso/LAN seulement, rien dans le dépôt). Fic
   `Ryback Vulkan S v2.blurcar` (vitesse 10, accélération 12, glisse 3, adhérence 6). Pour dépasser la vitesse de pointe
   de la classe, il faudrait réécrire après Map Builder `GameplayTopSpeed` (`amax.bin`), `finalRatio` et `airFriction`
   (`racingphysics.bin`) dans le pak de REBORN.
+- **`boost_car.py` (2026-11-24, essayé hors jeu sur une copie du pak, posé dans `Blur_test_hud`, pas encore en jeu)** :
+  après un Build de Map Builder, réécrit dans `rebrn\gamedata.pak` `GameplayTopSpeed` / `UiMaxSpeed` (`amax.bin`) et
+  `gears.finalRatio` / `friction.airFriction` (`racingphysics.bin`) d'une voiture perso. Méthode de `Pak.ReplaceFiles`
+  de Map Builder : fichier recompressé ajouté à la fin (zlib si entrées de 64 o, sinon morceaux deflate de 64 Ko),
+  entrée : +12 taille, +24 page (u64), +32 somme des ~crc32 par bloc de 32 Ko, +36 taille compressée, +44 SHA-1 du
+  compressé (entrées de 64 o). Vérifié : les 591 fichiers du pak restent lisibles. Vulkan S : 260 mph, rapport final
+  2,33 (estimé d'après la CCXR : 7 600 tr/min, rapports 0,59 × 4,2 = 221 mph ; la Vulkan a 7 800 tr/min et une 6e à
+  0,93), air 0,40. Lanceur `Jeux_WII\Booster la Vulkan S.bat` (sauvegarde `gamedata.pak.avant_boost`). Un nouveau
+  Build de Map Builder efface la modification.
 - Map Builder 2.7.1 dans une copie aux paks renommés `.off` : il exige `cache\gamedata.pak` et `root.pak` (sinon
   « A game file is missing ») et écrit `amax\plugins\plugins.lua` (refus si le fichier est en lecture seule).
 
