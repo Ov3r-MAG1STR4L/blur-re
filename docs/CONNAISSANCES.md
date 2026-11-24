@@ -1207,6 +1207,16 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
     les maillages du conteneur (jusqu'à 65 504 sommets par maillage, limite 16 bits) avant que Map Builder y écrive la
     carrosserie. Idée à proposer à Md.
+  - **Dégâts localisés (source 2.7.1, `CarGlb.GlbModel` / `Place`, Fort ; pas vu en jeu)** : le conteneur est toujours la
+    Bowler Nemesis (`Container`). Avant d'écrire la carrosserie, `Place(clear)` **vide tous les maillages sauf roues et
+    pneus** (index ramenés à un seul sommet), puis écrit tout le `.glb` dans `e_exterior` et `e_interior` (pièces fixes).
+    Une voiture importée n'a donc **ni pièces qui tombent ni pièces qui se déforment** à elle (capot, coffre, portes,
+    rétros vides) ; seule la vitre reprend les coordonnées de dégâts du pare-brise. Pièces de la Bowler (noms lus dans
+    `bowler_nemesis_stock.model`) : `e_bonnet`, `e_boot`, `e_door_left/right`, `e_mirror_frontleft/right`,
+    `e_window_front/frontleft/frontright`, phares et feux, plaques ; os de déformation `m_Bonnet_Bone0-2Z`,
+    `m_Bootlid_Bone0-2`, `m_Bumper_Front_Bone0-2`, `m_Wing_Left/Right_Bone0-2`. Piste : découper le `.glb` en pièces
+    à ces noms et écrire chaque pièce dans l'élément du même nom (fonction à proposer à Md, ou écriture maison).
+    Poids d'os donnés aux sommets importés : non lu.
 
 ## Voitures de NFS Most Wanted (2005) vers Blur : `mwgeom.py` (2026-11-24, Confirmé hors jeu sur la Ryback Vulcan)
 
