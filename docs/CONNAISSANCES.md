@@ -1239,6 +1239,13 @@ redistribution interdite : usage perso/LAN seulement, rien dans le dépôt). Fic
 - `mw2glb_blender.py` (Blender en ligne de commande) : garde les pièces choisies (`NOM:paint` = seulement la peinture),
   matériaux `paint` / `glass` / `interior` (noms reconnus par Map Builder), réduit (Decimate) et exporte des `.glb` de
   6 000, 9 000 et 13 000 triangles pour « Import body ». Pas encore essayé dans Map Builder ni en jeu.
+- **Découpe par pièces de Blur** (`--split`, 2026-11-24, vérifiée sur rendu, pas en jeu) : composantes connexes classées
+  par boîte englobante (réglée sur la Vulcan) en `e_bonnet` (2 334 tri.), `e_boot` (capot moteur arrière, 652),
+  `e_door_left/right` (3 140), `e_mirror_frontleft/right` (1 808), reste `e_exterior` / `e_interior`. La conversion NFS
+  **double** des pièces (même forme en peinture et en noir `DOOR_HANDLE`) : doublons noirs retirés (−7 500 tri.).
+  `ryback_vulcan_13k_pieces.glb` = objets à ces noms ; Map Builder 2.7.1 les fusionne encore dans `e_exterior`.
+- Map Builder 2.7.1 dans une copie aux paks renommés `.off` : il exige `cache\gamedata.pak` et `root.pak` (sinon
+  « A game file is missing ») et écrit `amax\plugins\plugins.lua` (refus si le fichier est en lecture seule).
 
 
 ## Projet J : circuit de NFS Hot Pursuit Wii vers Blur (2026-10-26, premier test hors jeu)
