@@ -98,7 +98,11 @@ int main(int argc, char **argv)
         /* essai v16: camera object = car position predicted ahead (20 m at speed) -> still that car */
         {
             float ahead[3] = {obj[0] + 20.f, obj[1], obj[2]};
+            veh_vel[0][0] = 60.f; veh_vel[0][1] = veh_vel[0][2] = 0.f;      /* 216 km/h along +x */
             veh_on[0] = 1; veh_up[0][0] = 1.f; veh_up[0][1] = 0.f; veh_bent_tick[0] = GetTickCount();
+            /* an AI car right at the predicted point, going the other way, not bent */
+            veh_pos[1][0] = ahead[0] + 3.f; veh_pos[1][1] = ahead[1]; veh_pos[1][2] = ahead[2] + 4.f;
+            veh_vel[1][0] = -60.f; veh_on[1] = 0;
             cam_ease(s, ahead);
             check(cam_k[s] == 0 && fabsf(cam_up[s][0] - 1.f) < 1e-4f, "match: car found 20 m behind the predicted object");
             /* surface lost for a moment inside the zone: up kept; outside the zone: back to world up */
@@ -108,6 +112,25 @@ int main(int argc, char **argv)
             veh_inside[0] = 0;
             cam_ease(s, ahead);
             check(world_up(s), "hold: back to world up outside the zone");
+        }
+
+        /* essai v17: a loop turning the up at 2.5 rad/s (about 2.5 s per loop), 60 frames/s, tau 0.3 s:
+           lag after 1.5 s, with compensation (was ~ tau x rate = 43 deg) */
+        {
+            float ax2[3] = {0.f, 0.f, 1.f}, lag;
+            int f;
+            cam_tau = 0.3f; veh_on[0] = 1; veh_inside[0] = 1;
+            veh_vel[0][0] = 0.f; veh_vel[0][1] = 0.f; veh_vel[0][2] = 0.f;
+            veh_up[0][0] = 0.f; veh_up[0][1] = 1.f; veh_up[0][2] = 0.f;
+            cam_up[s][0] = 0.f; cam_up[s][1] = 1.f; cam_up[s][2] = 0.f;
+            for (f = 0; f < 90; f++) {
+                rot(veh_up[0], ax2, cosf(2.5f / 60.f), sinf(2.5f / 60.f));
+                cam_t[s].QuadPart = 0;                       /* dt = 1/60 s */
+                cam_ease(s, obj);
+            }
+            lag = acosf(fminf(1.f, dot3(cam_up[s], veh_up[0]))) * 57.3f;
+            printf("      loop lag %.1f deg\n", lag);
+            check(lag < 6.f, "loop: camera up within 6 deg of the car's (lag compensation)");
         }
     }
     printf(fails ? "%d FAILED\n" : "all ok\n", fails);

@@ -4141,3 +4141,23 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
   `cam_h` (0..2, multiplie la hauteur de la caméra pendant le suivi, pour les tubes) ; journal « cam N: … » toutes les
   0,5 s pendant le suivi. `test_cam.c` : voiture trouvée à 20 m de l'objet anticipé, maintien et retour. Ancienne DLL :
   `b2gravity_v16.dll.bak`.
+- **Essai v17 (2026-11-24, Business Bay) : la caméra suit (Confirmé, journal), mais le looping reste instable.**
+  L'objet de la caméra est à **29 à 39 m** devant la voiture à 200-250 km/h. Dans la boucle, le haut de la caméra
+  traîne de 20 à 35° derrière celui de la voiture (lissage 0,3 s contre une boucle de 2-3 s). Au sommet, à
+  (447 ; 179 ; −712), « NO SURFACE within 4 m » : gravité remise vers le bas, voiture sur le toit qui tombe,
+  220 → 143 km/h, et caméra revenue d'un coup à la verticale.
+- **Sommet du looping de Business Bay : il n'y a AUCUNE géométrie (Confirmé, données Unity)** : aucun point de
+  `b2gravity.bin` à moins de 15 m, aucun sommet de collider à moins de 12 m (compléments compris) et aucun mesh
+  visible entre (418 ; 173 ; −692) et (457 ; 177 ; −711), soit environ 43 m. Les morceaux visibles et les collisions
+  s'arrêtent de part et d'autre (`physics_main_part_004_17f` / `draws_d0153` à x 415-418, `part_003_17f` /
+  `draws_d0158` à x 457-470). Le haut du tire-bouchon du prototype est un **trou franchi en l'air, sur le toit**.
+- **v17b (compilée, testée hors jeu, installée dans Blur_test, à essayer)** :
+  - **Maintien de gravité en l'air** : une voiture courbée qui perd la surface dans une zone garde sa dernière
+    gravité pendant `air_hold` ms (800 par défaut ; le trou se franchit en ~0,7 s à 220 km/h). Pendant ce temps,
+    l'appui en vol vers le bas, la poussée de décollage et la contrainte des 30° restent coupés. Journal « off the
+    surface in a zone: gravity held » / « gravity hold over ».
+  - **Caméra** : compensation du retard (vitesse de rotation du haut visé mesurée, cible prise `cam_tau` × vitesse en
+    avance, au plus 0,8 rad) → retard de 0,8° au lieu d'environ 43° sur une boucle simulée de 2,5 rad/s
+    (`test_cam.c`). Voiture reconnue par la distance au trajet position → position + vitesse × 1 s (≤ 10 m) : une IA
+    près du point anticipé n'est plus prise pour le joueur. Suivi maintenu pendant le maintien de gravité.
+  - Ancienne DLL : `b2gravity_v17.dll.bak`.

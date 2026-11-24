@@ -272,9 +272,16 @@ static float mph_min = 15.f, mph_max = 35.f;
 static int wallon[32];
 /* v16 camera: each vehicle's position, last "up" while bent (= -its bent gravity: smoothed, blended by speed),
    bent now, inside a zone, last time bent; read by the chase camera hook */
-static float veh_pos[32][3], veh_up[32][3];
+static float veh_pos[32][3], veh_up[32][3], veh_vel[32][3];
 static int veh_on[32], veh_inside[32];
 static DWORD veh_bent_tick[32];
+/* v17b air hold (essai v17, Business Bay loop top: NO geometry at all, neither collider nor visible mesh, over
+   ~43 m between (418, 173, -692) and (457, 177, -711): the prototype's corkscrew top is a gap crossed upside
+   down. Gravity went back to world down there, the car fell, 220 -> 143 km/h). A bent car that loses the surface
+   inside a zone keeps its last gravity for air_hold ms ("air_hold" in b2gravity.txt, 0 = off); the world-down
+   in-flight downforce, take-off push and 30 deg constraint stay off meanwhile. */
+static float air_hold_ms = 800.f;
+static int air_held[32];
 
 static unsigned bucket(int x, int y, int z)
 {
@@ -380,7 +387,7 @@ static void flag_switch(unsigned addr, int any, int *saved, const char *name)
 static void air_downforce_switch(void)
 {
     int i, any = 0;
-    for (i = 0; i < 32; i++) any |= applied[i] | wallon[i];
+    for (i = 0; i < 32; i++) any |= applied[i] | wallon[i] | air_held[i];
     flag_switch(AIR_DOWNFORCE_ON, any, &air_saved, "in-flight downforce");
     flag_switch(WALL_FIX2_ON, any, &fix2_saved, "wall-riding fix2");
 }
@@ -583,11 +590,21 @@ static void __stdcall gravity(char *self)
                 say("vehicle %d back on its wheels (up y %.2f)", k, uy);
             }
         }
+        if (k < 32) {                                       /* v17b: air hold (see air_hold_ms) */
+            int held = !on && inside && armed == 1 && air_hold_ms > 0.f && veh_bent_tick[k] && speed > 5.f
+                    && (float)(GetTickCount() - veh_bent_tick[k]) < air_hold_ms;
+            if (held) { gx = g * veh_up[k][0]; gy = g * veh_up[k][1]; gz = g * veh_up[k][2]; }   /* g < 0: into it */
+            if (held != air_held[k])
+                say("vehicle %d %s at (%.0f, %.0f, %.0f) %.0f km/h", k, held ? "off the surface in a zone: gravity held"
+                    : "gravity hold over", p[0], p[1], p[2], speed * 3.6f);
+            air_held[k] = held;
+        }
         if (k < 32) applied[k] = on && ext;
         if (k < 32) wallon[k] = surf && speed > 1.f;
         if (k < 32) {
             float gl = sqrtf(gx * gx + gy * gy + gz * gz);
             veh_pos[k][0] = p[0]; veh_pos[k][1] = p[1]; veh_pos[k][2] = p[2];
+            veh_vel[k][0] = v[0]; veh_vel[k][1] = v[1]; veh_vel[k][2] = v[2];
             veh_on[k] = on && gl > 1e-3f;
             veh_inside[k] = inside;
             if (veh_on[k]) {
@@ -596,7 +613,7 @@ static void __stdcall gravity(char *self)
             }
         }
         car_wallride(self, k, surf && speed > 1.f);
-        car_constraint_off(self, k, surf);
+        car_constraint_off(self, k, surf || (k < 32 && air_held[k]));
         if (k < 32 && inside != in_zone_last[k]) {
             in_zone_last[k] = inside;
             say("vehicle %d %s zone at (%.0f, %.0f, %.0f), %.0f km/h, up (%.2f, %.2f, %.2f)", k,
@@ -613,7 +630,7 @@ static void __stdcall gravity(char *self)
         }
     }
     out[0] = gx; out[1] = gy; out[2] = gz;
-    if (k >= 0 && k < 32) remember(self, k, gx, gy, gz, applied[k]);
+    if (k >= 0 && k < 32) remember(self, k, gx, gy, gz, applied[k] || air_held[k]);
     air_downforce_switch();
 }
 
@@ -914,13 +931,26 @@ static int cam_slot(unsigned cam)
 }
 
 /* ease the camera's up towards its car's up (on a zone surface) or world Y; per frame, from the camera hook */
-#define CAM_MATCH_M 60.f   /* essai v16: the chase camera's object is the car's position PREDICTED ahead
-                              (VehicleFeed.cpp:319, smoothed velocity x g_futureFeedPredictionTime): > 8 m at speed,
-                              the car was never found. ponytail: nearest car; split screen with two cars side by
-                              side may swap, match on the object's orient too if seen. */
+#define CAM_MATCH_M 10.f   /* essai v16: the chase camera's object is the car's position PREDICTED ahead
+                              (VehicleFeed.cpp:319, smoothed velocity x g_futureFeedPredictionTime; 30-39 m at
+                              230 km/h in essai v17): matched against each car's path pos .. pos + velocity x
+                              CAM_MATCH_S (essai v17: plain nearest car could be an AI near the predicted point) */
+#define CAM_MATCH_S 1.f
 #define CAM_HOLD_MS 500    /* surface lost this long, still in a zone (gap, bump, tube seam): keep the last up */
+#define CAM_LEAD_MAX 0.8f  /* rad, at most this far ahead (lag compensation, below) */
 static float cam_h = 1.f;
 static DWORD cam_status[MAX_CAMS];
+static float cam_tprev[MAX_CAMS][3], cam_w[MAX_CAMS][3];  /* last target up, its turn rate (rad/s vector) */
+static int cam_tprev_ok[MAX_CAMS];
+
+/* squared distance from o to the segment a .. a + d */
+static float seg_d2(const float *o, const float *a, const float *d)
+{
+    float u[3] = {o[0] - a[0], o[1] - a[1], o[2] - a[2]}, dd = d[0] * d[0] + d[1] * d[1] + d[2] * d[2], t = 0.f, e[3];
+    if (dd > 1e-6f) { t = (u[0] * d[0] + u[1] * d[1] + u[2] * d[2]) / dd; t = t < 0.f ? 0.f : t > 1.f ? 1.f : t; }
+    e[0] = u[0] - t * d[0]; e[1] = u[1] - t * d[1]; e[2] = u[2] - t * d[2];
+    return e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
+}
 
 static void cam_ease(int s, const float *obj)
 {
@@ -928,13 +958,13 @@ static void cam_ease(int s, const float *obj)
     int k, kk = -1, follow;
     DWORD tick = GetTickCount();
     LARGE_INTEGER now, fq;
-    for (k = 0; k < 32; k++) {                       /* the car followed = the vehicle nearest the camera object */
-        float dx = veh_pos[k][0] - obj[0], dy = veh_pos[k][1] - obj[1], dz = veh_pos[k][2] - obj[2];
-        float d2 = dx * dx + dy * dy + dz * dz;
+    for (k = 0; k < 32; k++) {                       /* the car followed = the one whose path holds the object */
+        float d[3] = {veh_vel[k][0] * CAM_MATCH_S, veh_vel[k][1] * CAM_MATCH_S, veh_vel[k][2] * CAM_MATCH_S};
+        float d2 = seg_d2(obj, veh_pos[k], d);
         if (d2 < best) { best = d2; kk = k; }
     }
     follow = kk >= 0 && armed == 1 && cam_follow > 0.f
-          && (veh_on[kk] || (veh_inside[kk] && tick - veh_bent_tick[kk] < CAM_HOLD_MS));
+          && (veh_on[kk] || air_held[kk] || (veh_inside[kk] && tick - veh_bent_tick[kk] < CAM_HOLD_MS));
     if (follow) {
         int i;
         for (i = 0; i < 3; i++) target[i] = (i == 1 ? 1.f - cam_follow : 0.f) + cam_follow * veh_up[kk][i];
@@ -957,6 +987,33 @@ static void cam_ease(int s, const float *obj)
         if (d > 0.f && d < 0.1f) dt = d;
     }
     cam_t[s] = now;
+    /* v17b lag compensation (essai v17: in the loop the camera up trailed the car's by 20-35 deg, tau 0.3 s against
+       a loop of 2-3 s): the target's turn rate w is measured and the target aimed tau x |w| ahead (an eased value
+       tracking a steady turn trails it by exactly tau x rate). Only while the car is bent; held / off: rate fades. */
+    {
+        float wi[3] = {0.f, 0.f, 0.f}, c[3], lc, lw;
+        int i;
+        if (follow && cam_tprev_ok[s]) {
+            cross3(cam_tprev[s], target, c);
+            lc = sqrtf(c[0] * c[0] + c[1] * c[1] + c[2] * c[2]);
+            if (lc > 1e-6f) {
+                float an = atan2f(lc, cam_tprev[s][0] * target[0] + cam_tprev[s][1] * target[1] + cam_tprev[s][2] * target[2]);
+                for (i = 0; i < 3; i++) wi[i] = c[i] / lc * an / dt;
+            }
+        }
+        for (i = 0; i < 3; i++) {
+            cam_w[s][i] = 0.8f * cam_w[s][i] + 0.2f * (follow && veh_on[kk] ? wi[i] : 0.f);
+            cam_tprev[s][i] = target[i];
+        }
+        cam_tprev_ok[s] = follow;
+        lw = sqrtf(cam_w[s][0] * cam_w[s][0] + cam_w[s][1] * cam_w[s][1] + cam_w[s][2] * cam_w[s][2]);
+        if (follow && veh_on[kk] && lw > 1e-3f && cam_tau > 0.f) {
+            float lead = lw * cam_tau, ax2[3] = {cam_w[s][0] / lw, cam_w[s][1] / lw, cam_w[s][2] / lw};
+            if (lead > CAM_LEAD_MAX) lead = CAM_LEAD_MAX;
+            rot(target, ax2, cosf(lead), sinf(lead));
+            norm3(target);
+        }
+    }
     /* turn cam_up towards target by a share 1 - exp(-dt / tau) of the angle */
     cross3(cam_up[s], target, axis);
     l = sqrtf(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
@@ -1109,6 +1166,7 @@ static void load_zones(void)
         if (sscanf_s(line, "ahead %f", &s) == 1) { ahead_s = s; continue; }
         if (sscanf_s(line, "cam_tau %f", &s) == 1) { cam_tau = s; continue; }
         if (sscanf_s(line, "cam_h %f", &s) == 1) { cam_h = s < 0.f ? 0.f : s > 2.f ? 2.f : s; continue; }
+        if (sscanf_s(line, "air_hold %f", &s) == 1) { air_hold_ms = s < 0.f ? 0.f : s; continue; }
         if (sscanf_s(line, "cam %f", &s) == 1) { cam_follow = s < 0.f ? 0.f : s > 1.f ? 1.f : s; continue; }
         if (sscanf_s(line, "mph_max %f", &s) == 1) { mph_max = s; continue; }
         if (nzones < MAX_ZONES && sscanf_s(line, "%f %f %f %f %f %f", b, b + 1, b + 2, b + 3, b + 4, b + 5) == 6) {
