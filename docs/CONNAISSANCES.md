@@ -4161,3 +4161,12 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
     (`test_cam.c`). Voiture reconnue par la distance au trajet position → position + vitesse × 1 s (≤ 10 m) : une IA
     près du point anticipé n'est plus prise pour le joueur. Suivi maintenu pendant le maintien de gravité.
   - Ancienne DLL : `b2gravity_v17.dll.bak`.
+- **Essai v17b (2026-11-24) : la voiture passe AU-DESSUS du looping (Confirmé, journal ; cause = v17b)**. Au
+  sommet, la gravité maintenue est celle du mur, donc **vers le haut**, vers la route manquante (`g (-0.5, 9.1,
+  3.6)`). En 0,5 s, la voiture monte de y 173 à 185 et se pose sur le dessus de la partie descendante, à
+  (464 ; 191), en passant de 184 à 100 km/h. Les deux bords du trou sont presque au même niveau (y 173 → 177 sur
+  43 m).
+- **v17c (compilée, installée dans Blur_test, à essayer)** : pendant le maintien, gravité × `air_g` (**0 par défaut
+  = apesanteur** : la voiture file tout droit au-dessus du trou ; 1 = comportement v17b). `remember()` garde
+  l'échelle de la gravité au lieu de la ramener à 9,81 (sinon l'apesanteur redevenait la gravité normale au
+  contact du sol). Ancienne DLL : `b2gravity_v17b.dll.bak`.

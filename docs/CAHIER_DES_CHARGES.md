@@ -635,3 +635,5 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
   aucune géométrie dans les données Unity (trou de ~43 m franchi sur le toit). v17b : maintien de gravité en l'air
   (`air_hold` 800 ms), compensation du retard de la caméra (0,8° au lieu de ~43° en test), reconnaissance de la
   voiture par sa trajectoire. Installée, à essayer.
+- 2026-11-24 (nuit, suite) : v17b fait passer au-dessus du looping (gravité maintenue vers le haut). v17c :
+  apesanteur pendant le maintien (`air_g` 0). Installée, à essayer.
