@@ -4075,3 +4075,22 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
   8 Mo, Marina 376 k / 28 Mo (taille maximale supportée par le jeu : inconnue).
 - `poscapture.py grille` : position de la voiture → case 0 de la route installée (`blur2_aid/dubai/grilles.json`),
   lue par `make_b2_map` quand `--grid` est omis (pas encore essayé en jeu).
+
+### Atlas (Blender) : grille et bonus placés à la main (2026-11-24, vérifié hors jeu)
+- `b2atlas.py` + `Jeux_WII\Atlas Blur (Blender).bat` : `atlas_<Route>.blend` = copie de `dubai.blend` + collection
+  ATLAS : 20 `Place_NN` (instances de `car01.model` + flèche jaune = avant) et les bonus (instances des vrais
+  `models/perks/pickups/<type>pickup.model`, lus par l'add-on BlurImportExport de Map Builder ; Bolt n'a pas de
+  modèle de bonus dans le jeu : `xppickup` à la place). Panneau « Atlas » (touche N) : ajouter un bonus au curseur 3D,
+  poser au sol (rayon vers le bas sur la collision), exporter → `blur2_aid/dubai/atlas/route_N.json`
+  (axes du jeu sans dy ; l'ancien gardé en `.precedent`).
+- `make_b2_map` : si l'atlas existe, `b2atlas.apply` écrit les 20 `StartPosition` (listes #15 et #98 de l'actorpack :
+  20 acteurs `StartNumber` 0-19) et les bonus (via `b2pickups.apply`) à ces places ; sinon les bonus officiels.
+  Vérifié sur une copie de l'actorpack de Construction : positions écrites = positions voulues.
+- Disposition de départ : rangées de 8 m le long du tracé, 2e colonne en miroir de la case officielle. Business Bay :
+  14 places sur 20 au sol ; derrière la case 0, la route remonte la sortie du looping (y 8 → 48 en 60 m), les 6
+  autres sont nommées `_HORS_ROUTE`, à placer à la main.
+- Éléments transparents rendus noirs (même jour) : 627 matériaux `InspectionSurface` sans écriture de profondeur
+  (`_ZWrite` 0 : vitres, décalques, voiles) gardent leur alpha (modèles découpés), 193 effets (`_MeshEffectMode` ≠ 0,
+  files 3004-3005) sont retirés (`b2bake`).
+- Sol de secours de Map Builder (`NFS_FLOOR_Y`) passé de −5 à −100, seuil « sous la carte » de la DLL de gravité
+  (`HOG_FLOOR`) de −2 à −90 : la sortie du looping de Business Bay descend à −5,5 (surfaces Blur 2 jusqu'à −20).

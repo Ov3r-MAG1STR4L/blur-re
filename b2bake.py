@@ -62,6 +62,9 @@ def extract(data_dir, laps, route, radius=300.0):
             if not mp.path_id:
                 continue
             envs = dict(mp.read().m_SavedProperties.m_TexEnvs)
+            fl = dict(getattr(mp.read().m_SavedProperties, "m_Floats", []))
+            if fl.get("_MeshEffectMode", 0) != 0:   # 2026-11-24: glows / power-up effects (193 materials, queue
+                continue                            # 3004-3005): drawn opaque they came out as black shapes
             te = envs.get("_BaseMap")
             if te is None or not te.m_Texture.path_id:
                 continue
@@ -73,7 +76,9 @@ def extract(data_dir, laps, route, radius=300.0):
                 env = ec is not None and ec.m_Texture.path_id
                 props = mp.read().m_SavedProperties
                 floats = dict(props.m_Floats) if hasattr(props, "m_Floats") else {}
-                if tex[k] is not None and (env or floats.get("_AlphaTest", 0) < 0.5):
+                if tex[k] is not None and (env or floats.get("_AlphaTest", 0) < 0.5) and floats.get("_ZWrite", 1) > 0.5:
+                    # (_ZWrite 0 = blended glass / decals / veils, 627 materials: their alpha kept -> cut-out models,
+                    # fully transparent parts become holes instead of black; ponytail: no real blending, cut at 50 %)
                     tex[k].putalpha(255)        # alpha = reflection mask or unused: only _AlphaTest cuts (2026-11-16)
                 mt = envs.get("_MaterialTex")   # Blur 2 material map: R reflection mask, G gloss, B Fresnel base
                 mat[k] = (mt.m_Texture.read().image.convert("RGB") if mt is not None and mt.m_Texture.path_id

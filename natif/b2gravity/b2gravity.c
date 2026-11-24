@@ -448,7 +448,7 @@ static void map_gate(const float *p, float speed)
    back on while the player's car is below HOG_FLOOR m or has been almost still (< 1 m/s) for HOG_STUCK_MS, until
    it drives again (> 5 m/s). Global: AI cars lose their respawn too while it is off. Restored on another map. */
 #define HOG_ON 0x1129DBC
-#define HOG_FLOOR -2.f
+#define HOG_FLOOR -90.f   /* Blur 2 loop exits dip to y -20 (2026-11-24) */
 #define HOG_STUCK_MS 4000
 static int hog_saved = -1, hog_safety = 0;
 static DWORD still_since = 0;

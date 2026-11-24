@@ -621,3 +621,6 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
   Tests utilisateur : les murs corrigés tiennent. Reste à faire : murs autour des routes encore traversables, sol
   manquant dans la zone orange de Dubai Island, gravité du semi-looping de départ et des tubes de Dubai Island (en
   attente des captures de position).
+- 2026-11-24 : Atlas dans Blender (grille de 20 places + bonus, vrais modèles, export lu par make_b2_map) ; sol de
+  secours à −100 ; transparents noirs (b2bake). À faire : essayer l'Atlas dans Blender (panneau, export), puis
+  une route reconstruite avec l'atlas en jeu.

@@ -490,14 +490,18 @@ def main():
                   open(spots, "w"))
     nfs = min(len(models), make_nfs_map.DECOR_MAX)
     env = dict(os.environ, BMB_GAME=config.BMB_GAME, BMB_INSTALLED="1", NFS_COUNT=str(nfs), NFS_SPOTS=spots,
-               NFS_DRAW=str(make_nfs_map.DECOR_DRAW), NFS_NO_WALLS="1", NFS_FLOOR_Y="-5")
+               NFS_DRAW=str(make_nfs_map.DECOR_DRAW), NFS_NO_WALLS="1", NFS_FLOOR_Y="-100")   # Blur 2 loops go down to y -20 (Business Bay exit at -5.5 hit the old -5 floor)
     subprocess.run([sys.executable, "build.py"], cwd=os.path.join(config.BMB_GAME, "map_builder", "flat_earth"),
                    env=env, check=True, stdout=subprocess.DEVNULL, timeout=1800)   # 30 min max (Map Builder)
     make_nfs_map.main()
     import b2pickups                                   # official power-ups at their 3D place, own types (2026-11-17)
     lines = [np.array([(float(r["x"]), float(r["y"]), float(r["z"])) for r in csv.DictReader(open(f))]) for f in laps]
-    b2pickups.apply(os.path.join(files, "gamedata", "levels", "flat_earth", "actorpack.xt"),
-                    b2pickups.spots(pk, lines, low))
+    import b2atlas                                     # Atlas (Blender) : grille et bonus placés à la main (2026-11-24)
+    apk = os.path.join(files, "gamedata", "levels", "flat_earth", "actorpack.xt")
+    if os.path.exists(b2atlas.atlas_path(a.route)):
+        b2atlas.apply(apk, json.load(open(b2atlas.atlas_path(a.route), encoding="utf-8")), low)
+    else:
+        b2pickups.apply(apk, b2pickups.spots(pk, lines, low))
     if models:
         decor(files, models, nfs)
     phys = os.path.join(files, "levels", "flat_earth", "level.levelphysics")
