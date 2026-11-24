@@ -275,18 +275,6 @@ static int wallon[32];
 static float veh_pos[32][3], veh_up[32][3], veh_vel[32][3];
 static int veh_on[32], veh_inside[32];
 static DWORD veh_bent_tick[32];
-/* v17b air hold (essai v17, Business Bay loop top: NO geometry at all, neither collider nor visible mesh, over
-   ~43 m between (418, 173, -692) and (457, 177, -711): the prototype's corkscrew top is a gap crossed upside
-   down. Gravity went back to world down there, the car fell, 220 -> 143 km/h). A bent car that loses the surface
-   inside a zone keeps its last gravity for air_hold ms ("air_hold" in b2gravity.txt, 0 = off); the world-down
-   in-flight downforce, take-off push and 30 deg constraint stay off meanwhile. */
-static float air_hold_ms = 800.f;
-/* essai v17b: holding the full wall gravity pulled the car UP towards the missing loop top (g (-0.5, 9.1, 3.6) for
-   0.5 s, y 173 -> 185) and it landed on the OUTSIDE of the descending part, 184 -> 100 km/h. The gap's two ends are
-   almost level (y 173 -> 177 over 43 m): no gravity at all lets the car fly straight across. "air_g" = share of the
-   held gravity (0 = weightless, 1 = the v17b behaviour). */
-static float air_g = 0.f;
-static int air_held[32];
 
 static unsigned bucket(int x, int y, int z)
 {
@@ -392,7 +380,7 @@ static void flag_switch(unsigned addr, int any, int *saved, const char *name)
 static void air_downforce_switch(void)
 {
     int i, any = 0;
-    for (i = 0; i < 32; i++) any |= applied[i] | wallon[i] | air_held[i];
+    for (i = 0; i < 32; i++) any |= applied[i] | wallon[i];
     flag_switch(AIR_DOWNFORCE_ON, any, &air_saved, "in-flight downforce");
     flag_switch(WALL_FIX2_ON, any, &fix2_saved, "wall-riding fix2");
 }
@@ -595,17 +583,6 @@ static void __stdcall gravity(char *self)
                 say("vehicle %d back on its wheels (up y %.2f)", k, uy);
             }
         }
-        if (k < 32) {                                       /* v17b: air hold (see air_hold_ms) */
-            int held = !on && inside && armed == 1 && air_hold_ms > 0.f && veh_bent_tick[k] && speed > 5.f
-                    && (float)(GetTickCount() - veh_bent_tick[k]) < air_hold_ms;
-            if (held) {                                     /* g < 0: into the surface left, times air_g */
-                gx = air_g * g * veh_up[k][0]; gy = air_g * g * veh_up[k][1]; gz = air_g * g * veh_up[k][2];
-            }
-            if (held != air_held[k])
-                say("vehicle %d %s at (%.0f, %.0f, %.0f) %.0f km/h", k, held ? "off the surface in a zone: gravity held"
-                    : "gravity hold over", p[0], p[1], p[2], speed * 3.6f);
-            air_held[k] = held;
-        }
         if (k < 32) applied[k] = on && ext;
         if (k < 32) wallon[k] = surf && speed > 1.f;
         if (k < 32) {
@@ -620,7 +597,7 @@ static void __stdcall gravity(char *self)
             }
         }
         car_wallride(self, k, surf && speed > 1.f);
-        car_constraint_off(self, k, surf || (k < 32 && air_held[k]));
+        car_constraint_off(self, k, surf);
         if (k < 32 && inside != in_zone_last[k]) {
             in_zone_last[k] = inside;
             say("vehicle %d %s zone at (%.0f, %.0f, %.0f), %.0f km/h, up (%.2f, %.2f, %.2f)", k,
@@ -637,7 +614,7 @@ static void __stdcall gravity(char *self)
         }
     }
     out[0] = gx; out[1] = gy; out[2] = gz;
-    if (k >= 0 && k < 32) remember(self, k, gx, gy, gz, applied[k] || air_held[k]);
+    if (k >= 0 && k < 32) remember(self, k, gx, gy, gz, applied[k]);
     air_downforce_switch();
 }
 
@@ -704,10 +681,7 @@ static void remember(char *self, int k, float gx, float gy, float gz, int bent)
     float l = sqrtf(gx * gx + gy * gy + gz * gz);
     car_of[k] = rd((unsigned)self + 0x238);
     car_bent[k] = bent;
-    if (bent) {                                     /* scaled, not renormalised: a weightless air hold stays 0 */
-        float s = l > 1e-3f ? 9.81f / fabsf(*(float *)G_DEBUG) : 0.f;
-        car_grav[k][0] = gx * s; car_grav[k][1] = gy * s; car_grav[k][2] = gz * s;
-    }
+    if (bent && l > 1e-3f) { car_grav[k][0] = gx / l * 9.81f; car_grav[k][1] = gy / l * 9.81f; car_grav[k][2] = gz / l * 9.81f; }
     else { car_grav[k][0] = 0.f; car_grav[k][1] = -9.81f; car_grav[k][2] = 0.f; }
 }
 
@@ -974,7 +948,7 @@ static void cam_ease(int s, const float *obj)
         if (d2 < best) { best = d2; kk = k; }
     }
     follow = kk >= 0 && armed == 1 && cam_follow > 0.f
-          && (veh_on[kk] || air_held[kk] || (veh_inside[kk] && tick - veh_bent_tick[kk] < CAM_HOLD_MS));
+          && (veh_on[kk] || (veh_inside[kk] && tick - veh_bent_tick[kk] < CAM_HOLD_MS));
     if (follow) {
         int i;
         for (i = 0; i < 3; i++) target[i] = (i == 1 ? 1.f - cam_follow : 0.f) + cam_follow * veh_up[kk][i];
@@ -1176,8 +1150,6 @@ static void load_zones(void)
         if (sscanf_s(line, "ahead %f", &s) == 1) { ahead_s = s; continue; }
         if (sscanf_s(line, "cam_tau %f", &s) == 1) { cam_tau = s; continue; }
         if (sscanf_s(line, "cam_h %f", &s) == 1) { cam_h = s < 0.f ? 0.f : s > 2.f ? 2.f : s; continue; }
-        if (sscanf_s(line, "air_hold %f", &s) == 1) { air_hold_ms = s < 0.f ? 0.f : s; continue; }
-        if (sscanf_s(line, "air_g %f", &s) == 1) { air_g = s < 0.f ? 0.f : s > 1.f ? 1.f : s; continue; }
         if (sscanf_s(line, "cam %f", &s) == 1) { cam_follow = s < 0.f ? 0.f : s > 1.f ? 1.f : s; continue; }
         if (sscanf_s(line, "mph_max %f", &s) == 1) { mph_max = s; continue; }
         if (nzones < MAX_ZONES && sscanf_s(line, "%f %f %f %f %f %f", b, b + 1, b + 2, b + 3, b + 4, b + 5) == 6) {

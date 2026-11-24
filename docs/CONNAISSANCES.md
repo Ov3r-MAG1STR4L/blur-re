@@ -4170,3 +4170,8 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
   = apesanteur** : la voiture file tout droit au-dessus du trou ; 1 = comportement v17b). `remember()` garde
   l'échelle de la gravité au lieu de la ramener à 9,81 (sinon l'apesanteur redevenait la gravité normale au
   contact du sol). Ancienne DLL : `b2gravity_v17b.dll.bak`.
+- **Retour en arrière (2026-11-24, demande de l'utilisateur : « touche plus à la gravité, remets comme avant »)** :
+  maintien en l'air (`air_hold`, `air_g`) et changement de `remember()` retirés. **La gravité est de nouveau celle
+  de la v15**, ligne pour ligne (aucune ligne de la v15 modifiée). La caméra reste (compensation du retard,
+  reconnaissance par la trajectoire, maintien caméra 0,5 s). Installée dans Blur_test. Le trou au sommet du looping
+  de Business Bay reste un problème de données ou de collision, à traiter un jour côté carte, pas côté gravité.
