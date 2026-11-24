@@ -1208,6 +1208,28 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     les maillages du conteneur (jusqu'à 65 504 sommets par maillage, limite 16 bits) avant que Map Builder y écrive la
     carrosserie. Idée à proposer à Md.
 
+## Voitures de NFS Most Wanted (2005) vers Blur : `mwgeom.py` (2026-11-24, Confirmé hors jeu sur la Ryback Vulcan)
+
+Source : conversion « Split/Second Ryback Vulcan » pour NFS MW (Dynamitechips, Paradoz ; export Split/Second d'Elysium ;
+redistribution interdite : usage perso/LAN seulement, rien dans le dépôt). Fichiers dans `Jeux_WIIirestorm_src`.
+- `GEOMETRY.BIN` (écrit par NFS-CarToolkit) : conteneur `0x80134000`, table `0x00134004` (24 o : hachage, position,
+  taille compressée, taille), une pièce (« solid ») par bloc **JDLZ** (LZ maison de Black Box, décodé dans `mwgeom.jdlz`).
+  Pièce : `0x134011` (nom à +0xA0), `0x134012` (hachages de textures, 8 o chacun), `0x134B02` (groupes de 104 o après
+  bourrage 0x11 : boîte, emplacement de texture à +24, 1er index à +68, nombre d'index à +92), `0x134B01` (sommets de
+  36 o : position 3f, normale 3f, couleur u32, UV 2f), `0x134B03` (index u16 en liste de triangles). **Pièges** : les
+  index d'un groupe pointent dans tout le tampon de la pièce, et `0x134B03` commence par un bourrage `11 11` (lu
+  comme l'index 4369 = triangles en « spaghetti »).
+- `TEXTURES.BIN` (TPK compressé) : table `0x33310003` (24 o), chaque texture = bloc JDLZ (ou HUFF, pas décodé) avec ses
+  pixels puis une fiche de 0x9C o à la fin : nom à +12 (24 car.), hachage +36, taille +56, largeur/hauteur +68, format
+  aux 12 derniers octets (`DXT1/3/5` ou 21 = A8R8G8B8). Hachage des noms = `h = h*33 + c` depuis 0xFFFFFFFF.
+- Textures absentes du TPK = textures globales du jeu : `VULCAN_SKIN1` (peinture), `WINDOW_FRONT` (vitres).
+- Les noms des pièces ne disent pas leur contenu (la Vulcan met pare-chocs et portes dans `LEFT_SIDE_MIRROR`,
+  `RIGHT_SIDE_MIRROR` = copie de `BODY`, `HOOD` ≈ `LEFT_BRAKELIGHT` + le capot peint). Carrosserie complète : 95 000
+  triangles.
+- `mw2glb_blender.py` (Blender en ligne de commande) : garde les pièces choisies (`NOM:paint` = seulement la peinture),
+  matériaux `paint` / `glass` / `interior` (noms reconnus par Map Builder), réduit (Decimate) et exporte des `.glb` de
+  6 000, 9 000 et 13 000 triangles pour « Import body ». Pas encore essayé dans Map Builder ni en jeu.
+
 
 ## Projet J : circuit de NFS Hot Pursuit Wii vers Blur (2026-10-26, premier test hors jeu)
 
