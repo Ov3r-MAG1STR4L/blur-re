@@ -4094,3 +4094,17 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
   files 3004-3005) sont retirés (`b2bake`).
 - Sol de secours de Map Builder (`NFS_FLOOR_Y`) passé de −5 à −100, seuil « sous la carte » de la DLL de gravité
   (`HOG_FLOOR`) de −2 à −90 : la sortie du looping de Business Bay descend à −5,5 (surfaces Blur 2 jusqu'à −20).
+
+## Caméra de poursuite et murs / looping (2026-11-24, lecture de la source, Indice : pas vérifié dans l'exe)
+- **Le « haut » de la caméra est celui du monde, pas celui de la voiture.** `C_Camera::GetLookQuat`
+  (`mercury/library/graphics/camera2/source/Camera.cpp:151`) construit l'orientation avec `(0, 1, 0) ^ direction` ;
+  `C_ChaseCamera2` (`.../stock/ChaseCamera2.cpp:108`) monte la caméra de `height` en **y monde**. Seul le point de
+  départ du rayon anti-mur (`safeHeight`, l. 112) est dans le repère de la voiture. `C_AmaxChaseCamera` n'ajoute
+  qu'avance / FOV selon l'accélération et des rotations d'effets.
+- Conséquences attendues avec la gravité collée : sur un mur, horizon gardé à plat et caméra placée « au-dessus » en
+  y monde (donc vers ou dans la paroi, puis rapprochée par le rayon) ; dans un looping, quand la direction de visée
+  devient verticale, le produit vectoriel tend vers 0 → caméra qui bascule d'un coup (ou valeur invalide).
+- Piste : dans la DLL de gravité, remplacer `(0, 1, 0)` de `GetLookQuat` et de `height` par un « haut caméra »
+  lissé (vers le haut de la voiture dans une zone, retour vers y monde à la sortie), caméra du joueur seulement.
+  Adresse de `GetLookQuat` dans `Blur.exe` à trouver (constante 1.0 et produit vectoriel ; appelée depuis la
+  fonction qui lit `Camera2.Chase2.Tilt`).
