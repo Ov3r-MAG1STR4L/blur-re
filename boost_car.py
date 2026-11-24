@@ -80,6 +80,11 @@ def main():
     ap.add_argument('--grip', type=float, default=1.3)       # multiplie grip.yScale et transverseGripScale avant / arrière
     ap.add_argument('--traction', type=float, default=1.6)   # tyres.rearTyres.forwardsGripScale (patinage au départ)
     ap.add_argument('--downforce', type=float, default=2.0)
+    # couple : Map Builder extrapole l'accélération 12 à 2471 (CCXR 900 pour 1179 kg) -> cabrages ; 1700 = 2x la CCXR au kg
+    ap.add_argument('--torque', type=float, default=1700)
+    # pilote : Map Builder le cache 1,5 m sous une carrosserie importée (DriverDown) ; il se voit quand la voiture se
+    # cabre. "vx,vy,vz" pour le replacer (Bowler : -0.007,0.247,0.147 ; CCXR : 0.093,-0.247,0.22). Vide = inchangé
+    ap.add_argument('--driver', default='')
     a = ap.parse_args()
     A, R = r'\gamedata\xt\amax.bin', r'\gamedata\xt\racingphysics.bin'
     # .avant_boost = le pak tel que Map Builder l'a construit ; .boost = empreinte du pak que nous avons écrit.
@@ -95,13 +100,16 @@ def main():
     base = values(rp, 'RP_CarDynamics', phys)
     gears = [float(x) for x in a.gears.split(',')]
     sets = {'gears.finalRatio': a.final, 'friction.airFriction': a.air, 'friction.downforce': a.downforce,
-            'tyres.rearTyres.forwardsGripScale': a.traction}
+            'tyres.rearTyres.forwardsGripScale': a.traction, 'engine.engineTorque_Rpm.yScale': a.torque}
     sets.update({f'gears.gearRatios[{i}]': g for i, g in enumerate(gears)})
     for side in ('frontTyres', 'rearTyres'):
         t = base['tyres'][side]
         sets[f'tyres.{side}.grip.yScale'] = t['grip']['yScale'] * a.grip
         sets[f'tyres.{side}.transverseGripScale'] = t['transverseGripScale'] * a.grip
-    amax2 = patch(amax, a.car, {'GameplayTopSpeed': a.mph, 'UiMaxSpeed': a.mph, 'HealthGroup': a.health})
+    aset = {'GameplayTopSpeed': a.mph, 'UiMaxSpeed': a.mph, 'HealthGroup': a.health}
+    if a.driver:
+        aset.update(zip(('DriverOffset.vx', 'DriverOffset.vy', 'DriverOffset.vz'), map(float, a.driver.split(','))))
+    amax2 = patch(amax, a.car, aset)
     rp2 = patch(rp, phys, sets)
     shutil.copy2(a.pak + '.avant_boost', a.pak)      # repart toujours du pak de Map Builder (pas d'ajouts en chaîne)
     replace_files(a.pak, {A: amax2, R: rp2})
@@ -113,7 +121,8 @@ def main():
     assert [round(x, 3) for x in r['gears']['gearRatios']] == [round(g, 3) for g in gears], r['gears']['gearRatios']
     assert abs(r['gears']['finalRatio'] - a.final) < 1e-3 and abs(r['friction']['airFriction'] - a.air) < 1e-3
     print('ok', a.car, 'mph', a.mph, 'vie', a.health, 'boite', gears, 'final', a.final, 'air', a.air,
-          'grip x%.2f' % a.grip, 'traction', a.traction, 'appui', a.downforce)
+          'grip x%.2f' % a.grip, 'traction', a.traction, 'appui', a.downforce, 'couple', a.torque,
+          'pilote', v['DriverOffset'])
 
 
 if __name__ == '__main__':

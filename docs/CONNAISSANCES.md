@@ -1311,6 +1311,12 @@ redistribution interdite : usage perso/LAN seulement, rien dans le dépôt). Fic
     ~290 mph, air 0,32, grip et adhérence latérale ×1,3, `rearTyres.forwardsGripScale` 1,6, appui 2,0. Repart toujours
     du pak de Map Builder (`.avant_boost`) ; empreinte `.boost` du pak écrit pour reconnaître un nouveau Build.
     Le pak est verrouillé tant que Blur REBORN tourne.
+  - **Pilote sous la voiture** (capture du 2026-11-24, S cabrée) : voulu par Map Builder, `DriverOffset.vy` =
+    celui de la Bowler − `DriverDown` (1,5 m) pour toute carrosserie importée (Vulkan : −1,253) ; il se voit dès que la
+    voiture se lève. Références : Bowler (−0,007 ; 0,247 ; 0,147), CCXR (0,093 ; −0,247 ; 0,22), Opel (0,056 ;
+    −0,183 ; −0,10). `boost_car.py --driver vx,vy,vz` pour le replacer (pas de valeur sûre pour la Vulcan).
+  - Cabrage attribué au couple extrapolé (2 471) : `--torque` 1 700 par défaut. Appliqué le 2026-11-24 à 23 h 03 sur
+    le Build de 22 h 37 (la carrosserie 6k attend encore un Build).
 - Map Builder 2.7.1 dans une copie aux paks renommés `.off` : il exige `cache\gamedata.pak` et `root.pak` (sinon
   « A game file is missing ») et écrit `amax\plugins\plugins.lua` (refus si le fichier est en lecture seule).
 
