@@ -471,8 +471,8 @@ static void hog_update(const float *p, float speed)
         hog_safety = 0;
         say("respawn safety over: car driving again");
     }
-    if (GetAsyncKeyState(VK_END) & 0x8000) {            /* v15: End = respawn on demand (game's HandOfGod, 3 s) */
-        if (!hog_key_until) say("End pressed: HandOfGod on for %d ms", HOG_KEY_MS);
+    if (GetAsyncKeyState(VK_BACK) & 0x8000) {            /* v15: Backspace = respawn on demand (game's HandOfGod, 3 s) */
+        if (!hog_key_until) say("Backspace pressed: HandOfGod on for %d ms", HOG_KEY_MS);
         hog_key_until = now + HOG_KEY_MS;
     }
     if (hog_key_until && now > hog_key_until) hog_key_until = 0;
