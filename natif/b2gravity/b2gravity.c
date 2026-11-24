@@ -459,7 +459,10 @@ static void hog_update(const float *p, float speed)
     DWORD now = GetTickCount();
     int want_off;
     if (speed < 1.f) { if (!still_since) still_since = now; } else still_since = 0;
-    if (!hog_safety && (p[1] < HOG_FLOOR || (still_since && now - still_since > HOG_STUCK_MS))) {
+    /* 2026-11-24 (split screen): "stuck" trigger removed - a still car 0 (player 1 waiting) switched the global
+       HandOfGod back on for every car, player 2 got respawned; only "below the map" remains */
+    (void)now;
+    if (!hog_safety && p[1] < HOG_FLOOR) {
         hog_safety = 1;
         say("respawn safety: HandOfGod back on (car at (%.0f, %.0f, %.0f), %s)", p[0], p[1], p[2],
             p[1] < HOG_FLOOR ? "below the map" : "stuck");
