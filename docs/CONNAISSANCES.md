@@ -1296,6 +1296,21 @@ redistribution interdite : usage perso/LAN seulement, rien dans le dépôt). Fic
   2,33 (estimé d'après la CCXR : 7 600 tr/min, rapports 0,59 × 4,2 = 221 mph ; la Vulkan a 7 800 tr/min et une 6e à
   0,93), air 0,40. Lanceur `Jeux_WII\Booster la Vulkan S.bat` (sauvegarde `gamedata.pak.avant_boost`). Un nouveau
   Build de Map Builder efface la modification.
+- **2e essai en jeu (2026-11-24, captures de l'utilisateur)** : la S avance. Défauts : grands triangles noirs qui
+  vont et viennent sur la carrosserie, phares avant sombres et non allumés, beaucoup de glisse, son moteur décalé.
+  - Triangles noirs : le journal de Map Builder dit « 8734 triangles placés dans 12 trim parts », toute la place de
+    la Bowler, **pièces d'habitacle (`e_interior`) comprises** ; hypothèse forte : la carrosserie qui déborde dans
+    l'habitacle est dessinée avec l'éclairage de l'intérieur. Cause dans notre outil : après le renommage en
+    `e_interior`, l'allègement de l'intérieur (×0,35) ne s'appliquait plus. Corrigé (×0,12 ; intérieur 686 tri.) ;
+    6k installé à la place du 9k dans `Blur_test_hud`. Faces aussi réorientées vers l'extérieur (`outward`,
+    6 arêtes à l'envers sur 10 000), au cas où.
+  - Map Builder (`OneTexture`) gère les UV qui débordent (décalage par triangle) et les couleurs unies (pastilles de
+    32 px dans un atlas de 1024) : pas en cause.
+  - `boost_car.py` étendu : `HealthGroup` (Low), boîte de la CCXR `gearRatios` 2,62 / 1,94 / 1,47 / 1,14 / 0,74 /
+    0,59 (la S a le son de la CCXR : le régime suit la vitesse comme le son l'attend), rapport final 3,285 pour
+    ~290 mph, air 0,32, grip et adhérence latérale ×1,3, `rearTyres.forwardsGripScale` 1,6, appui 2,0. Repart toujours
+    du pak de Map Builder (`.avant_boost`) ; empreinte `.boost` du pak écrit pour reconnaître un nouveau Build.
+    Le pak est verrouillé tant que Blur REBORN tourne.
 - Map Builder 2.7.1 dans une copie aux paks renommés `.off` : il exige `cache\gamedata.pak` et `root.pak` (sinon
   « A game file is missing ») et écrit `amax\plugins\plugins.lua` (refus si le fichier est en lecture seule).
 

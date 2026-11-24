@@ -45,7 +45,20 @@ def build():
     for o in bpy.data.objects:   # noms parlants pour Map Builder (intérieur mat d'après le nom)
         if 'INTERIOR' in o.name: o.name = 'interior'
     split_blur()   # retire toujours les doublons NFS (surfaces superposées qui clignotent) ; découpe seulement avec --split
+    outward()
     return sum(len(o.data.polygons) for o in bpy.data.objects)
+
+def outward():
+    """Faces tournées vers l'extérieur. NFS dessine les deux côtés, Blur seulement l'avant : une face à l'envers y
+    disparaît ou sort noire selon l'angle (essai du 2026-11-24). Soudure des sommets coupés aux coutures d'UV d'abord,
+    sinon Blender ne voit pas quelles faces se touchent."""
+    import bmesh
+    for o in bpy.data.objects:
+        if o.type != 'MESH': continue
+        bm = bmesh.new(); bm.from_mesh(o.data)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0005)
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        bm.to_mesh(o.data); bm.free()
 
 # Découpe en pièces aux noms des éléments d'une voiture de Blur (ceux de la Bowler Nemesis).
 # Repère de la voiture NFS : +x avant, +y gauche, z haut, en mètres.
@@ -127,7 +140,9 @@ for t in targets:
     build()
     for o in bpy.data.objects:
         mod = o.modifiers.new('dec', 'DECIMATE')
-        mod.ratio = min(1.0, t / total * (0.35 if o.name.startswith('interior') else 1.15))
+        # intérieur très allégé : il se voit peu, et la place du conteneur doit aller à la carrosserie (un surplus déborde
+        # dans les pièces d'habitacle de la Bowler, dessinées sombres : triangles noirs en jeu, essai du 2026-11-24)
+        mod.ratio = min(1.0, t / total * (0.12 if 'interior' in o.name else 1.25))
         bpy.context.view_layer.objects.active = o; bpy.ops.object.modifier_apply(modifier='dec')
     n = sum(len(o.data.polygons) for o in bpy.data.objects)
     out = os.path.join(outdir, f'ryback_vulcan_{t // 1000}k{"_pieces" if SPLIT else ""}.glb')
