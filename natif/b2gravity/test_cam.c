@@ -94,6 +94,21 @@ int main(int argc, char **argv)
         veh_on[0] = 0; cam_tau = 0.f;
         cam_ease(s, obj);
         check(world_up(s), "ease: back to world up off the surface");
+
+        /* essai v16: camera object = car position predicted ahead (20 m at speed) -> still that car */
+        {
+            float ahead[3] = {obj[0] + 20.f, obj[1], obj[2]};
+            veh_on[0] = 1; veh_up[0][0] = 1.f; veh_up[0][1] = 0.f; veh_bent_tick[0] = GetTickCount();
+            cam_ease(s, ahead);
+            check(cam_k[s] == 0 && fabsf(cam_up[s][0] - 1.f) < 1e-4f, "match: car found 20 m behind the predicted object");
+            /* surface lost for a moment inside the zone: up kept; outside the zone: back to world up */
+            veh_on[0] = 0; veh_inside[0] = 1;
+            cam_ease(s, ahead);
+            check(fabsf(cam_up[s][0] - 1.f) < 1e-4f, "hold: up kept when the surface is lost inside a zone");
+            veh_inside[0] = 0;
+            cam_ease(s, ahead);
+            check(world_up(s), "hold: back to world up outside the zone");
+        }
     }
     printf(fails ? "%d FAILED\n" : "all ok\n", fails);
     return fails != 0;

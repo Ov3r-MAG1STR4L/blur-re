@@ -4129,3 +4129,15 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
   compare : même quaternion que le jeu sur 2 000 directions (convention trouvée), haut caméra sur un mur, axe
   latéral gardé en haut de looping, lissage (suivi, haut opposé, retour). Tout passe. Ancienne DLL :
   `b2gravity_v15.dll.bak`. Non vérifié : le rendu en jeu, l'écran partagé (une caméra par joueur, 4 au plus).
+- **Essai v16 (2026-11-24, Business Bay) : la caméra ne s'est jamais activée (Confirmé, journal)** : une seule ligne
+  « camera 0 back to world up » au chargement, aucun « follows » alors que la voiture était courbée (virage à
+  233 km/h, haut du looping y 180). Ce que l'utilisateur a vu = la caméra d'origine. **Cause (Fort, source)** : l'objet
+  suivi par la caméra est la position **anticipée** de la voiture (`VehicleFeed.cpp:319` : position + vitesse lissée ×
+  `g_futureFeedPredictionTime` + accélération), plusieurs mètres devant à haute vitesse ; la DLL cherchait la voiture à
+  moins de 8 m.
+- **Caméra v17 (compilée, testée hors jeu, installée dans Blur_test, à essayer)** : voiture la plus proche à moins de
+  60 m ; haut visé = **opposé de la gravité appliquée** à la voiture (déjà lissé, fondu selon la vitesse), plus le haut
+  de la carrosserie ; **maintien 0,5 s** si la surface est perdue dans une zone (raccord, bosse, tube) ; réglage
+  `cam_h` (0..2, multiplie la hauteur de la caméra pendant le suivi, pour les tubes) ; journal « cam N: … » toutes les
+  0,5 s pendant le suivi. `test_cam.c` : voiture trouvée à 20 m de l'objet anticipé, maintien et retour. Ancienne DLL :
+  `b2gravity_v16.dll.bak`.

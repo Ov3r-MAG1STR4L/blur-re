@@ -628,3 +628,6 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
   dans les loopings, `GetLookQuat` 0x58B4D0 / appel 0x590F2B), vérifiée hors jeu contre la fonction du jeu
   (`test_cam.c`), installée dans Blur_test. À faire : l'essayer en jeu (Marina virage sud-ouest, looping de Business
   Bay), régler `cam_tau`.
+- 2026-11-24 (nuit) : essai v16 = caméra jamais activée (objet suivi = position anticipée de la voiture, cherchée à
+  8 m). v17 : voiture trouvée à 60 m, haut = opposé de la gravité appliquée, maintien 0,5 s, réglage `cam_h`.
+  Installée, à essayer (murs, looping, puis tubes de Dubai Island).

@@ -270,9 +270,11 @@ static float mph_min = 15.f, mph_max = 35.f;
 /* v8: in a zone, on a surface, above 1 m/s: Blur 1's anti-wall-riding is lifted whatever the speed
    (Fix2 off, wheels along car -up); only the gravity / torque / downforce wait for mph_min. */
 static int wallon[32];
-/* v16 camera: each vehicle's position / up / "on a surface" this frame, read by the chase camera hook */
+/* v16 camera: each vehicle's position, last "up" while bent (= -its bent gravity: smoothed, blended by speed),
+   bent now, inside a zone, last time bent; read by the chase camera hook */
 static float veh_pos[32][3], veh_up[32][3];
-static int veh_on[32];
+static int veh_on[32], veh_inside[32];
+static DWORD veh_bent_tick[32];
 
 static unsigned bucket(int x, int y, int z)
 {
@@ -584,9 +586,14 @@ static void __stdcall gravity(char *self)
         if (k < 32) applied[k] = on && ext;
         if (k < 32) wallon[k] = surf && speed > 1.f;
         if (k < 32) {
+            float gl = sqrtf(gx * gx + gy * gy + gz * gz);
             veh_pos[k][0] = p[0]; veh_pos[k][1] = p[1]; veh_pos[k][2] = p[2];
-            if (len > 0.5f) { veh_up[k][0] = up[0] / len; veh_up[k][1] = up[1] / len; veh_up[k][2] = up[2] / len; }
-            veh_on[k] = surf && speed > 1.f;
+            veh_on[k] = on && gl > 1e-3f;
+            veh_inside[k] = inside;
+            if (veh_on[k]) {
+                veh_up[k][0] = -gx / gl; veh_up[k][1] = -gy / gl; veh_up[k][2] = -gz / gl;
+                veh_bent_tick[k] = GetTickCount();
+            }
         }
         car_wallride(self, k, surf && speed > 1.f);
         car_constraint_off(self, k, surf);
@@ -907,26 +914,42 @@ static int cam_slot(unsigned cam)
 }
 
 /* ease the camera's up towards its car's up (on a zone surface) or world Y; per frame, from the camera hook */
+#define CAM_MATCH_M 60.f   /* essai v16: the chase camera's object is the car's position PREDICTED ahead
+                              (VehicleFeed.cpp:319, smoothed velocity x g_futureFeedPredictionTime): > 8 m at speed,
+                              the car was never found. ponytail: nearest car; split screen with two cars side by
+                              side may swap, match on the object's orient too if seen. */
+#define CAM_HOLD_MS 500    /* surface lost this long, still in a zone (gap, bump, tube seam): keep the last up */
+static float cam_h = 1.f;
+static DWORD cam_status[MAX_CAMS];
+
 static void cam_ease(int s, const float *obj)
 {
-    float target[3] = {0.f, 1.f, 0.f}, best = 8.f * 8.f, dt = 1.f / 60.f, axis[3], l, ang, a;
-    int k, kk = -1;
+    float target[3] = {0.f, 1.f, 0.f}, best = CAM_MATCH_M * CAM_MATCH_M, dt = 1.f / 60.f, axis[3], l, ang, a;
+    int k, kk = -1, follow;
+    DWORD tick = GetTickCount();
     LARGE_INTEGER now, fq;
-    for (k = 0; k < 32; k++) {                       /* the car followed = the vehicle at the camera object */
+    for (k = 0; k < 32; k++) {                       /* the car followed = the vehicle nearest the camera object */
         float dx = veh_pos[k][0] - obj[0], dy = veh_pos[k][1] - obj[1], dz = veh_pos[k][2] - obj[2];
         float d2 = dx * dx + dy * dy + dz * dz;
         if (d2 < best) { best = d2; kk = k; }
     }
-    if (kk >= 0 && veh_on[kk] && armed == 1 && cam_follow > 0.f) {
+    follow = kk >= 0 && armed == 1 && cam_follow > 0.f
+          && (veh_on[kk] || (veh_inside[kk] && tick - veh_bent_tick[kk] < CAM_HOLD_MS));
+    if (follow) {
         int i;
         for (i = 0; i < 3; i++) target[i] = (i == 1 ? 1.f - cam_follow : 0.f) + cam_follow * veh_up[kk][i];
         norm3(target);
     }
-    k = (kk >= 0 && veh_on[kk] && armed == 1) ? kk : -1;
+    k = follow ? kk : -1;
     if (k != cam_k[s]) {
         cam_k[s] = k;
-        if (k >= 0) say("camera %d follows the up of vehicle %d", s, k);
+        if (k >= 0) say("camera %d follows the up of vehicle %d (camera object %.1f m from it)", s, k, sqrtf(best));
         else say("camera %d back to world up", s);
+    }
+    if (follow && tick - cam_status[s] > 500) {
+        cam_status[s] = tick;
+        say("  cam %d: vehicle %d %.1f m, %s, target (%.2f, %.2f, %.2f) camera up (%.2f, %.2f, %.2f)", s, kk, sqrtf(best),
+            veh_on[kk] ? "bent" : "held", target[0], target[1], target[2], cam_up[s][0], cam_up[s][1], cam_up[s][2]);
     }
     QueryPerformanceCounter(&now); QueryPerformanceFrequency(&fq);
     if (cam_t[s].QuadPart) {
@@ -990,7 +1013,7 @@ static void __stdcall cam_want(unsigned cam, unsigned gesp)
     h = *(float *)(gesp + CAM_PARAM_H);
     if (!(h > -50.f && h < 50.f)) return;
     want = (float *)(cam + CAM_WANT);
-    for (i = 0; i < 3; i++) want[i] += h * (cam_up[s][i] - (i == 1 ? 1.f : 0.f));
+    for (i = 0; i < 3; i++) want[i] += h * (cam_h * cam_up[s][i] - (i == 1 ? 1.f : 0.f));   /* cam_h: lower in tubes */
 }
 
 static __declspec(naked) void stub_look(void)
@@ -1085,6 +1108,7 @@ static void load_zones(void)
         }
         if (sscanf_s(line, "ahead %f", &s) == 1) { ahead_s = s; continue; }
         if (sscanf_s(line, "cam_tau %f", &s) == 1) { cam_tau = s; continue; }
+        if (sscanf_s(line, "cam_h %f", &s) == 1) { cam_h = s < 0.f ? 0.f : s > 2.f ? 2.f : s; continue; }
         if (sscanf_s(line, "cam %f", &s) == 1) { cam_follow = s < 0.f ? 0.f : s > 1.f ? 1.f : s; continue; }
         if (sscanf_s(line, "mph_max %f", &s) == 1) { mph_max = s; continue; }
         if (nzones < MAX_ZONES && sscanf_s(line, "%f %f %f %f %f %f", b, b + 1, b + 2, b + 3, b + 4, b + 5) == 6) {
@@ -1141,7 +1165,7 @@ BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID r)
         patch_bytes(SITE_GRAV, ORIGINAL_GRAV, 102, stub_grav, SITE_GRAV_END);
         patch_bytes(SITE_PUSH, ORIGINAL_PUSH, 5, stub_push, 0);
         if (nzones) {                        /* v16: chase camera up (only where there are wall zones) */
-            say("camera: follow %.2f, tau %.2f s", cam_follow, cam_tau);
+            say("camera: follow %.2f, tau %.2f s, height x %.2f while following", cam_follow, cam_tau, cam_h);
             patch_bytes(CAM_LOOK_CALL, ORIGINAL_LOOKCALL, 5, stub_look, 0);
             patch_bytes(CAM_WANT_SITE, ORIGINAL_WANT, 16, stub_want, 0);
         }
