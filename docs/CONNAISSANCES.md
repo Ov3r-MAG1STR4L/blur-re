@@ -1260,6 +1260,16 @@ redistribution interdite : usage perso/LAN seulement, rien dans le dépôt). Fic
   `decal_alpha`, `clear_glass`. Les stats ne sont ramenées dans la fourchette de la classe (`Fair`) que sur une
   modification dans l'interface ; la tenue de route est interpolée par stat entre les voitures de la classe
   (`Handling`, sans borne : une stat hors fourchette serait extrapolée, non essayé).
+- **« Classe S » (2026-11-24, construit, pas essayé en jeu)** : pas de vraie classe en plus (Map Builder et le jeu ne
+  connaissent que A à D, `class` 0 à 3) ; voiture de classe A aux stats au-delà de la classe. `Handling` place chaque
+  champ physique entre le min et le max des voitures de la classe selon t = (stat − min) / (max − min), **sans borne** :
+  vitesse → `friction.airFriction`, `gears.finalRatio` ; accélération → couple / kg ; adhérence → grip avant / arrière,
+  `downforce` ; glisse → 6 champs du train arrière. Vitesse max affichée et `GameplayTopSpeed` extrapolées pareil
+  (`TopSpeed`). `strength` ne touche que la barre du menu (`UiStrength`). `Fair` (remise dans la fourchette) ne
+  s'applique que sur une modification des stats dans l'interface, ou si la voiture « Body » ne correspond plus.
+  Fichier : `Ryback Vulkan S.blurcar` (vitesse 12, accélération 12, glisse 3, adhérence 6, solidité 5). Fourchettes de
+  la classe A (`blur_voitures.csv`, voitures utilisables) : vitesse 8-10, accélération 9-10, glisse 0-5,
+  adhérence 1-5, 188-246 mph.
 - Map Builder 2.7.1 dans une copie aux paks renommés `.off` : il exige `cache\gamedata.pak` et `root.pak` (sinon
   « A game file is missing ») et écrit `amax\plugins\plugins.lua` (refus si le fichier est en lecture seule).
 
