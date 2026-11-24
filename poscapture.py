@@ -12,6 +12,8 @@ Les commentaires s'ajoutent après coup (le jeu se met en pause dès qu'on cliqu
   poscapture.py classer CHEMIN CIRCUIT   déplace une capture non identifiée vers un circuit (nouvelle session « reclassement »)
   poscapture.py export                captures/captures_toutes.csv (toutes les sessions, régénéré)
   poscapture.py test                  auto-test hors jeu (dossier temporaire)
+  poscapture.py grille                voiture garée sur la 1re place voulue -> grille de la route installée
+                                      (blur2_aid/dubai/grilles.json, lue par make_b2_map quand --grid est omis)
 
 Rangement : captures/<Circuit>/session_AAAA-MM-JJ_HH-MM-SS/capture_NNN.json. Une session par circuit et par
 lancement du programme ; rien n'est jamais écrasé (création exclusive). Circuit : route installée dans la copie du
@@ -253,6 +255,33 @@ def do_capture(arc):
     return path
 
 
+GRILLES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "blur2_aid", "dubai",
+                       "grilles.json")
+
+
+def set_grid():
+    """position actuelle de la voiture -> case 0 de la grille de la route installée (l'ancienne valeur gardée en
+    historique). Map Builder pose ensuite 2 colonnes à +-5 m, rangées tous les 8 m vers l'arrière de la route."""
+    pm, exe = attach()
+    if not pm:
+        sys.exit(exe)
+    s, route = read_player(pm), installed_route(exe)
+    if not route:
+        sys.exit("route installée inconnue (b2gravity.txt)")
+    g = json.load(open(GRILLES, encoding="utf-8")) if os.path.exists(GRILLES) else {}
+    old = g.get(str(route))
+    g[str(route)] = {"x": round(s["x"], 2), "y": round(s["y"], 2), "z": round(s["z"], 2),
+                     "date": time.strftime("%Y-%m-%d %H:%M:%S"),
+                     "historique": ([old] + old.pop("historique", []))[:10] if old else []}
+    if os.path.exists(GRILLES + ".tmp"):
+        os.remove(GRILLES + ".tmp")
+    write_new(GRILLES + ".tmp", g)
+    os.replace(GRILLES + ".tmp", GRILLES)
+    print("route %d (%s) : case 0 = (%.1f ; %.1f), était %s" % (route, CIRCUITS.get(route, "?"), s["x"], s["z"],
+          "(%.1f ; %.1f)" % (old["x"], old["z"]) if old else "rien"))
+    print("reconstruire cette route avec make_b2_map sans --grid pour l'appliquer")
+
+
 # ---------- commandes ----------
 def resolve(p):
     q = p if os.path.isabs(p) else os.path.join(ROOT, p)
@@ -299,6 +328,8 @@ def main(argv):
         print("déplacée :", os.path.relpath(new, ROOT))
     elif cmd == "export":
         print("%s (%d captures)" % export())
+    elif cmd == "grille":
+        set_grid()
     elif cmd == "test":
         selftest()
     else:

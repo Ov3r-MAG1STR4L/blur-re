@@ -4063,3 +4063,15 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
   Probable) : carte inédite de Blur 2, version « déchets toxiques, post-apocalyptique » de LA River, avec de très
   nombreux chemins alternatifs. uKER la montre en mouvement : il a donc un moyen de l'afficher (à demander : une
   version Unity comme Blur2DubaiTest ?). Archive X360 d'août : `kanzen_la_river`, 91 Mo, rendu non décodé chez nous.
+- La route de Map Builder **a une collision**, même avec `NFS_NO_WALLS` : ses morceaux de route bloquent (2026-11-23,
+  Business Bay, suivi de position et b2gravity.log). Le tracé du chemin 3 qui descend le looping a donné une rampe
+  invisible de 30 m de large en travers de la paroi (y 124 → 0) : choc de 142 à 57 km/h vers y = 47, puis voiture
+  coincée dessous. `make_b2_map.flatten_loops` aplatit, pour Map Builder seulement, les tronçons de pente > 1 (loopings,
+  murs) ; le tracé de la collision garde ses hauteurs.
+- Surfaces noires du décor : l'alpha des textures Unity (brillance) faisait passer l'atlas en transparence 1 bit,
+  rendue en noir par le shader. `b2lit` passe en RGB les modèles hors découpe (`_AlphaTest` reste en DXT5).
+- Découpage des triangles raides > 8 m² (`b2collision.split_steep`), limité à 40 m du tracé : sans cette limite,
+  Marina montait à 828 k triangles / 88 Mo. Collisions actuelles : Business Bay 185 k / 14 Mo, Dubai Island 125 k /
+  8 Mo, Marina 376 k / 28 Mo (taille maximale supportée par le jeu : inconnue).
+- `poscapture.py grille` : position de la voiture → case 0 de la route installée (`blur2_aid/dubai/grilles.json`),
+  lue par `make_b2_map` quand `--grid` est omis (pas encore essayé en jeu).

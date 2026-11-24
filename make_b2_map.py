@@ -378,6 +378,26 @@ def mb_branch_m(mp):
         b["from_m"], b["to_m"] = int(round(fm)), int(round(tm + r.length if tm < fm else tm))
 
 
+def flatten_loops(pts, steep=1.0, reach=60, tol=3.0):
+    """copy of the points with every loop / vertical wall-ride stretch flattened (Map Builder only): its road
+    pieces collide (2026-11-23, Business Bay: the branch going down the loop became a 30 m wide invisible ramp
+    across the wall-ride, from y 124 down to 0 -> the car hit it at 140 km/h and got stuck under it). Around each
+    segment steeper than `steep` (dh / ds): from the last point within `tol` m of the lowest of the `reach` points
+    before, to the first such point after, h goes linearly between those two.
+    ponytail: anchors by local minimum, a loop starting on a slope may flatten a bit too far"""
+    h = np.array([q["h"] for q in pts], float)
+    xz = np.array([(q["x"], q["z"]) for q in pts], float)
+    g = np.abs(np.diff(h)) / np.maximum(np.hypot(*np.diff(xz, axis=0).T), 0.1)
+    out = h.copy()
+    for s in np.where(g > steep)[0]:
+        lo = max(0, s - reach)
+        a = lo + int(np.where(h[lo:s + 1] <= h[lo:s + 1].min() + tol)[0].max())
+        hi = min(len(h), s + 1 + reach)
+        b = s + 1 + int(np.where(h[s + 1:hi] <= h[s + 1:hi].min() + tol)[0].min())
+        out[a:b + 1] = np.minimum(out[a:b + 1], np.linspace(h[a], h[b], b - a + 1))
+    return [dict(q, h=float(v)) for q, v in zip(pts, out)]
+
+
 def track(mp, path, low, grid, route, out_dir):
     """--track: main road and branches from the editor (b2track.py), instead of --edges / --drive; start_m again
     from the grid (the points moved), one CSV per branch (x, y, z: collision and scenery) + a top view check image"""
@@ -394,7 +414,9 @@ def track(mp, path, low, grid, route, out_dir):
         b = min(mp["branches"], key=lambda b: len(b["points"]))
         mp["branches"].remove(b)
         print("branch %d-%d m dropped (Map Builder: 64 road models at most)" % (b["from_m"], b["to_m"]))
-    lines = [mp["points"]] + [b["points"] for b in mp["branches"]]
+    mp["points"] = flatten_loops(mp["points"])         # Map Builder's copy only (`every` keeps the real heights)
+    mp["branches"] = [dict(b, points=flatten_loops(b["points"])) for b in mp["branches"]]
+    lines =[mp["points"]] + [b["points"] for b in mp["branches"]]
     mp["width"] = max(TUBE, max(q["w"] for pts in lines for q in pts) + 10)
     os.makedirs(out_dir, exist_ok=True)
     csvs = []
@@ -415,13 +437,21 @@ def main():
     ap.add_argument("lap"), ap.add_argument("pickups"), ap.add_argument("out")
     ap.add_argument("--name", required=True), ap.add_argument("--city", required=True)
     ap.add_argument("--route", type=int, required=True)
-    ap.add_argument("--grid", type=float, nargs=2, required=True, metavar=("X", "Z"))
+    ap.add_argument("--grid", type=float, nargs=2, metavar=("X", "Z"),
+                    help="grid slot 0; omitted: blur2_aid/dubai/grilles.json (poscapture.py grille) for --route")
     ap.add_argument("--decor", action="store_true")
     ap.add_argument("--edges", action="store_true", help="road centre and width fitted between the walls")
     ap.add_argument("--drive", nargs="+", metavar="PLAYER_LOG", help="wall-hugging drives: edges from them")
     ap.add_argument("--official", metavar="ACTORPACK", help="X360 actorpack.xt of the city: official AI branches")
     ap.add_argument("--track", metavar="TRACK_JSON", help="road and branches edited in b2track.py (replaces the above)")
     a = ap.parse_args()
+    if a.grid is None:
+        gf = os.path.join(os.path.dirname(HERE), "blur2_aid", "dubai", "grilles.json")
+        g = json.load(open(gf, encoding="utf-8")).get(str(a.route)) if os.path.exists(gf) else None
+        if not g:
+            sys.exit("--grid X Z, or place it in game: poscapture.py grille (route %s)" % a.route)
+        a.grid = [g["x"], g["z"]]
+        print("grid from grilles.json: (%.1f ; %.1f), %s" % (g["x"], g["z"], g["date"]))
     lap = [(float(r["x"]), float(r["y"]), float(r["z"])) for r in csv.DictReader(open(a.lap))]
     pk = json.load(open(a.pickups))["pickups"]
     w, low, npk, res = world(lap, pk, a.name, a.city, a.grid)

@@ -191,6 +191,8 @@ def jobs(data, laps, count):
         for k, i in texs.items():
             img.paste(data["tex"][k].resize((CELL, CELL), Image.LANCZOS), ((i % per) * CELL, (i // per) * CELL))
             mat.paste(material_cell(data.get("mat", {}).get(k)), ((i % per) * CELL, (i // per) * CELL))
+        if not is_cut:      # 2026-11-23: Unity alpha = gloss etc., not holes; any alpha < 128 switched the writer to
+            img = img.convert("RGB")   # 1-bit transparency, which the shader draws BLACK (roads seen black in game)
         mt = []
         for t, c, u in cur:
             i = texs[t[0]]

@@ -110,12 +110,12 @@ ORIENT, ORIENT_BOTH = 60.0, 20.0
 # 2026-11-23 (Business Bay loop, part_003_17f, triangles of 58-71 m2): the car going down the wall-ride at ~34 m/s got
 # behind these huge faces and stuck there / fell under the map. Steep triangles (n.y < 0.5) larger than SPLIT m2 are
 # cut in 4 (edge midpoints, same plane, same winding) until all are below it.
-SPLIT = 8.0
+SPLIT, SPLIT_NEAR = 8.0, 40.0
 
 
 def split_steep(T):
     """(m, 3, 3) triangles -> same surface, steep ones cut to <= SPLIT m2"""
-    out = []
+    out = [T[:0]]
     while len(T):
         n = np.cross(T[:, 1] - T[:, 0], T[:, 2] - T[:, 0])
         a = np.linalg.norm(n, axis=1) / 2
@@ -145,7 +145,9 @@ def build(cols, base, route, laps, radius, dy=0.0):
     for name, (v, t) in cols.items():
         if name.startswith("physics_route_") and not name.startswith("physics_route_%d_" % route):
             continue                                   # another route's barriers
-        T = split_steep(v[t] + (0, dy, 0))
+        T = v[t] + (0, dy, 0)
+        close = lap3.query(T.mean(1))[0] < SPLIT_NEAR   # only where the car drives (Marina: 828 k triangles, 88 MB
+        T = np.concatenate([split_steep(T[close]), T[~close]])   # when every facade within 150 m was cut)
         c = T.mean(1)
         d, k = near.query(c[:, [0, 2]])
         n = np.cross(T[:, 1] - T[:, 0], T[:, 2] - T[:, 0])
