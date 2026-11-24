@@ -4175,3 +4175,25 @@ Détails : `POWERUP_BEHAVIOUR_STUDY.md` (v3).
   de la v15**, ligne pour ligne (aucune ligne de la v15 modifiée). La caméra reste (compensation du retard,
   reconnaissance par la trajectoire, maintien caméra 0,5 s). Installée dans Blur_test. Le trou au sommet du looping
   de Business Bay reste un problème de données ou de collision, à traiter un jour côté carte, pas côté gravité.
+
+## Bonus sur les murs et loopings de Blur 2 (2026-11-24, source lue, adresses dans l'exe)
+- **Les projectiles (Shunt, Bolt, Mine lancée) ne connaissent que le haut du monde (Fort, `PickupProjectileBase.cpp`)** :
+  - suivi du sol : rayon **vertical** de +`TraceLengthUp` (2 m) à −`TraceLengthDown` sous la position visée, et seule
+    la **hauteur y** est recalée (`CheckFall`, l. 357-371 : y = sol + rayon + `HeightFromGround`, chute limitée par
+    `FallRateMin` + `FallRateDot` × (1 − |n.y|)) ;
+  - direction : **composante verticale bornée à ±0,1** (`UpdateCollisionBody`, l. 234-235) et repère construit
+    autour de y monde → un projectile ne monte jamais une paroi ;
+  - mur = triangle dont |n.y| < `Perks.Projectile.Angle` (`CheckIsValidWallCollision`, l. 664-673) → rebond si
+    rasant (`ReboundAngle`), sinon explosion ;
+  - aucun sol sous lui (rayon + recherche jusqu'à `TraceSearchMax` au-dessus) → « tombé hors du monde », détruit
+    (l. 202-206).
+  - **Conséquence sur Dubaï** : un projectile tiré sur une paroi est recollé au sol au pied du mur, détruit ou pris
+    pour un mur ; à l'envers (looping, tube), il ne peut pas exister.
+- **Adresses (Confirmé, désassemblage)** : variables `Perks.Projectile.TraceLengthUp` (valeur `0x123B9F4`) et
+  `TraceLengthDown` (`0x123BA2C`). `KickOffAlignProjectileToGround` = **`0xBE4800`** (appelée en `0xBE4B57`),
+  `AlignProjectileToGroundImmediate` = **`0xBE4900`** (appelée en `0xBEAE93`), `AlignProjectileToGround` =
+  **`0xBE5D30`** (appelée en `0xBE7D22`). À relever : `CheckFall`, `UpdateCollisionBody`, `CheckIsValidWallCollision`.
+- **Piste (non codée)** : dans une zone de `b2gravity`, remplacer « haut du monde » par la normale de la surface
+  sous le projectile (même nuage de points `b2gravity.bin` que la gravité) : rayon le long de −normale, recalage le
+  long de la normale, direction gardée tangente à la surface, « mur » jugé par rapport à cette normale. Hors zone :
+  code du jeu inchangé. Mine posée : à poser sur la surface sous la voiture, pas 5 m plus bas.
