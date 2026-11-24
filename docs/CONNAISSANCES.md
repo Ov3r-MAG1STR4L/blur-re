@@ -1190,6 +1190,23 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
   image d'asphalte et de rustines perso.
 - **Tests** : démarrage rapide (plugin de quick start) corrigé en 2.7.1 ; Play et Build ne regardent que le Blur de
   leur propre dossier (deux copies du jeu sur un PC marchent, 2.6.1).
+- **Voitures perso : limites lues dans la source 2.7.1 (2026-11-24, `CarPanel.cs`, `Cars.cs`, `Ui.cs`, Fort ; rien essayé
+  en jeu)**. 2.7.1 = dernière release (aucun commit après `bdff03ec`), installée le 2026-11-24 dans `Blur_test_hud`
+  (exe sha256 `6063569e…`, ancienne 1.x et `maps` sauvegardées dans `_bmb_v1_backup`).
+  - Deux modes : **nouvelle voiture** (« No - add it as a new car » : fiche `AmaxVehicle` clonée, classe A-D, stats
+    libres dans la fourchette de la classe et sous un **budget de points = moyenne des stats de la classe** ; maniement
+    de départ = la voiture « Body » de la classe ; 2 échappements au plus) ou **remplacement** d'une voiture du jeu
+    (carrosserie, roues, son ; stats, classe et maniement de la voiture remplacée ; visible seulement chez soi en ligne).
+  - **Limite principale : la place dans le `.model` de la voiture « conteneur »**. La carrosserie `.glb` est écrite
+    dans les maillages existants de cette voiture, sans les agrandir : place = somme des sommets (V) et des index (I) de
+    ses maillages. Accepté si V ≥ 1,1 × points soudés (UV comprises) et I ≥ 2,3 × triangles. Exemples des captures :
+    Bowler Nemesis 16 128 points, Opel Astra Extreme 10 570. Un modèle d'hypercar (100 000+ triangles) doit être réduit
+    (Decimate) à quelques milliers de triangles, sinon des pièces manquent en jeu.
+  - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
+    Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
+  - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
+    les maillages du conteneur (jusqu'à 65 504 sommets par maillage, limite 16 bits) avant que Map Builder y écrive la
+    carrosserie. Idée à proposer à Md.
 
 
 ## Projet J : circuit de NFS Hot Pursuit Wii vers Blur (2026-10-26, premier test hors jeu)

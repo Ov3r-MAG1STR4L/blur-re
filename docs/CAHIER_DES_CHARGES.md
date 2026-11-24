@@ -637,3 +637,4 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
   voiture par sa trajectoire. Installée, à essayer.
 - 2026-11-24 (nuit, suite) : v17b fait passer au-dessus du looping (gravité maintenue vers le haut). v17c :
   apesanteur pendant le maintien (`air_g` 0). Installée, à essayer.
+- 2026-11-24 : Map Builder 2.7.1 installé dans `Blur_test_hud` (ancienne 1.x sauvegardée). Voitures perso : nouvelle voiture ou remplacement ; limite = place dans le `.model` de la voiture conteneur (hypercars à réduire) ; piste : agrandir le conteneur avec `blurmodel_write`. Rayback Firestorm introuvable (ni Blur, ni Blur 2, ni web)
