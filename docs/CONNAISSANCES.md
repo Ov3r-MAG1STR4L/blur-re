@@ -1242,6 +1242,12 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     coque en lambeaux (deux faces à 1 cm, arêtes visées de 5 cm), il lui faut un volume plein. Meilleur résultat
     automatique : voxels 12 mm + Decimate + occlusion + lissage 25° → `1000tipla_rebuild4.glb` (5 098 + 400).
     Pour aller plus loin : retouche à la main dans Blender, ou plus de triangles si Map Builder les accepte.
+  - **Étude sur une pièce (2026-11-25, Confirmé sur rendu et mesure, pas en jeu)** : `docs/ETUDE_RECONSTRUCTION_1000TIPLA.md`.
+    Méthode retenue **D2** (`etude_reconstruction/method_D_blender.py --normales`) : pièces et textures d'origine,
+    budget **par surface** et non par densité, normales recalculées → 1,8 mm de formes perdues en moyenne contre
+    27 à 32 mm pour Decimate uniforme, Instant Meshes et MeshLab au même budget. Une partie des « cabossages » vus
+    avant venait des normales d'origine figées après réduction (ombrage), pas de la forme. pymeshlab installé
+    (`pip --user`, 2025.7) ; lancer les scripts sans `python -I` (sinon le paquet utilisateur n'est pas vu).
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
