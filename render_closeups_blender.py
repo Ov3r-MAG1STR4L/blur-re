@@ -20,6 +20,10 @@ ZONES = {
     'bouclier_avant': ((0.0, -2.0, 0.45), (1.2, -4.3, 0.95)),
     'diffuseur': ((0.0, 2.0, 0.35), (1.0, 4.3, 0.55)),
     'chromes': ((0.90, -0.2, 0.95), (2.7, -1.3, 1.2)),
+    'fenetre_avant': ((0.80, -0.55, 1.20), (2.3, -1.3, 1.45)),
+    'fenetre_arriere': ((0.80, 1.10, 1.20), (2.4, 1.9, 1.45)),
+    'fenetre_haut': ((0.75, 0.30, 1.42), (2.4, 0.3, 2.1)),
+    'fenetre_bas': ((0.82, 0.30, 0.97), (2.6, 0.0, 0.75)),
 }
 ONLY = [z for z in os.environ.get('ZONES', '').split(',') if z]   # ZONES=a,b : seulement ces zones
 bpy.ops.wm.read_factory_settings(use_empty=True)

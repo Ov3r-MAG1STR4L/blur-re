@@ -1280,6 +1280,13 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     127 pièces, aucune face retournée, détails de D2R protégés. Écart moyen pondéré 8,6 / 5,5 / 2,5 mm (D2R 9,4) ;
     pire pièce 15,5 / 10,4 / 4,0 mm. V16000 : **bande sombre de lissage sur la portière avant** (bord enroulé fondu
     par le lissage à 30°), à corriger avant essai. Les estimations des courbes sont justes à quelques mm près.
+  - **Encadrements de fenêtres (2026-11-25, relevé par rayons + gros plans, rien modifié)** :
+    `docs/etude_reconstruction/audit_fenetres/RAPPORT_FENETRES.md`. Ils manquent dans **toutes** les reconstructions
+    depuis la première conversion : le tri « habitacle » (pièce entièrement dans le volume de l'habitacle) a retiré
+    `Fiat_Multipla_96` (51 050 tri., joints et cadres noirs des vitres), `94.002/94.003` (montants) et `_135`, qui se
+    voient de l'extérieur (5 652 cm² vus de côté). V16000 reproduit fidèlement sa base (mêmes boucles de bord, aucun
+    trou). Restauration à 4 mm : ~1 780 triangles. Leçon : trier l'habitacle par **visibilité depuis l'extérieur**
+    (rayons), pas par boîte englobante.
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
