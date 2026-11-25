@@ -1205,6 +1205,23 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     Confirmé hors jeu sur un maillage d'essai : 251 904 → 6 000 triangles, 19 → 0,46 Mo) : `glb_reduce_blender.py`
     (glb/gltf/fbx/obj → `.glb` ~6 000 triangles, textures ramenées à 1024 px). Multipla « 1000tipla » de Sketchfab
     (JimiHadrix) : 2,3 M triangles et **non téléchargeable** (2026-11-25).
+  - **Réduire une voiture (2026-11-25, Confirmé sur rendu Blender, pas en jeu)** : souder chaque pièce **seule**
+    (coutures d'UV) et retirer ses faces en double (surfaces « deux côtés »). Sans soudure, Decimate bute sur les
+    îlots (1000tipla : 24 000 au lieu de 6 000). Soudée avec ses voisines (autocollants sur la peinture), une pièce a
+    des arêtes à 3 faces et Decimate s'arrête (10 600). Pièce par pièce : 6 170. Une grille en nid d'abeille
+    (13 000 triangles, trouée) ne se réduit pas : à retirer. Un OBJ ouvert par un chemin relatif perd ses textures
+    (`.glb` sans image).
+  - **Voitures Assetto Corsa : `kn5.py`** (`.kn5` v6 → OBJ + MTL + PNG). En-tête `sc6969`, version, un entier en plus
+    si version > 5 ; textures (nom, PNG/DDS) ; matériaux (shader, propriétés : nom + 9 flottants, échantillonneurs) ;
+    arbre de nœuds : 1 = repère (matrice 4x4 en lignes), 2 = maillage (sommet 44 o : position, normale, UV, tangente ;
+    index u16), 3 = maillage à os (76 o). Repère : y haut, z avant. Lecture contrôlée jusqu'au dernier octet.
+    Groupes à retirer : `COCKPIT_HR` (habitacle détaillé), `WHEEL_*`, `SUSP_*` ; une partie de l'habitacle est
+    rangée dans la carrosserie (à trier au cas par cas : la 1000tipla a un toit noir rangé comme un ciel de toit).
+  - **1000tipla pour Assetto Corsa** (`Jeux_WII/tipla_src`, usage perso, auteur inconnu, « YI Design ») :
+    667 000 triangles ; carrosserie sans habitacle 341 000 → `1000tipla_6000.glb` (6 170) et `_9000` (9 133).
+    Sons (`sfx/*.bank`, FMOD, FSB5 Vorbis, 86 sons) : enregistrements de **Corvette C6 Z06** (`c6z*`) et de
+    **Ferrari 458**, pas de la vraie 1000tipla. Map Builder prend un son moteur enregistré à un régime donné
+    (`sound_rpm`, 3 000 par défaut) et des sons d'appoint (`OwnSound.Kinds` : turbo, rapports, pétarades, pneus).
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
