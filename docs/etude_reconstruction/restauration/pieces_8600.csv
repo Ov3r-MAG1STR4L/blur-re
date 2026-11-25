@@ -1,0 +1,128 @@
+pièce;matériau;importante;surface cm²;tri. origine;tri. réduits;écart moy mm;écart max mm;alerte
+body_main.011;CarPaint;;125847;99966;1141;1.6;23.2;
+Circle.015;BlackMatte;;3347;3592;512;0.1;3.0;
+Circle.019;Chrome_polished;oui;3259;4864;512;0.5;2.4;
+Fiat_Multipla_28;BlackMatte;;92250;716;512;0.0;0.0;
+Fiat_Multipla_126;light_red;oui;1962;21248;510;0.6;3.2;
+Circle.026;Chrome_Matte;;361;12008;256;2.9;7.5;
+Cube.001;BlackMatte;oui;1299;3808;256;0.8;3.5;
+Fiat_Multipla_65;Car_windshield_glass;oui;1330;13152;256;0.7;3.3;
+Fiat_Multipla_94.005;CarPaint;;24650;8924;224;0.5;3.7;
+body_main.040;BlackMatte;;24846;16204;224;0.7;3.5;
+Circle.006;BlackMatte;;21361;1216;194;0.2;1.2;
+Circle.018;Chrome_Matte;oui;648;832;128;0.6;2.1;
+Circle.021;BlackMatte;;16678;136;128;0.0;0.0;
+Fiat_Multipla_100;BlackGloss;;4124;13824;128;0.9;4.8;
+Fiat_Multipla_123;BlackMatte;;387;2400;128;0.5;2.1;
+Fiat_Multipla_124;Chrome_Matte;;816;5296;128;0.6;4.5;
+Fiat_Multipla_130;Chrome_Matte;;816;5296;128;0.7;4.6;
+Fiat_Multipla_48;BlackMatte;;583;2880;128;0.4;2.3;
+Fiat_Multipla_53;BlackMatte;;583;2880;128;0.4;3.8;
+Fiat_Multipla_86;Car_windshield_glass;oui;13098;2800;128;0.5;4.6;
+Fiat_Multipla_98;Car_windshield_glass;oui;12181;3220;128;0.8;4.4;
+Circle.011;BlackMatte;;3597;3040;114;1.7;7.2;
+Circle.008;BlackMatte;;12067;2112;108;0.3;3.2;
+Circle.028;BlackMatte;;547;1152;106;1.1;5.4;
+BrakeLights;Chrome_Matte;oui;175;4272;64;0.9;3.5;
+Circle.014;BlackMatte;;5459;576;64;1.4;5.7;
+Circle.020;BlackGloss;oui;839;1568;64;1.9;3.8;
+Circle.027;BlackMatte;;3810;20448;64;2.7;10.1;remplacée par une carte (couleur cuite)
+Fiat_Multipla_120;light_orange;oui;418;4208;64;0.8;3.7;
+Fiat_Multipla_127;light_orange;oui;418;4208;64;0.8;3.9;
+Fiat_Multipla_128;BlackMatte;;387;2400;64;1.2;4.8;
+Fiat_Multipla_65.001;light_red;oui;204;3136;64;0.5;3.0;
+Fiat_Multipla_69;Chrome_Matte;oui;257;512;64;1.0;4.2;
+Fiat_Multipla_74;Chrome_Matte;oui;257;512;64;1.1;4.1;
+Fiat_Multipla_94.004;Car_windshield_glass;oui;8145;224;64;0.0;0.4;
+Fiat_Multipla_97;BlackMatte;;2037;1472;64;1.6;7.8;
+REverseLight;Light;oui;180;4096;64;0.8;3.1;
+body_main.053;CarPaint;;93;1664;64;0.7;3.1;
+NurbsPath.001;Metal;;3731;2640;63;2.7;9.9;
+Fiat_Multipla_35;BlackMatte;;754;192;58;0.5;3.1;
+Circle.009;BlackMatte;;2627;1552;54;3.7;14.3;
+Circle.024;BlackMatte;;1601;1536;48;5.6;27.0;déformée (moy > 5 mm)
+Fiat_Multipla_90;BlackMatte;;377;13532;47;1.4;9.8;
+Circle.029;BlackMatte;;421;350;46;3.7;12.4;
+Circle.002;BlackMatte;;3238;3168;44;5.6;21.9;déformée (moy > 5 mm)
+Circle.013;BlackMatte;;4887;768;44;1.9;9.1;
+Circle.017;BlackMatte;;4453;2448;40;3.0;18.9;
+body_main.044;CarPaint;;6;48;38;0.0;0.9;
+Circle.004;BlackMatte;;2595;640;37;2.9;11.7;
+Circle.005;BlackMatte;;949;768;32;3.9;17.0;
+Fiat_Multipla_102;Chrome_Matte;;20;1536;32;1.3;4.2;
+Fiat_Multipla_106;Chrome_Matte;;26;384;32;1.1;3.3;
+Fiat_Multipla_110;Chrome_Matte;;26;384;32;1.1;2.9;
+Fiat_Multipla_66;BlackMatte;oui;257;1024;32;1.1;3.6;
+RearLight;Chrome_Matte;;223;540;32;1.0;4.6;
+body_main.004;RearBumper;;2796;4416;32;0.9;6.3;
+body_main.024;CarPaint;;122;172;32;0.6;2.9;
+body_main.056;CarPaint;;192;1268;32;0.5;2.4;
+Circle.007;FrontSpoiler;;3419;1280;31;0.5;2.4;
+Circle.022;Detail;;2422;2944;31;3.3;22.5;
+Fiat_Multipla_71;BlackMatte;oui;257;1024;31;1.1;4.4;
+Fiat_Multipla_91;BlackMatte;;54;1088;31;1.8;7.7;
+body_main.041;CarPaint;;674;2640;31;2.2;9.0;
+Circle.001;BlackMatte;;2540;4352;22;2.4;13.2;
+body_main.057;CarPaint;;2485;9104;22;2.5;12.2;
+Fiat_Multipla_50;Chrome_Matte;;80;384;20;2.6;7.9;
+polymsh_detached19;Metal;;511;75;20;7.1;22.7;déformée (moy > 5 mm)
+Circle.023;BlackMatte;;1891;512;17;2.3;8.2;
+Cube.002;Mirror;oui;311;416;16;0.5;3.0;
+Fiat_Multipla_101;Light;oui;172;208;16;0.8;2.8;
+body_main.027;CarPaint;;45;78;16;0.7;1.7;
+body_main.039;CarPaint;;310;1296;16;1.1;6.6;
+polymsh_detached20;Metal;;511;75;16;8.4;29.3;déformée (moy > 5 mm)
+body_main.047;CarPaint;;55;664;15;1.0;3.9;
+Fiat_Multipla_55;Chrome_Matte;;80;384;12;3.7;11.4;
+body_main.036;CarPaint;;1308;2160;12;5.7;20.2;déformée (moy > 5 mm)
+polymsh_detached21;Metal;;567;85;12;11.0;27.8;déformée (moy > 5 mm)
+polymsh_detached22;Metal;;567;85;12;11.1;28.2;déformée (moy > 5 mm)
+Circle.025;FrontBumper;;792;384;8;2.8;16.2;au plancher
+Circle.030;Chrome_Matte;;46;128;8;6.6;18.1;au plancher, déformée (moy > 5 mm)
+FL 1.002;BlackMatte;;103;1440;8;0.6;4.7;au plancher
+Fiat_Multipla_105;Chrome_Matte;;116;512;8;4.9;17.6;au plancher
+Fiat_Multipla_109;Chrome_Matte;;116;512;8;4.7;17.1;au plancher
+Fiat_Multipla_113;BlackMatte;;62;1920;8;4.7;11.4;au plancher
+Fiat_Multipla_36;BlackMatte;;636;48;8;4.0;15.1;au plancher
+Fiat_Multipla_49;Chrome_Matte;;336;1080;8;4.6;14.8;au plancher
+Fiat_Multipla_54;Chrome_Matte;;336;1080;8;4.4;13.6;au plancher
+Turnsignal left;Chrome_Matte;;117;100;8;4.4;14.5;au plancher
+Turnsignal right;Chrome_Matte;;117;100;8;4.4;14.5;au plancher
+body_main.003;CarPaint;;276;832;8;2.6;17.1;au plancher
+body_main.005;CarPaint;;77;400;8;0.6;2.2;au plancher
+body_main.010;CarPaint;;7;176;8;0.2;0.4;au plancher
+body_main.014;CarPaint;;245;76;8;3.7;10.6;au plancher
+body_main.015;CarPaint;;31;16;8;0.0;0.1;au plancher
+body_main.016;CarPaint;;13;80;8;0.3;1.0;au plancher
+body_main.018;CarPaint;;1;18;8;0.0;0.1;au plancher
+body_main.020;CarPaint;;4;20;8;0.1;0.3;au plancher
+body_main.025;CarPaint;;150;112;8;4.9;11.5;au plancher
+body_main.026;CarPaint;;0;8;8;0.0;0.0;
+body_main.028;CarPaint;;26;140;8;0.5;13.7;au plancher
+body_main.038;CarPaint;;156;1324;8;2.2;6.6;au plancher
+body_main.042;CarPaint;;7;640;8;1.3;4.0;au plancher
+body_main.055;CarPaint;;79;616;8;1.2;4.3;au plancher
+Fiat_Multipla_107;Chrome_Matte;;9;24;7;1.4;2.6;au plancher
+Fiat_Multipla_111;Chrome_Matte;;9;24;7;1.3;2.4;au plancher
+Fiat_Multipla_112;Detail;;568;2624;7;3.7;9.5;au plancher
+Fiat_Multipla_51;Chrome_Matte;;12;24;7;1.3;2.4;au plancher
+Fiat_Multipla_56;Chrome_Matte;;12;24;7;1.3;2.4;au plancher
+body_main.007;CarPaint;;1;4;4;0.0;0.0;
+body_main.008;CarPaint;;0;4;4;0.0;0.0;
+body_main.009;CarPaint;;0;4;4;0.0;0.0;
+body_main.012;CarPaint;;7;4;4;0.0;0.0;
+body_main.022;CarPaint;;0;4;4;0.0;0.0;
+body_main.023;CarPaint;;0;4;4;0.0;0.0;
+body_main.029;CarPaint;;2;4;4;0.0;0.0;
+body_main.043;CarPaint;;0;4;4;0.0;0.0;
+body_main.045;CarPaint;;0;4;4;0.0;0.0;
+body_main.017;CarPaint;;1;2;2;0.0;0.0;
+body_main.019;CarPaint;;1;2;2;0.0;0.0;
+body_main.021;CarPaint;;0;2;2;0.0;0.0;
+body_main.030;CarPaint;;1;2;2;0.0;0.0;
+body_main.031;CarPaint;;0;2;2;0.0;0.0;
+body_main.046;CarPaint;;1;2;2;0.0;0.0;
+body_main.048;CarPaint;;0;2;2;0.0;0.0;
+body_main.049;CarPaint;;0;2;2;0.0;0.0;
+body_main.050;CarPaint;;0;2;2;0.0;0.0;
+Box001.017;BlackMatte;;1;1;1;0.0;0.0;

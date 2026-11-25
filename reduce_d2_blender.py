@@ -19,10 +19,20 @@ import bmesh
 import bpy
 from mathutils.bvhtree import BVHTree
 
-a = sys.argv[sys.argv.index('--') + 1:]
+args = sys.argv[sys.argv.index('--') + 1:]
+opt = dict(x[2:].split('=', 1) for x in args if x.startswith('--'))
+a = [x for x in args if not x.startswith('--')]
 src, outdir = os.path.abspath(a[0]), os.path.abspath(a[1])
 budgets = [int(b) for b in a[2].split(',')]
 names_imp = open(a[3]).read().split() if len(a) > 3 else []
+# Options issues de l'audit des détails (docs/etude_reconstruction/audit_details) :
+#   --planchers=f.csv  pièce;triangles imposés (détails tenus à 5 mm : vitres, rétros, feux, échappements)
+#   --plafonds=f.csv   pièce;triangles max (besoin à 1 mm : au-delà, gaspillage)
+#   --cartes=f.txt     seules ces pièces deviennent des cartes (sinon : règle automatique)
+read_map = lambda p: {l.split(';')[0]: int(l.split(';')[1]) for l in open(p, encoding='utf-8') if ';' in l}
+fixed = read_map(opt['planchers']) if 'planchers' in opt else {}
+caps = read_map(opt['plafonds']) if 'plafonds' in opt else {}
+cards_only = set(open(opt['cartes']).read().split()) if 'cartes' in opt else None
 IMPORTANT, PLANCHER = 3.0, 8
 MAT_IMP = ('glass', 'light', 'mirror')            # vitres, feux (light_red, light_orange, Light), miroirs
 os.makedirs(outdir, exist_ok=True)
@@ -86,7 +96,8 @@ for o in objs:
     m = o.modifiers.new('d', 'DECIMATE'); m.ratio = min(1.0, PLANCHER / max(1, tris(me)))
     bpy.context.view_layer.objects.active = o; bpy.ops.object.modifier_apply(modifier='d')
     # pièce lourde seulement : Fiat_Multipla_28 (716 tri., bandes séparées) devenait une carte de 4 000 triangles
-    if tris(o.data) > 100 and info[o.name]['hi'] > 2000:
+    rebel = tris(o.data) > 100 and info[o.name]['hi'] > 2000
+    if (o.name in cards_only) if cards_only is not None else rebel:
         orig[o.name] = card(o); info[o.name]['carte'] = True
         # écart d'une carte mesuré par rapport à la carte : face à l'original ajouré (montants d'aileron), une
         # plaque pleine n'est jamais sous la tolérance (Circle.015 réclamait 3 588 triangles)
@@ -101,9 +112,28 @@ cache = {}   # (pièce, triangles voulus) -> maillage réduit
 
 def reduced(o, want):
     # jamais plus que l'origine (une grande pièce plate recevait plus que ses 716 triangles), jamais moins que le plancher
-    want = max(floor.get(o.name, min(info[o.name]['hi'], PLANCHER)), min(want, info[o.name]['hi']))
+    top = min(info[o.name]['hi'], caps.get(o.name, info[o.name]['hi']))
+    low_ = max(floor.get(o.name, min(info[o.name]['hi'], PLANCHER)), fixed.get(o.name, 0))
+    want = max(low_, min(want, top))
     key = (o.name, want)
     if key not in cache:
+        # Une réduction forte replie des triangles d'une pièce fine : retournés, ils sont invisibles dans Blur (qui
+        # n'affiche qu'un côté ; 29 % de la barre latérale Fiat_Multipla_90 à 14 triangles). Refusée au-delà de 1 % de
+        # la surface : +50 % de triangles (au-delà du plafond s'il le faut) jusqu'à une pièce propre.
+        w = want
+        while True:
+            me = decimate(o, w)
+            if w >= info[o.name]['hi'] or flipped(o, me) <= 0.01: break
+            w = min(info[o.name]['hi'], int(w * 1.5) + 1)
+        cache[key] = me
+    return cache[key]
+
+
+raw = {}
+
+
+def decimate(o, want):
+    if (o.name, want) not in raw:
         me = orig[o.name].copy(); o.data = me
         for _ in range(4):
             n = tris(me)
@@ -112,8 +142,18 @@ def reduced(o, want):
             bpy.context.view_layer.objects.active = o; bpy.ops.object.modifier_apply(modifier='d')
             me = o.data
             if tris(me) > 0.97 * n: break
-        cache[key] = me
-    return cache[key]
+        raw[(o.name, want)] = me
+    return raw[(o.name, want)]
+
+
+def flipped(o, me):
+    """part de la surface réduite sans face d'origine de même orientation à moins de 1 cm (face retournée)."""
+    bad = tot = 0.0
+    for p in me.polygons:
+        hits = hi_bvh[o.name].find_nearest_range(p.center, 0.01) or [hi_bvh[o.name].find_nearest(p.center)]
+        tot += p.area
+        if not any(h[1] is not None and h[1].dot(p.normal) > 0.3 for h in hits): bad += p.area
+    return bad / max(tot, 1e-12)
 
 
 def build(s):
@@ -180,6 +220,7 @@ for budget in budgets:
         d = info[o.name]; lo = tris(o.data); mean, mx = deviation(o)
         alerte = []
         if d.get('carte'): alerte.append('remplacée par une carte (couleur cuite)')
+        if flipped(o, o.data) > 0.01: alerte.append('FACES RETOURNÉES')
         if lo == 0: alerte.append('SUPPRIMÉE')
         elif lo <= PLANCHER and d['hi'] > PLANCHER: alerte.append('au plancher')
         if mean > 5: alerte.append('déformée (moy > 5 mm)')

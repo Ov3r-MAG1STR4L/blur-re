@@ -1264,6 +1264,12 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     passés en carte à tort (512 tri. suffisent à 5 mm). Tout à 5 mm = 27 702 triangles ; détails visibles à 5 mm
     dans 8 000 sauf la moitié des feux (~8 600 pour tous les feux, ~9 900 avec les baguettes). Méthode proposée :
     tolérance relative à la taille, planchers par catégorie, carte seulement au-delà de ~2 000 tri. à 5 mm.
+  - **D2 restaurée à 8 600 (2026-11-25, Confirmé sur rendu et audit, pas en jeu)** : `docs/etude_reconstruction/restauration/`.
+    `reduce_d2_blender.py` accepte `--planchers`, `--plafonds`, `--cartes` ; 8 597 triangles, intègre ; détails
+    (vitres, rétros, feux, échappements, montants d'aileron) tous sous 5 mm. **Faces retournées** : une réduction forte
+    replie des triangles des pièces fines (jusqu'à 29 % retournés, invisibles dans Blur) → refusée au-delà de 1 % de la
+    surface (+50 % de triangles). Le pare-brise `Fiat_Multipla_65` contient les lentilles des phares du pied de
+    pare-brise : à traiter comme un détail.
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
