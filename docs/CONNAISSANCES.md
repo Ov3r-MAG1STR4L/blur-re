@@ -1256,6 +1256,14 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     pièce trouée (calandre) bloque Decimate → « carte » (plaque fermée, couleur cuite) ; ne jamais donner à une pièce
     plus que ses triangles d'origine ; **l'export glTF coupe les noms d'images au point** : deux images
     `Circle.015_carte` / `Circle.027_carte` fusionnées en une (noms sans point désormais).
+  - **Audit des détails de D2 8000 (2026-11-25, mesures + gros plans, rien reconstruit)** :
+    `docs/etude_reconstruction/audit_details/RAPPORT_AUDIT.md`. Toutes les pièces présentes, matériaux / UV / textures
+    gardés, aucune face retournée, aucune face double à l'origine : les pertes sont **géométriques**. Cause : tolérance
+    absolue de 3 cm trop large pour les pièces fines ou petites (contours de vitres 23 628 → 245 tri., rétros
+    3 808 → 54, feux 59 788 → 348, baguettes chromées 17 360 → 362) sans déclencher d'alerte ; montants d'aileron
+    passés en carte à tort (512 tri. suffisent à 5 mm). Tout à 5 mm = 27 702 triangles ; détails visibles à 5 mm
+    dans 8 000 sauf la moitié des feux (~8 600 pour tous les feux, ~9 900 avec les baguettes). Méthode proposée :
+    tolérance relative à la taille, planchers par catégorie, carte seulement au-delà de ~2 000 tri. à 5 mm.
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir

@@ -1,0 +1,128 @@
+pièce;catégorie;matériau origine;tri. origine;tri. D2;état;matériau D2;% faces retournées;% surface perdue (>1 cm);apparence
+Box001.017;pièce noire / aéro;BlackMatte.001;1;1;présente;BlackMatte;0;0;texture détaillée
+BrakeLights;feu;Chrome_Matte.001;4272;16;présente;Chrome_Matte;0;0;couleur unie (forme = géométrie)
+Circle.001;pièce noire / aéro;BlackMatte.001;4352;36;présente;BlackMatte;0;0;texture détaillée
+Circle.002;pièce noire / aéro;BlackMatte.001;3168;64;présente;BlackMatte;0;9;texture détaillée
+Circle.004;pièce noire / aéro;BlackMatte.001;640;36;présente;BlackMatte;1;4;texture détaillée
+Circle.005;pièce noire / aéro;BlackMatte.001;768;32;présente;BlackMatte;0;4;texture détaillée
+Circle.006;pièce noire / aéro;BlackMatte.001;1216;300;présente;BlackMatte;0;0;texture détaillée
+Circle.007;pièce noire / aéro;FrontSpoiler.001;1280;48;présente;FrontSpoiler;0;0;texture détaillée
+Circle.008;pièce noire / aéro;BlackMatte.001;2112;170;présente;BlackMatte;0;0;texture détaillée
+Circle.009;pièce noire / aéro;BlackMatte.001;1552;36;présente;BlackMatte;7;39;texture détaillée
+Circle.011;pièce noire / aéro;BlackMatte.001;3040;128;présente;BlackMatte;0;0;texture détaillée
+Circle.013;pièce noire / aéro;BlackMatte.001;768;68;présente;BlackMatte;0;0;texture détaillée
+Circle.014;pièce noire / aéro;BlackMatte.001;576;76;présente;BlackMatte;0;0;texture détaillée
+Circle.015;pièce noire / aéro;BlackMatte.001;3592;189;présente;Circle_015_carte;31;28;texture détaillée
+Circle.017;pièce noire / aéro;BlackMatte.001;2448;62;présente;BlackMatte;0;0;texture détaillée
+Circle.018;échappement;Chrome_Matte.001;832;63;présente;Chrome_Matte;0;0;couleur unie (forme = géométrie)
+Circle.019;échappement;Chrome_polished.001;5120;138;présente;Chrome_polished;0;3;texture détaillée
+Circle.020;échappement;BlackGloss.001;1568;34;présente;BlackGloss;0;10;texture détaillée
+Circle.021;pièce noire / aéro;BlackMatte.001;136;136;présente;BlackMatte;0;0;texture détaillée
+Circle.022;pièce noire / aéro;Detail.001;2944;33;présente;Detail;0;5;couleur unie (forme = géométrie)
+Circle.023;pièce noire / aéro;BlackMatte.001;512;27;présente;BlackMatte;0;0;texture détaillée
+Circle.024;pièce noire / aéro;BlackMatte.001;1536;64;présente;BlackMatte;0;7;texture détaillée
+Circle.025;pièce noire / aéro;FrontBumper.001;384;11;présente;FrontBumper;0;0;texture détaillée
+Circle.026;chrome;Chrome_Matte.001;12008;256;présente;Chrome_Matte;0;0;couleur unie (forme = géométrie)
+Circle.027;pièce noire / aéro;BlackMatte.001;20448;64;présente;Circle_027_carte;0;0;texture détaillée
+Circle.028;pièce noire / aéro;BlackMatte.001;1152;64;présente;BlackMatte;22;0;texture détaillée
+Circle.029;pièce noire / aéro;BlackMatte.001;350;32;présente;BlackMatte;12;26;texture détaillée
+Circle.030;chrome;Chrome_Matte.001;128;8;présente;Chrome_Matte;0;30;couleur unie (forme = géométrie)
+Cube.001;rétro;BlackMatte.001;3808;54;présente;BlackMatte;0;19;texture détaillée
+Cube.002;rétro;Mirror.001;416;13;présente;Mirror;0;0;couleur unie (forme = géométrie)
+FL 1.002;pièce noire / aéro;BlackMatte.001;1440;8;présente;BlackMatte;0;0;texture détaillée
+Fiat_Multipla_100;contour de vitre;BlackGloss.001;13824;64;présente;BlackGloss;10;7;texture détaillée
+Fiat_Multipla_101;feu;Light.001;208;8;présente;Light;0;0;couleur unie (forme = géométrie)
+Fiat_Multipla_102;contour de vitre;Chrome_Matte.001;1536;4;présente;Chrome_Matte;0;0;couleur unie (forme = géométrie)
+Fiat_Multipla_105;chrome;Chrome_Matte.001;512;8;présente;Chrome_Matte;0;14;couleur unie (forme = géométrie)
+Fiat_Multipla_106;feu;Chrome_Matte.001;384;8;présente;Chrome_Matte;0;0;couleur unie (forme = géométrie)
+Fiat_Multipla_107;feu;Chrome_Matte.001;24;7;présente;Chrome_Matte;0;0;couleur unie (forme = géométrie)
+Fiat_Multipla_109;chrome;Chrome_Matte.001;512;8;présente;Chrome_Matte;0;16;couleur unie (forme = géométrie)
+Fiat_Multipla_110;feu;Chrome_Matte.001;384;8;présente;Chrome_Matte;0;0;couleur unie (forme = géométrie)
+Fiat_Multipla_111;feu;Chrome_Matte.001;24;7;présente;Chrome_Matte;0;0;couleur unie (forme = géométrie)
+Fiat_Multipla_112;pièce noire / aéro;Detail.001;2624;7;présente;Detail;0;0;couleur unie (forme = géométrie)
+Fiat_Multipla_113;pièce noire / aéro;BlackMatte.001;1920;8;présente;BlackMatte;0;3;texture détaillée
+Fiat_Multipla_120;feu;light_orange.001;4208;18;présente;light_orange;0;4;couleur unie (forme = géométrie)
+Fiat_Multipla_123;feu;BlackMatte.001;2400;15;présente;BlackMatte;26;40;texture détaillée
+Fiat_Multipla_124;feu;Chrome_Matte.001;5296;31;présente;Chrome_Matte;0;16;couleur unie (forme = géométrie)
+Fiat_Multipla_126;feu;light_red.001;21248;126;présente;light_red;4;3;couleur unie (forme = géométrie)
+Fiat_Multipla_127;feu;light_orange.001;4208;18;présente;light_orange;0;4;couleur unie (forme = géométrie)
+Fiat_Multipla_128;feu;BlackMatte.001;2400;15;présente;BlackMatte;31;46;texture détaillée
+Fiat_Multipla_130;feu;Chrome_Matte.001;5296;32;présente;Chrome_Matte;5;10;couleur unie (forme = géométrie)
+Fiat_Multipla_28;pièce noire / aéro;BlackMatte.001;736;716;présente;BlackMatte;0;0;texture détaillée
+Fiat_Multipla_35;pièce noire / aéro;BlackMatte.001;192;64;présente;BlackMatte;0;0;texture détaillée
+Fiat_Multipla_36;pièce noire / aéro;BlackMatte.001;48;8;présente;BlackMatte;0;19;texture détaillée
+Fiat_Multipla_48;contour de vitre;BlackMatte.001;2880;31;présente;BlackMatte;8;0;texture détaillée
+Fiat_Multipla_49;chrome;Chrome_Matte.001;1080;8;présente;Chrome_Matte;0;1;couleur unie (forme = géométrie)
+Fiat_Multipla_50;chrome;Chrome_Matte.001;384;8;présente;Chrome_Matte;28;5;couleur unie (forme = géométrie)
+Fiat_Multipla_51;chrome;Chrome_Matte.001;24;7;présente;Chrome_Matte;0;0;couleur unie (forme = géométrie)
+Fiat_Multipla_53;contour de vitre;BlackMatte.001;2880;16;présente;BlackMatte;32;15;texture détaillée
+Fiat_Multipla_54;chrome;Chrome_Matte.001;1080;8;présente;Chrome_Matte;0;1;couleur unie (forme = géométrie)
+Fiat_Multipla_55;chrome;Chrome_Matte.001;384;8;présente;Chrome_Matte;32;7;couleur unie (forme = géométrie)
+Fiat_Multipla_56;chrome;Chrome_Matte.001;24;7;présente;Chrome_Matte;0;0;couleur unie (forme = géométrie)
+Fiat_Multipla_65;vitre;Car_windshield_glass.001;13152;56;présente;Car_windshield_glass;0;1;couleur unie (forme = géométrie)
+Fiat_Multipla_65.001;feu;light_red.001;3136;7;présente;light_red;0;15;couleur unie (forme = géométrie)
+Fiat_Multipla_66;contour de vitre;BlackMatte.001;1024;11;présente;BlackMatte;0;3;texture détaillée
+Fiat_Multipla_69;chrome;Chrome_Matte.001;512;10;présente;Chrome_Matte;0;19;couleur unie (forme = géométrie)
+Fiat_Multipla_71;contour de vitre;BlackMatte.001;1024;11;présente;BlackMatte;0;6;texture détaillée
+Fiat_Multipla_74;chrome;Chrome_Matte.001;512;10;présente;Chrome_Matte;0;19;couleur unie (forme = géométrie)
+Fiat_Multipla_86;vitre;Car_windshield_glass.001;2800;553;présente;Car_windshield_glass;0;0;couleur unie (forme = géométrie)
+Fiat_Multipla_90;pièce noire / aéro;BlackMatte.001;13536;6;présente;BlackMatte;17;40;texture détaillée
+Fiat_Multipla_91;pièce noire / aéro;BlackMatte.001;1088;8;présente;BlackMatte;21;8;texture détaillée
+Fiat_Multipla_94.004;vitre;Car_windshield_glass.001;224;224;présente;Car_windshield_glass;0;0;couleur unie (forme = géométrie)
+Fiat_Multipla_94.005;peinture;CarPaint.001;8924;346;présente;CarPaint;0;0;texture détaillée
+Fiat_Multipla_97;pièce noire / aéro;BlackMatte.001;1472;29;présente;BlackMatte;18;16;texture détaillée
+Fiat_Multipla_98;vitre;Car_windshield_glass.001;3220;514;présente;Car_windshield_glass;0;0;couleur unie (forme = géométrie)
+NurbsPath.001;pièce noire / aéro;Metal.001;2640;63;présente;Metal;0;0;texture détaillée
+REverseLight;feu;Light.001;4096;16;présente;Light;0;0;couleur unie (forme = géométrie)
+RearLight;feu;Chrome_Matte.001;540;8;présente;Chrome_Matte;0;2;couleur unie (forme = géométrie)
+Turnsignal left;chrome;Chrome_Matte.001;100;8;présente;Chrome_Matte;0;25;couleur unie (forme = géométrie)
+Turnsignal right;chrome;Chrome_Matte.001;100;8;présente;Chrome_Matte;0;25;couleur unie (forme = géométrie)
+body_main.003;peinture;CarPaint.001;832;8;présente;CarPaint;0;9;texture détaillée
+body_main.004;pièce noire / aéro;RearBumper.001;4416;38;présente;RearBumper;0;0;texture détaillée
+body_main.005;peinture;CarPaint.001;400;8;présente;CarPaint;0;0;texture détaillée
+body_main.007;peinture;CarPaint.001;4;4;présente;CarPaint;0;0;texture détaillée
+body_main.008;peinture;CarPaint.001;4;4;présente;CarPaint;0;0;texture détaillée
+body_main.009;peinture;CarPaint.001;4;4;présente;CarPaint;0;0;texture détaillée
+body_main.010;peinture;CarPaint.001;176;8;présente;CarPaint;0;0;texture détaillée
+body_main.011;peinture;CarPaint.001;99985;1769;présente;CarPaint;0;0;texture détaillée
+body_main.012;peinture;CarPaint.001;4;4;présente;CarPaint;0;0;texture détaillée
+body_main.014;peinture;CarPaint.001;76;8;présente;CarPaint;0;5;texture détaillée
+body_main.015;peinture;CarPaint.001;16;8;présente;CarPaint;0;0;texture détaillée
+body_main.016;contour de vitre;CarPaint.001;80;8;présente;CarPaint;0;0;texture détaillée
+body_main.017;contour de vitre;CarPaint.001;2;2;présente;CarPaint;0;0;texture détaillée
+body_main.018;contour de vitre;CarPaint.001;18;8;présente;CarPaint;0;0;texture détaillée
+body_main.019;contour de vitre;CarPaint.001;2;2;présente;CarPaint;0;0;texture détaillée
+body_main.020;contour de vitre;CarPaint.001;20;8;présente;CarPaint;0;0;texture détaillée
+body_main.021;contour de vitre;CarPaint.001;2;2;présente;CarPaint;0;0;texture détaillée
+body_main.022;contour de vitre;CarPaint.001;4;4;présente;CarPaint;0;0;texture détaillée
+body_main.023;contour de vitre;CarPaint.001;4;4;présente;CarPaint;0;0;texture détaillée
+body_main.024;contour de vitre;CarPaint.001;172;16;présente;CarPaint;0;3;texture détaillée
+body_main.025;peinture;CarPaint.001;112;8;présente;CarPaint;0;21;texture détaillée
+body_main.026;contour de vitre;CarPaint.001;8;8;présente;CarPaint;0;0;texture détaillée
+body_main.027;contour de vitre;CarPaint.001;78;8;présente;CarPaint;0;0;texture détaillée
+body_main.028;peinture;CarPaint.001;140;8;présente;CarPaint;0;2;texture détaillée
+body_main.029;contour de vitre;CarPaint.001;4;4;présente;CarPaint;0;0;texture détaillée
+body_main.030;contour de vitre;CarPaint.001;2;2;présente;CarPaint;0;0;texture détaillée
+body_main.031;contour de vitre;CarPaint.001;2;2;présente;CarPaint;0;0;texture détaillée
+body_main.036;peinture;CarPaint.001;2160;18;présente;CarPaint;0;0;texture détaillée
+body_main.038;peinture;CarPaint.001;1324;8;présente;CarPaint;0;0;texture détaillée
+body_main.039;peinture;CarPaint.001;1296;16;présente;CarPaint;0;0;texture détaillée
+body_main.040;pièce noire / aéro;BlackMatte.001;16204;349;présente;BlackMatte;0;0;texture détaillée
+body_main.041;peinture;CarPaint.001;2640;15;présente;CarPaint;13;12;texture détaillée
+body_main.042;peinture;CarPaint.001;640;8;présente;CarPaint;0;0;texture détaillée
+body_main.043;contour de vitre;CarPaint.001;4;4;présente;CarPaint;0;0;texture détaillée
+body_main.044;contour de vitre;CarPaint.001;48;16;présente;CarPaint;5;0;texture détaillée
+body_main.045;contour de vitre;CarPaint.001;4;4;présente;CarPaint;0;0;texture détaillée
+body_main.046;peinture;CarPaint.001;2;2;présente;CarPaint;0;0;texture détaillée
+body_main.047;peinture;CarPaint.001;664;15;présente;CarPaint;0;0;texture détaillée
+body_main.048;contour de vitre;CarPaint.001;2;2;présente;CarPaint;0;0;texture détaillée
+body_main.049;contour de vitre;CarPaint.001;2;2;présente;CarPaint;0;0;texture détaillée
+body_main.050;contour de vitre;CarPaint.001;2;2;présente;CarPaint;0;0;texture détaillée
+body_main.053;feu;CarPaint.001;1664;8;présente;CarPaint;0;10;texture détaillée
+body_main.055;peinture;CarPaint.001;616;8;présente;CarPaint;0;0;texture détaillée
+body_main.056;peinture;CarPaint.001;1268;32;présente;CarPaint;0;0;texture détaillée
+body_main.057;peinture;CarPaint.001;9104;34;présente;CarPaint;0;0;texture détaillée
+polymsh_detached19;pièce noire / aéro;Metal.001;75;16;présente;Metal;12;30;texture détaillée
+polymsh_detached20;pièce noire / aéro;Metal.001;75;16;présente;Metal;1;30;texture détaillée
+polymsh_detached21;pièce noire / aéro;Metal.001;85;16;présente;Metal;0;45;texture détaillée
+polymsh_detached22;pièce noire / aéro;Metal.001;85;16;présente;Metal;0;44;texture détaillée
