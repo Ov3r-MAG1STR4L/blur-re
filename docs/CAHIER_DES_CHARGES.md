@@ -657,3 +657,4 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
 - 2026-11-25 : audit des encadrements de fenêtres : absents de toutes les reconstructions (pièces Fiat_Multipla_96, 94.002/003, 135 retirées à tort comme habitacle au premier tri), V16000 fidèle à sa base ; restauration chiffrée ~1 780 triangles à 4 mm, rien reconstruit
 - 2026-11-26 : V16000 + encadrements de fenêtres (D2_fenetres_16k) : 15 644 triangles, intègre, 1 753 ajoutés / 1 854 redistribués, fenêtres 97 % retrouvées ; non validée, rien importé
 - 2026-11-26 : limite de Map Builder = points soudés (≤ ~14 660), pas 16 000 triangles ; 1000tipla avec cadres refusée de 37 points (14 698) ; glb_check.py compte les points
+- 2026-11-26 : 1000tipla avec cadres sous la limite de points : 1000tipla_cadres_15386.glb (15 386 tri., ~14 475 points Map Builder), à essayer dans Map Builder

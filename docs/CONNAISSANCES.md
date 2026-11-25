@@ -1300,6 +1300,10 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     avec cadres (15 644 tri.) en a 14 698 pour Map Builder → refusée de 37 points ; V16000 sans cadres (14 165 points
     comptés) passe. Le conseil « to about N triangles » du message est faux (formule sans le facteur 1,1 : il propose
     plus de triangles qu'il n'y en a). `glb_check.py` compte ces points (~0,5 % sous Map Builder, alerte avec 1 % de marge).
+  - **Version avec cadres conforme (2026-11-26)** : `docs/etude_reconstruction/fenetres_points/RAPPORT.md`,
+    `tipla_src/D2_fenetres_points/glb/1000tipla_cadres_15386.glb` : 15 386 triangles, 14 406 points comptés
+    (≈ 14 475 pour Map Builder), intègre, 131 pièces ; 258 triangles pris surtout aux chromes (sans perte mesurée).
+    À essayer dans Map Builder.
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
