@@ -1233,6 +1233,15 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     Smart UV + cuisson Cycles de la couleur du modèle détaillé (2048 px, ~3,5 min CPU) : livrée et autocollants nets.
     Vitres à part (400 triangles, matériau `glass`). Défauts restants : montants d'aileron anguleux, feux arrière
     flous, envers des tôles visible par les vitres. `1000tipla_rebuild.glb` dans `tipla_src/glb`.
+  - **Essais pour garder les creux (2026-11-25, rendus Blender)** : Map Builder **ne lit pas les normal maps**
+    (`ModelImport.cs` : « bump map (NOT read) ») ; le relief fin ne peut passer que par la couleur (occlusion cuite,
+    gardée : `AO_MIN` 0,25, portée 25 cm) ou par des triangles. Échecs : groupe de sommets « détail » sur Decimate
+    (les sommets à poids faible sont figés : 32 000 triangles quel que soit le facteur, tôles cabossées « comme
+    après un train ») ; voxels de 8 mm (4 échappements visibles mais Decimate froisse les tôles, cuisson du capot
+    abîmée) ; **Instant Meshes** (wjakob, `Jeux_WII/tools/instant-meshes`, option `--instant`) sur la tôle épaissie :
+    coque en lambeaux (deux faces à 1 cm, arêtes visées de 5 cm), il lui faut un volume plein. Meilleur résultat
+    automatique : voxels 12 mm + Decimate + occlusion + lissage 25° → `1000tipla_rebuild4.glb` (5 098 + 400).
+    Pour aller plus loin : retouche à la main dans Blender, ou plus de triangles si Map Builder les accepte.
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
