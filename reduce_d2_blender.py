@@ -40,6 +40,11 @@ os.makedirs(outdir, exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.wm.obj_import(filepath=src)
 objs = sorted([o for o in bpy.data.objects if o.type == 'MESH'], key=lambda o: o.name)
+# l'export OBJ de Blender remplace les espaces des noms par « _ » : une entrée qui ne correspond à rien est ignorée en
+# silence (clignotants sans plancher, 2026-11-26) -> arrêt
+_names = {o.name for o in objs}
+_bad = sorted(n for n in list(fixed) + list(caps) if n not in _names)
+if _bad: raise SystemExit(f'planchers / plafonds sans pièce correspondante : {_bad}')
 tris = lambda me: sum(len(p.vertices) - 2 for p in me.polygons)
 
 orig, hi_bvh, info = {}, {}, {}

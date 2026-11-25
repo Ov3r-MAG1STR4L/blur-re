@@ -1287,6 +1287,13 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     voient de l'extérieur (5 652 cm² vus de côté). V16000 reproduit fidèlement sa base (mêmes boucles de bord, aucun
     trou). Restauration à 4 mm : ~1 780 triangles. Leçon : trier l'habitacle par **visibilité depuis l'extérieur**
     (rayons), pas par boîte englobante.
+  - **V16000 + encadrements (2026-11-26, contrôlée en rendu, pas en jeu)** : `docs/etude_reconstruction/fenetres_16k/RAPPORT_CADRES.md`.
+    15 644 triangles, 131 pièces, intègre. Faces gardées par visibilité réelle (`visible_faces_blender.py`, 72 caméras,
+    côté avant, vitres transparentes) + 2 rangées, découpe et fusion (`trim_merge_blender.py`). Cadres 1 753 tri.
+    à 5 mm, 1 854 pris aux autres pièces (tôles 4 → 5,8 mm). Fenêtres : 5 652 → 154 cm² manquants. **Découper une
+    pièce la rend plus chère à réduire** (bords de coupe : `_96` 2 168 contre 1 386 tri. à 4 mm). **L'export OBJ de
+    Blender change les espaces des noms en « _ »** : planchers ignorés en silence → `reduce_d2_blender.py` s'arrête
+    sur un nom inconnu.
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
