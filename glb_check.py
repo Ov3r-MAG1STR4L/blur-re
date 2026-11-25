@@ -45,6 +45,7 @@ def check(path, budget=None):
         if t and t['index'] >= len(j.get('textures', [])): err.append(f"matériau {m.get('name')} -> texture absente")
 
     pieces, total = [], 0
+    welded = set()   # points au sens de Map Builder (CarGlb.WeldUv) : position à 0,1 mm et UV à 1e-5 près
     for mesh in j['meshes']:
         n_tri = 0
         for p in mesh['primitives']:
@@ -65,14 +66,27 @@ def check(path, budget=None):
                 if idx.size and idx.max() >= len(pos): err.append(f"{mesh['name']} : index hors des sommets")
                 n_tri += idx.size // 3
             else: n_tri += len(pos) // 3
+            uvs = acc(p['attributes']['TEXCOORD_0']) if 'TEXCOORD_0' in p['attributes'] else np.zeros((len(pos), 2))
+            corners = idx.ravel() if idx is not None else np.arange(len(pos))
+            q = np.c_[np.round(pos[corners] / 1e-4), np.round(uvs[corners] / 1e-5)].astype(np.int64)
+            welded.update(map(tuple, q))
         pieces.append((mesh['name'], n_tri)); total += n_tri
     if budget and total > budget: err.append(f'{total} triangles > budget {budget}')
+    j['_points_map_builder'] = len(welded)
+    # Map Builder (Ui.Fits) : place en points de la Bowler Nemesis >= 1,1 x points soudés -> 16 128 / 1,1 = 14 661
+    # marge de 1 % : ce comptage donne ~0,5 % de moins que Map Builder (14 630 contre 14 698 sur la 1000tipla avec
+    # cadres, 2026-11-26 ; Map Builder recadre le modèle avant d'arrondir)
+    if len(welded) > 0.99 * BOWLER_POINTS / 1.1:
+        err.append(f'{len(welded)} points soudés > {int(0.99 * BOWLER_POINTS / 1.1)} (place de la Bowler / 1,1, marge 1 %)')
     return err, pieces, total, j
+
+
+BOWLER_POINTS = 16128   # place en points de la voiture conteneur de Map Builder (message de Map Builder 2.7.1)
 
 
 if __name__ == '__main__':
     budget = int(sys.argv[2]) if len(sys.argv) > 2 else None
     err, pieces, total, j = check(sys.argv[1], budget)
-    print(f"{sys.argv[1]} : {total} triangles, {len(pieces)} pièces, {len(j.get('materials', []))} matériaux, "
-          f"{len(j.get('images', []))} images")
+    print(f"{sys.argv[1]} : {total} triangles, {j['_points_map_builder']} points soudés (Map Builder, max "
+          f"{int(BOWLER_POINTS / 1.1)}), {len(pieces)} pièces, {len(j.get('materials', []))} matériaux, {len(j.get('images', []))} images")
     print('INTÈGRE' if not err else 'PROBLÈMES :\n  ' + '\n  '.join(err))

@@ -1294,6 +1294,12 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     pièce la rend plus chère à réduire** (bords de coupe : `_96` 2 168 contre 1 386 tri. à 4 mm). **L'export OBJ de
     Blender change les espaces des noms en « _ »** : planchers ignorés en silence → `reduce_d2_blender.py` s'arrête
     sur un nom inconnu.
+  - **La vraie limite de Map Builder est en POINTS, pas en triangles (2026-11-26, source `Ui.cs` `Fits`, Fort)** :
+    place en points de la Bowler (16 128) ≥ 1,1 × points soudés du `.glb` (position à 0,1 mm et UV à 1e-5 près, coutures
+    d'UV comprises : `CarGlb.WeldUv`) **et** place en index ≥ 2,3 × triangles. Donc ~14 660 points au plus. La 1000tipla
+    avec cadres (15 644 tri.) en a 14 698 pour Map Builder → refusée de 37 points ; V16000 sans cadres (14 165 points
+    comptés) passe. Le conseil « to about N triangles » du message est faux (formule sans le facteur 1,1 : il propose
+    plus de triangles qu'il n'y en a). `glb_check.py` compte ces points (~0,5 % sous Map Builder, alerte avec 1 % de marge).
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
