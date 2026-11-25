@@ -1248,6 +1248,14 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     27 à 32 mm pour Decimate uniforme, Instant Meshes et MeshLab au même budget. Une partie des « cabossages » vus
     avant venait des normales d'origine figées après réduction (ombrage), pas de la forme. pymeshlab installé
     (`pip --user`, 2025.7) ; lancer les scripts sans `python -I` (sinon le paquet utilisateur n'est pas vu).
+  - **Voiture entière en D2 (2026-11-25, Confirmé sur rendu, pas validé, pas en jeu)** : `reduce_d2_blender.py`
+    (budgets 6 000 / 7 000 / 8 000 en un passage, cache par pièce), contrôle `glb_check.py`, vues
+    `render_views_blender.py` (avant vers −Y, flanc gauche vers +X). Rapport : `docs/etude_reconstruction/RAPPORT_D2_COMPLET.md`.
+    Leçons : un plancher fixe ne suffit pas (baguettes chromées `Circle.026`, 12 008 tri. pour 361 cm², tombées à 8
+    triangles étirés sur 3 m) → plancher par pièce selon l'écart (2 cm demande ~9 700 triangles, 3 cm ~4 300) ; une
+    pièce trouée (calandre) bloque Decimate → « carte » (plaque fermée, couleur cuite) ; ne jamais donner à une pièce
+    plus que ses triangles d'origine ; **l'export glTF coupe les noms d'images au point** : deux images
+    `Circle.015_carte` / `Circle.027_carte` fusionnées en une (noms sans point désormais).
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
