@@ -1222,6 +1222,17 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     Sons (`sfx/*.bank`, FMOD, FSB5 Vorbis, 86 sons) : enregistrements de **Corvette C6 Z06** (`c6z*`) et de
     **Ferrari 458**, pas de la vraie 1000tipla. Map Builder prend un son moteur enregistré à un régime donné
     (`sound_rpm`, 3 000 par défaut) et des sons d'appoint (`OwnSound.Kinds` : turbo, rapports, pétarades, pneus).
+  - **Sons extraits (2026-11-25)** : vgmstream r2168 (release officielle, `Jeux_WII/tools/vgmstream`),
+    `vgmstream-cli -S 0 -o "?n.wav" x.bank` → 86 `.wav` 48 kHz dans `tipla_src/sfx`. Sélection renommée par type
+    Map Builder dans `tipla_src/map_builder_sons` (moteur `c6zextaccmid`, turbo, rapports, pétarades `corvette2stepext`,
+    dérapage). **Régime d'enregistrement non trouvé** : le `.bank` ne le donne pas lisiblement et la mesure de hauteur
+    (FFT, autocorrélation, comparaison au ralenti) accroche des sous-harmoniques ; à régler à l'oreille dans Map Builder.
+  - **Reconstruction au lieu de réduction : `retopo_bake_blender.py`** (2026-11-25, Confirmé sur rendu, pas en jeu) :
+    carrosserie épaissie (Solidify 1,8 cm) + remaillage voxel 1,2 cm (835 000 triangles), faces cachées retirées
+    (rayons, 13 directions), Decimate sur cette surface propre → coque de 5 098 triangles lisse, sans déchirure ;
+    Smart UV + cuisson Cycles de la couleur du modèle détaillé (2048 px, ~3,5 min CPU) : livrée et autocollants nets.
+    Vitres à part (400 triangles, matériau `glass`). Défauts restants : montants d'aileron anguleux, feux arrière
+    flous, envers des tôles visible par les vitres. `1000tipla_rebuild.glb` dans `tipla_src/glb`.
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
