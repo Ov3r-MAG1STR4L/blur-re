@@ -1275,6 +1275,11 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     répartition **par tolérance** (proportionnelle à la taille, bornée 1 mm / plafond) bat la répartition par surface :
     à 8 600, plus rien au-delà de 7 mm (D2R : 23 mm sur la carrosserie). 12 000 = toutes les pièces ≤ 5 mm ;
     16 000 = ≤ 4 mm ; rendements décroissants au-delà de 12 000. Calandre : ~13 300 tri. en géométrie → carte.
+  - **V8600 / V12000 / V16000 construites (2026-11-25, contrôlées en rendu, pas en jeu)** :
+    `docs/etude_reconstruction/comparatif_16k/RAPPORT_COMPARATIF.md`. 8 466 / 11 794 / 15 745 triangles, intègres,
+    127 pièces, aucune face retournée, détails de D2R protégés. Écart moyen pondéré 8,6 / 5,5 / 2,5 mm (D2R 9,4) ;
+    pire pièce 15,5 / 10,4 / 4,0 mm. V16000 : **bande sombre de lissage sur la portière avant** (bord enroulé fondu
+    par le lissage à 30°), à corriger avant essai. Les estimations des courbes sont justes à quelques mm près.
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir

@@ -16,7 +16,12 @@ ZONES = {
     'feu_arriere': ((0.70, 1.78, 0.78), (2.0, 3.4, 1.05)),
     'bas_de_caisse': ((0.95, 0.0, 0.35), (3.2, -0.9, 0.65)),
     'arche_arriere': ((0.90, 1.20, 0.50), (3.0, 2.2, 0.85)),
+    'arche_avant': ((0.90, -1.23, 0.45), (3.0, -2.1, 0.8)),
+    'bouclier_avant': ((0.0, -2.0, 0.45), (1.2, -4.3, 0.95)),
+    'diffuseur': ((0.0, 2.0, 0.35), (1.0, 4.3, 0.55)),
+    'chromes': ((0.90, -0.2, 0.95), (2.7, -1.3, 1.2)),
 }
+ONLY = [z for z in os.environ.get('ZONES', '').split(',') if z]   # ZONES=a,b : seulement ces zones
 bpy.ops.wm.read_factory_settings(use_empty=True)
 if src.lower().endswith('.obj'): bpy.ops.wm.obj_import(filepath=src)
 else: bpy.ops.import_scene.gltf(filepath=src)
@@ -29,5 +34,6 @@ sc.world = bpy.data.worlds.new('w'); sc.world.color = (0.62, 0.66, 0.70)
 cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); sc.collection.objects.link(cam); sc.camera = cam
 cam.data.lens = 50
 for z, (t, c) in ZONES.items():
+    if ONLY and z not in ONLY: continue
     cam.location = Vector(c); cam.rotation_euler = (Vector(t) - cam.location).to_track_quat('-Z', 'Y').to_euler()
     sc.render.filepath = f"{out}_{z}{'_gris' if grey else ''}.png"; bpy.ops.render.render(write_still=True)
