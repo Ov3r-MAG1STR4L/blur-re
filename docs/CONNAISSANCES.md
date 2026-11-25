@@ -1270,6 +1270,11 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     replie des triangles des pièces fines (jusqu'à 29 % retournés, invisibles dans Blur) → refusée au-delà de 1 % de la
     surface (+50 % de triangles). Le pare-brise `Fiat_Multipla_65` contient les lentilles des phares du pied de
     pare-brise : à traiter comme un détail.
+  - **Étude jusqu'à 16 000 triangles (2026-11-25, chiffrée, rien reconstruit)** : `docs/etude_reconstruction/etude_16k/ETUDE_16K.md`,
+    courbes de coût par pièce (`cost_curve_blender.py`). Tout à 5 mm = ~11 200 triangles, tout à 3 mm ~19 000. Une
+    répartition **par tolérance** (proportionnelle à la taille, bornée 1 mm / plafond) bat la répartition par surface :
+    à 8 600, plus rien au-delà de 7 mm (D2R : 23 mm sur la carrosserie). 12 000 = toutes les pièces ≤ 5 mm ;
+    16 000 = ≤ 4 mm ; rendements décroissants au-delà de 12 000. Calandre : ~13 300 tri. en géométrie → carte.
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
