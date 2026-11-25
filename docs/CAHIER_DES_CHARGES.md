@@ -644,3 +644,4 @@ crochet sur l'attribution du bonus) ; jamais en ligne (gameplay différent entre
 - 2026-11-24 : Vulcan « classe S » (`Ryback Vulkan S.blurcar`, stats extrapolées au-delà de la classe A), à essayer en jeu ; réglages de l'utilisateur vérifiés dans l'aperçu (roues, échappements)
 - 2026-11-24 : Vulkan S recule = rapport final négatif (−0,77) par extrapolation de la stat vitesse ; S v2 (vitesse 10, accélération 12) produite
 - 2026-11-24 : `boost_car.py` : vraie vitesse de pointe pour la Vulkan S (260 mph, rapport 2,33, air 0,40) réécrite dans le pak de REBORN après Map Builder ; posé dans `Blur_test_hud`, à essayer en jeu
+- 2026-11-25 : `glb_reduce_blender.py` : allège un modèle Sketchfab (ici Fiat Multipla « 1000tipla ») pour Map Builder (Decimate ~6 000 triangles, textures 1024 px) ; essai hors jeu OK, modèle pas encore téléchargé
