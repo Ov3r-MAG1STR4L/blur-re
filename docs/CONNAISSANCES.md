@@ -1201,7 +1201,10 @@ Releases : 2.6.0 (16/11), 2.6.1 (17/11), 2.6.2 (18/11), 2.7.0 (19/11), 2.7.1 (21
     dans les maillages existants de cette voiture, sans les agrandir : place = somme des sommets (V) et des index (I) de
     ses maillages. Accepté si V ≥ 1,1 × points soudés (UV comprises) et I ≥ 2,3 × triangles. Exemples des captures :
     Bowler Nemesis 16 128 points, Opel Astra Extreme 10 570. Un modèle d'hypercar (100 000+ triangles) doit être réduit
-    (Decimate) à quelques milliers de triangles, sinon des pièces manquent en jeu.
+    (Decimate) à quelques milliers de triangles, sinon des pièces manquent en jeu. Outil générique (2026-11-25,
+    Confirmé hors jeu sur un maillage d'essai : 251 904 → 6 000 triangles, 19 → 0,46 Mo) : `glb_reduce_blender.py`
+    (glb/gltf/fbx/obj → `.glb` ~6 000 triangles, textures ramenées à 1024 px). Multipla « 1000tipla » de Sketchfab
+    (JimiHadrix) : 2,3 M triangles et **non téléchargeable** (2026-11-25).
   - Vitres : posées dans les maillages `e_headlightcover*` (`veh_glass`) s'ils ont assez de place, sinon ancienne vitre.
     Peinture : triangles placés dans `e_exterior` (`veh_paint_b_c`) ; grisée en 2.7.1 pour les carrosseries importées.
   - **Piste pour lever la limite** (Hypothèse) : `blurmodel_write.py` écrit déjà des `.model` de taille libre ; agrandir
